@@ -12,9 +12,9 @@ BUILD_TOOLS=OFF  # Default: Do not build tests
 BUILD_TYPE="Release"  # Default: Release mode
 
 # Default directories (can be overridden by arguments)
-MLIR_DIR="/opt/llvm/lib/cmake/mlir"
-CLANG_DIR="/opt/llvm/lib/cmake/clang"
-LLVM_DIR="/opt/llvm/lib/cmake/llvm"
+MLIR_DIR="/usr/local/llvm/lib/cmake/mlir"
+CLANG_DIR="/usr/local/llvm/lib/cmake/clang"
+LLVM_DIR="/usr/local/llvm/lib/cmake/llvm"
 INSTALL_DIR="${INSTALL_PATH:-$HOME/.passes}"
 
 # Parse command-line arguments
@@ -93,9 +93,9 @@ mkdir -p build && cd build || { echo "Failed to create or navigate to build dire
 # Configure CUDA Quantum using CMake
 echo "Configuring CUDA Quantum with CMake..."
 cmake -G Ninja \
-  -DMLIR_DIR="${MLIR_DIR}" \
-  -DClang_DIR="${CLANG_DIR}" \
-  -DLLVM_DIR="${LLVM_DIR}" \
+  -DMLIR_DIR="/usr/local/llvm/lib/cmake/mlir" \
+  -DClang_DIR="/usr/local/llvm/lib/cmake/clang" \
+  -DLLVM_DIR="/usr/local/llvm/lib/cmake/llvm" \
   ..
 
 if [ $? -ne 0 ]; then
@@ -119,11 +119,12 @@ cd  "${BUILD_DIR}" || { echo "Failed to navigate back to the original directory.
 
 echo "Configuring MQSS Passes Repository CMake..."
 cmake .. \
+  -DCMAKE_INSTALL_PREFIX=/usr/local \
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \
   -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
-  -DMLIR_DIR="${MLIR_DIR}" \
-  -DLLVM_DIR="${LLVM_DIR}" \
+  -DMLIR_DIR="/usr/local/llvm/lib/cmake/mlir" \
+  -DLLVM_DIR="/usr/local/llvm/lib/cmake/llvm" \
   -DBUILD_MLIR_PASSES_TOOLS="${BUILD_TOOLS}" \
   -DBUILD_MLIR_PASSES_DOCS="${BUILD_DOCS}" \
   -DBUILD_MLIR_PASSES_TESTS="${BUILD_TESTS}"\

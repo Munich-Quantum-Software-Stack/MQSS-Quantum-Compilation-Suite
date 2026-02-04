@@ -108,7 +108,7 @@ std::string getEmptyQuakeKernel(const std::string kernelName,
 std::tuple<std::unique_ptr<mlir::MLIRContext>,
            mlir::OwningOpRef<mlir::ModuleOp>>
 extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
+  auto contextPtr = cudaq::getOwningMLIRContext();
   mlir::MLIRContext &context = *contextPtr.get();
 
   // Get the quake representation of the kernel

@@ -72,7 +72,7 @@ matches.
 #define CUDAQ_GEN_PREFIX_NAME "__nvqpp__mlirgen__"
 
 std::tuple<mlir::ModuleOp, mlir::MLIRContext *> createEmptyMLIRModule() {
-  auto contextPtr = cudaq::initializeMLIR();
+  auto contextPtr = cudaq::getOwningMLIRContext();
   mlir::MLIRContext &context = *contextPtr.get();
   // Create an empty MLIR module
   mlir::OwningOpRef<mlir::ModuleOp> m_module =
@@ -82,7 +82,7 @@ std::tuple<mlir::ModuleOp, mlir::MLIRContext *> createEmptyMLIRModule() {
 
 std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
 extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
+  auto contextPtr = cudaq::getOwningMLIRContext();
   mlir::MLIRContext &context = *contextPtr.get();
 
   // Get the quake representation of the kernel

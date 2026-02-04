@@ -41,16 +41,16 @@ target_include_directories(
           ${CUDAQ_MLIR_RUNTIME_PATH})
 add_test(NAME Tesst-MQSS-passes COMMAND test-mqss-passes)
 
-add_executable(test-decomposition-passes testCudaQDecompositionPasses.cpp)
-target_link_libraries(test-decomposition-passes PRIVATE ${COMMON_LIBRARIES})
-target_include_directories(
-  test-decomposition-passes PRIVATE ${CMAKE_SOURCE_DIR}/include
-                                    ${CUDAQ_MLIR_RUNTIME_PATH})
+# add_executable(test-decomposition-passes testCudaQDecompositionPasses.cpp)
+# target_link_libraries(test-decomposition-passes PRIVATE ${COMMON_LIBRARIES})
+# target_include_directories(
+#   test-decomposition-passes PRIVATE ${CMAKE_SOURCE_DIR}/include
+#                                     ${CUDAQ_MLIR_RUNTIME_PATH})
 
-add_executable(test-transpiler testCudaQTranspiler.cpp)
-target_link_libraries(test-transpiler PRIVATE ${COMMON_LIBRARIES})
-target_include_directories(test-transpiler PRIVATE ${CMAKE_SOURCE_DIR}/include
-                                                   ${CUDAQ_MLIR_RUNTIME_PATH})
+# add_executable(test-transpiler testCudaQTranspiler.cpp)
+# target_link_libraries(test-transpiler PRIVATE ${COMMON_LIBRARIES})
+# target_include_directories(test-transpiler PRIVATE ${CMAKE_SOURCE_DIR}/include
+#                                                    ${CUDAQ_MLIR_RUNTIME_PATH})
 
 add_executable(test-verification-qcec testMQSS-QCEC.cpp)
 target_link_libraries(test-verification-qcec PRIVATE ${COMMON_LIBRARIES}

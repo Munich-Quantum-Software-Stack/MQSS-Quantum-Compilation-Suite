@@ -64,7 +64,7 @@ matches.
 
 std::tuple<mlir::ModuleOp, mlir::MLIRContext *>
 extractMLIRContext(const std::string &quakeModule) {
-  auto contextPtr = cudaq::initializeMLIR();
+  auto contextPtr = cudaq::getOwningMLIRContext();
   mlir::MLIRContext &context = *contextPtr.get();
 
   // Get the quake representation of the kernel
