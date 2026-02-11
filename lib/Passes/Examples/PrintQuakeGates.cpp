@@ -49,7 +49,7 @@ class PrintQuakeGates
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(PrintQuakeGates)
 
-  PrintQuakeGates(llvm::raw_string_ostream &ostream) : outputStream(ostream) {}
+  PrintQuakeGates(llvm::raw_ostream &ostream) : outputStream(ostream) {}
 
   llvm::StringRef getArgument() const override {
     return "print-quake-gates-pass";
@@ -78,12 +78,12 @@ public:
   }
 
 private:
-  llvm::raw_string_ostream &outputStream; // Store the output stream
+  llvm::raw_ostream &outputStream; // Store the output stream
 };
 
 } // namespace
 
 std::unique_ptr<mlir::Pass>
-mqss::opt::createPrintQuakeGatesPass(llvm::raw_string_ostream &ostream) {
+mqss::opt::createPrintQuakeGatesPass(llvm::raw_ostream &ostream) {
   return std::make_unique<PrintQuakeGates>(ostream);
 }

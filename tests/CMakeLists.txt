@@ -41,6 +41,17 @@ target_include_directories(
           ${CUDAQ_MLIR_RUNTIME_PATH})
 add_test(NAME Tesst-MQSS-passes COMMAND test-mqss-passes)
 
+add_executable(test-mytest testMytest.cpp)
+target_link_libraries(test-mytest PRIVATE ${COMMON_LIBRARIES} MLIRPasses)
+target_include_directories(
+  test-mytest
+  PRIVATE ${CMAKE_SOURCE_DIR}/include
+          ${CMAKE_SOURCE_DIR}/include/Passes/
+          ${CMAKE_SOURCE_DIR}/include/Support/
+          ${CMAKE_SOURCE_DIR}/include/Support/CodeGen
+          ${CUDAQ_MLIR_RUNTIME_PATH})
+          
+
 # add_executable(test-decomposition-passes testCudaQDecompositionPasses.cpp)
 # target_link_libraries(test-decomposition-passes PRIVATE ${COMMON_LIBRARIES})
 # target_include_directories(

@@ -9,7 +9,7 @@ NUM_JOBS=1  # Default number of jobs
 BUILD_DOCS=OFF  # Default: Do not build documentation
 BUILD_TESTS=OFF  # Default: Do not build tests
 BUILD_TOOLS=OFF  # Default: Do not build tests
-BUILD_TYPE="Release"  # Default: Release mode
+BUILD_TYPE="debug"  # Default: Release mode
 
 # Default directories (can be overridden by arguments)
 MLIR_DIR="/usr/local/llvm/lib/cmake/mlir"
@@ -106,6 +106,7 @@ fi
 # Build the cudaq-mlir-runtime target using Ninja
 echo "Building cudaq-mlir-runtime target with ${NUM_JOBS} jobs..."
 ninja -j"${NUM_JOBS}" cudaq-mlir-runtime
+ninja -j"${NUM_JOBS}" cudaq-opt
 
 if [ $? -ne 0 ]; then
   echo "Failed to build cudaq-mlir-runtime target."
@@ -119,7 +120,7 @@ cd  "${BUILD_DIR}" || { echo "Failed to navigate back to the original directory.
 
 echo "Configuring MQSS Passes Repository CMake..."
 cmake .. \
-  -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -G Ninja \
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \
   -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
@@ -131,5 +132,5 @@ cmake .. \
   -DCUDAQ_SOURCE_DIR="${CUDAQ_DIR}" \
 	-DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
 echo "Building MQSS Repository Passes with ${NUM_JOBS} jobs..."
-make -j"${NUM_JOBS}"
+ninja -j"${NUM_JOBS}"
 echo "Build of MQSS Repository Passes completed successfully!..."
