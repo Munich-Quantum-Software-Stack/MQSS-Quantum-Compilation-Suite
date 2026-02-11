@@ -47,6 +47,42 @@ target_include_directories(cpp-to-only-quake PRIVATE ${CMAKE_SOURCE_DIR}/include
 # set_target_properties(cpp-to-only-quake PROPERTIES INSTALL_RPATH
 # "$ORIGIN/../lib" BUILD_WITH_INSTALL_RPATH ON)
 
+# 1. Define the executable and its source file
+add_executable(mqss-opt mqss.cpp)
+
+# 2. Link the required libraries
+# Note: We must include the Dialects to resolve those "undefined symbols"
+target_link_libraries(mqss-opt 
+  PRIVATE 
+    Optimizer               # Your MQSS passes
+    MLIRPasses              # The library containing CommuteCxRx
+    # The missing MLIR dialects
+    MLIRFuncDialect         # <--- Fixes the func.func error
+    MLIRArithDialect        # <--- For constants and math
+    MLIRControlFlowDialect  # <--- For branching/returns
+    
+    SupportQuake            # MQSS/Quake support
+    Interfaces              # MQSS Interfaces
+    MLIROptLib              # Provides MlirOptMain engine
+    ${COMMON_LIBRARIES}     # Your CUDA-Q runtime + GTest
+)
+
+# 3. Set include directories so the compiler finds your headers
+target_include_directories(mqss-opt
+  PRIVATE 
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/Passes
+    ${CUDAQ_MLIR_RUNTIME_PATH}/include  # Path to CUDA-Q headers
+)
+
+# 4. Ensure it outputs to build/bin
+set_target_properties(mqss-opt PROPERTIES 
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# (Optional) Verify links
+mlir_check_all_link_libraries(mqss-opt)
+
 # Install the quake-to-tikz tool
 install(TARGETS quake-to-tikz RUNTIME DESTINATION bin)
 
