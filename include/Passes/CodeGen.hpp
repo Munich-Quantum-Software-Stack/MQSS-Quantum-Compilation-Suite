@@ -60,7 +60,7 @@ namespace mqss::opt {
  `mlir::PassManager` to take effect on any given MLIR module.
  */
 std::unique_ptr<mlir::Pass>
-createQuakeToTikzPass(llvm::raw_string_ostream &ostream);
+createQuakeToTikzPass(llvm::raw_ostream &ostream);
 
 /**
  * @brief Pass that generates a quake module form a given QASM3 circuit.

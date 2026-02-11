@@ -156,7 +156,7 @@ class QuakeToTikzPass
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeToTikzPass)
 
-  QuakeToTikzPass(llvm::raw_string_ostream &ostream) : outputStream(ostream) {}
+  QuakeToTikzPass(llvm::raw_ostream &ostream) : outputStream(ostream) {}
 
   llvm::StringRef getArgument() const override {
     return "convert-quake-to-tikz";
@@ -210,12 +210,12 @@ public:
   }
 
 private:
-  llvm::raw_string_ostream &outputStream; // Store the tikz circuit
+  llvm::raw_ostream &outputStream; // Store the tikz circuit
 };
 
 } // namespace
 
 std::unique_ptr<mlir::Pass>
-mqss::opt::createQuakeToTikzPass(llvm::raw_string_ostream &ostream) {
+mqss::opt::createQuakeToTikzPass(llvm::raw_ostream &ostream) {
   return std::make_unique<QuakeToTikzPass>(ostream);
 }

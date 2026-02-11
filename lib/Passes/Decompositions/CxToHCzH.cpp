@@ -80,6 +80,6 @@ public:
 };
 } // namespace
 
-std::unique_ptr<Pass> mqss::opt::createCxToHCzHDecompositionPass() {
+std::unique_ptr<mlir::Pass> mqss::opt::createCxToHCzHDecompositionPass() {
   return std::make_unique<CxToHCzH>();
 }

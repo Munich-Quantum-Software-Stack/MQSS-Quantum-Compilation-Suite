@@ -60,6 +60,7 @@ target_link_libraries(mqss-opt
     MLIRFuncDialect         # <--- Fixes the func.func error
     MLIRArithDialect        # <--- For constants and math
     MLIRControlFlowDialect  # <--- For branching/returns
+    MLIRTransforms
     
     SupportQuake            # MQSS/Quake support
     Interfaces              # MQSS Interfaces

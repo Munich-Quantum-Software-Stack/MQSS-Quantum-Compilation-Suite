@@ -1,0 +1,192 @@
+OVERVIEW: MQSS Optimizer
+
+Available Dialects: arith, builtin, cc, cf, func, quake
+USAGE: mqss-opt [options] <input file>
+
+OPTIONS:
+
+Color Options:
+
+  --color                                              - Use colors in output (default=autodetect)
+
+General options:
+
+  --aarch64-neon-syntax=<value>                        - Choose style of NEON code to emit from AArch64 backend:
+    =generic                                           -   Emit generic NEON assembly
+    =apple                                             -   Emit Apple-style NEON assembly
+  --aarch64-use-aa                                     - Enable the use of AA during codegen.
+  --abort-on-max-devirt-iterations-reached             - Abort when the max iterations for devirtualization CGSCC repeat pass is reached
+  --allow-ginsert-as-artifact                          - Allow G_INSERT to be considered an artifact. Hack around AMDGPU test infinite loops.
+  --allow-unregistered-dialect                         - Allow operation with no registered dialects
+  --atomic-counter-update-promoted                     - Do counter update using atomic fetch add  for promoted counters only
+  --atomic-first-counter                               - Use atomic fetch add for first counter in a function (usually the entry counter)
+  --bounds-checking-single-trap                        - Use one trap block per function
+  --cfg-hide-cold-paths=<number>                       - Hide blocks with relative frequency below the given value
+  --cfg-hide-deoptimize-paths                          - 
+  --cfg-hide-unreachable-paths                         - 
+  Compiler passes to run
+    Passes:
+      --CancellationDoubleCx                           -   This pass removes the pattern CNot, CNot if both gates operates on the same control and targets.
+      --CancellationNullRotation                       -   Optimization pass that removes of Rx, Ry and Rz null rotations
+      --CommuteCxRx                                    -   Apply commutation pass of pattern CNot-Rx
+      --CommuteCxX                                     -   Apply commutation pass to pattern CNot-X
+      --CommuteCxZ                                     -   Apply commutation pass of the pattern CNot-Z to Z-CNot
+      --CommuteRxCx                                    -   Apply commutation pass to pattern Rx-CNot to CNot-Rx
+      --CommuteXCx                                     -   Apply commutation pass to pattern X-CNot to CNot-X
+      --CommuteZCx                                     -   Apply commutation pass to pattern Z-CNot to CNot-Z
+      --CxToHCzH                                       -   Decomposition pass of two-qubits cnot by H, Cz, and H
+      --CzToHCxH                                       -   Decomposition pass of Cz by H, Cx, and H
+      --HXHToZ                                         -   Optimization pass that replaces a pattern composed of H, X, H by Z
+      --HZHToX                                         -   Optimization pass that replaces a pattern composed of H, Z, H by X
+      --NormalizeArgAngle                              -   Optimization pass that normalizes the angle of Rx, Ry and Rz rotations
+      --ReductionPattern                               -   This pass removes the pattern Gate, Gate if both gates operates on the same control and targets.
+      --ReverseCx                                      -   Decomposition pass that reverses the control and targets of each two-qubits CNot gate in a circuit
+      --SAdjZToS                                       -   Optimization pass that replaces a pattern composed of S adjoint and Z by S
+      --SZToSAdj                                       -   Optimization pass that replaces a pattern composed of S and Z by S(adj)
+      --SwitchHX                                       -   Pass that switches a pattern composed Hadamard and X to Z and Hadamard
+      --SwitchHY                                       -   Pass that switches a pattern composed Hadamard and Y to Y and Hadamard
+      --SwitchHZ                                       -   Pass that switches a pattern composed Hadamard and Z to X and Hadamard
+      --SwitchPauliH                                   -   Pass that switches a pattern composed by {X,Y,Z} (Pauli) and Hadamard
+      --SwitchXH                                       -   Pass that switches a pattern composed by X and Hadamard to Hadamard and Z
+      --SwitchYH                                       -   Pass that switches a pattern composed by Y and Hadamard to Hadamard and Y
+      --SwitchZH                                       -   Pass that switches a pattern composed by Z and Hadamard to Hadamard and X
+      --canonicalize                                   -   Canonicalize operations
+        --disable-patterns=<string>                    - Labels of patterns that should be filtered out during application
+        --enable-patterns=<string>                     - Labels of patterns that should be used during application, all other patterns are filtered out
+        --max-iterations=<long>                        - Max. iterations between applying patterns / simplifying regions
+        --max-num-rewrites=<long>                      - Max. number of pattern rewrites within an iteration
+        --region-simplify                              - Perform control flow optimizations to the region tree
+        --test-convergence                             - Test only: Fail pass on non-convergence to detect cyclic pattern
+        --top-down                                     - Seed the worklist in general top-down order
+      --convert-qasm3-to-quake                         -   Convert QASM3 to Quake Operations
+      --convert-quake-to-linalg                        -   Convert Quake to linalg Operations
+      --convert-quake-to-tikz                          -   Lower Quake Operations to LaTeX TiKz
+      --cse                                            -   Eliminate common sub-expressions
+      --cudaq-custom-pass                              -   Apply dummy example pass that replaces each H gate by a S gate
+      --print-quake-gates-pass                         -   pass that traverses a given mlir module, print its gates and a description of the operands of each gate
+    Pass Pipelines:
+      --mqss-o1                                        -   Run MQSS O1
+      --mqss-o2                                        -   Run MQSS O2
+      --mqss-o3                                        -   Run MQSS O3
+  --cost-kind=<value>                                  - Target cost kind
+    =throughput                                        -   Reciprocal throughput
+    =latency                                           -   Instruction latency
+    =code-size                                         -   Code size
+    =size-latency                                      -   Code size and latency
+  --debug-info-correlate                               - Use debug info to correlate profiles.
+  --debugify-func-limit=<ulong>                        - Set max number of processed functions per pass.
+  --debugify-level=<value>                             - Kind of debug info to add
+    =locations                                         -   Locations only
+    =location+variables                                -   Locations and Variables
+  --debugify-quiet                                     - Suppress verbose debugify output
+  --disable-i2p-p2i-opt                                - Disables inttoptr/ptrtoint roundtrip optimization
+  --do-counter-promotion                               - Do counter register promotion
+  --dot-cfg-mssa=<file name for generated dot file>    - file name for generated dot file
+  --dump-pass-pipeline                                 - Print the pipeline that will be run
+  --emit-bytecode                                      - Emit bytecode when generating output
+  --enable-cse-in-irtranslator                         - Should enable CSE in irtranslator
+  --enable-cse-in-legalizer                            - Should enable CSE in Legalizer
+  --enable-gvn-hoist                                   - Enable the GVN hoisting pass (default = off)
+  --enable-gvn-memdep                                  - 
+  --enable-gvn-sink                                    - Enable the GVN sinking pass (default = off)
+  --enable-load-in-loop-pre                            - 
+  --enable-load-pre                                    - 
+  --enable-loop-simplifycfg-term-folding               - 
+  --enable-name-compression                            - Enable name/filename string compression
+  --enable-split-backedge-in-load-pre                  - 
+  --experimental-debug-variable-locations              - Use experimental new value-tracking variable locations
+  --fs-profile-debug-bw-threshold=<uint>               - Only show debug message if the source branch weight is greater  than this value.
+  --fs-profile-debug-prob-diff-threshold=<uint>        - Only show debug message if the branch probility is greater than this value (in percentage).
+  --generate-merged-base-profiles                      - When generating nested context-sensitive profiles, always generate extra base profile for function with all its context profiles merged into it.
+  --hash-based-counter-split                           - Rename counter variable of a comdat function based on cfg hash
+  --hot-cold-split                                     - Enable hot-cold splitting pass
+  --import-all-index                                   - Import all external functions in index.
+  --instcombine-code-sinking                           - Enable code sinking
+  --instcombine-guard-widening-window=<uint>           - How wide an instruction window to bypass looking for another guard
+  --instcombine-max-iterations=<uint>                  - Limit the maximum number of instruction combining iterations
+  --instcombine-max-num-phis=<uint>                    - Maximum number phis to handle in intptr/ptrint folding
+  --instcombine-max-sink-users=<uint>                  - Maximum number of undroppable users for instruction sinking
+  --instcombine-maxarray-size=<uint>                   - Maximum array size considered when doing a combine
+  --instcombine-negator-enabled                        - Should we attempt to sink negations?
+  --instcombine-negator-max-depth=<uint>               - What is the maximal lookup depth when trying to check for viability of negation sinking.
+  --instrprof-atomic-counter-update-all                - Make all profile counter updates atomic (for testing only)
+  --internalize-public-api-file=<filename>             - A file containing list of symbol names to preserve
+  --internalize-public-api-list=<list>                 - A list of symbol names to preserve
+  --iterative-counter-promotion                        - Allow counter promotion across the whole loop nest.
+  --matrix-default-layout=<value>                      - Sets the default matrix layout
+    =column-major                                      -   Use column-major layout
+    =row-major                                         -   Use row-major layout
+  --matrix-print-after-transpose-opt                   - 
+  --max-counter-promotions=<int>                       - Max number of allowed counter promotions
+  --max-counter-promotions-per-loop=<uint>             - Max number counter promotions per loop to avoid increasing register pressure too much
+  --mir-strip-debugify-only                            - Should mir-strip-debug only strip debug info from debugified modules by default
+  --misexpect-tolerance=<uint>                         - Prevents emiting diagnostics when profile counts are within N% of the threshold..
+  --mlir-debug-counter=<string>                        - Comma separated list of debug counter skip and count arguments
+  --mlir-disable-threading                             - Disable multi-threading within MLIR, overrides any further call to MLIRContext::enableMultiThreading()
+  --mlir-elide-elementsattrs-if-larger=<uint>          - Elide ElementsAttrs with "..." that have more elements than the given upper limit
+  --mlir-pass-pipeline-crash-reproducer=<string>       - Generate a .mlir reproducer file at the given output path if the pass manager crashes or fails
+  --mlir-pass-pipeline-local-reproducer                - When generating a crash reproducer, attempt to generated a reproducer with the smallest pipeline.
+  --mlir-pass-statistics                               - Display the statistics of each pass
+  --mlir-pass-statistics-display=<value>               - Display method for pass statistics
+    =list                                              -   display the results in a merged list sorted by pass name
+    =pipeline                                          -   display the results with a nested pipeline view
+  --mlir-pretty-debuginfo                              - Print pretty debug info in MLIR output
+  --mlir-print-debug-counter                           - Print out debug counter information after all counters have been accumulated
+  --mlir-print-debuginfo                               - Print debug info in MLIR output
+  --mlir-print-elementsattrs-with-hex-if-larger=<long> - Print DenseElementsAttrs with a hex string that have more elements than the given upper limit (use -1 to disable)
+  --mlir-print-ir-after=<pass-arg>                     - Print IR after specified passes
+  --mlir-print-ir-after-all                            - Print IR after each pass
+  --mlir-print-ir-after-change                         - When printing the IR after a pass, only print if the IR changed
+  --mlir-print-ir-after-failure                        - When printing the IR after a pass, only print if the pass failed
+  --mlir-print-ir-before=<pass-arg>                    - Print IR before specified passes
+  --mlir-print-ir-before-all                           - Print IR before each pass
+  --mlir-print-ir-module-scope                         - When printing IR for print-ir-[before|after]{-all} always print the top-level operation
+  --mlir-print-local-scope                             - Print with local scope and inline information (eliding aliases for attributes, types, and locations
+  --mlir-print-op-on-diagnostic                        - When a diagnostic is emitted on an operation, also print the operation as an attached note
+  --mlir-print-stacktrace-on-diagnostic                - When a diagnostic is emitted, also print the stack trace as an attached note
+  --mlir-print-value-users                             - Print users of operation results and block arguments as a comment
+  --mlir-timing                                        - Display execution times
+  --mlir-timing-display=<value>                        - Display method for timing data
+    =list                                              -   display the results in a list sorted by total time
+    =tree                                              -   display the results ina with a nested tree view
+  --no-discriminators                                  - Disable generation of discriminator information.
+  --no-implicit-module                                 - Disable implicit addition of a top-level module op during parsing
+  -o <filename>                                        - Output filename
+  --opaque-pointers                                    - Use opaque pointers
+  --pass-pipeline=<string>                             - Textual description of the pass pipeline to run
+  --poison-checking-function-local                     - Check that returns are non-poison (for testing)
+  --print-pipeline-passes                              - Print a '-passes' compatible string describing the pipeline (best-effort only).
+  --runtime-counter-relocation                         - Enable relocating counters at runtime.
+  --safepoint-ir-verifier-print-only                   - 
+  --sample-profile-check-record-coverage=<N>           - Emit a warning if less than N% of records in the input profile are matched to the IR.
+  --sample-profile-check-sample-coverage=<N>           - Emit a warning if less than N% of samples in the input profile are matched to the IR.
+  --sample-profile-max-propagate-iterations=<uint>     - Maximum number of iterations to go through when propagating sample block/edge weights through the CFG.
+  --show-dialects                                      - Print the list of registered dialects
+  --skip-ret-exit-block                                - Suppress counter promotion if exit blocks contain ret.
+  --speculative-counter-promotion-max-exiting=<uint>   - The max number of exiting blocks of a loop to allow  speculative counter promotion
+  --speculative-counter-promotion-to-loop              - When the option is false, if the target block is in a loop, the promotion will be disallowed unless the promoted counter  update can be further/iteratively promoted into an acyclic  region.
+  --split-input-file                                   - Split the input file into pieces and process each chunk independently
+  --summary-file=<string>                              - The summary file to use for function importing.
+  --sve-tail-folding=<string>                          - Control the use of vectorisation using tail-folding for SVE:
+                                                         disabled    No loop types will vectorize using tail-folding
+                                                         default     Uses the default tail-folding settings for the target CPU
+                                                         all         All legal loop types will vectorize using tail-folding
+                                                         simple      Use tail-folding for simple loops (not reductions or recurrences)
+                                                         reductions  Use tail-folding for loops containing reductions
+                                                         recurrences Use tail-folding for loops containing fixed order recurrences
+  --type-based-intrinsic-cost                          - Calculate intrinsics cost based only on argument types
+  --verify-diagnostics                                 - Check that emitted diagnostics match expected-* lines on the corresponding line
+  --verify-each                                        - Run the verifier after each transformation pass
+  --verify-legalizer-debug-locs=<value>                - Verify that debug locations are handled
+    =none                                              -   No verification
+    =legalizations                                     -   Verify legalizations
+    =legalizations+artifactcombiners                   -   Verify legalizations and artifact combines
+  --verify-region-info                                 - Verify region info (time consuming)
+  --vp-counters-per-site=<number>                      - The average number of profile counters allocated per value profiling site.
+  --vp-static-alloc                                    - Do static counter allocation for value profiler
+
+Generic Options:
+
+  --help                                               - Display available options (--help-hidden for more)
+  --help-list                                          - Display list of available options (--help-list-hidden for more)
+  --version                                            - Display the version of this program

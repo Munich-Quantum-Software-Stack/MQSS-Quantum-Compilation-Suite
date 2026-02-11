@@ -8,13 +8,13 @@ INSTALL_PATH="${INSTALL_PATH:-$HOME/.passes}"
 NUM_JOBS=1  # Default number of jobs
 BUILD_DOCS=OFF  # Default: Do not build documentation
 BUILD_TESTS=OFF  # Default: Do not build tests
-BUILD_TOOLS=OFF  # Default: Do not build tests
+BUILD_TOOLS=ON
 BUILD_TYPE="debug"  # Default: Release mode
 
 # Default directories (can be overridden by arguments)
-MLIR_DIR="/opt/llvm/lib/cmake/mlir"
-CLANG_DIR="/opt/llvm/lib/cmake/clang"
-LLVM_DIR="/opt/llvm/lib/cmake/llvm"
+MLIR_DIR="/usr/local/llvm/lib/cmake/mlir"
+CLANG_DIR="/usr/local/llvm/lib/cmake/clang"
+LLVM_DIR="/usr/local/llvm/lib/cmake/llvm"
 INSTALL_DIR="${INSTALL_PATH:-$HOME/.passes}"
 
 # Parse command-line arguments
