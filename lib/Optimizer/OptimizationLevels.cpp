@@ -30,9 +30,16 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Optimizer/Pipelines.hpp"
 #include "Passes/Transforms.hpp"
 
+#include <mlir/Transforms/Passes.h>
+
 using namespace mlir;
 
-void mqss::opt::O1(PassManager &pm) { pm.addPass(createCanonicalizerPass()); }
+void mqss::opt::O1(PassManager &pm) {
+  pm.addPass(createCSEPass());
+  pm.addPass(createCanonicalizerPass());
+  pm.addPass(createCommuteCxRxPass());
+  // more passes to be added here
+}
 
 void mqss::opt::O2(PassManager &pm) {
   pm.addPass(createCanonicalizerPass());

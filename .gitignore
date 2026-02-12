@@ -19,6 +19,7 @@ CMakeUserPresets.json
 build
 .cache
 .cache/clangd
+.cache/clangd/index
 # Compiled Object files
 *.slo
 *.lo

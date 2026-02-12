@@ -38,6 +38,9 @@ int main(int argc, char **argv) {
     mlir::registerCSEPass();           // Enables --cse
     mlir::registerCanonicalizerPass(); // Enables --canonicalize
 
+  registerMQSSOptTransformsPasses();
+  registerMQSSOptDecompositionsPasses();
+
   // 1. Register the Pipelines (These show up under "Pass Pipelines")
   // mlir::PassPipelineRegistration<>("mqss-o1", "MQSS O1", mqss::opt::O1);
   mlir::PassPipelineRegistration<>(
@@ -60,96 +63,6 @@ int main(int argc, char **argv) {
         // This works because PassManager inherits from OpPassManager
         mqss::opt::O3(static_cast<mlir::PassManager &>(pm));
       });
-
-  // 2. Register Individual Passes (This makes them show up under "Passes")
-  // Use the explicit registration call:
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteCxRxPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteZCxPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteCxZPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteCxXPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteRxCxPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteXCxPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchPauliHPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchHXPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchHZPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchXHPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchZHPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchHYPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchYHPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCancellationDoubleCxPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCustomExamplePass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createHXHToZPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createHZHToXPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCancellationNullRotationPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createNormalizeArgAnglePass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createQuakeToLinAlgPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createReductionPatternPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCxToHCzHDecompositionPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCzToHCxHDecompositionPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createReverseCxPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSAdjZToSPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSZToSAdjPass();
-  });
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mqss::opt::createPrintQuakeGatesPass(llvm::outs());
