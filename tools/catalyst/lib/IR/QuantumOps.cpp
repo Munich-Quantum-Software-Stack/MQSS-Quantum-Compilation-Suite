@@ -21,8 +21,8 @@
 #include "llvm/ADT/StringSet.h"
 #include "llvm/ADT/TypeSwitch.h"
 
-#include "Quantum/IR/QuantumDialect.h"
-#include "Quantum/IR/QuantumOps.h"
+#include "IR/QuantumDialect.h"
+#include "IR/QuantumOps.h"
 
 using namespace mlir;
 using namespace catalyst::quantum;
@@ -31,9 +31,9 @@ using namespace catalyst::quantum;
 // Quantum op definitions.
 //===----------------------------------------------------------------------===//
 
-#include "Quantum/IR/QuantumEnums.cpp.inc"
+#include "IR/QuantumEnums.cpp.inc"
 #define GET_OP_CLASSES
-#include "Quantum/IR/QuantumOps.cpp.inc"
+#include "IR/QuantumOps.cpp.inc"
 
 //===----------------------------------------------------------------------===//
 // Quantum op canonicalizers.

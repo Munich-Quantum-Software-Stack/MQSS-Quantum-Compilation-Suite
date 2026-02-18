@@ -26,7 +26,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/ErrorHandling.h"
 
-#include "Quantum/IR/QuantumInterfaces.h"
+#include "QuantumInterfaces.h"
 
 //===----------------------------------------------------------------------===//
 // Quantum trait declarations.
@@ -48,9 +48,9 @@ class HermitianTrait : public TraitBase<ConcreteType, HermitianTrait> {};
 // Quantum ops declarations.
 //===----------------------------------------------------------------------===//
 
-#include "Quantum/IR/QuantumDialect.h"
-#include "Quantum/IR/QuantumEnums.h.inc"
+#include "QuantumDialect.h"
+#include "IR/QuantumEnums.h.inc"
 #define GET_ATTRDEF_CLASSES
-#include "Quantum/IR/QuantumAttributes.h.inc"
+#include "IR/QuantumAttributes.h.inc"
 #define GET_OP_CLASSES
-#include "Quantum/IR/QuantumOps.h.inc"
+#include "IR/QuantumOps.h.inc"

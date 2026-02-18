@@ -20,4 +20,4 @@
 // Quantum interface declarations.
 //===----------------------------------------------------------------------===//
 
-#include "Quantum/IR/QuantumInterfaces.h.inc"
+#include "IR/QuantumInterfaces.h.inc"

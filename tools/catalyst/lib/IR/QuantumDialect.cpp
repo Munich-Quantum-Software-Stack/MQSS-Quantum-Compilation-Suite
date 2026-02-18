@@ -16,8 +16,8 @@
 #include "mlir/IR/DialectImplementation.h" // needed for generated type parser
 #include "llvm/ADT/TypeSwitch.h"           // needed for generated type parser
 
-#include "Quantum/IR/QuantumDialect.h"
-#include "Quantum/IR/QuantumOps.h"
+#include "IR/QuantumDialect.h"
+#include "IR/QuantumOps.h"
 
 using namespace mlir;
 using namespace catalyst::quantum;
@@ -26,23 +26,23 @@ using namespace catalyst::quantum;
 // Quantum dialect definitions.
 //===----------------------------------------------------------------------===//
 
-#include "Quantum/IR/QuantumOpsDialect.cpp.inc"
+#include "IR/QuantumOpsDialect.cpp.inc"
 
 void QuantumDialect::initialize()
 {
     addTypes<
 #define GET_TYPEDEF_LIST
-#include "Quantum/IR/QuantumOpsTypes.cpp.inc"
+#include "IR/QuantumOpsTypes.cpp.inc"
         >();
 
     addAttributes<
 #define GET_ATTRDEF_LIST
-#include "Quantum/IR/QuantumAttributes.cpp.inc"
+#include "IR/QuantumAttributes.cpp.inc"
         >();
 
     addOperations<
 #define GET_OP_LIST
-#include "Quantum/IR/QuantumOps.cpp.inc"
+#include "IR/QuantumOps.cpp.inc"
         >();
 
     declarePromisedInterfaces<bufferization::BufferizableOpInterface, QubitUnitaryOp, HermitianOp,
@@ -55,7 +55,7 @@ void QuantumDialect::initialize()
 //===----------------------------------------------------------------------===//
 
 #define GET_TYPEDEF_CLASSES
-#include "Quantum/IR/QuantumOpsTypes.cpp.inc"
+#include "IR/QuantumOpsTypes.cpp.inc"
 
 #define GET_ATTRDEF_CLASSES
-#include "Quantum/IR/QuantumAttributes.cpp.inc"
+#include "IR/QuantumAttributes.cpp.inc"

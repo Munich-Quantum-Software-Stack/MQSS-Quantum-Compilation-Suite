@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Define directoriesi
+# Define directories
 CURRENT_DIR="/workspaces/MQSS-Passes-Dialect-Agnostic"
 
 INSTALL_PATH="${INSTALL_PATH:-$HOME/.passes}"

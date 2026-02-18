@@ -22,14 +22,14 @@
 // Quantum dialect declarations.
 //===----------------------------------------------------------------------===//
 
-#include "Quantum/IR/QuantumOpsDialect.h.inc"
+#include "IR/QuantumOpsDialect.h.inc"
 
 //===----------------------------------------------------------------------===//
 // Quantum type declarations.
 //===----------------------------------------------------------------------===//
 
 #define GET_TYPEDEF_CLASSES
-#include "Quantum/IR/QuantumOpsTypes.h.inc"
+#include "IR/QuantumOpsTypes.h.inc"
 
 class QuantumMemory : public mlir::SideEffects::Resource::Base<QuantumMemory> {
     llvm::StringRef getName() final { return "QuantumMemory"; }

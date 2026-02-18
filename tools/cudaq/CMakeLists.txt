@@ -23,8 +23,8 @@ include_directories(${MLIR_INCLUDE_DIRS})
 
 
 set(MLIR_DIR "/usr/local/llvm/lib/cmake/mlir")
-set(LLVM_DIR "LLVM_DIR=/usr/local/llvm/lib/cmake/llvm")
-set(CLANG_DIR "CLANG_DIR=usr/local/llvm/lib/cmake/clang")
+set(LLVM_DIR "/usr/local/llvm/lib/cmake/llvm")
+set(CLANG_DIR "usr/local/llvm/lib/cmake/clang")
 
 project(
   MLIRPasses

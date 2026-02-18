@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "Quantum/IR/QuantumInterfaces.h"
+#include "IR/QuantumInterfaces.h"
 
 using namespace mlir;
 using namespace catalyst::quantum;
@@ -21,4 +21,4 @@ using namespace catalyst::quantum;
 // Quantum interface definitions.
 //===----------------------------------------------------------------------===//
 
-#include "Quantum/IR/QuantumInterfaces.cpp.inc"
+#include "IR/QuantumInterfaces.cpp.inc"
