@@ -22,6 +22,7 @@
 
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/Pass/PassRegistry.h>
+#include "include/Passes/Examples.hpp"
 
 using namespace llvm;
 int main(int argc, char **argv) {
@@ -40,6 +41,10 @@ int main(int argc, char **argv) {
   // mlir::DialectRegistry catRegistry;
   // catRegistry.insert<catalyst::quantum::QuantumDialect>();
   // mlir::MLIRContext catContext(catRegistry);
+
+   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return mqss::opt::createPrintQuakeGatesPass(llvm::outs());;
+  });
 
   llvm::outs() << "Dialects have been registered!\n";
 }
