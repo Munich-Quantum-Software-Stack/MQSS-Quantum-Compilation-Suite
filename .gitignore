@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 *.swp
 *.swo
 *.swn
@@ -43,3 +44,7 @@ build
 *.a
 *.lib
 git-emoji-commit.sh
+=======
+.cache/
+build/
+>>>>>>> localrepo/master
