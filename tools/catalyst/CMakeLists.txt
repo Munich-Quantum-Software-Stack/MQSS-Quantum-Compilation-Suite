@@ -35,10 +35,24 @@ endif()
 ## Handle Dependencies ##
 #########################
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE
+      Debug
+      CACHE STRING "Build type (Debug, Release)" FORCE)
+endif()
+
+# Define macros for Debug builds
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  message("Configuring for Debug mode")
+  add_compile_definitions(DEBUG)
+endif()
+
 find_package(MLIR REQUIRED CONFIG)
 # if(NOT CATALYST_DOCS_ONLY)
 #   find_package(MHLO REQUIRED CONFIG)
 # endif()
+
+include_directories(${MLIR_INCLUDE_DIRS})
 
 message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -67,9 +81,9 @@ include(AddLLVM)
 include(AddMLIR)
 include(HandleLLVMOptions)
 
-if(APPLE)
-  string(REPLACE "-Wl,-undefined -Wl,suppress" "" CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS}")
-endif()
+# if(APPLE)
+#   string(REPLACE "-Wl,-undefined -Wl,suppress" "" CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS}")
+# endif()
 
 if(QUANTUM_ENABLE_BINDINGS_PYTHON)
   include(MLIRDetectPythonEnv)
@@ -79,11 +93,11 @@ endif()
 # list(GET MHLO_INCLUDE_DIRS 1 MLIRHLO_DIR)
 # list(GET MHLO_INCLUDE_DIRS 2 MLIRHLO_BUILD_DIR)
 
-set(CATALYST_MAIN_INCLUDE_DIR ${DIALECTS_BUILD_DIR}/tools/catalyst/include/)
+
 # set(CATALYST_GEN_INCLUDE_DIR ${PROJECT_BINARY_DIR}/include)
 # set(CATALYST_LIB_DIR ${PROJECT_BINARY_DIR})
 
-include_directories(BEFORE ${LLVM_INCLUDE_DIRS}
+include_directories(SYSTEM ${LLVM_INCLUDE_DIRS}
   ${MLIR_INCLUDE_DIRS}
 #   ${MHLO_INCLUDE_DIRS}
 #   ${MLIRHLO_DIR}/stablehlo
@@ -94,18 +108,17 @@ add_definitions(${LLVM_DEFINITIONS})
 
 set(CATALYST_MLIR_RUNTIME_PATH "${DIALECTS_BUILD_DIR}/tools/catalyst/")
 
-set(CUDAQ_BINARY_DIR "${CUDAQ_SOURCE_DIR}/build")
+set(CATALYST_BINARY_DIR "${DIALECTS_SRC_DIR}/build")
+set(CATALYST_MAIN_INCLUDE_DIR "${DIALECTS_SRC_DIR}/tools/catalyst/include")
 
 include_directories(BEFORE ${CATALYST_MAIN_INCLUDE_DIR}
-  ${DIALECTS_BUILD_DIR}/tools/catalyst/include/IR
+  ${CATALYST_BINARY_DIR}/tools/catalyst/include
 )
 
 
 add_subdirectory(include) # Must come first to set up targets
 add_subdirectory(lib)
 
-# add_subdirectory(include)
-# add_subdirectory(lib)
 add_subdirectory(cmake/modules)
 
 include(FetchContent)

@@ -19,12 +19,12 @@ if(NOT Boost_FOUND)
   message(FATAL_ERROR "Boost library not found.")
 endif()
 
-include_directories(${MLIR_INCLUDE_DIRS})
-
 
 set(MLIR_DIR "/usr/local/llvm/lib/cmake/mlir")
 set(LLVM_DIR "/usr/local/llvm/lib/cmake/llvm")
-set(CLANG_DIR "usr/local/llvm/lib/cmake/clang")
+set(CLANG_DIR "/usr/local/llvm/lib/cmake/clang")
+
+include_directories(${MLIR_INCLUDE_DIRS})
 
 project(
   MLIRPasses

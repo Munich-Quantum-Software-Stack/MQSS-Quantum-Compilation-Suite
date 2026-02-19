@@ -1,11 +1,8 @@
 
-include_directories(
-  # 1. The source 'include' dir (so it finds QuantumDialect.h)
-  ${DIALECTS_SRC_DIR}/tools/catalyst/include
-  
-  # 2. The build 'include' dir (so it finds "IR/QuantumOpsDialect.h.inc")
-  ${DIALECTS_SRC_DIR}/tools/catalyst/include
-)
+# include_directories(
+#   # 1. The source 'include' dir (so it finds QuantumDialect.h)
+#   ${DIALECTS_SRC_DIR}/tools/catalyst/include
+# )
 
 add_mlir_library(MLIRQuantum
     QuantumDialect.cpp
@@ -13,8 +10,7 @@ add_mlir_library(MLIRQuantum
     QuantumOps.cpp
     
     ADDITIONAL_HEADER_DIRS
-    ${CURRENT_DIR}/tools/catalyst/include
-    ${CMAKE_CURRENT_SOURCE_DIR} 
+    ${PROJECT_SOURCE_DIR}/tools/catalyst/include
 
     DEPENDS
     MLIRQuantumInterfacesIncGen
@@ -27,3 +23,9 @@ add_mlir_library(MLIRQuantum
     MLIRBytecodeReader
     MLIRSideEffectInterfaces
 )
+
+# target_include_directories(MLIRQuantum
+#   PUBLIC
+#     ${CATALYST_MAIN_INCLUDE_DIR}
+#     ${PROJECT_BINARY_DIR}/tools/catalyst/include
+# )
