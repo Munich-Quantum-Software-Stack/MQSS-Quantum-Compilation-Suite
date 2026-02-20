@@ -2,7 +2,7 @@
 # Project name and language specification
 cmake_minimum_required(VERSION 3.19...3.30)
 
-project(Tests)
+project(Tests LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
@@ -25,11 +25,6 @@ set(LLVM_DIR "/usr/local/llvm/lib/cmake/llvm")
 set(CLANG_DIR "/usr/local/llvm/lib/cmake/clang")
 
 include_directories(${MLIR_INCLUDE_DIRS})
-
-project(
-  MLIRPasses
-  VERSION 1.0
-  LANGUAGES C CXX)
 
 # Set default build type to Debug if none is specified
 if(NOT CMAKE_BUILD_TYPE)
@@ -190,8 +185,17 @@ add_executable(cudaq-opt cudaq.cpp)
 
 # 2. Link the required libraries
 # Note: We must include the Dialects to resolve those "undefined symbols"
+message(LIB CMAKE CUR SRC DIR= "${CMAKE_CURRENT_SOURCE_DIR}")
+# 3. Set include directories so the compiler finds your headers
+target_include_directories(cudaq-opt
+  PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    #${CUDAQ_MLIR_RUNTIME_PATH}/include  # Path to CUDA-Q headers
+)
+
 target_link_libraries(cudaq-opt 
   PRIVATE 
+    MLIRPasses
     # The missing MLIR dialects
     MLIRFuncDialect         # <--- Fixes the func.func error
     MLIRArithDialect        # <--- For constants and math
@@ -202,13 +206,6 @@ target_link_libraries(cudaq-opt
     # Interfaces              # MQSS Interfaces
     MLIROptLib              # Provides MlirOptMain engine
     ${COMMON_LIBRARIES}     # Your CUDA-Q runtime + GTest
-)
-
-# 3. Set include directories so the compiler finds your headers
-target_include_directories(cudaq-opt
-  PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes
-    ${CUDAQ_MLIR_RUNTIME_PATH}/include  # Path to CUDA-Q headers
 )
 
 # 4. Ensure it outputs to build/bin

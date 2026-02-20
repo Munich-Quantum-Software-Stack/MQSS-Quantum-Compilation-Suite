@@ -22,7 +22,7 @@
 
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/Pass/PassRegistry.h>
-#include "include/Passes/Examples.hpp"
+#include "Passes/Examples.hpp"
 
 using namespace llvm;
 int main(int argc, char **argv) {
@@ -47,4 +47,8 @@ int main(int argc, char **argv) {
   });
 
   llvm::outs() << "Dialects have been registered!\n";
+
+  return mlir::asMainReturnCode(
+      mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));
+      
 }

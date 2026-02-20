@@ -38,7 +38,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "Examples.hpp"
+#include "Passes/Examples.hpp"
 
 using namespace mlir;
 

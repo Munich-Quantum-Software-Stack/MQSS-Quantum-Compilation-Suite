@@ -13,9 +13,9 @@ add_mlir_library(MLIRPasses
     MLIRTransforms
 )
 
+
 target_include_directories(MLIRPasses
   PUBLIC
-    ${CMAKE_SOURCE_DIR}/include/
-    ${CMAKE_BINARY_DIR}/include/
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
