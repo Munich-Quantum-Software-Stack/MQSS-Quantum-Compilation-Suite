@@ -20,9 +20,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   date   December 2024
   version 1.0
   brief
-  PrintQuakeGatesPass(llvm::raw_string_ostream ostream)
+  PrintCatalystGatesPass(llvm::raw_string_ostream ostream)
   Example MLIR pass that shows how to traverse a Quantum kernel written in
-  MLIR/Quake.
+  MLIR/CatalystQuantum.
   The pass prints in ostream the type of each quantum gate and its operand(s)
   qubits.
 
@@ -31,9 +31,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 * the terms of the Apache License 2.0 which accompanies this distribution.    *
 ******************************************************************************/
 
-// #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
-// #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
-#include "cudaq/Support/Plugin.h"
+
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -41,20 +39,19 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "InternalInclude/Extractor.h"
 #include "Passes/Examples.hpp"
 
-
 using namespace mlir;
 
 namespace {
 
-class PrintQuakeGates
-    : public PassWrapper<PrintQuakeGates, OperationPass<mlir::ModuleOp>> {
+class PrintCatalystGates
+    : public PassWrapper<PrintCatalystGates, OperationPass<mlir::ModuleOp>> {
 public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(PrintQuakeGates)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(PrintCatalystGates)
 
-  PrintQuakeGates(llvm::raw_ostream &ostream) : outputStream(ostream) {}
+  PrintCatalystGates(llvm::raw_ostream &ostream) : outputStream(ostream) {}
 
   llvm::StringRef getArgument() const override {
-    return "print-quake-gates-pass";
+    return "print-catalyst-gates-pass";
   }
   llvm::StringRef getDescription() const override {
     return "Example pass that traverses a given mlir module, print its gates "
@@ -66,20 +63,20 @@ public:
     auto circuit = getOperation();
     auto &analysis = getAnalysis<MyModuleAnalysis>();
 
-    llvm::outs() << "Dumping Quake GateOps:\n";
-    for(auto *op : analysis.getQuakeGateOps()){
+    llvm::outs() << "Dumping catalyst GateOps:\n";
+    for(auto *op : analysis.getCatalystGateOps()){
         op->dump();
     }
 
     // circuit.walk([&](Operation *op) {
-    //   if (op->getDialect()->getNamespace() == "quake") {
+    //   if (op->getDialect()->getNamespace() == "catalyst") {
     //     outputStream << "Quantum Operation: " << op->getName().getStringRef()
     //                  << "\n";
 
     //     // Iterate over the operands (qubits) the operation acts on
     //     for (Value operand : op->getOperands()) {
     //       if (operand.getType()
-    //               .isa<quake::RefType>()) { // Check if it's a qubit reference
+    //               .isa<catalyst::RefType>()) { // Check if it's a qubit reference
     //         outputStream << "  Acts on qubit: " << operand << "\n";
     //       }
     //     }
@@ -94,6 +91,6 @@ private:
 } // namespace
 
 std::unique_ptr<mlir::Pass>
-cudaq::opt::createPrintQuakeGatesPass(llvm::raw_ostream &ostream) {
-  return std::make_unique<PrintQuakeGates>(ostream);
+catalyst::opt::createPrintCatalystGatesPass(llvm::raw_ostream &ostream) {
+  return std::make_unique<PrintCatalystGates>(ostream);
 }

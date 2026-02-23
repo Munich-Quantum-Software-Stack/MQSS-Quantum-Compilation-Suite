@@ -6,6 +6,7 @@ CATALYST_COMPILER_DIR="/workspaces/compilers/MQSS-Catalyst-Compiler"
 LLVM_BUILD_DIR="${CATALYST_COMPILER_DIR}/mlir/llvm-project/build"
 
 BUILD_TYPE="Debug"
+BUILD_CATALYST=ON
 
 source "${CATALYST_COMPILER_DIR}/catalyst-venv/bin/activate"                      # Edit in the future
 
@@ -65,6 +66,7 @@ cmake -G Ninja \
   -S "${CURRENT_DIR}/tools/catalyst" \
   -B "${CURRENT_DIR}/build/tools/catalyst" \
   -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+  -DBUILD_CATALYST="${BUILD_CATALYST}" \
   -DLLVM_ENABLE_ASSERTIONS=ON \
   -DQUANTUM_ENABLE_BINDINGS_PYTHON=ON \
   -DPython3_EXECUTABLE="${PYTHON}" \

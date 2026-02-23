@@ -9,7 +9,7 @@ NUM_JOBS=4  # Default number of jobs
 BUILD_DOCS=OFF  # Default: Do not build documentation
 BUILD_TESTS=OFF  # Default: Do not build tests
 BUILD_Quake=OFF
-BUILD_TOOLS=ON
+BUILD_CUDAQ=ON
 BUILD_TYPE="Debug"  # Default: Release mode
 
 # Default directories (can be overridden by arguments)
@@ -44,10 +44,6 @@ while [[ $# -gt 0 ]]; do
     --llvm-dir)
       LLVM_DIR="$2"
       shift 2
-      ;;
-    --build-tools)
-      BUILD_TOOLS=ON
-      shift
       ;;
     --build-quake)
       BUILD_Quake=ON
@@ -135,9 +131,10 @@ echo "Configuring MQSS Passes Repository CMake..."
 cmake -G Ninja \
   -S "${CURRENT_DIR}/tools/cudaq" \
   -B "${CURRENT_DIR}/build/tools/cudaq" \
+  -DCOMMON_INCLUDE_DIR="${CURRENT_DIR}/common" \
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \
-  -DBUILD_MLIR_PASSES_TOOLS="${BUILD_TOOLS}" \
+  -DBUILD_CUDAQ="${BUILD_CUDAQ}" \
   -DBUILD_MLIR_PASSES_DOCS="${BUILD_DOCS}" \
   -DBUILD_MLIR_PASSES_TESTS="${BUILD_TESTS}"\
   -DCUDAQ_SOURCE_DIR="${CUDAQ_DIR}" \

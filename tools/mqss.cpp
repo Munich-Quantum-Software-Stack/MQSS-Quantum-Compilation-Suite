@@ -6,7 +6,7 @@
  * the terms of the Apache License 2.0 which accompanies this distribution.    *
  ******************************************************************************/
 
-#include "Examples.hpp"
+#include "Passes/Examples.hpp"
 #include "Optimizer/Pipelines.hpp"
 #include "Passes/CodeGen.hpp"
 #include "Transforms.hpp"

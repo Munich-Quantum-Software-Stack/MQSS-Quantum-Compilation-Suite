@@ -75,7 +75,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 # ###################### CUDAQ settings ###################################
 
-message("CUDAQ_DIR = ${CUDAQ_SOURCE_DIR}")
 
 set(CUDAQ_MAIN_INCLUDE_DIR "${CUDAQ_SOURCE_DIR}/include")
 
@@ -107,7 +106,7 @@ set(COMMON_LIBRARIES ${CUDAQ_MLIR_RUNTIME_PATH}/libcudaq-mlir-runtime.so
 
 ##################################-MQSS Settings-###############################
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib)
+add_subdirectory(lib)
 # include_directories(
 #   BEFORE
 #   ${CMAKE_SOURCE_DIR}/include
@@ -185,13 +184,18 @@ add_executable(cudaq-opt cudaq.cpp)
 
 # 2. Link the required libraries
 # Note: We must include the Dialects to resolve those "undefined symbols"
-message(LIB CMAKE CUR SRC DIR= "${CMAKE_CURRENT_SOURCE_DIR}")
+
 # 3. Set include directories so the compiler finds your headers
 target_include_directories(cudaq-opt
   PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../InternalIR
     #${CUDAQ_MLIR_RUNTIME_PATH}/include  # Path to CUDA-Q headers
 )
+
+if(BUILD_CUDAQ)
+  target_compile_definitions(cudaq-opt PRIVATE BUILD_CUDAQ_ENABLED)
+endif()
 
 target_link_libraries(cudaq-opt 
   PRIVATE 

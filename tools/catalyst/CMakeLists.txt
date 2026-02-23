@@ -126,10 +126,22 @@ include(FetchContent)
 
 add_executable(catalyst-opt catalyst.cpp)
 
+# 3. Set include directories so the compiler finds your headers
+target_include_directories(catalyst-opt
+  PRIVATE 
+    ${CMAKE_SOURCE_DIR}/include
+    # ${CMAKE_SOURCE_DIR}/include/Passes
+    # 2. Build Includes (CRITICAL): Allows finding the generated .inc files
+    ${CMAKE_CURRENT_BINARY_DIR}/include
+    
+    ${CATALYST_MLIR_RUNTIME_PATH}/include/IR  # Path to CUDA-Q headers
+)
+
 # 2. Link the required libraries
 # Note: We must include the Dialects to resolve those "undefined symbols"
 target_link_libraries(catalyst-opt 
   PRIVATE 
+    MLIRPasses
     MLIRQuantum
     # The missing MLIR dialects
     MLIRFuncDialect         # <--- Fixes the func.func error
@@ -140,17 +152,6 @@ target_link_libraries(catalyst-opt
     # SupportQuake            # MQSS/Quake support
     # Interfaces              # MQSS Interfaces
     MLIROptLib              # Provides MlirOptMain engine
-)
-
-# 3. Set include directories so the compiler finds your headers
-target_include_directories(catalyst-opt
-  PRIVATE 
-    ${CMAKE_SOURCE_DIR}/include
-    # ${CMAKE_SOURCE_DIR}/include/Passes
-    # 2. Build Includes (CRITICAL): Allows finding the generated .inc files
-    ${CMAKE_CURRENT_BINARY_DIR}/include
-    
-    ${CATALYST_MLIR_RUNTIME_PATH}/include/IR  # Path to CUDA-Q headers
 )
 
 # 4. Ensure it outputs to build/bin

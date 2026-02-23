@@ -50,7 +50,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 #define CUDAQ_PREFIX_FUNCTION "__nvqpp__mlirgen__"
 
-namespace cudaq::opt {
+namespace catalyst::opt {
 
 /**
  * @brief Example custom MLIR pass.
@@ -78,6 +78,6 @@ std::unique_ptr<mlir::Pass> createCustomExamplePass();
  `mlir::PassManager` to take effect on any given MLIR module.
  */
 std::unique_ptr<mlir::Pass>
-createPrintQuakeGatesPass(llvm::raw_ostream &ostream);
+createPrintCatalystGatesPass(llvm::raw_ostream &ostream);
 } // namespace mqss::opt
 #endif // EXAMPLES_H
