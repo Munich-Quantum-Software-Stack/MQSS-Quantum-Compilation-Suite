@@ -133,8 +133,6 @@ target_include_directories(catalyst-opt
     # ${CMAKE_SOURCE_DIR}/include/Passes
     # 2. Build Includes (CRITICAL): Allows finding the generated .inc files
     ${CMAKE_CURRENT_BINARY_DIR}/include
-    
-    ${CATALYST_MLIR_RUNTIME_PATH}/include/IR  # Path to CUDA-Q headers
 )
 
 # 2. Link the required libraries

@@ -7,6 +7,7 @@ add_mlir_library(MLIRPasses
   ${PASS_ANALYSIS_SOURCES}
 
   LINK_LIBS PUBLIC
+    MLIRQuantum
     MLIRTensorDialect
     MLIRIR
     MLIRPass

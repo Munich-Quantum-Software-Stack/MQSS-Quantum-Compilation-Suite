@@ -6,13 +6,13 @@
  * the terms of the Apache License 2.0 which accompanies this distribution.    *
  ******************************************************************************/
 
-
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
+
 #include "llvm/Support/raw_ostream.h"
 
 #ifdef BUILD_CUDAQ_ENABLED
@@ -25,7 +25,6 @@
 
 using namespace llvm;
 using namespace mlir;
-
 
 struct MyModuleAnalysis {
 
@@ -46,22 +45,23 @@ public:
     return funcOperations;
   }
 
-  #ifdef BUILD_CATALYST_ENABLED
+#ifdef BUILD_CATALYST_ENABLED
   std::vector<Operation *> getCatalystGateOps() {
     if (funcOperations.empty())
       funcOperations = gatherOperations();
 
     for (auto *Op : funcOperations) {
       if (Op->getDialect()->getNamespace() == "quantum") {
-            catalystquantumGateOps.push_back(Op);
+        if (isCatalystQuantumGateOp(Op))
+          catalystquantumGateOps.push_back(Op);
       }
     }
 
     return catalystquantumGateOps;
   }
-  #endif
+#endif
 
-  #ifdef BUILD_CUDAQ_ENABLED
+#ifdef BUILD_CUDAQ_ENABLED
   std::vector<Operation *> getQuakeGateOps() {
     if (funcOperations.empty())
       funcOperations = gatherOperations();
@@ -69,14 +69,14 @@ public:
     for (auto *Op : funcOperations) {
       if (Op->getDialect()->getNamespace() == "quake") {
         if (isQuakeGateOp(Op)) {
-            quakeGateOps.push_back(Op);
+          quakeGateOps.push_back(Op);
         }
       }
     }
 
     return quakeGateOps;
   }
-  #endif
+#endif
 
 private:
   mlir::ModuleOp module;

@@ -68,6 +68,10 @@ public:
         op->dump();
     }
 
+    if (failed(circuit.verify())) {
+        llvm::errs() << "[Print-catalyst-gates-pass] MLIR Module verification failed\n";
+    }
+
     // circuit.walk([&](Operation *op) {
     //   if (op->getDialect()->getNamespace() == "catalyst") {
     //     outputStream << "Quantum Operation: " << op->getName().getStringRef()
