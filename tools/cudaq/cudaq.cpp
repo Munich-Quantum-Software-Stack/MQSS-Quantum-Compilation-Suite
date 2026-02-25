@@ -10,10 +10,10 @@
 // #include "Examples.hpp"
 // #include "Optimizer/Pipelines.hpp"
 // #include "Passes/CodeGen.hpp"
-// #include "Transforms.hpp"
 // #include "Interfaces/Extractor.hpp"
 #include "InternalInclude/Extractor.h"
 #include "Passes/Examples.hpp"
+#include "Passes/Transforms.hpp"
 #include "common/RuntimeMLIR.h"
 #include "cudaq/Optimizer/Dialect/CC/CCDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
@@ -51,6 +51,8 @@ int main(int argc, char **argv) {
   // mlir::DialectRegistry catRegistry;
   // catRegistry.insert<catalyst::quantum::QuantumDialect>();
   // mlir::MLIRContext catContext(catRegistry);
+
+  registerMQSSTransformsPasses();
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return cudaq::opt::createPrintQuakeGatesPass(llvm::outs());;

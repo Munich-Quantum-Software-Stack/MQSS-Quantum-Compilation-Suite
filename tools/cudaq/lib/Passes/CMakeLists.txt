@@ -1,10 +1,16 @@
 set(PASS_ANALYSIS_SOURCES
   Analysis/PrintQuakeGates.cpp
+  Transforms/CommuteCxRx.cpp
+  ${CMAKE_SOURCE_DIR}/../InternalIR/Extractor.cpp
 )
+
 
 add_mlir_library(MLIRPasses
   SHARED
   ${PASS_ANALYSIS_SOURCES}
+
+  DEPENDS
+    MQSSTransformsPassIncGen
 
   LINK_LIBS PUBLIC
     MLIRTensorDialect
@@ -20,6 +26,7 @@ endif()
 target_include_directories(MLIRPasses
   PUBLIC
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/../InternalIR
 )
 

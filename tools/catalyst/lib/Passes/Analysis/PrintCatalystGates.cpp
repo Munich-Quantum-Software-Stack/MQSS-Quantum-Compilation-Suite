@@ -31,13 +31,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 * the terms of the Apache License 2.0 which accompanies this distribution.    *
 ******************************************************************************/
 
-
+#include "InternalInclude/Extractor.h"
+#include "Passes/Examples.hpp"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "InternalInclude/Extractor.h"
-#include "Passes/Examples.hpp"
 
 using namespace mlir;
 
@@ -59,33 +58,19 @@ public:
   }
 
   void runOnOperation() override {
-  
+
     auto circuit = getOperation();
     auto &analysis = getAnalysis<MyModuleAnalysis>();
 
     llvm::outs() << "Dumping catalyst GateOps:\n";
-    for(auto *op : analysis.getCatalystGateOps()){
-        op->dump();
+    for (auto *op : analysis.getGateOps()) {
+      op->dump();
     }
 
     if (failed(circuit.verify())) {
-        llvm::errs() << "[Print-catalyst-gates-pass] MLIR Module verification failed\n";
+      llvm::errs()
+          << "[Print-catalyst-gates-pass] MLIR Module verification failed\n";
     }
-
-    // circuit.walk([&](Operation *op) {
-    //   if (op->getDialect()->getNamespace() == "catalyst") {
-    //     outputStream << "Quantum Operation: " << op->getName().getStringRef()
-    //                  << "\n";
-
-    //     // Iterate over the operands (qubits) the operation acts on
-    //     for (Value operand : op->getOperands()) {
-    //       if (operand.getType()
-    //               .isa<catalyst::RefType>()) { // Check if it's a qubit reference
-    //         outputStream << "  Acts on qubit: " << operand << "\n";
-    //       }
-    //     }
-    //   }
-    // });
   }
 
 private:

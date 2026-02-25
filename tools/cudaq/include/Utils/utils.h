@@ -1,8 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2022 - 2026 NVIDIA Corporation & Affiliates.                  *
+ * All rights reserved.                                                        *
+ *                                                                             *
+ * This source code and the accompanying materials are made available under    *
+ * the terms of the Apache License 2.0 which accompanies this distribution.    *
+ ******************************************************************************/
 
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 
-bool isQuakeGateOp(mlir::Operation *op) {
+inline bool isQuakeGateOp(mlir::Operation *op) {
 
   if (auto g = llvm::dyn_cast<quake::XOp>(op)) {
     return true;

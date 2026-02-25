@@ -107,6 +107,7 @@ set(COMMON_LIBRARIES ${CUDAQ_MLIR_RUNTIME_PATH}/libcudaq-mlir-runtime.so
 ##################################-MQSS Settings-###############################
 
 add_subdirectory(lib)
+add_subdirectory(include)
 # include_directories(
 #   BEFORE
 #   ${CMAKE_SOURCE_DIR}/include

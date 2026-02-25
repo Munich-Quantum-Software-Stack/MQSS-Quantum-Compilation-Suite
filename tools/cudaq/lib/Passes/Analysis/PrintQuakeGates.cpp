@@ -67,7 +67,7 @@ public:
     auto &analysis = getAnalysis<MyModuleAnalysis>();
 
     llvm::outs() << "Dumping Quake GateOps:\n";
-    for(auto *op : analysis.getQuakeGateOps()){
+    for(auto *op : analysis.getGateOps()){
         op->dump();
     }
 

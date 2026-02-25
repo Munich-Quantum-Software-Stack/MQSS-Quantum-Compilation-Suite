@@ -1,5 +1,6 @@
 set(PASS_ANALYSIS_SOURCES
   Analysis/PrintCatalystGates.cpp
+   ${CMAKE_SOURCE_DIR}/../InternalIR/Extractor.cpp
 )
 
 add_mlir_library(MLIRPasses
@@ -9,6 +10,7 @@ add_mlir_library(MLIRPasses
   LINK_LIBS PUBLIC
     MLIRQuantum
     MLIRTensorDialect
+    MLIRFuncDialect
     MLIRIR
     MLIRPass
     MLIRTransforms

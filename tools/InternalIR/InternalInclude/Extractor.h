@@ -26,64 +26,38 @@
 using namespace llvm;
 using namespace mlir;
 
+struct DialectInfo {
+
+  SmallVector<Operation *, 16> QuantumKernels;
+  std::vector<Operation *> GateOps;
+};
+
 struct MyModuleAnalysis {
 
 public:
-  MyModuleAnalysis(mlir::ModuleOp module) : module(module) {}
+  MyModuleAnalysis(mlir::ModuleOp module);
 
-  SmallVector<mlir::func::FuncOp> getModuleFunctions() {
-    SmallVector<mlir::func::FuncOp> functions;
-    module.walk([&](mlir::func::FuncOp f) { functions.push_back(f); });
 
-    return functions;
+// #ifdef BUILD_CUDAQ_ENABLED
+  std::vector<Operation *> getGateOps();
+
+  void fetchQuantumKernels();
+
+  DialectInfo getDialectInfo(){
+    return Info;
   }
-
-  std::vector<Operation *> gatherOperations() {
-
-    module->walk([&](Operation *op) { funcOperations.push_back(op); });
-
-    return funcOperations;
-  }
-
-#ifdef BUILD_CATALYST_ENABLED
-  std::vector<Operation *> getCatalystGateOps() {
-    if (funcOperations.empty())
-      funcOperations = gatherOperations();
-
-    for (auto *Op : funcOperations) {
-      if (Op->getDialect()->getNamespace() == "quantum") {
-        if (isCatalystQuantumGateOp(Op))
-          catalystquantumGateOps.push_back(Op);
-      }
-    }
-
-    return catalystquantumGateOps;
-  }
-#endif
-
-#ifdef BUILD_CUDAQ_ENABLED
-  std::vector<Operation *> getQuakeGateOps() {
-    if (funcOperations.empty())
-      funcOperations = gatherOperations();
-
-    for (auto *Op : funcOperations) {
-      if (Op->getDialect()->getNamespace() == "quake") {
-        if (isQuakeGateOp(Op)) {
-          quakeGateOps.push_back(Op);
-        }
-      }
-    }
-
-    return quakeGateOps;
-  }
-#endif
+//#endif
 
 private:
+  void gatherOperations();
+  void initialize(mlir::ModuleOp module);
+
   mlir::ModuleOp module;
-  std::vector<Operation *> funcOperations;
-  std::vector<Operation *> quakeGateOps;
-  std::vector<Operation *> catalystquantumGateOps;
+  DialectInfo Info;
+
 };
+
+extern std::unique_ptr<MyModuleAnalysis> analysis;
 
 struct MyModuleAnalysisPass
     : public mlir::PassWrapper<MyModuleAnalysisPass,
@@ -93,6 +67,4 @@ struct MyModuleAnalysisPass
     auto module = getOperation();
     analysis = std::make_unique<MyModuleAnalysis>(module);
   }
-
-  std::unique_ptr<MyModuleAnalysis> analysis;
 };
