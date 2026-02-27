@@ -118,6 +118,8 @@ echo "Build completed successfully!"
 echo ${BUILD_DIR}
 cd  "${BUILD_DIR}" || { echo "Failed to navigate back to the original directory."; exit 1; }
 
+export cmake="/usr/local/cmake-3.29/bin"
+
 echo "Configuring MQSS Passes Repository CMake..."
 cmake .. \
   -G Ninja \

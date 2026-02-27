@@ -10,6 +10,7 @@
 #include "Optimizer/Pipelines.hpp"
 #include "Passes/CodeGen.hpp"
 #include "Transforms.hpp"
+#include "Decompositions.hpp"
 #include "common/RuntimeMLIR.h"
 #include "cudaq/Optimizer/Dialect/CC/CCDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
@@ -58,50 +59,8 @@ int main(int argc, char **argv) {
         mqss::opt::O3(static_cast<mlir::PassManager &>(pm));
       });
 
-  // 2. Register Individual Passes (This makes them show up under "Passes")
-  // Use the explicit registration call:
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteCxRxPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteZCxPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteCxZPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteCxXPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteRxCxPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createCommuteXCxPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchPauliHPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchHXPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchHZPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchXHPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchZHPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchHYPass();
-  });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::opt::createSwitchYHPass();
-  });
-
-  std::string inputfile = argv[1];
+  registerMQSSOptTransformsPasses();
+  registerMQSSOptDecompositionsPasses();
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mqss::opt::createPrintQuakeGatesPass(llvm::outs());;

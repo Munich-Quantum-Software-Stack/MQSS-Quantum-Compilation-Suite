@@ -63,8 +63,8 @@ fi
 
 
 cmake -G Ninja \
-  -S "${CURRENT_DIR}/tools/catalyst" \
-  -B "${CURRENT_DIR}/build/tools/catalyst" \
+  -S "${CURRENT_DIR}/tools/mqss-catalyst" \
+  -B "${CURRENT_DIR}/build/tools/mqss-catalyst" \
   -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
   -DBUILD_CATALYST="${BUILD_CATALYST}" \
   -DLLVM_ENABLE_ASSERTIONS=ON \
@@ -89,4 +89,4 @@ cmake -G Ninja \
 
 
 NUM_JOBS=4
-ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/catalyst"
+ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/mqss-catalyst"

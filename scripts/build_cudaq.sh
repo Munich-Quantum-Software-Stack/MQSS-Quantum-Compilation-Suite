@@ -129,8 +129,8 @@ cd  "${BUILD_DIR}" || { echo "Failed to navigate back to the original directory.
 echo "Configuring MQSS Passes Repository CMake..."
 
 cmake -G Ninja \
-  -S "${CURRENT_DIR}/tools/cudaq" \
-  -B "${CURRENT_DIR}/build/tools/cudaq" \
+  -S "${CURRENT_DIR}/tools/mqss-cudaq" \
+  -B "${CURRENT_DIR}/build/tools/mqss-cudaq" \
   -DCOMMON_INCLUDE_DIR="${CURRENT_DIR}/common" \
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \
@@ -141,5 +141,5 @@ cmake -G Ninja \
 	-DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 echo "Building MQSS Repository Passes with ${NUM_JOBS} jobs..."
-ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/cudaq"
+ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/mqss-cudaq"
 echo "Build of MQSS Repository Passes completed successfully!..."

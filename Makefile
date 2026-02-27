@@ -1,17 +1,17 @@
 
-CATALYST_CCDB = build/tools/catalyst/compile_commands.json
-CUDAQ_CCDB    = build/tools/cudaq/compile_commands.json
+CATALYST_CCDB = build/tools/mqss-catalyst/compile_commands.json
+CUDAQ_CCDB    = build/tools/mqss-cudaq/compile_commands.json
 MERGED_CCDB   = build/compile_commands.json
 
 
-.PHONY: cudaq catalyst all
+.PHONY: mqss-cudaq mqss-catalyst all
 
 
-cudaq:
+mqss-cudaq:
 	./scripts/build_cudaq.sh
 	$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
 
-catalyst:
+mqss-catalyst:
 	./scripts/build_catalyst.sh
 	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
@@ -21,8 +21,8 @@ ccdb-clean:
 	rm -f $(MERGED_CCDB)
 
 clean:
-	rm -rf build/tools/catalyst
-	rm -rf build/tools/cudaq 
+	rm -rf build/tools/mqss-catalyst
+	rm -rf build/tools/mqss-cudaq 
 
 merge-one:
 	@if [ ! -f $(MERGED_CCDB) ]; then \
