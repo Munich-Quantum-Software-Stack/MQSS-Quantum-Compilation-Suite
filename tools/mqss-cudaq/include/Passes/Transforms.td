@@ -30,10 +30,10 @@ def CommuteCxRx : Pass<"CommuteCxRx"> {
 //   let constructor = "mqss::opt::createCommuteZCxPass()";
 // }
 
-// def CancellationDoubleCx : Pass<"CancellationDoubleCx"> {
-//   let summary = "This pass removes the pattern CNot, CNot if both gates operates on the same control and targets. ";
-//   let constructor = "mqss::opt::createCancellationDoubleCxPass()";
-// }
+def CancellationDoubleCx : Pass<"CancellationDoubleCx"> {
+  let summary = "This pass removes the pattern CNot, CNot if both gates operates on the same control and targets. ";
+  let constructor = "mqss_cudaq::opt::createCancellationDoubleCxPass()";
+}
 
 // def ReductionPattern : Pass<"ReductionPattern"> {
 //   let summary = "This pass removes the pattern Gate, Gate if both gates operates on the same control and targets. ";

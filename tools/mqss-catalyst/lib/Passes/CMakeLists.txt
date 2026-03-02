@@ -1,6 +1,6 @@
 set(PASS_ANALYSIS_SOURCES
   Analysis/PrintCatalystGates.cpp
-   ${CMAKE_SOURCE_DIR}/../common/Extractor.cpp
+   ${CMAKE_SOURCE_DIR}/../common/InternalInclude/Extractor.cpp
 )
 
 add_mlir_library(MLIRPasses

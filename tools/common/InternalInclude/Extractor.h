@@ -7,12 +7,12 @@
  ******************************************************************************/
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/OpDefinition.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/IR/OpDefinition.h"
 
 #include "llvm/Support/raw_ostream.h"
 
@@ -20,10 +20,18 @@ using namespace llvm;
 using namespace mlir;
 
 
+struct QuantumOpView {
+  StringRef GateName="";
+  std::vector<Value> InputQubits={};
+  std::vector<Value> OutputQubits={};
+  bool hasSideEffects = false;
+};
+
 struct DialectInfo {
 
-  SmallVector<Operation *, 16> QuantumKernels;
+  SmallVector<func::FuncOp, 16> QuantumKernels;
   std::vector<Operation *> GateOps;
+  std::unordered_map<Operation *, QuantumOpView> OpQuantumView;
 };
 
 struct MyModuleAnalysis {
@@ -35,14 +43,11 @@ public:
 
   void fetchQuantumKernels();
 
-  DialectInfo getDialectInfo(){
-    return Info;
-  }
+  DialectInfo getDialectInfo() { return Info; }
 
-  mlir::LogicalResult verifyModule(){
-    return module.verify();
+  void gatherOpInfo();
 
-  }
+  mlir::LogicalResult verifyModule() { return module.verify(); }
 
 private:
   void gatherOperations();
@@ -50,7 +55,6 @@ private:
 
   mlir::ModuleOp module;
   DialectInfo Info;
-
 };
 
 extern std::unique_ptr<MyModuleAnalysis> analysis;

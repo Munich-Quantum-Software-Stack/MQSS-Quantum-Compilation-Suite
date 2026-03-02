@@ -20,63 +20,59 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   date   January 2025
   version 1.0
 
-Adapted from:
-https://quantumcomputing.stackexchange.com/questions/12458/show-that-a-cz-gate-can-be-implemented-using-a-cnot-gate-and-hadamard-gates
+Adapted from: https://dl.acm.org/doi/10.5555/1972505
 
 *************************************************************************/
 
+// #include "Passes/BaseMQSSPass.hpp"
+#include "InternalInclude/Extractor.h"
 #include "Passes/Transforms.hpp"
-#include "Passes/CommutateOperations.hpp"
-// #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
-// #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
+#include "Passes/CancellationOperations.hpp"
+
+#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
+#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
 #include "mlir/IR/Threading.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
-#include "InternalInclude/Extractor.h"
-
 // Include auto-generated pass registration
 namespace mqss_cudaq::opt {
-#define GEN_PASS_DEF_COMMUTECXRX
+#define GEN_PASS_DEF_CANCELLATIONDOUBLECX
 #include "Passes/Transforms.h.inc"
-} // namespace cudaq::opt
+} // namespace mqss::opt
 using namespace mlir;
 using namespace mqss_cudaq::support::transforms;
 
 namespace {
 
-class CommuteCxRx : public PassWrapper<CommuteCxRx, OperationPass<mlir::ModuleOp>> {
+class CancellationDoubleCx
+    : public PassWrapper<CancellationDoubleCx, OperationPass<mlir::ModuleOp>> {
 public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommuteCxRx)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CancellationDoubleCx)
 
-  llvm::StringRef getArgument() const override { return "CommuteCxRx"; }
+  llvm::StringRef getArgument() const override {
+    return "CancellationDoubleCx";
+  }
   llvm::StringRef getDescription() const override {
-    return "Apply commutation pass of pattern CNot-Rx";
+    return "This pass removes the pattern CNot, CNot if both gates operates on "
+           "the same control and targets.";
   }
 
-  // void operationsOnQuantumKernel(func::FuncOp kernel) override {
-  //   // kernel.walk([&](Operation *op) {
-  //   //   commuteOperation<quake::XOp, quake::RxOp>(op, 1, 1, 0, 1);
-  //   //   // CommuteCNotRx(op);
-  //   // });
-  // }
-  void runOnOperation() override{
-      llvm::outs() << "Within the pass: CommuteCxRx\n";
-      auto &analysis = getAnalysis<MyModuleAnalysis>();
-      auto DialectInfo = analysis.getDialectInfo();
-      auto kernels = DialectInfo.QuantumKernels;
-      for(auto kernel : kernels){
-           kernel->walk([&](Operation *op) {
-            commuteOperation<quake::XOp, quake::RxOp>(op, 1, 1, 0, 1);
-      // CommuteCNotRx(op);
-    });
-
-      }
+  void runOnOperation() override {
+    auto &analysis = getAnalysis<MyModuleAnalysis>();
+    auto DialectInfo = analysis.getDialectInfo();
+    auto kernels = DialectInfo.QuantumKernels;
+    for (auto kernel : kernels) {
+      kernel->walk([&](Operation *op) {
+        patternCancellation<quake::XOp, quake::XOp>(op, 1, 1, 1, 1);
+      });
+    }
+    
   }
 };
 } // namespace
 
-std::unique_ptr<Pass> mqss_cudaq::opt::createCommuteCxRxPass() {
-  return std::make_unique<CommuteCxRx>();
+std::unique_ptr<Pass> mqss_cudaq::opt::createCancellationDoubleCxPass() {
+  return std::make_unique<CancellationDoubleCx>();
 }

@@ -1,11 +1,23 @@
 
 
 #include "IR/QuantumOps.h"
-
-inline bool isCatalystQuantumGateOp(mlir::Operation *op) {
+using namespace mlir;
+inline catalyst::quantum::CustomOp isCatalystQuantumGateOp(mlir::Operation *op) {
 
   if (auto g = llvm::dyn_cast<catalyst::quantum::CustomOp>(op)) {
-    return true;
+    return g;
   }
-  return false;
+  return nullptr;
+}
+
+inline bool touchesQubit(mlir::Operation *op) {
+    for (Type t : op->getOperandTypes())
+        if (isa<catalyst::quantum::QubitType>(t))
+            return true;
+
+    for (Type t : op->getResultTypes())
+        if (isa<catalyst::quantum::QubitType>(t))
+            return true;
+
+    return false;
 }

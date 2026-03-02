@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
   // ... your dialect setup ...
 
   // 2. Explicitly register the standard dialects
-  // registerAllDialects(registry) often fails due to linker stripping symbols 
+  // registerAllDialects(registry) often fails due to linker stripping symbols
   registry.insert<mlir::func::FuncDialect, mlir::arith::ArithDialect,
                   mlir::cf::ControlFlowDialect>();
 
@@ -55,12 +55,18 @@ int main(int argc, char **argv) {
   registerMQSSTransformsPasses();
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss_cudaq::opt::createPrintQuakeGatesPass(llvm::outs());;
+    return mlir::createCanonicalizerPass();
+  });
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return mlir::createCSEPass();
+  });
+
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return mqss_cudaq::opt::createPrintQuakeGatesPass(llvm::outs());
   });
 
   llvm::outs() << "Dialects have been registered!\n";
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));
-
 }

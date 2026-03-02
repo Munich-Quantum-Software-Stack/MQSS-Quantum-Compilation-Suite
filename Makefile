@@ -15,7 +15,7 @@ mqss-catalyst:
 	./scripts/build_catalyst.sh
 	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
-all: cudaq catalyst
+all: mqss-cudaq mqss-catalyst
 
 ccdb-clean:
 	rm -f $(MERGED_CCDB)

@@ -21,12 +21,12 @@
 // #include "Transforms.hpp"
 // #include "Interfaces/Extractor.hpp"
 
+#include "IR/QuantumDialect.h"
+#include "Passes/Examples.hpp"
 #include "mlir/IR/Dialect.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
-#include "IR/QuantumDialect.h"
-#include "Passes/Examples.hpp"
 
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/Pass/PassRegistry.h>
@@ -50,12 +50,17 @@ int main(int argc, char **argv) {
   // catRegistry.insert<catalyst::quantum::QuantumDialect>();
   // mlir::MLIRContext catContext(catRegistry);
 
-   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return catalyst::opt::createPrintCatalystGatesPass(llvm::outs());
   });
 
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return mlir::createCanonicalizerPass();
+  });
+  mlir::registerPass(
+      []() -> std::unique_ptr<mlir::Pass> { return mlir::createCSEPass(); });
+
   llvm::outs() << "Dialects have been registered!\n";
-   return mlir::asMainReturnCode(
+  return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));
-      
 }
