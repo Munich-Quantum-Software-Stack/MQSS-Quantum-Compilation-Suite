@@ -19,9 +19,8 @@
 using namespace llvm;
 using namespace mlir;
 
-
 struct QuantumOpView {
-  StringRef GateName="";
+  StringRef GateTy="";
   std::vector<Value> InputQubits={};
   std::vector<Value> OutputQubits={};
   bool hasSideEffects = false;

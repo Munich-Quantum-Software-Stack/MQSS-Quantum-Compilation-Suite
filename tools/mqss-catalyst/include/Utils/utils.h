@@ -6,6 +6,7 @@ inline catalyst::quantum::CustomOp isCatalystQuantumGateOp(mlir::Operation *op) 
 
   if (auto g = llvm::dyn_cast<catalyst::quantum::CustomOp>(op)) {
     return g;
+    
   }
   return nullptr;
 }

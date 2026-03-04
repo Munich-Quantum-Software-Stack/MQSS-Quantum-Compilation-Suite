@@ -9,12 +9,16 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 
-inline mlir::Operation *isQuakeGateOp(mlir::Operation *Op) {
 
-  if (auto g = dyn_cast<quake::OperatorInterface>(Op)) {
-  }
-  return nullptr;
-}
-inline bool isQuakeQuantumGate(mlir::Operation *Op) {
-  return Op->hasTrait<cudaq::QuantumGate>();
+inline std::tuple<bool, llvm::StringLiteral> isQuakeQuantumGate(mlir::Operation *op) {
+  if (auto x = dyn_cast<quake::XOp>(op))
+    return {true, "CNOT"};
+
+  if(auto x = dyn_cast<quake::RxOp>(op))
+    return {true, "RX"};
+
+  if(auto x = dyn_cast<quake::HOp>(op))
+    return {true, "H"};
+  
+  return {false, ""};
 }

@@ -87,14 +87,14 @@ MyModuleAnalysis::MyModuleAnalysis(mlir::ModuleOp module) {
 void MyModuleAnalysis::gatherOpInfo() {
   for (auto kernel : Info.QuantumKernels) {
 
-    kernel->walk([&](Operation *Op) {
-      QuantumOpView OpView;
+    kernel.getBody().walk([&](Operation *Op) {
       if (Op->getDialect()->getNamespace() == "quake") {
 #ifdef BUILD_CUDAQ_ENABLED
         //    Only Gate operations have Memory effects
-
-        if (isQuakeQuantumGate(Op)) {
-          llvm::outs() << *Op << " : is a quake gate Op\n";
+        auto [isQGateOp, GateTy] = isQuakeQuantumGate(Op);
+        if (isQGateOp) {
+          QuantumOpView OpView;
+          OpView.GateTy = GateTy;
           auto gate = dyn_cast<quake::OperatorInterface>(Op);
           // OpView.InputQubits = gate.getControls();
           for (auto t : gate.getControls())
@@ -103,7 +103,6 @@ void MyModuleAnalysis::gatherOpInfo() {
             OpView.InputQubits.push_back(t);
 
           OpView.OutputQubits = OpView.InputQubits;
-
           Info.OpQuantumView[Op] = OpView;
         }
 #endif
@@ -112,29 +111,30 @@ void MyModuleAnalysis::gatherOpInfo() {
 #ifdef BUILD_CATALYST_ENABLED
         // Only consider operations on gates with side-effects
         if (auto g = isCatalystQuantumGateOp(Op)) {
-          auto controlIn = g->getOperand(0);
-          auto targetIn = g->getOperand(1);
-          auto controlOut = g->getResult(0);
-          auto targetOut = g->getResult(1);
+          QuantumOpView OpView;
+          for (unsigned i = 0; i < g.getNumOperands(); i++) {
+            OpView.InputQubits.push_back(g->getOperand(i));
+          }
 
-          OpView.InputQubits.push_back(controlIn);
-          OpView.InputQubits.push_back(targetIn);
-          OpView.OutputQubits.push_back(controlOut);
-          OpView.OutputQubits.push_back(targetOut);
+          for (unsigned i = 0; i < g->getNumResults(); i++) {
+            OpView.OutputQubits.push_back(g->getResult(i));
+          }
+          OpView.GateTy = g.getGateName();
+          Info.OpQuantumView[Op] = OpView;
         }
 #endif
       }
     });
   }
 
-  for (auto &[Op, View] : Info.OpQuantumView) {
-    llvm::outs() << "Op: " << *Op << "\n";
-    llvm::outs().indent(4) << "Control qubits: " << View.InputQubits.size()
-                           << "\n";
-    llvm::outs().indent(4) << "Target qubits: " << View.OutputQubits.size()
-                           << "\n";
-    llvm::outs().indent(4) << "Side Effect:" << View.hasSideEffects << "\n";
-  }
+  // for (auto &[Op, View] : Info.OpQuantumView) {
+  //   llvm::outs() << "Op: " << *Op << "\n";
+  //   llvm::outs().indent(4) << "gate: " << View.GateTy << "\n";
+  //   for (auto op : View.InputQubits)
+  //     llvm::outs().indent(4) << "input qubit: " << op << "\n";
+  //   for (auto opRes : View.OutputQubits)
+  //     llvm::outs().indent(4) << "Target qubit: " << opRes << "\n";
+  // }
 }
 
 std::vector<Operation *> MyModuleAnalysis::getGateOps() {
@@ -148,7 +148,8 @@ std::vector<Operation *> MyModuleAnalysis::getGateOps() {
     kernel->walk([&](Operation *Op) {
       if (Op->getDialect()->getNamespace() == "quake") {
 #ifdef BUILD_CUDAQ_ENABLED
-        if (isQuakeQuantumGate(Op))
+        auto [isQGateOp, GateTy] = isQuakeQuantumGate(Op);
+        if (isQGateOp)
           Info.GateOps.push_back(Op);
 #endif
       }
