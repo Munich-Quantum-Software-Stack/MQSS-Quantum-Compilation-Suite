@@ -25,9 +25,9 @@ Adapted from: https://dl.acm.org/doi/10.5555/1972505
 *************************************************************************/
 
 // #include "Passes/BaseMQSSPass.hpp"
-#include "InternalInclude/Extractor.h"
-#include "Passes/Transforms.hpp"
-#include "Passes/CancellationOperations.hpp"
+#include "SemanticExtractLayer/Extractor.h"
+#include "MQSSCUDAQPasses/Transforms.hpp"
+#include "MQSSCUDAQPasses/CancellationOperations.hpp"
 
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"

@@ -19,10 +19,15 @@
 using namespace llvm;
 using namespace mlir;
 
+struct QubitID {
+    Value base;
+    std::size_t index;
+};
+
 struct QuantumOpView {
   StringRef GateTy="";
-  std::vector<Value> InputQubits={};
-  std::vector<Value> OutputQubits={};
+  std::vector<QubitID> InputQubits={};
+  std::vector<QubitID> OutputQubits={};
   bool hasSideEffects = false;
 };
 
@@ -32,6 +37,8 @@ struct DialectInfo {
   std::vector<Operation *> GateOps;
   std::unordered_map<Operation *, QuantumOpView> OpQuantumView;
 };
+
+using tupleVectorsQubitIDs = std::tuple<std::vector<QubitID>, std::vector<QubitID>>;
 
 struct MyModuleAnalysis {
 
@@ -45,6 +52,10 @@ public:
   DialectInfo getDialectInfo() { return Info; }
 
   void gatherOpInfo();
+
+  bool sameQubits(tupleVectorsQubitIDs Op1View, tupleVectorsQubitIDs Op2View);
+
+  bool touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs);
 
   mlir::LogicalResult verifyModule() { return module.verify(); }
 

@@ -5,6 +5,11 @@ def CommuteCxRx : Pass<"CommuteCxRx"> {
   let constructor = "mqss_cudaq::opt::createCommuteCxRxPass()";
 }
 
+def GateCancellationPass : Pass<"MyGateCancellationPass"> {
+  let summary = "This pass removes the pattern CNot, CNot if both gates operates on the same control and targets. ";
+  let constructor = "mqss_cudaq::opt::GateCancellationPass()";
+}
+
 // def  CommuteCxX : Pass<"CommuteCxX"> {
 //   let summary = "Apply commutation pass to pattern CNot-X";
 //   let constructor = "mqss::opt::createCommuteCxXPass()";

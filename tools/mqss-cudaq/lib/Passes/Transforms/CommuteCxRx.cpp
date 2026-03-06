@@ -25,8 +25,8 @@ https://quantumcomputing.stackexchange.com/questions/12458/show-that-a-cz-gate-c
 
 *************************************************************************/
 
-#include "Passes/Transforms.hpp"
-#include "Passes/CommutateOperations.hpp"
+#include "MQSSCUDAQPasses/Transforms.hpp"
+#include "MQSSCUDAQPasses/CommutateOperations.hpp"
 // #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 // #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "cudaq/Support/Plugin.h"
@@ -34,7 +34,7 @@ https://quantumcomputing.stackexchange.com/questions/12458/show-that-a-cz-gate-c
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
-#include "InternalInclude/Extractor.h"
+#include "SemanticExtractLayer/Extractor.h"
 
 // Include auto-generated pass registration
 namespace mqss_cudaq::opt {

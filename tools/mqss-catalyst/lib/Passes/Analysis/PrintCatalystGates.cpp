@@ -31,8 +31,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 * the terms of the Apache License 2.0 which accompanies this distribution.    *
 ******************************************************************************/
 
-#include "InternalInclude/Extractor.h"
-#include "Passes/Examples.hpp"
+#include "SemanticExtractLayer/Extractor.h"
+#include "MQSSCatalystPasses/Examples.hpp"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 

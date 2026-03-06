@@ -22,7 +22,8 @@
 // #include "Interfaces/Extractor.hpp"
 
 #include "IR/QuantumDialect.h"
-#include "Passes/Examples.hpp"
+#include "MQSSCatalystPasses/Examples.hpp"
+#include "MQSSCatalystPasses/Transforms.hpp"
 #include "mlir/IR/Dialect.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
@@ -53,6 +54,9 @@ int main(int argc, char **argv) {
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return catalyst::opt::createPrintCatalystGatesPass(llvm::outs());
   });
+
+   mlir::registerPass(
+      []() -> std::unique_ptr<mlir::Pass> { return catalyst::opt::GateCancellationPass(); });
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::createCanonicalizerPass();

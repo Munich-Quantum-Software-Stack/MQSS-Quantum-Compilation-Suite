@@ -19,6 +19,7 @@
 
 #ifdef BUILD_CUDAQ_ENABLED
 #include "../../mqss-cudaq/include/Utils/utils.h"
+#include "Utils/Quake.hpp"
 #endif
 
 #ifdef BUILD_CATALYST_ENABLED
@@ -88,53 +89,130 @@ void MyModuleAnalysis::gatherOpInfo() {
   for (auto kernel : Info.QuantumKernels) {
 
     kernel.getBody().walk([&](Operation *Op) {
+      QuantumOpView OpView;
       if (Op->getDialect()->getNamespace() == "quake") {
 #ifdef BUILD_CUDAQ_ENABLED
         //    Only Gate operations have Memory effects
-        auto [isQGateOp, GateTy] = isQuakeQuantumGate(Op);
-        if (isQGateOp) {
-          QuantumOpView OpView;
-          OpView.GateTy = GateTy;
-          auto gate = dyn_cast<quake::OperatorInterface>(Op);
+        if (auto mem = dyn_cast<MemoryEffectOpInterface>(Op))
+          if (!mem.hasNoEffect())
+            OpView.hasSideEffects = true;
+        if (auto gate = dyn_cast<quake::OperatorInterface>(Op)) {
           // OpView.InputQubits = gate.getControls();
-          for (auto t : gate.getControls())
-            OpView.InputQubits.push_back(t);
-          for (auto t : gate.getTargets())
-            OpView.InputQubits.push_back(t);
+          for (auto t : gate.getControls()) {
+            if (auto ext_ref =
+                    dyn_cast<quake::ExtractRefOp>(t.getDefiningOp())) {
+              QubitID ID;
+              Value base = ext_ref.getVeq();
+              auto index = ext_ref.getConstantIndex();
+              ID.base = base;
+              ID.index = index;
+              OpView.InputQubits.push_back(ID);
+            }
+          }
+          for (auto t : gate.getTargets()) {
+            if (auto ext_ref =
+                    dyn_cast<quake::ExtractRefOp>(t.getDefiningOp())) {
+              QubitID ID;
+              Value base = ext_ref.getVeq();
+              auto index = ext_ref.getConstantIndex();
+              ID.base = base;
+              ID.index = index;
+              OpView.InputQubits.push_back(ID);
+            }
+          }
+
+          auto [isQGateOp, GateTy] = isQuakeQuantumGate(Op);
+          if (isQGateOp)
+            OpView.GateTy = GateTy;
 
           OpView.OutputQubits = OpView.InputQubits;
-          Info.OpQuantumView[Op] = OpView;
         }
+
 #endif
       }
       if (Op->getDialect()->getNamespace() == "quantum") {
 #ifdef BUILD_CATALYST_ENABLED
         // Only consider operations on gates with side-effects
         if (auto g = isCatalystQuantumGateOp(Op)) {
-          QuantumOpView OpView;
+          if (auto mem = dyn_cast<MemoryEffectOpInterface>(Op))
+            if (!mem.hasNoEffect())
+              OpView.hasSideEffects = true;
           for (unsigned i = 0; i < g.getNumOperands(); i++) {
-            OpView.InputQubits.push_back(g->getOperand(i));
+            QubitID ID;
+            ID.base = g->getOperand(i);
+            ID.index = -1;
+            OpView.InputQubits.push_back(ID);
           }
 
           for (unsigned i = 0; i < g->getNumResults(); i++) {
-            OpView.OutputQubits.push_back(g->getResult(i));
+            QubitID ID;
+            ID.base = g->getResult(i);
+            ID.index = nullptr;
+            OpView.OutputQubits.push_back(ID);
           }
           OpView.GateTy = g.getGateName();
-          Info.OpQuantumView[Op] = OpView;
         }
 #endif
       }
+      Info.OpQuantumView[Op] = OpView;
     });
   }
+}
 
-  // for (auto &[Op, View] : Info.OpQuantumView) {
-  //   llvm::outs() << "Op: " << *Op << "\n";
-  //   llvm::outs().indent(4) << "gate: " << View.GateTy << "\n";
-  //   for (auto op : View.InputQubits)
-  //     llvm::outs().indent(4) << "input qubit: " << op << "\n";
-  //   for (auto opRes : View.OutputQubits)
-  //     llvm::outs().indent(4) << "Target qubit: " << opRes << "\n";
-  // }
+bool MyModuleAnalysis::touchesAny(Operation *Op2,
+                                  std::vector<QubitID> Op1QubitIDs) {
+
+
+  bool touches = false;
+  for (auto op : Op2->getOperands()) {
+    // Catalyst case
+    
+    for (auto Op1Qubit : Op1QubitIDs) {
+      if (Op1Qubit.index == -1){
+        touches = (op == Op1Qubit.base);
+      }
+
+      // Quake case
+      if (auto ext = dyn_cast<quake::ExtractRefOp>(op.getDefiningOp())){
+        touches = (ext.getVeq() == Op1Qubit.base &&
+               ext.getConstantIndex() == Op1Qubit.index);
+      }
+    }
+  }
+
+  return touches;
+}
+
+bool equivalence_check(const std::vector<QubitID> &Op1,
+                const std::vector<QubitID> &Op2) {
+  if (Op1.size() != Op2.size()) return false;
+
+  for (const auto &q1 : Op1) {
+    bool found = false;
+    for (const auto &q2 : Op2) {
+      if (q1.base == q2.base && q1.index == q2.index) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) return false;
+  }
+
+  return true;
+}
+
+bool MyModuleAnalysis::sameQubits(tupleVectorsQubitIDs Op1InOuts,
+                                  tupleVectorsQubitIDs Op2InOuts) {
+
+  auto &[Op1Inputs, Op1Outputs] = Op1InOuts;
+  auto &[Op2Inputs, Op2Outputs] = Op2InOuts;
+
+  auto Inputcheck = equivalence_check(Op1Inputs, Op2Inputs);
+  if (!Inputcheck)
+    return false;
+  auto OutputCheck = equivalence_check(Op1Outputs, Op2Outputs);
+
+  return true;
 }
 
 std::vector<Operation *> MyModuleAnalysis::getGateOps() {

@@ -388,6 +388,8 @@ std::unique_ptr<mlir::Pass> createSwitchHYPass();
  `mlir::PassManager` to take effect on any given MLIR module.
  */
 std::unique_ptr<mlir::Pass> createSwitchHZPass();
+
+std::unique_ptr<mlir::Pass> GateCancellationPass();
 } // namespace mqss::opt
 
 /**
