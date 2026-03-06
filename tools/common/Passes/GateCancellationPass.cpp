@@ -62,6 +62,9 @@ public:
         auto CNOT1 = kernelCNOTs.at(i);
         if(ToErase.count(CNOT1))
           continue;
+        // Starting from CNOT1, check all intervening operations until CNOT2.
+        // The intervening operations should not touch any of the Qubits used by 
+        // CNOT1.
         for (int j = i+1; j < kernelCNOTs.size(); j++) {
           auto CNOT2 = kernelCNOTs.at(j);
 
@@ -74,6 +77,7 @@ public:
           while (nextOp != CNOT2) {
 
             auto nextOpView = OpView[nextOp];
+            llvm::outs() << "next op: " << *nextOp << ", side-effects: " << nextOpView.hasSideEffects << "\n";
             if (nextOpView.hasSideEffects &&
                 (analysis.touchesAny(nextOp, CNOT1View.InputQubits) ||
                  analysis.touchesAny(nextOp, CNOT1View.OutputQubits))) {
@@ -83,10 +87,12 @@ public:
             nextOp = nextOp->getNextNode();
           }
 
+          // If an intervening Op touches CNOT1's Qubits, stop the analysis
           if (touches) {
             continue;
           }
 
+          // If both CNOT1 and CNOT2 operate on the same Qubits, they can be erased
           if (analysis.sameQubits(
                   {CNOT1View.InputQubits, CNOT1View.OutputQubits},
                   {CNOT2View.InputQubits, CNOT2View.OutputQubits})) {

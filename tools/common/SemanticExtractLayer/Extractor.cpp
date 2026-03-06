@@ -90,12 +90,11 @@ void MyModuleAnalysis::gatherOpInfo() {
 
     kernel.getBody().walk([&](Operation *Op) {
       QuantumOpView OpView;
+      if (!mlir::isMemoryEffectFree(Op))
+        OpView.hasSideEffects = true;
+
       if (Op->getDialect()->getNamespace() == "quake") {
 #ifdef BUILD_CUDAQ_ENABLED
-        //    Only Gate operations have Memory effects
-        if (auto mem = dyn_cast<MemoryEffectOpInterface>(Op))
-          if (!mem.hasNoEffect())
-            OpView.hasSideEffects = true;
         if (auto gate = dyn_cast<quake::OperatorInterface>(Op)) {
           // OpView.InputQubits = gate.getControls();
           for (auto t : gate.getControls()) {
@@ -147,7 +146,7 @@ void MyModuleAnalysis::gatherOpInfo() {
           for (unsigned i = 0; i < g->getNumResults(); i++) {
             QubitID ID;
             ID.base = g->getResult(i);
-            ID.index = nullptr;
+            ID.index = -1;
             OpView.OutputQubits.push_back(ID);
           }
           OpView.GateTy = g.getGateName();
@@ -163,29 +162,32 @@ bool MyModuleAnalysis::touchesAny(Operation *Op2,
                                   std::vector<QubitID> Op1QubitIDs) {
 
 
-  bool touches = false;
   for (auto op : Op2->getOperands()) {
     // Catalyst case
-    
     for (auto Op1Qubit : Op1QubitIDs) {
-      if (Op1Qubit.index == -1){
-        touches = (op == Op1Qubit.base);
+      if (Op1Qubit.index == -1) {
+        if (op == Op1Qubit.base)
+          return true;                // Return if an operand Qubit of Op1 is used in Op2
       }
 
-      // Quake case
-      if (auto ext = dyn_cast<quake::ExtractRefOp>(op.getDefiningOp())){
-        touches = (ext.getVeq() == Op1Qubit.base &&
-               ext.getConstantIndex() == Op1Qubit.index);
+// Quake case
+#ifdef BUILD_CUDAQ_ENABLED
+      if (auto ext = dyn_cast<quake::ExtractRefOp>(op.getDefiningOp())) {
+        if (ext.getVeq() == Op1Qubit.base &&
+            ext.getConstantIndex() == Op1Qubit.index)
+        return true;                    // Return if an operand Qubit of Op1 is used in Op2
       }
+#endif
     }
   }
 
-  return touches;
+  return false;
 }
 
 bool equivalence_check(const std::vector<QubitID> &Op1,
-                const std::vector<QubitID> &Op2) {
-  if (Op1.size() != Op2.size()) return false;
+                       const std::vector<QubitID> &Op2) {
+  if (Op1.size() != Op2.size())
+    return false;
 
   for (const auto &q1 : Op1) {
     bool found = false;
@@ -195,7 +197,8 @@ bool equivalence_check(const std::vector<QubitID> &Op1,
         break;
       }
     }
-    if (!found) return false;
+    if (!found)
+      return false;
   }
 
   return true;
