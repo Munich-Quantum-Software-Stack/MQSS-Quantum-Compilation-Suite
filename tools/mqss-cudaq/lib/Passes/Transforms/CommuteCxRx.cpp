@@ -39,7 +39,7 @@ https://quantumcomputing.stackexchange.com/questions/12458/show-that-a-cz-gate-c
 // Include auto-generated pass registration
 namespace mqss_cudaq::opt {
 #define GEN_PASS_DEF_COMMUTECXRX
-#include "Passes/Transforms.h.inc"
+#include "MQSSCUDAQPasses/Transforms.h.inc"
 } // namespace cudaq::opt
 using namespace mlir;
 using namespace mqss_cudaq::support::transforms;

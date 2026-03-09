@@ -390,7 +390,7 @@ std::unique_ptr<mlir::Pass> createSwitchHYPass();
 std::unique_ptr<mlir::Pass> createSwitchHZPass();
 
 std::unique_ptr<mlir::Pass> GateCancellationPass();
-} // namespace mqss::opt
+} // namespace mqss_cudaq::opt
 
 /**
  * @def GEN_PASS_DECL
@@ -403,4 +403,4 @@ std::unique_ptr<mlir::Pass> GateCancellationPass();
  * @brief Macro for pass registration
  */
 #define GEN_PASS_REGISTRATION
-#include "Passes/Transforms.h.inc"
+#include "MQSSCUDAQPasses/Transforms.h.inc"

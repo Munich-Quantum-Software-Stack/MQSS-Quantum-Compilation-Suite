@@ -39,7 +39,7 @@ Adapted from: https://dl.acm.org/doi/10.5555/1972505
 // Include auto-generated pass registration
 namespace mqss_cudaq::opt {
 #define GEN_PASS_DEF_CANCELLATIONDOUBLECX
-#include "Passes/Transforms.h.inc"
+#include "MQSSCUDAQPasses/Transforms.h.inc"
 } // namespace mqss::opt
 using namespace mlir;
 using namespace mqss_cudaq::support::transforms;
