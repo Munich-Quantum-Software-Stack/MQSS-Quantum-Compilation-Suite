@@ -66,29 +66,16 @@ public:
     auto circuit = getOperation();
     auto &analysis = getAnalysis<MyModuleAnalysis>();
 
-    llvm::outs() << "Dumping Quake GateOps:\n";
+
+    llvm::outs() << "\n[Print-quake-gates-pass:]\n";
     for(auto *op : analysis.getGateOps()){
         op->dump();
     }
 
-    if (failed(analysis.verifyModule())) {
-        llvm::errs() << "[" << getArgument() << "]" << " : MLIR Module verification failed\n";
-    }
+    // Since this is an "Analysis" pass, preserve the module analysis
+    // Therefore, later passes will reuse the cached module analyses.
+    markAnalysesPreserved<MyModuleAnalysis>();
 
-    // circuit.walk([&](Operation *op) {
-    //   if (op->getDialect()->getNamespace() == "quake") {
-    //     outputStream << "Quantum Operation: " << op->getName().getStringRef()
-    //                  << "\n";
-
-    //     // Iterate over the operands (qubits) the operation acts on
-    //     for (Value operand : op->getOperands()) {
-    //       if (operand.getType()
-    //               .isa<quake::RefType>()) { // Check if it's a qubit reference
-    //         outputStream << "  Acts on qubit: " << operand << "\n";
-    //       }
-    //     }
-    //   }
-    // });
   }
 
 private:

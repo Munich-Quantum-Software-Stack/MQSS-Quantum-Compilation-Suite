@@ -30,6 +30,7 @@ public:
            "the same control and targets.";
   }
 
+
   void cancel(Operation *Op) {
     mlir::IRRewriter rewriter(Op->getContext());
     // Erase the operations
@@ -42,7 +43,7 @@ public:
     auto &analysis = getAnalysis<MyModuleAnalysis>();
     auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
 
-    llvm::outs() << "[Common GateCancellationPass]:\n";
+    llvm::outs() << "\n[Common GateCancellationPass]:\n";
 
     auto kernels = analysis.getDialectInfo().QuantumKernels;
 
@@ -77,7 +78,7 @@ public:
           while (nextOp != CNOT2) {
 
             auto nextOpView = OpView[nextOp];
-            llvm::outs() << "next op: " << *nextOp << ", side-effects: " << nextOpView.hasSideEffects << "\n";
+      
             if (nextOpView.hasSideEffects &&
                 (analysis.touchesAny(nextOp, CNOT1View.InputQubits) ||
                  analysis.touchesAny(nextOp, CNOT1View.OutputQubits))) {

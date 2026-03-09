@@ -34,6 +34,13 @@ void MyModuleAnalysis::initialize(mlir::ModuleOp module) {
   MyModuleAnalysis::module = module;
 }
 
+// Constructor
+MyModuleAnalysis::MyModuleAnalysis(mlir::ModuleOp module) {
+  initialize(module);
+  fetchQuantumKernels();
+  gatherOpInfo();
+}
+
 void MyModuleAnalysis::fetchQuantumKernels() {
 
   auto walkResult = module.walk([&](Operation *op) {
@@ -77,15 +84,9 @@ void MyModuleAnalysis::fetchQuantumKernels() {
   //   return std::make_tuple(Info.QuantumKernels, walkResult);
 }
 
-// Constructor
-MyModuleAnalysis::MyModuleAnalysis(mlir::ModuleOp module) {
-  initialize(module);
-  fetchQuantumKernels();
-  gatherOpInfo();
-}
-
 // Gather Information (QuantumView) about every operation
 void MyModuleAnalysis::gatherOpInfo() {
+  llvm::outs() << "------->Gathering Info<--------\n";
   for (auto kernel : Info.QuantumKernels) {
 
     kernel.getBody().walk([&](Operation *Op) {
