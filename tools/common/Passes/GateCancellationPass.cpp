@@ -1,16 +1,12 @@
 
 
-#include "../SemanticExtractLayer/Extractor.h"
+
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#ifdef BUILD_CUDAQ_ENABLED
-#include "MQSSCUDAQPasses/Transforms.hpp"
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-#include "MQSSCatalystPasses/Transforms.hpp"
-#endif
+
+#include "Pass.h"
 
 using namespace mlir;
 using namespace llvm;
@@ -36,6 +32,7 @@ public:
     rewriter.eraseOp(Op);
   }
 
+
   // The following algorithm, iterates over operations in an mlir-kernel (FuncOp)
   // attempting to erase consecutive CNOTs under certain conditions. The conditions are:
   // 1. The two CNOTs should appear consecutively
@@ -45,7 +42,13 @@ public:
   void runOnOperation() override {
 
     // TODO: Think about how we can run the analysis once and reuse results
-    auto &analysis = getAnalysis<MyModuleAnalysis>();
+#ifdef BUILD_CUDAQ_ENABLED
+    auto &analysis = getAnalysis<QuakeAnalysis>();
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
+#endif
+
     auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
 
     llvm::outs() << "\n[Common GateCancellationPass]:\n";

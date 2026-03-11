@@ -31,7 +31,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 * the terms of the Apache License 2.0 which accompanies this distribution.    *
 ******************************************************************************/
 
-#include "SemanticExtractLayer/Extractor.h"
+#include "SemanticExtractLayer/CatalystExtractor.h"
 #include "MQSSCatalystPasses/Examples.hpp"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -59,7 +59,7 @@ public:
 
   void runOnOperation() override {
 
-    auto &analysis = getAnalysis<MyModuleAnalysis>();
+    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 
     llvm::outs() << "Dumping catalyst GateOps:\n";
     for (auto *op : analysis.getGateOps()) {

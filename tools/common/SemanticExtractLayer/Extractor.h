@@ -20,14 +20,14 @@ using namespace llvm;
 using namespace mlir;
 
 struct QubitID {
-    Value base;
-    std::size_t index;
+  Value base;
+  std::size_t index;
 };
 
 struct QuantumOpView {
-  StringRef GateTy="";
-  std::vector<QubitID> InputQubits={};
-  std::vector<QubitID> OutputQubits={};
+  StringRef GateTy = "";
+  std::vector<QubitID> InputQubits = {};
+  std::vector<QubitID> OutputQubits = {};
   bool hasSideEffects = false;
 };
 
@@ -38,43 +38,64 @@ struct DialectInfo {
   std::unordered_map<Operation *, QuantumOpView> OpQuantumView;
 };
 
-using tupleVectorsQubitIDs = std::tuple<std::vector<QubitID>, std::vector<QubitID>>;
+using tupleVectorsQubitIDs =
+    std::tuple<std::vector<QubitID>, std::vector<QubitID>>;
 
-struct MyModuleAnalysis {
+static bool equivalence_check(const std::vector<QubitID> &Op1,
+                              const std::vector<QubitID> &Op2) {
+  if (Op1.size() != Op2.size())
+    return false;
+
+  for (const auto &q1 : Op1) {
+    bool found = false;
+    for (const auto &q2 : Op2) {
+      if (q1.base == q2.base && q1.index == q2.index) {
+        found = true;
+        break;
+      }
+    }
+    if (!found)
+      return false;
+  }
+
+  return true;
+}
+
+class MyModuleAnalysis {
 
 public:
-  MyModuleAnalysis(mlir::ModuleOp module);
+  virtual ~MyModuleAnalysis() = default;
+  virtual std::vector<Operation *> getGateOps()=0; // Pure virtual functions that need to be implemented by
+                    // derived classes
 
-  std::vector<Operation *> getGateOps();
+  virtual void fetchQuantumKernels()=0;
 
-  void fetchQuantumKernels();
+  virtual void gatherOpInfo()=0;
 
-  DialectInfo getDialectInfo() { return Info; }
+  virtual bool touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs)=0;
 
-  void gatherOpInfo();
+  virtual mlir::LogicalResult verifyModule()=0;
 
-  bool sameQubits(tupleVectorsQubitIDs Op1View, tupleVectorsQubitIDs Op2View);
-
-  bool touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs);
-
-  mlir::LogicalResult verifyModule() { return module.verify(); }
-
-private:
-  void gatherOperations();
-  void initialize(mlir::ModuleOp module);
-
-  mlir::ModuleOp module;
-  DialectInfo Info;
-};
-
-extern std::unique_ptr<MyModuleAnalysis> analysis;
-
-struct MyModuleAnalysisPass
-    : public mlir::PassWrapper<MyModuleAnalysisPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
-
-  void runOnOperation() override {
-    auto module = getOperation();
-    analysis = std::make_unique<MyModuleAnalysis>(module);
+  DialectInfo getDialectInfo(){
+    return Info;
   }
+
+  bool sameQubits(tupleVectorsQubitIDs Op1InOuts,
+                                    tupleVectorsQubitIDs Op2InOuts) {
+
+    auto &[Op1Inputs, Op1Outputs] = Op1InOuts;
+    auto &[Op2Inputs, Op2Outputs] = Op2InOuts;
+
+    auto Inputcheck = equivalence_check(Op1Inputs, Op2Inputs);
+    if (!Inputcheck)
+      return false;
+    auto OutputCheck = equivalence_check(Op1Outputs, Op2Outputs);
+
+    return true;
+  }
+
+
+protected:
+  DialectInfo Info;
+
 };

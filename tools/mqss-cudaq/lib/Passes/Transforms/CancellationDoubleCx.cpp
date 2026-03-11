@@ -25,7 +25,7 @@ Adapted from: https://dl.acm.org/doi/10.5555/1972505
 *************************************************************************/
 
 // #include "Passes/BaseMQSSPass.hpp"
-#include "SemanticExtractLayer/Extractor.h"
+#include "SemanticExtractLayer/QuakeExtractor.h"
 #include "MQSSCUDAQPasses/Transforms.hpp"
 #include "MQSSCUDAQPasses/CancellationOperations.hpp"
 
@@ -60,7 +60,7 @@ public:
   }
 
   void runOnOperation() override {
-    auto &analysis = getAnalysis<MyModuleAnalysis>();
+    auto &analysis = getAnalysis<QuakeAnalysis>();
     auto DialectInfo = analysis.getDialectInfo();
     auto kernels = DialectInfo.QuantumKernels;
     for (auto kernel : kernels) {

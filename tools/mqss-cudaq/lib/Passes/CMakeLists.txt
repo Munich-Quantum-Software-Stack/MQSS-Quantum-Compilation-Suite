@@ -3,7 +3,6 @@ set(PASS_ANALYSIS_SOURCES
   Transforms/CommuteCxRx.cpp
   Transforms/CancellationDoubleCx.cpp
   Utils/QuakeUtils.cpp
-  ${CMAKE_SOURCE_DIR}/../common/SemanticExtractLayer/Extractor.cpp
   ${CMAKE_SOURCE_DIR}/../common/Passes/GateCancellationPass.cpp
 )
 

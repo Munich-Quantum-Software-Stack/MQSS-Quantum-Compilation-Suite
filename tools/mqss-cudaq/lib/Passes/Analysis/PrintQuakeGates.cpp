@@ -38,7 +38,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "SemanticExtractLayer/Extractor.h"
+#include "SemanticExtractLayer/QuakeExtractor.h"
 #include "MQSSCUDAQPasses/Examples.hpp"
 
 
@@ -64,7 +64,7 @@ public:
   void runOnOperation() override {
   
     auto circuit = getOperation();
-    auto &analysis = getAnalysis<MyModuleAnalysis>();
+    auto &analysis = getAnalysis<QuakeAnalysis>();
 
 
     llvm::outs() << "\n[Print-quake-gates-pass:]\n";

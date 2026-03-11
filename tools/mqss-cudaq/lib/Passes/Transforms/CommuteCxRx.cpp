@@ -34,7 +34,7 @@ https://quantumcomputing.stackexchange.com/questions/12458/show-that-a-cz-gate-c
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
-#include "SemanticExtractLayer/Extractor.h"
+#include "SemanticExtractLayer/QuakeExtractor.h"
 
 // Include auto-generated pass registration
 namespace mqss_cudaq::opt {
@@ -63,7 +63,7 @@ public:
   // }
   void runOnOperation() override{
       llvm::outs() << "Within the pass: CommuteCxRx\n";
-      auto &analysis = getAnalysis<MyModuleAnalysis>();
+      auto &analysis = getAnalysis<QuakeAnalysis>();
       auto DialectInfo = analysis.getDialectInfo();
       auto kernels = DialectInfo.QuantumKernels;
       for(auto kernel : kernels){
