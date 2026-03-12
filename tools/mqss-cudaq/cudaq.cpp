@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
     return mqss_cudaq::opt::createPrintQuakeGatesPass(llvm::outs());
   });
 
-  llvm::outs() << "Dialects have been registered!\n";
+  llvm::outs() << "Dialects and Passes have been registered!\n";
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));

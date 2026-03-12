@@ -8,6 +8,9 @@ add_mlir_library(MLIRPasses
   SHARED
   ${PASS_ANALYSIS_SOURCES}
 
+   DEPENDS
+    MQSSTransformsPassIncGen
+
   LINK_LIBS PUBLIC
     MLIRQuantum
     MLIRTensorDialect

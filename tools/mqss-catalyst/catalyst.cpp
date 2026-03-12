@@ -46,21 +46,15 @@ int main(int argc, char **argv) {
   registry.insert<mlir::tensor::TensorDialect>();
   registry.insert<catalyst::quantum::QuantumDialect>();
 
-  // For Catalyst / StableHLO
+  // For Catalyst / StableHLO (Maybe in the future)
   // mlir::DialectRegistry catRegistry;
   // catRegistry.insert<catalyst::quantum::QuantumDialect>();
   // mlir::MLIRContext catContext(catRegistry);
 
+  registerMQSSTransformsPasses();
+
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return catalyst::opt::createPrintCatalystGatesPass(llvm::outs());
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return catalyst::opt::GateCancellationPass();
-  });
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return catalyst::opt::GateCommutationPass();
   });
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
@@ -69,7 +63,8 @@ int main(int argc, char **argv) {
   mlir::registerPass(
       []() -> std::unique_ptr<mlir::Pass> { return mlir::createCSEPass(); });
 
-  llvm::outs() << "Dialects have been registered!\n";
+  llvm::outs() << "Dialects and Passes have been registered!\n";
+  
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));
 }

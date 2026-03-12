@@ -89,3 +89,16 @@ std::unique_ptr<mlir::Pass> GateCommutationPass();
  */
 } // namespace catalyst::opt
 #endif // TRANSFORMS_H
+
+/**
+ * @def GEN_PASS_DECL
+ * @brief Macro for declaring passes for registration
+ */
+// declarative passes
+#define GEN_PASS_DECL
+/**
+ * @def GEN_PASS_REGISTRATION
+ * @brief Macro for pass registration
+ */
+#define GEN_PASS_REGISTRATION
+#include "MQSSCatalystPasses/Transforms.h.inc"
