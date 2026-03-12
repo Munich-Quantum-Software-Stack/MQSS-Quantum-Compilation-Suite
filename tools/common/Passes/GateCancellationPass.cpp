@@ -147,7 +147,7 @@ std::unique_ptr<mlir::Pass> mqss_cudaq::opt::GateCancellationPass() {
 #endif
 
 #ifdef BUILD_CATALYST_ENABLED
-std::unique_ptr<mlir::Pass> catalyst::opt::GateCancellationPass() {
+std::unique_ptr<mlir::Pass> mqss_catalyst::opt::GateCancellationPass() {
   return std::make_unique<GateCancellation>();
 }
 #endif

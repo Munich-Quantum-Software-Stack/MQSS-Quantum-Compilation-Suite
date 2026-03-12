@@ -32,7 +32,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ******************************************************************************/
 
 #include "SemanticExtractLayer/CatalystExtractor.h"
-#include "MQSSCatalystPasses/Examples.hpp"
+#include "MQSSCatalystPasses/Analysis.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -78,6 +78,6 @@ private:
 } // namespace
 
 std::unique_ptr<mlir::Pass>
-catalyst::opt::createPrintCatalystGatesPass(llvm::raw_ostream &ostream) {
+mqss_catalyst::opt::createPrintCatalystGatesPass(llvm::raw_ostream &ostream) {
   return std::make_unique<PrintCatalystGates>(ostream);
 }

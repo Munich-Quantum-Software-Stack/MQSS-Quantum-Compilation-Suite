@@ -123,7 +123,7 @@ std::unique_ptr<mlir::Pass> mqss_cudaq::opt::GateCommutationPass() {
 #endif
 
 #ifdef BUILD_CATALYST_ENABLED
-std::unique_ptr<mlir::Pass> catalyst::opt::GateCommutationPass() {
+std::unique_ptr<mlir::Pass> mqss_catalyst::opt::GateCommutationPass() {
   return std::make_unique<GateCommutation>();
 }
 #endif

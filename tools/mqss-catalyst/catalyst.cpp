@@ -1,18 +1,4 @@
-/*******************************************************************************
- * Copyright (c) 2022 - 2026 NVIDIA Corporation & Affiliates.                  *
- * All rights reserved.                                                        *
- *                                                                             *
- * This source code and the accompanying materials are made available under    *
- * the terms of the Apache License 2.0 which accompanies this distribution.    *
- ******************************************************************************/
 
-/*******************************************************************************
- * Copyright (c) 2022 - 2026 NVIDIA Corporation & Affiliates.                  *
- * All rights reserved.                                                        *
- *                                                                             *
- * This source code and the accompanying materials are made available under    *
- * the terms of the Apache License 2.0 which accompanies this distribution.    *
- ******************************************************************************/
 
 // #include "Decompositions.hpp"
 // #include "Examples.hpp"
@@ -22,8 +8,8 @@
 // #include "Interfaces/Extractor.hpp"
 
 #include "IR/QuantumDialect.h"
-#include "MQSSCatalystPasses/Examples.hpp"
-#include "MQSSCatalystPasses/Transforms.hpp"
+#include "MQSSCatalystPasses/Analysis.h"
+#include "MQSSCatalystPasses/Transforms.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
@@ -54,7 +40,7 @@ int main(int argc, char **argv) {
   registerMQSSTransformsPasses();
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return catalyst::opt::createPrintCatalystGatesPass(llvm::outs());
+    return mqss_catalyst::opt::createPrintCatalystGatesPass(llvm::outs());
   });
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
@@ -64,7 +50,7 @@ int main(int argc, char **argv) {
       []() -> std::unique_ptr<mlir::Pass> { return mlir::createCSEPass(); });
 
   llvm::outs() << "Dialects and Passes have been registered!\n";
-  
+
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));
 }

@@ -6,6 +6,6 @@
 #endif
 
 #ifdef BUILD_CATALYST_ENABLED
-#include "MQSSCatalystPasses/Transforms.hpp"
+#include "MQSSCatalystPasses/Transforms.h"
 #include "../SemanticExtractLayer/CatalystExtractor.h"
 #endif
