@@ -83,6 +83,8 @@ void commuteOperation(mlir::Operation *currentOp, int nCtrlsOp1, int nTgtsOp1,
   auto prevOp =
       getPreviousOperationOnTarget(currentGate, currentGate.getTargets()[0]);
 
+  llvm::outs() << "\nprev op target: " << *prevOp << "\n";
+
   if (!prevOp)
     return;
   auto previousGate = dyn_cast_or_null<T1>(prevOp);

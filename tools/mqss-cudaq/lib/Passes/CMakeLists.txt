@@ -4,6 +4,7 @@ set(PASS_ANALYSIS_SOURCES
   Transforms/CancellationDoubleCx.cpp
   Utils/QuakeUtils.cpp
   ${CMAKE_SOURCE_DIR}/../common/Passes/GateCancellationPass.cpp
+  ${CMAKE_SOURCE_DIR}/../common/Passes/GateCommutationPass.cpp
 )
 
 

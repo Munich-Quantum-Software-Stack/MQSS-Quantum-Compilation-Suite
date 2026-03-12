@@ -390,6 +390,8 @@ std::unique_ptr<mlir::Pass> createSwitchHYPass();
 std::unique_ptr<mlir::Pass> createSwitchHZPass();
 
 std::unique_ptr<mlir::Pass> GateCancellationPass();
+std::unique_ptr<mlir::Pass> GateCommutationPass();
+
 } // namespace mqss_cudaq::opt
 
 /**

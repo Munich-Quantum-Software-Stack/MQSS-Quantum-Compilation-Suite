@@ -19,15 +19,33 @@
 using namespace llvm;
 using namespace mlir;
 
+enum Gate { CNOT, H, RX, Z, Y, NA };
+
+inline Gate parseGateTy(const StringRef &GateTy) {
+  if (GateTy == "CNOT")
+    return CNOT;
+  if (GateTy == "H")
+    return H;
+  if (GateTy == "RX")
+    return RX;
+  if (GateTy == "Z")
+    return Z;
+  if (GateTy == "Y")
+    return Y;
+  return NA;
+}
+
 struct QubitID {
   Value base;
   std::size_t index;
 };
 
+// TODO (Akshay): Is it better to have separate ControlQubits
+//                and TargetQubits vectors?
 struct QuantumOpView {
-  StringRef GateTy = "";
-  std::vector<QubitID> InputQubits = {};
-  std::vector<QubitID> OutputQubits = {};
+  Gate GateTy=Gate::NA;                   //<---------- Important to initialize enums
+  std::vector<QubitID> ControlQubits = {};
+  std::vector<QubitID> TargetQubits = {};
   bool hasSideEffects = false;
 };
 
@@ -41,7 +59,7 @@ struct DialectInfo {
 using tupleVectorsQubitIDs =
     std::tuple<std::vector<QubitID>, std::vector<QubitID>>;
 
-static bool equivalence_check(const std::vector<QubitID> &Op1,
+inline bool equivalence_check(const std::vector<QubitID> &Op1,
                               const std::vector<QubitID> &Op2) {
   if (Op1.size() != Op2.size())
     return false;
@@ -80,16 +98,16 @@ public:
     return Info;
   }
 
-  bool sameQubits(tupleVectorsQubitIDs Op1InOuts,
-                                    tupleVectorsQubitIDs Op2InOuts) {
+  bool sameQubits(tupleVectorsQubitIDs Op1CtrlTarget,
+                                    tupleVectorsQubitIDs Op2CtrlTarget) {
 
-    auto &[Op1Inputs, Op1Outputs] = Op1InOuts;
-    auto &[Op2Inputs, Op2Outputs] = Op2InOuts;
+    auto &[Op1Ctrls, Op1Targets] = Op1CtrlTarget;
+    auto &[Op2Ctrls, Op2Targets] = Op2CtrlTarget;
 
-    auto Inputcheck = equivalence_check(Op1Inputs, Op2Inputs);
+    auto Inputcheck = equivalence_check(Op1Ctrls, Op2Ctrls);
     if (!Inputcheck)
       return false;
-    auto OutputCheck = equivalence_check(Op1Outputs, Op2Outputs);
+    auto OutputCheck = equivalence_check(Op1Targets, Op2Targets);
 
     return true;
   }

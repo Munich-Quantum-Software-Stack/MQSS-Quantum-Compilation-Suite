@@ -10,6 +10,11 @@ def GateCancellationPass : Pass<"MyGateCancellationPass"> {
   let constructor = "mqss_cudaq::opt::GateCancellationPass()";
 }
 
+def GateCommutationPass : Pass<"MyGateCommutationPass"> {
+  let summary = "This pass searches for a specific pattern T1 followed by T2 and commutes them.";
+  let constructor = "mqss_cudaq::opt::GateCommutationPass()";
+}
+
 // def  CommuteCxX : Pass<"CommuteCxX"> {
 //   let summary = "Apply commutation pass to pattern CNot-X";
 //   let constructor = "mqss::opt::createCommuteCxXPass()";

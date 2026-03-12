@@ -74,6 +74,8 @@ namespace catalyst::opt {
  */
 std::unique_ptr<mlir::Pass> GateCancellationPass();
 
+std::unique_ptr<mlir::Pass> GateCommutationPass();
+
 /**
  * @brief Example MLIR pass that traverses a given MLIR/Quake.
    @details This method constructs an `mlir::Pass` of the type

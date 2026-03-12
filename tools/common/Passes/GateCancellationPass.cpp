@@ -1,12 +1,10 @@
 
 
-
+#include "Pass.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-
-#include "Pass.h"
 
 using namespace mlir;
 using namespace llvm;
@@ -32,16 +30,31 @@ public:
     rewriter.eraseOp(Op);
   }
 
+  // Currently performing only cancellation of consecutive CNOT gates
+  //  Add cases here if more gate types need to be supported
+  bool isValidGate(Gate GateTy) {
+    switch (GateTy) {
+    case Gate::CNOT:
+      return true;
+    default:
+      return false;
+    }
+  }
 
-  // The following algorithm, iterates over operations in an mlir-kernel (FuncOp)
-  // attempting to erase consecutive CNOTs under certain conditions. The conditions are:
+  // The following algorithm, iterates over operations in an mlir-kernel
+  // (FuncOp) attempting to erase consecutive CNOTs under certain conditions.
+  // The conditions are:
   // 1. The two CNOTs should appear consecutively
-  // 2. There should not be any intervening operation between the CNOTs that operating on
+  // 2. There should not be any intervening operation between the CNOTs that
+  // operating on
   //    the Input/Output Qubits of the CNOTs.
   // 3. The two CNOTs should operate on the same Input Qubits
   void runOnOperation() override {
 
-    // TODO: Think about how we can run the analysis once and reuse results
+    // Note: Dialect specific analysis is needed to proceed
+    //       This is needed currently because we do not "parse" the dialects.
+    //        Parsing would involve a more sophisticated Internal IR to
+    //        represent operations of all supported dialects.
 #ifdef BUILD_CUDAQ_ENABLED
     auto &analysis = getAnalysis<QuakeAnalysis>();
 #endif
@@ -67,7 +80,7 @@ public:
 
         auto curr_op_qView = OpQuantumView[curr_op];
         // Only continue with the analysis if current op is a CNOT
-        if (curr_op_qView.GateTy != "CNOT") {
+        if (!isValidGate(curr_op_qView.GateTy)) {
           curr_op = curr_op->getNextNode();
           continue;
         }
@@ -77,27 +90,27 @@ public:
           break;
 
         // Now, iterate operation-by-operation:
-        // 1. If an intervening Non-CNOT operation, with side-effects is found: abandon
-        // 2. If a CNOT is found, check if the two CNOTs operate on the same Qubits
+        // 1. If an intervening Non-CNOT operation, with side-effects is found:
+        // abandon
+        // 2. If a CNOT is found, check if the two CNOTs operate on the same
+        // Qubits
         //    - If yes, the two CNOTs can be erased
         //    - Otherwise, abandon
         while (next_op) {
 
           auto nextOpView = OpQuantumView[next_op];
-
-          if (nextOpView.hasSideEffects && nextOpView.GateTy != "CNOT" &&
-              (analysis.touchesAny(next_op, curr_op_qView.InputQubits) ||
-               analysis.touchesAny(next_op, curr_op_qView.OutputQubits))) {
-            // llvm::outs().indent(6) << "has side-effects\n";
+          // TODO: Should the "touchesAny" check be there?
+          if (nextOpView.hasSideEffects && !isValidGate(nextOpView.GateTy) &&
+              (analysis.touchesAny(next_op, curr_op_qView.ControlQubits) ||
+               analysis.touchesAny(next_op, curr_op_qView.TargetQubits))) {
             break;
           }
 
-          if (nextOpView.GateTy == "CNOT") {
+          if (isValidGate(nextOpView.GateTy)) {
 
             if (analysis.sameQubits(
-                    {curr_op_qView.InputQubits, curr_op_qView.OutputQubits},
-                    {nextOpView.InputQubits, nextOpView.OutputQubits})) {
-              // llvm::outs().indent(6) << "Matched\n";
+                    {curr_op_qView.ControlQubits, curr_op_qView.TargetQubits},
+                    {nextOpView.ControlQubits, nextOpView.TargetQubits})) {
               ToErase.insert(curr_op);
               ToErase.insert(next_op);
               next_op = next_op->getNextNode();

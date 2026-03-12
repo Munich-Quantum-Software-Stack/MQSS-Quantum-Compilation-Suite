@@ -13,6 +13,45 @@
 #include "Extractor.h"
 #include "../../mqss-catalyst/include/Utils/utils.h"
 
+enum class QubitRole {
+    Control,
+    Target
+};
+
+static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable = {
+    {"CNOT",   {QubitRole::Control, QubitRole::Target}},
+    {"CZ",     {QubitRole::Control, QubitRole::Target}},
+    {"CY",     {QubitRole::Control, QubitRole::Target}},
+    {"CZ",   {QubitRole::Control, QubitRole::Target}},
+    {"CH",   {QubitRole::Control, QubitRole::Target}},
+
+    // Controlled rotation gates
+    {"CRX",  {QubitRole::Control, QubitRole::Target}},
+    {"CRY",  {QubitRole::Control, QubitRole::Target}},
+    {"CRZ",  {QubitRole::Control, QubitRole::Target}},
+    {"CRot", {QubitRole::Control, QubitRole::Target}},
+
+    // Single-qubit gates
+    {"Hadamard", {QubitRole::Target}},
+    {"H",        {QubitRole::Target}},
+    {"X",        {QubitRole::Target}},
+    {"Y",        {QubitRole::Target}},
+    {"Z",        {QubitRole::Target}},
+    {"S",        {QubitRole::Target}},
+    {"T",        {QubitRole::Target}},
+    {"SX",       {QubitRole::Target}}
+    //TODO:Add more Here
+};
+
+static const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName)
+{
+    auto it = gateOperandRoleTable.find(gateName);
+    if (it != gateOperandRoleTable.end())
+        return it->second;
+
+    return {};
+}
+
 
 class CatalystQuantumAnalysis : public MyModuleAnalysis {
 
@@ -55,23 +94,30 @@ public:
 
           // Only consider operations on gates with side-effects
           if (auto g = isCatalystQuantumGateOp(Op)) {
+            OpView.GateTy = parseGateTy(g.getGateName());
+
             if (auto mem = dyn_cast<MemoryEffectOpInterface>(Op))
               if (!mem.hasNoEffect())
                 OpView.hasSideEffects = true;
+
+            auto OpRoles = getGateOpRoles(g.getGateName()); // Now we can separate out the Qubits into Ctrl/Target
             for (unsigned i = 0; i < g.getNumOperands(); i++) {
               QubitID ID;
-              ID.base = g->getOperand(i);
-              ID.index = -1;
-              OpView.InputQubits.push_back(ID);
+              QubitRole role = OpRoles[i];
+              
+              if(role == QubitRole::Control){
+                ID.base = g->getOperand(i);
+                ID.index = -1;
+                OpView.ControlQubits.push_back(ID);
+              }
+              if(role == QubitRole::Target){
+                ID.base = g->getResult(i);
+                ID.index = -1;
+                OpView.TargetQubits.push_back(ID);
+              }
+              
             }
-
-            for (unsigned i = 0; i < g->getNumResults(); i++) {
-              QubitID ID;
-              ID.base = g->getResult(i);
-              ID.index = -1;
-              OpView.OutputQubits.push_back(ID);
-            }
-            OpView.GateTy = g.getGateName();
+            
           }
         }
         Info.OpQuantumView[Op] = OpView;

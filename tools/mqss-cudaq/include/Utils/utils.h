@@ -19,6 +19,12 @@ inline std::tuple<bool, llvm::StringLiteral> isQuakeQuantumGate(mlir::Operation 
 
   if(auto x = dyn_cast<quake::HOp>(op))
     return {true, "H"};
+
+  if(auto x = dyn_cast<quake::ZOp>(op))
+    return {true, "Z"};
+
+  if(auto x = dyn_cast<quake::YOp>(op))
+    return {true, "Y"};
   
   return {false, ""};
 }

@@ -79,7 +79,7 @@ public:
                 auto index = ext_ref.getConstantIndex();
                 ID.base = base;
                 ID.index = index;
-                OpView.InputQubits.push_back(ID);
+                OpView.ControlQubits.push_back(ID);
               }
             }
             for (auto t : gate.getTargets()) {
@@ -90,15 +90,16 @@ public:
                 auto index = ext_ref.getConstantIndex();
                 ID.base = base;
                 ID.index = index;
-                OpView.InputQubits.push_back(ID);
+                OpView.TargetQubits.push_back(ID);
               }
             }
 
             auto [isQGateOp, GateTy] = isQuakeQuantumGate(Op);
-            if (isQGateOp)
-              OpView.GateTy = GateTy;
+            if (isQGateOp){
+              OpView.GateTy = parseGateTy(GateTy);
+            }
 
-            OpView.OutputQubits = OpView.InputQubits;
+            // OpView.OutputQubits = OpView.InputQubits;
           }
         }
         Info.OpQuantumView[Op] = OpView;
