@@ -19,11 +19,13 @@
 using namespace llvm;
 using namespace mlir;
 
-enum Gate { CNOT, H, RX, Z, Y, NA };
+enum Gate { CNOT, PAULIX, H, RX, Z, Y, NA };
 
 inline Gate parseGateTy(const StringRef &GateTy) {
   if (GateTy == "CNOT")
     return CNOT;
+   if (GateTy == "PAULIX")
+    return PAULIX;
   if (GateTy == "H")
     return H;
   if (GateTy == "RX")
@@ -104,12 +106,14 @@ public:
     auto &[Op1Ctrls, Op1Targets] = Op1CtrlTarget;
     auto &[Op2Ctrls, Op2Targets] = Op2CtrlTarget;
 
-    auto Inputcheck = equivalence_check(Op1Ctrls, Op2Ctrls);
-    if (!Inputcheck)
-      return false;
-    auto OutputCheck = equivalence_check(Op1Targets, Op2Targets);
+    if (!Op1Ctrls.empty() && !Op2Ctrls.empty()) {
+      auto CtrlCheck = equivalence_check(Op1Ctrls, Op2Ctrls);
+      if (!CtrlCheck)
+        return false;
+    }
+    auto TargetCheck = equivalence_check(Op1Targets, Op2Targets);
 
-    return true;
+    return TargetCheck;
   }
 
 

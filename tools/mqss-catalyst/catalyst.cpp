@@ -55,8 +55,13 @@ int main(int argc, char **argv) {
     return catalyst::opt::createPrintCatalystGatesPass(llvm::outs());
   });
 
-   mlir::registerPass(
-      []() -> std::unique_ptr<mlir::Pass> { return catalyst::opt::GateCancellationPass(); });
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return catalyst::opt::GateCancellationPass();
+  });
+
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return catalyst::opt::GateCommutationPass();
+  });
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::createCanonicalizerPass();

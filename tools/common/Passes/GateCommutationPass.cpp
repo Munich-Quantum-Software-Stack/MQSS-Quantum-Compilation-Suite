@@ -9,8 +9,14 @@
 using namespace mlir;
 using namespace llvm;
 
-
 namespace {
+
+struct CommuteTy{
+  Operation *Op1;
+  Operation *Op2;
+  public:
+    CommuteTy(Operation *Op1, Operation *Op2) : Op1(Op1), Op2(Op2){}
+};
 
 class GateCommutation
     : public PassWrapper<GateCommutation, OperationPass<mlir::ModuleOp>> {
@@ -28,8 +34,18 @@ public:
            "under the constraints of input and output qubit counts.";
   }
 
-  void Commute(){
-    
+  void Commute(std::vector<CommuteTy> CommmutationCandidates) {
+
+    for(auto [Cand1, Cand2] : CommmutationCandidates){
+      llvm::outs() << "Commuting...\n";
+      llvm::outs().indent(4) << "Cand 1: " << *Cand1 << "\n";
+      llvm::outs().indent(4) << "Cand 2: " << *Cand2 << "\n";
+      Cand1->moveAfter(Cand2);
+
+      llvm::outs().indent(4) << "---------------------------------------------\n";
+      
+    }
+
   }
 
   void runOnOperation() override {
@@ -54,6 +70,7 @@ public:
       auto ops = kernel.getFunctionBody().getOps().begin();
       auto *curr_op = &*ops;
 
+      std::vector<CommuteTy> CommmuteCandidates;
       while (curr_op) {
 
         auto curr_op_qView = OpQuantumView[curr_op];
@@ -67,26 +84,24 @@ public:
         if (!next_op)
           break;
 
-        while(next_op){
+        while (next_op) {
           auto nextOpView = OpQuantumView[next_op];
 
-          if (nextOpView.hasSideEffects &&  nextOpView.GateTy!=SecondGateTy &&
+          if (nextOpView.hasSideEffects && nextOpView.GateTy != SecondGateTy &&
               (analysis.touchesAny(next_op, curr_op_qView.ControlQubits) ||
                analysis.touchesAny(next_op, curr_op_qView.TargetQubits))) {
             // llvm::outs().indent(6) << "has side-effects\n";
             break;
           }
 
-          if(nextOpView.GateTy == SecondGateTy){
+          if (nextOpView.GateTy == SecondGateTy) {
+            if (analysis.sameQubits(
+                    {curr_op_qView.ControlQubits, curr_op_qView.TargetQubits},
+                    {nextOpView.ControlQubits, nextOpView.TargetQubits})) {
+              CommuteTy comm{curr_op, next_op};
+              CommmuteCandidates.emplace_back(comm);
+            }
 
-            llvm::outs() << "Found second target: " << *next_op << "\n";
-            for(auto InQubit : nextOpView.ControlQubits){
-                llvm::outs().indent(4) << "Ctrl: " << InQubit.base << "," << InQubit.index << "\n";
-            }
-             for(auto OutQubit : nextOpView.TargetQubits){
-                llvm::outs().indent(4) << "Target: " << OutQubit.base << "," << OutQubit.index << "\n";
-            }
-            
             break;
           }
 
@@ -95,13 +110,9 @@ public:
 
         curr_op = next_op;
       }
-
-
+      Commute(CommmuteCandidates);
     }
   }
-
-
-
 };
 } // namespace
 

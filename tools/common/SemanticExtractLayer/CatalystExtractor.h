@@ -19,27 +19,29 @@ enum class QubitRole {
 };
 
 static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable = {
-    {"CNOT",   {QubitRole::Control, QubitRole::Target}},
-    {"CZ",     {QubitRole::Control, QubitRole::Target}},
-    {"CY",     {QubitRole::Control, QubitRole::Target}},
+    // Controlled gates
+    {"CNOT", {QubitRole::Control, QubitRole::Target}},
+    {"CX",   {QubitRole::Control, QubitRole::Target}},
+    {"CY",   {QubitRole::Control, QubitRole::Target}},
     {"CZ",   {QubitRole::Control, QubitRole::Target}},
-    {"CH",   {QubitRole::Control, QubitRole::Target}},
-
-    // Controlled rotation gates
-    {"CRX",  {QubitRole::Control, QubitRole::Target}},
-    {"CRY",  {QubitRole::Control, QubitRole::Target}},
-    {"CRZ",  {QubitRole::Control, QubitRole::Target}},
-    {"CRot", {QubitRole::Control, QubitRole::Target}},
 
     // Single-qubit gates
+    {"PauliX", {QubitRole::Target}},
+    {"PauliY", {QubitRole::Target}},
+    {"PauliZ", {QubitRole::Target}},
+    {"X", {QubitRole::Target}},   // sometimes emitted
+    {"Y", {QubitRole::Target}},
+    {"Z", {QubitRole::Target}},
     {"Hadamard", {QubitRole::Target}},
-    {"H",        {QubitRole::Target}},
-    {"X",        {QubitRole::Target}},
-    {"Y",        {QubitRole::Target}},
-    {"Z",        {QubitRole::Target}},
-    {"S",        {QubitRole::Target}},
-    {"T",        {QubitRole::Target}},
-    {"SX",       {QubitRole::Target}}
+    {"H", {QubitRole::Target}},
+
+    // Rotations
+    {"RX", {QubitRole::Target}},
+    {"RY", {QubitRole::Target}},
+    {"RZ", {QubitRole::Target}},
+
+    // Two-qubit symmetric gates
+    {"SWAP", {QubitRole::Target, QubitRole::Target}}
     //TODO:Add more Here
 };
 
@@ -100,8 +102,11 @@ public:
               if (!mem.hasNoEffect())
                 OpView.hasSideEffects = true;
 
-            auto OpRoles = getGateOpRoles(g.getGateName()); // Now we can separate out the Qubits into Ctrl/Target
-            for (unsigned i = 0; i < g.getNumOperands(); i++) {
+            std::vector<QubitRole> OpRoles = getGateOpRoles(g.getGateName()); // Now we can separate out the Qubits into Ctrl/Target
+            assert(!OpRoles.empty() && "Found a gate Op with empty Operand Roles(Control/Target)");
+            assert((OpRoles.size() == g.getQubitOperands().size()) && "Operand Roles not equals No. of Qubit Operands");
+
+            for (unsigned i = 0; i < g.getQubitOperands().size(); i++) {
               QubitID ID;
               QubitRole role = OpRoles[i];
               
