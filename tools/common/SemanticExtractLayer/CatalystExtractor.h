@@ -116,7 +116,7 @@ public:
                 OpView.ControlQubits.push_back(ID);
               }
               if(role == QubitRole::Target){
-                ID.base = g->getResult(i);
+                ID.base = g->getOperand(i);
                 ID.index = -1;
                 OpView.TargetQubits.push_back(ID);
               }
@@ -128,20 +128,6 @@ public:
         Info.OpQuantumView[Op] = OpView;
       });
     }
-  }
-
-  bool touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs) override {
-    for (auto op : Op2->getOperands()) {
-      // Catalyst case
-      for (auto Op1Qubit : Op1QubitIDs) {
-        if (Op1Qubit.index == -1) {
-          if (op == Op1Qubit.base)
-            return true; // Return if an operand Qubit of Op1 is used in Op2
-        }
-      }
-    }
-
-    return false;
   }
 
   mlir::LogicalResult verifyModule() override { return module.verify(); }

@@ -101,26 +101,17 @@ public:
 
             // OpView.OutputQubits = OpView.InputQubits;
           }
+          else if(auto extract_refop = dyn_cast<quake::ExtractRefOp>(Op)){
+            //Do something
+            QubitID ID;
+            ID.base = extract_refop.getVeq();
+            ID.index = extract_refop.getConstantIndex();
+            OpView.TargetQubits.push_back(ID);
+          }
         }
         Info.OpQuantumView[Op] = OpView;
       });
     }
-  }
-
-  bool touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs) override {
-
-    for (auto op : Op2->getOperands()) {
-      // Catalyst case
-      for (auto Op1Qubit : Op1QubitIDs) {
-
-        if (auto ext = dyn_cast<quake::ExtractRefOp>(op.getDefiningOp())) {
-          if (ext.getVeq() == Op1Qubit.base &&
-              ext.getConstantIndex() == Op1Qubit.index)
-            return true; // Return if an operand Qubit of Op1 is used in Op2
-        }
-      }
-    }
-    return false;
   }
 
   std::vector<Operation *> getGateOps() override {

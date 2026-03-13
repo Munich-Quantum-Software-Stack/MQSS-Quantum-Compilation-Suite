@@ -1,10 +1,10 @@
 
 
-#include "Pass.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
+#include "include/Pass.h"
 
 using namespace mlir;
 using namespace llvm;
@@ -21,11 +21,12 @@ struct CommuteTy{
 class GateCommutation
     : public PassWrapper<GateCommutation, OperationPass<mlir::ModuleOp>> {
 
-public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(GateCommutation)
+    public:
+    MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(GateCommutation)
+
 
   [[nodiscard]] StringRef getArgument() const override {
-    return "MyGateCommutationPass";
+      return "MyGateCommutationPass";
   }
   [[nodiscard]] StringRef getDescription() const override {
     return "This pass searches for a specific pattern where operation T2 is"
@@ -64,6 +65,7 @@ public:
 
     auto FirstGateTy = Gate::CNOT;
     auto SecondGateTy = Gate::RX;
+    //auto parsedOp = parseGateTy(GateOp1);
 
     for (auto kernel : kernels) {
 
@@ -86,16 +88,17 @@ public:
 
         while (next_op) {
           auto nextOpView = OpQuantumView[next_op];
-
+      
           if (nextOpView.hasSideEffects && nextOpView.GateTy != SecondGateTy &&
-              (analysis.touchesAny(next_op, curr_op_qView.ControlQubits) ||
-               analysis.touchesAny(next_op, curr_op_qView.TargetQubits))) {
-            // llvm::outs().indent(6) << "has side-effects\n";
+              (touchesAny(next_op, curr_op_qView.ControlQubits,OpQuantumView) ||
+               touchesAny(next_op, curr_op_qView.TargetQubits, OpQuantumView))) {
+            
             break;
           }
 
           if (nextOpView.GateTy == SecondGateTy) {
-            if (analysis.sameQubits(
+    
+            if (sameQubits(
                     {curr_op_qView.ControlQubits, curr_op_qView.TargetQubits},
                     {nextOpView.ControlQubits, nextOpView.TargetQubits})) {
               CommuteTy comm{curr_op, next_op};

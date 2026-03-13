@@ -35,6 +35,7 @@
 
 using namespace mlir;
 
+
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
   // ... your dialect setup ...

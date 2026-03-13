@@ -1,10 +1,11 @@
 
 
-#include "Pass.h"
+
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
+#include "include/Pass.h"
 
 using namespace mlir;
 using namespace llvm;
@@ -101,14 +102,14 @@ public:
           auto nextOpView = OpQuantumView[next_op];
           // TODO: Should the "touchesAny" check be there?
           if (nextOpView.hasSideEffects && !isValidGate(nextOpView.GateTy) &&
-              (analysis.touchesAny(next_op, curr_op_qView.ControlQubits) ||
-               analysis.touchesAny(next_op, curr_op_qView.TargetQubits))) {
+              (touchesAny(next_op, curr_op_qView.ControlQubits, OpQuantumView) ||
+               touchesAny(next_op, curr_op_qView.TargetQubits, OpQuantumView))) {
             break;
           }
 
           if (isValidGate(nextOpView.GateTy)) {
 
-            if (analysis.sameQubits(
+            if (sameQubits(
                     {curr_op_qView.ControlQubits, curr_op_qView.TargetQubits},
                     {nextOpView.ControlQubits, nextOpView.TargetQubits})) {
               ToErase.insert(curr_op);
