@@ -31,6 +31,22 @@ inline Gate parseGateTy(const StringRef &GateTy) {
   return UNKNOWN;
 }
 
+inline StringRef parseGateTy(const Gate &GateTy) {
+  if (GateTy == Gate::CNOT)
+    return "CNOT";
+  if (GateTy == Gate::PAULIX)
+    return "PAULIX";
+  if (GateTy == Gate::H)
+    return "H";
+  if (GateTy == Gate::RX)
+    return "RX";
+  if (GateTy == Gate::Z)
+    return "Z";
+  if (GateTy == Gate::Y)
+    return "Y";
+  return "UNKNOWN";
+}
+
 struct QubitID {
   Value base;
   std::size_t index;

@@ -17,7 +17,6 @@ class CommonCommuteCxRx
     public:
     MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteCxRx)
 
-
   [[nodiscard]] StringRef getArgument() const override {
       return "CommonCommuteCxRxPass";
   }

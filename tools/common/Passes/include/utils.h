@@ -108,7 +108,7 @@ touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
   return false;
 }
 
-static void
+static std::vector<CommuteTy>
 performCommutation(Operation *curr_op,
                    std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
                    Gate FirstGateTy, Gate SecondGateTy) {
@@ -117,6 +117,7 @@ performCommutation(Operation *curr_op,
   while (curr_op) {
 
     auto curr_op_qView = OpQuantumView[curr_op];
+    // llvm::outs() << "curr op: " << *curr_op << "\n";
     // Only continue with the analysis if current op is a CNOT
     if (curr_op_qView.GateTy != FirstGateTy) {
       curr_op = curr_op->getNextNode();
@@ -129,11 +130,12 @@ performCommutation(Operation *curr_op,
 
     while (next_op) {
       auto nextOpView = OpQuantumView[next_op];
-
+      // llvm::outs() << "next op: " << *next_op << "\n";
       if (nextOpView.hasSideEffects && nextOpView.GateTy != SecondGateTy &&
           (touchesAny(next_op, curr_op_qView.ControlQubits, OpQuantumView) ||
            touchesAny(next_op, curr_op_qView.TargetQubits, OpQuantumView))) {
 
+        // llvm::outs().indent(4) << "Found intervening ops!\n";
         break;
       }
 
@@ -145,19 +147,33 @@ performCommutation(Operation *curr_op,
           CommuteTy comm{curr_op, next_op};
           CommmuteCandidates.emplace_back(comm);
         }
-
+        // llvm::outs().indent(4) << "Not same Qubits!\n";
         break;
       }
 
       next_op = next_op->getNextNode();
     }
 
-    curr_op = next_op;
+    curr_op = curr_op->getNextNode();
   }
-  if (!CommmuteCandidates.empty())
+
+  if (!CommmuteCandidates.empty()){
     Commute(CommmuteCandidates);
+  }
   else
     llvm::outs() << "No Commutation Candidates!!\n";
+
+  return CommmuteCandidates;
+}
+
+static void performCommuteAndSwitch(Operation *curr_op,
+                   std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
+                   Gate FirstGateTy, Gate SecondGateTy, Gate ReplaceGateTy){
+
+    auto CommutedOps = performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy);
+    for(auto &[Op1, Op2] : CommutedOps){
+    createAndEraseGate(Op2, parseGateTy(ReplaceGateTy));
+    }
 }
 
 static void performCancellation(
@@ -213,7 +229,7 @@ static void performCancellation(
       next_op = next_op->getNextNode();
     }
 
-    curr_op = next_op;
+    curr_op = curr_op->getNextNode();
   }
 
   for (auto *Op : ToErase) {

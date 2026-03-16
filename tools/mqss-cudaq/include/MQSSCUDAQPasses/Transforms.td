@@ -15,3 +15,9 @@ def CommonCommuteCxXPass : Pass<"CommonCommuteCxXPass"> {
   let summary = "This pass searches for the gate Op pattern CNOT followed by PAULIX and commutes them.";
   let constructor = "mqss_cudaq::opt::CommonCommuteCxXPass()";
 }
+
+def CommonSwitchHXPass : Pass<"CommonSwitchHXPass"> {
+  let summary = "This pass searches for the gate Op pattern Hadamard followed by "
+                "X and switched it to Z followed by Hadamard";
+  let constructor = "mqss_cudaq::opt::CommonSwitchHXPass()";
+}

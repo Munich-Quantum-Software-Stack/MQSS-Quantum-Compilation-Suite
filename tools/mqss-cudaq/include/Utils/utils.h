@@ -8,7 +8,7 @@
 
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
-
+#include "mlir/Rewrite/FrozenRewritePatternSet.h"
 
 inline std::tuple<bool, llvm::StringLiteral> isQuakeQuantumGate(mlir::Operation *op) {
   if (auto x = dyn_cast<quake::XOp>(op)){
@@ -30,4 +30,21 @@ inline std::tuple<bool, llvm::StringLiteral> isQuakeQuantumGate(mlir::Operation 
     return {true, "Y"};
   
   return {false, ""};
+}
+
+inline void createAndEraseGate(mlir::Operation* SwitchOutGate, llvm::StringRef NewGateTy){
+   mlir::IRRewriter rewriter(SwitchOutGate->getContext());
+  rewriter.setInsertionPointAfter(SwitchOutGate);
+
+  auto gate = dyn_cast<quake::OperatorInterface>(SwitchOutGate);
+
+  quake::OperatorInterface OpInterface;
+
+  if (NewGateTy == "Z") {
+    auto newGate = rewriter.create<quake::ZOp>(
+        gate.getLoc(), gate.isAdj(), gate.getParameters(), gate.getControls(),
+        gate.getTargets());
+  }
+
+  rewriter.eraseOp(SwitchOutGate);
 }
