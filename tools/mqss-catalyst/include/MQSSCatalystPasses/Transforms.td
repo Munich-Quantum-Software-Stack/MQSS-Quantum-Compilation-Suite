@@ -2,12 +2,17 @@
 
 include "mlir/Pass/PassBase.td"
 
-def GateCancellationPass : Pass<"MyGateCancellationPass"> {
+def CommonCxCancellationPass : Pass<"CommonCxCancellationPass"> {
   let summary = "This pass removes the pattern CNot, CNot if both gates operates on the same control and targets. ";
-  let constructor = "mqss_catalyst::opt::GateCancellationPass()";
+  let constructor = "mqss_catalyst::opt::CommonCxCancellationPass()";
 }
 
-def GateCommutationPass : Pass<"MyGateCommutationPass"> {
-  let summary = "This pass searches for a specific pattern T1 followed by T2 and commutes them.";
-  let constructor = "mqss_catalyst::opt::GateCommutationPass()";
+def CommonCommuteCxRxPass : Pass<"CommonCommuteCxRxPass"> {
+  let summary = "This pass searches for the gate Op pattern CNOT followed by Rx and commutes them.";
+  let constructor = "mqss_catalyst::opt::CommonCommuteCxRxPass()";
+}
+
+def CommonCommuteCxXPass : Pass<"CommonCommuteCxXPass"> {
+  let summary = "This pass searches for the gate Op pattern CNOT followed by PAULIX and commutes them.";
+  let constructor = "mqss_catalyst::opt::CommonCommuteCxXPass()";
 }

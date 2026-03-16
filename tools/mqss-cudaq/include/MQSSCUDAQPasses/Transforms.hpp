@@ -51,8 +51,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 namespace mqss_cudaq::opt {
 
-std::unique_ptr<mlir::Pass> GateCancellationPass();
-std::unique_ptr<mlir::Pass> GateCommutationPass();
+std::unique_ptr<mlir::Pass> CommonCxCancellationPass();
+std::unique_ptr<mlir::Pass> CommonCommuteCxRxPass();
+std::unique_ptr<mlir::Pass> CommonCommuteCxXPass();
 
 } // namespace mqss_cudaq::opt
 

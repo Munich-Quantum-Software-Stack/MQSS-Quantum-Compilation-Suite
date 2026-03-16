@@ -33,9 +33,6 @@ fi
 PASS_ARGS=()
 IFS=',' read -ra PASS_LIST <<< "$PASSES"
 
-echo "Passes:"
-echo $PASSES
-
 for p in "${PASS_LIST[@]}"; do
     PASS_ARGS+=(--"$p")
 done

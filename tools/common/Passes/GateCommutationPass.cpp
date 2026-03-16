@@ -4,49 +4,25 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "include/Pass.h"
+#include "include/utils.h"
 
 using namespace mlir;
 using namespace llvm;
 
 namespace {
 
-struct CommuteTy{
-  Operation *Op1;
-  Operation *Op2;
-  public:
-    CommuteTy(Operation *Op1, Operation *Op2) : Op1(Op1), Op2(Op2){}
-};
-
-class GateCommutation
-    : public PassWrapper<GateCommutation, OperationPass<mlir::ModuleOp>> {
+class CommonCommuteCxRx
+    : public PassWrapper<CommonCommuteCxRx, OperationPass<mlir::ModuleOp>> {
 
     public:
-    MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(GateCommutation)
+    MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteCxRx)
 
 
   [[nodiscard]] StringRef getArgument() const override {
-      return "MyGateCommutationPass";
+      return "CommonCommuteCxRxPass";
   }
   [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for a specific pattern where operation T2 is"
-           "followed by T1 and attempts to commute them to the order T1 "
-           "followed by T2,"
-           "under the constraints of input and output qubit counts.";
-  }
-
-  void Commute(std::vector<CommuteTy> CommmutationCandidates) {
-
-    for(auto [Cand1, Cand2] : CommmutationCandidates){
-      llvm::outs() << "Commuting...\n";
-      llvm::outs().indent(4) << "Cand 1: " << *Cand1 << "\n";
-      llvm::outs().indent(4) << "Cand 2: " << *Cand2 << "\n";
-      Cand1->moveAfter(Cand2);
-
-      llvm::outs().indent(4) << "---------------------------------------------\n";
-      
-    }
-
+    return "This pass searches for the gate Op pattern CNOT followed by Rx and commutes them.";
   }
 
   void runOnOperation() override {
@@ -59,74 +35,80 @@ class GateCommutation
 
     auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
 
-    llvm::outs() << "\n[Common GateCommutationPass]:\n";
+    llvm::outs() << "\n[Applying Pass: CommonCommuteCxRx]\n";
 
     auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::CNOT;
     auto SecondGateTy = Gate::RX;
-    //auto parsedOp = parseGateTy(GateOp1);
 
     for (auto kernel : kernels) {
 
       auto ops = kernel.getFunctionBody().getOps().begin();
       auto *curr_op = &*ops;
 
-      std::vector<CommuteTy> CommmuteCandidates;
-      while (curr_op) {
+      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy);
+    }
+  }
+};
 
-        auto curr_op_qView = OpQuantumView[curr_op];
-        // Only continue with the analysis if current op is a CNOT
-        if (curr_op_qView.GateTy != FirstGateTy) {
-          curr_op = curr_op->getNextNode();
-          continue;
-        }
+class CommonCommuteCxX : public PassWrapper<CommonCommuteCxX, OperationPass<mlir::ModuleOp>> {
 
-        auto *next_op = curr_op->getNextNode();
-        if (!next_op)
-          break;
+  public:
+  public:
+    MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteCxX)
 
-        while (next_op) {
-          auto nextOpView = OpQuantumView[next_op];
-      
-          if (nextOpView.hasSideEffects && nextOpView.GateTy != SecondGateTy &&
-              (touchesAny(next_op, curr_op_qView.ControlQubits,OpQuantumView) ||
-               touchesAny(next_op, curr_op_qView.TargetQubits, OpQuantumView))) {
-            
-            break;
-          }
+  [[nodiscard]] StringRef getArgument() const override {
+      return "CommonCommuteCxXPass";
+  }
+  [[nodiscard]] StringRef getDescription() const override {
+    return "This pass searches for the gate Op pattern CNOT followed by PAULIX and commutes them.";
+  }
 
-          if (nextOpView.GateTy == SecondGateTy) {
-    
-            if (sameQubits(
-                    {curr_op_qView.ControlQubits, curr_op_qView.TargetQubits},
-                    {nextOpView.ControlQubits, nextOpView.TargetQubits})) {
-              CommuteTy comm{curr_op, next_op};
-              CommmuteCandidates.emplace_back(comm);
-            }
+  void runOnOperation() override {
 
-            break;
-          }
+#ifdef BUILD_CUDAQ_ENABLED
+    auto &analysis = getAnalysis<QuakeAnalysis>();
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
+#endif
 
-          next_op = next_op->getNextNode();
-        }
+    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
 
-        curr_op = next_op;
-      }
-      Commute(CommmuteCandidates);
+    llvm::outs() << "\n[Applying Pass: CommonCommuteCxX]\n";
+
+    auto kernels = analysis.getDialectInfo().QuantumKernels;
+
+    auto FirstGateTy = Gate::CNOT;
+    auto SecondGateTy = Gate::PAULIX;
+
+    for (auto kernel : kernels) {
+
+      auto ops = kernel.getFunctionBody().getOps().begin();
+      auto *curr_op = &*ops;
+
+      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy);
     }
   }
 };
 } // namespace
 
 #ifdef BUILD_CUDAQ_ENABLED
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::GateCommutationPass() {
-  return std::make_unique<GateCommutation>();
+std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteCxRxPass() {
+  return std::make_unique<CommonCommuteCxRx>();
+}
+std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteCxXPass() {
+  return std::make_unique<CommonCommuteCxX>();
 }
 #endif
 
 #ifdef BUILD_CATALYST_ENABLED
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::GateCommutationPass() {
-  return std::make_unique<GateCommutation>();
+std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteCxRxPass() {
+  return std::make_unique<CommonCommuteCxRx>();
+}
+
+std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteCxXPass() {
+  return std::make_unique<CommonCommuteCxX>();
 }
 #endif
