@@ -13,19 +13,19 @@
 using namespace llvm;
 using namespace mlir;
 
-enum Gate { CNOT, PAULIX, H, RX, Z, Y, UNKNOWN };
+enum Gate { CNOT, PAULIX, H, Hadamard, RX, PauliZ, Y, UNKNOWN };
 
 inline Gate parseGateTy(const StringRef &GateTy) {
   if (GateTy == "CNOT")
     return CNOT;
-  if (GateTy == "PAULIX")
+  if (GateTy == "PauliX")
     return PAULIX;
   if (GateTy == "H")
     return H;
   if (GateTy == "RX")
     return RX;
   if (GateTy == "Z")
-    return Z;
+    return PauliZ;
   if (GateTy == "Y")
     return Y;
   return UNKNOWN;
@@ -35,13 +35,13 @@ inline StringRef parseGateTy(const Gate &GateTy) {
   if (GateTy == Gate::CNOT)
     return "CNOT";
   if (GateTy == Gate::PAULIX)
-    return "PAULIX";
+    return "PauliX";
   if (GateTy == Gate::H)
     return "H";
   if (GateTy == Gate::RX)
     return "RX";
-  if (GateTy == Gate::Z)
-    return "Z";
+  if (GateTy == Gate::PauliZ)
+    return "PauliZ";
   if (GateTy == Gate::Y)
     return "Y";
   return "UNKNOWN";

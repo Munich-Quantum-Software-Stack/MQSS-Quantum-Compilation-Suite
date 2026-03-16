@@ -166,14 +166,34 @@ performCommutation(Operation *curr_op,
   return CommmuteCandidates;
 }
 
-static void performCommuteAndSwitch(Operation *curr_op,
-                   std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
-                   Gate FirstGateTy, Gate SecondGateTy, Gate ReplaceGateTy){
+static void performCommuteAndSwitch(
+    Operation *curr_op,
+    std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
+    Gate FirstGateTy, Gate SecondGateTy, Gate ReplaceGateTy) {
 
-    auto CommutedOps = performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy);
-    for(auto &[Op1, Op2] : CommutedOps){
-    createAndEraseGate(Op2, parseGateTy(ReplaceGateTy));
+  auto CommutedOps =
+      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy);
+
+  for (auto &[Op1, Op2] : CommutedOps) {
+    if (OpQuantumView.count(Op2)) {
+      auto Op2TargetQubits = OpQuantumView[Op2].TargetQubits;
+      assert(Op2TargetQubits.size() == 1 &&
+             "Currently, Can only switch single qubit gates!");
+
+      auto target = OpQuantumView[Op2].TargetQubits[0];
+
+      llvm::outs() << "Switch out: " << *Op2 << " target: " << target.base
+                   << " , Ctrl: " << OpQuantumView[Op2].ControlQubits.size()
+                   << "\n";
+
+      #ifdef BUILD_CUDAQ_ENABLED
+      createAndEraseGate(Op2, parseGateTy(ReplaceGateTy));
+      #endif
+      #ifdef BUILD_CATALYST_ENABLED
+      createAndEraseGate(Op2, parseGateTy(ReplaceGateTy), target.base);
+      #endif
     }
+  }
 }
 
 static void performCancellation(

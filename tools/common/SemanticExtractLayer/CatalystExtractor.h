@@ -29,9 +29,6 @@ static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable = 
     {"PauliX", {QubitRole::Target}},
     {"PauliY", {QubitRole::Target}},
     {"PauliZ", {QubitRole::Target}},
-    {"X", {QubitRole::Target}},   // sometimes emitted
-    {"Y", {QubitRole::Target}},
-    {"Z", {QubitRole::Target}},
     {"Hadamard", {QubitRole::Target}},
     {"H", {QubitRole::Target}},
 

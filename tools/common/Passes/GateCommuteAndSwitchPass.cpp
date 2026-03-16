@@ -42,7 +42,7 @@ class CommonSwitchHX
 
     auto FirstGateTy = Gate::H;
     auto SecondGateTy = Gate::PAULIX;
-    auto ReplaceGateTy = Gate::Z;
+    auto ReplaceGateTy = Gate::PauliZ;
 
     for (auto kernel : kernels) {
 
