@@ -1,7 +1,11 @@
 
 
 #include "IR/QuantumOps.h"
+
+
 using namespace mlir;
+
+
 inline catalyst::quantum::CustomOp
 isCatalystQuantumGateOp(mlir::Operation *op) {
 
@@ -11,30 +15,16 @@ isCatalystQuantumGateOp(mlir::Operation *op) {
   return nullptr;
 }
 
-inline bool touchesQubit(mlir::Operation *op) {
-  for (Type t : op->getOperandTypes())
-    if (isa<catalyst::quantum::QubitType>(t))
-      return true;
-
-  for (Type t : op->getResultTypes())
-    if (isa<catalyst::quantum::QubitType>(t))
-      return true;
-
-  return false;
-}
-
-inline void createAndEraseGate(mlir::Operation *SwitchOutGate,
-                               llvm::StringRef NewGateTy, const Value TargetQubit) {
-  mlir::IRRewriter builder(SwitchOutGate->getContext());
-  builder.setInsertionPointAfter(SwitchOutGate);
-
-  auto gate = dyn_cast<catalyst::quantum::CustomOp>(SwitchOutGate);
+inline void createGate(mlir::Operation *SwitchOutGate,
+                               llvm::StringRef NewGateTy,
+                               const Value TargetQubit,
+                               mlir::IRRewriter &builder) {
 
   if (NewGateTy == "PauliZ") {
 
     auto newGate =
         builder.create<catalyst::quantum::CustomOp>(
-            gate.getLoc(),
+            SwitchOutGate->getLoc(),
             /*out_qubits=*/mlir::TypeRange({TargetQubit.getType()}),
             /*out_ctrl_qubits=*/mlir::TypeRange(),
             /*params=*/mlir::ValueRange(),
@@ -44,6 +34,4 @@ inline void createAndEraseGate(mlir::Operation *SwitchOutGate,
             /*in_ctrl_qubits=*/mlir::ValueRange(),
             /*in_ctrl_values=*/mlir::ValueRange());
   }
-
-  builder.eraseOp(SwitchOutGate);
 }

@@ -149,15 +149,3 @@ public:
 private:
   ModuleOp module;
 };
-
-extern std::unique_ptr<CatalystQuantumAnalysis> analysis;
-
-struct CatalystQuantumAnalysisPass
-    : public mlir::PassWrapper<CatalystQuantumAnalysisPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
-
-  void runOnOperation() override {
-    auto module = getOperation();
-    analysis = std::make_unique<CatalystQuantumAnalysis>(module);
-  }
-};

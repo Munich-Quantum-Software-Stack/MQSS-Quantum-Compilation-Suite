@@ -3,7 +3,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "Pass.h"
+#include "PassIncludes.h"
 
 using namespace mlir;
 
@@ -14,6 +14,7 @@ struct CommuteTy {
 public:
   CommuteTy(Operation *Op1, Operation *Op2) : Op1(Op1), Op2(Op2) {}
 };
+
 
 static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
 
@@ -53,22 +54,28 @@ static bool equivalence_check(const std::vector<QubitID> &Op1,
   return true;
 }
 
-static bool sameQubits(tupleVectorsQubitIDs Op1CtrlTarget,
-                       tupleVectorsQubitIDs Op2CtrlTarget) {
+static bool SameQubits(tupleVectorsQubitIDs Gate1CtrlTarget,
+                            tupleVectorsQubitIDs Gate2CtrlTarget,
+                            Comparety Comparekey) {
 
-  auto &[Op1Ctrls, Op1Targets] = Op1CtrlTarget;
-  auto &[Op2Ctrls, Op2Targets] = Op2CtrlTarget;
+  auto &[Gate1Ctrls, Gate1Targets] = Gate1CtrlTarget;
+  auto &[Gate2Ctrls, Gate2Targets] = Gate2CtrlTarget;
 
-  if (!Op1Ctrls.empty() && !Op2Ctrls.empty()) {
-    auto CtrlCheck = equivalence_check(Op1Ctrls, Op2Ctrls);
-    if (!CtrlCheck)
-      return false;
+  if (Comparekey.KeyGate1 == "Control" && Comparekey.KeyGate2 == "Target") {
+
+    return equivalence_check(Gate1Ctrls, Gate2Targets);
   }
+  if (Comparekey.KeyGate1 == "Target" && Comparekey.KeyGate2 == "Control") {
 
-  auto TargetCheck = equivalence_check(Op1Targets, Op2Targets);
-
-  return TargetCheck;
+    return equivalence_check(Gate1Targets, Gate2Ctrls);
+  }
+  if (Comparekey.KeyGate1 == "Target" && Comparekey.KeyGate2 == "Target") {
+    return equivalence_check(Gate1Targets, Gate2Targets);
+  }
+  return (equivalence_check(Gate1Ctrls, Gate2Ctrls) &&
+          equivalence_check(Gate1Targets, Gate2Targets));
 }
+
 
 static bool isContained(QubitID KeyQubit, std::vector<QubitID> QubitList) {
 
@@ -111,15 +118,15 @@ touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
 static std::vector<CommuteTy>
 performCommutation(Operation *curr_op,
                    std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
-                   Gate FirstGateTy, Gate SecondGateTy) {
+                   Gate Gate1Ty, Gate Gate2Ty, Comparety CompareKey) {
 
-  std::vector<CommuteTy> CommmuteCandidates;
-  while (curr_op) {
+ std::vector<CommuteTy> CommmuteCandidates;
+ while (curr_op) {
 
     auto curr_op_qView = OpQuantumView[curr_op];
     // llvm::outs() << "curr op: " << *curr_op << "\n";
     // Only continue with the analysis if current op is a CNOT
-    if (curr_op_qView.GateTy != FirstGateTy) {
+    if (curr_op_qView.GateTy != Gate1Ty) {
       curr_op = curr_op->getNextNode();
       continue;
     }
@@ -131,7 +138,7 @@ performCommutation(Operation *curr_op,
     while (next_op) {
       auto nextOpView = OpQuantumView[next_op];
       // llvm::outs() << "next op: " << *next_op << "\n";
-      if (nextOpView.hasSideEffects && nextOpView.GateTy != SecondGateTy &&
+      if (nextOpView.hasSideEffects && nextOpView.GateTy != Gate2Ty &&
           (touchesAny(next_op, curr_op_qView.ControlQubits, OpQuantumView) ||
            touchesAny(next_op, curr_op_qView.TargetQubits, OpQuantumView))) {
 
@@ -139,11 +146,12 @@ performCommutation(Operation *curr_op,
         break;
       }
 
-      if (nextOpView.GateTy == SecondGateTy) {
+      if (nextOpView.GateTy == Gate2Ty) {
 
-        if (sameQubits(
+        if (SameQubits(
                 {curr_op_qView.ControlQubits, curr_op_qView.TargetQubits},
-                {nextOpView.ControlQubits, nextOpView.TargetQubits})) {
+                {nextOpView.ControlQubits, nextOpView.TargetQubits},
+                CompareKey)) {
           CommuteTy comm{curr_op, next_op};
           CommmuteCandidates.emplace_back(comm);
         }
@@ -169,10 +177,10 @@ performCommutation(Operation *curr_op,
 static void performCommuteAndSwitch(
     Operation *curr_op,
     std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
-    Gate FirstGateTy, Gate SecondGateTy, Gate ReplaceGateTy) {
+    Gate FirstGateTy, Gate SecondGateTy, Gate ReplaceGateTy, Comparety CompareKey) {
 
   auto CommutedOps =
-      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy);
+      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy, CompareKey);
 
   for (auto &[Op1, Op2] : CommutedOps) {
     if (OpQuantumView.count(Op2)) {
@@ -186,12 +194,21 @@ static void performCommuteAndSwitch(
                    << " , Ctrl: " << OpQuantumView[Op2].ControlQubits.size()
                    << "\n";
 
-      #ifdef BUILD_CUDAQ_ENABLED
-      createAndEraseGate(Op2, parseGateTy(ReplaceGateTy));
-      #endif
-      #ifdef BUILD_CATALYST_ENABLED
-      createAndEraseGate(Op2, parseGateTy(ReplaceGateTy), target.base);
-      #endif
+
+      mlir::IRRewriter builder(Op2->getContext());
+      builder.setInsertionPointAfter(Op2);
+
+      // Since gate creation has dialect specific semantics, need to have
+      //  dialect specific APIs to create the gates.
+      //  TODO: Can we do better? Do not like the use of MACROS
+
+#ifdef BUILD_CUDAQ_ENABLED
+      createGate(Op2, parseGateTy(ReplaceGateTy), builder);
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+      createGate(Op2, parseGateTy(ReplaceGateTy), target.base, builder);
+#endif
+      builder.eraseOp(Op2);
     }
   }
 }
@@ -199,7 +216,7 @@ static void performCommuteAndSwitch(
 static void performCancellation(
     Operation *curr_op,
     std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
-    Gate GateToCancel) {
+    Gate GateToCancel, Comparety CompareKey) {
   // Iterate operation-by-operation starting from the first operation
   // in the kernel
   SmallSetVector<Operation *, 16> ToErase;
@@ -235,9 +252,10 @@ static void performCancellation(
 
       if (nextOpView.GateTy == GateToCancel) {
 
-        if (sameQubits(
+        if (SameQubits(
                 {curr_op_qView.ControlQubits, curr_op_qView.TargetQubits},
-                {nextOpView.ControlQubits, nextOpView.TargetQubits})) {
+                {nextOpView.ControlQubits, nextOpView.TargetQubits},
+                CompareKey)) {
           ToErase.insert(curr_op);
           ToErase.insert(next_op);
           next_op = next_op->getNextNode();
@@ -249,7 +267,7 @@ static void performCancellation(
       next_op = next_op->getNextNode();
     }
 
-    curr_op = curr_op->getNextNode();
+    curr_op = next_op;
   }
 
   for (auto *Op : ToErase) {

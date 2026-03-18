@@ -25,7 +25,7 @@ isQuakeQuantumGate(mlir::Operation *op) {
     return {true, "H"};
 
   if (auto x = dyn_cast<quake::ZOp>(op))
-    return {true, "Z"};
+    return {true, "PauliZ"};
 
   if (auto x = dyn_cast<quake::YOp>(op))
     return {true, "Y"};
@@ -33,10 +33,9 @@ isQuakeQuantumGate(mlir::Operation *op) {
   return {false, ""};
 }
 
-inline void createAndEraseGate(mlir::Operation *SwitchOutGate,
-                               llvm::StringRef NewGateTy) {
-  mlir::IRRewriter rewriter(SwitchOutGate->getContext());
-  rewriter.setInsertionPointAfter(SwitchOutGate);
+inline void createGate(mlir::Operation *SwitchOutGate,
+                               llvm::StringRef NewGateTy,
+                               mlir::IRRewriter &builder) {
 
   auto gate = dyn_cast<quake::OperatorInterface>(SwitchOutGate);
 
@@ -44,9 +43,7 @@ inline void createAndEraseGate(mlir::Operation *SwitchOutGate,
 
   if (NewGateTy == "PauliZ") {
     auto newGate =
-        rewriter.create<quake::ZOp>(gate.getLoc(), false, mlir::ValueRange(),
+        builder.create<quake::ZOp>(gate.getLoc(), false, mlir::ValueRange(),
                                     mlir::ValueRange(), gate.getTargets());
   }
-
-  rewriter.eraseOp(SwitchOutGate);
 }

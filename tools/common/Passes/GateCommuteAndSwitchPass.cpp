@@ -4,7 +4,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "include/utils.h"
+#include "include/PassUtils.h"
 
 using namespace mlir;
 using namespace llvm;
@@ -41,15 +41,16 @@ class CommonSwitchHX
     auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::H;
-    auto SecondGateTy = Gate::PAULIX;
+    auto SecondGateTy = Gate::PauliX;
     auto ReplaceGateTy = Gate::PauliZ;
 
+    Comparety CompareKey{"Target", "Target"};
     for (auto kernel : kernels) {
 
       auto ops = kernel.getFunctionBody().getOps().begin();
       auto *curr_op = &*ops;
 
-      performCommuteAndSwitch(curr_op, OpQuantumView, FirstGateTy, SecondGateTy, ReplaceGateTy);
+      performCommuteAndSwitch(curr_op, OpQuantumView, FirstGateTy, SecondGateTy, ReplaceGateTy, CompareKey);
     }
   }
 };

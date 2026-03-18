@@ -5,7 +5,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "include/utils.h"
+#include "include/PassUtils.h"
 
 using namespace mlir;
 using namespace llvm;
@@ -52,12 +52,13 @@ public:
 
     auto kernels = analysis.getDialectInfo().QuantumKernels;
 
+    Comparety CompareKey;
     for (auto kernel : kernels) {
 
       auto ops = kernel.getFunctionBody().getOps().begin();
       auto *curr_op = &*ops;
 
-      performCancellation(curr_op, OpQuantumView, Gate::CNOT);
+      performCancellation(curr_op, OpQuantumView, Gate::CNOT, CompareKey);
    
     }
 

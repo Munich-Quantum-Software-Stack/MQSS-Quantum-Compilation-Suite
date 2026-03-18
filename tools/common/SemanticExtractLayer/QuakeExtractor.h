@@ -142,14 +142,3 @@ private:
   ModuleOp module;
 };
 
-// extern std::unique_ptr<QuakeAnalysis> analysis;
-
-// struct QuakeExtractorAnalysisPass
-//     : public mlir::PassWrapper<QuakeExtractorAnalysisPass,
-//                                mlir::OperationPass<mlir::ModuleOp>> {
-
-//   void runOnOperation() override {
-//     auto module = getOperation();
-//     analysis = std::make_unique<QuakeAnalysis>(module);
-//   }
-// };
