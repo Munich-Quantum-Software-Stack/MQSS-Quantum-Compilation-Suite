@@ -42,8 +42,12 @@ inline void createGate(mlir::Operation *SwitchOutGate,
   quake::OperatorInterface OpInterface;
 
   if (NewGateTy == "PauliZ") {
-    auto newGate =
         builder.create<quake::ZOp>(gate.getLoc(), false, mlir::ValueRange(),
+                                    mlir::ValueRange(), gate.getTargets());
+  }
+  else if (NewGateTy == "PauliX") {
+    auto newGate =
+        builder.create<quake::XOp>(gate.getLoc(), false, mlir::ValueRange(),
                                     mlir::ValueRange(), gate.getTargets());
   }
 }

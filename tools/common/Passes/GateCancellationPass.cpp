@@ -52,6 +52,8 @@ public:
 
     auto kernels = analysis.getDialectInfo().QuantumKernels;
 
+    // Empty CompareKey meaning - both control and target qubit operands
+    // of the gates to be cancelled will be compared
     Comparety CompareKey;
     for (auto kernel : kernels) {
 

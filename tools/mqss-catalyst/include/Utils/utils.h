@@ -20,7 +20,7 @@ inline void createGate(mlir::Operation *SwitchOutGate,
                                const Value TargetQubit,
                                mlir::IRRewriter &builder) {
 
-  if (NewGateTy == "PauliZ") {
+  if (NewGateTy == "PauliZ" || NewGateTy == "PauliX") {
 
     auto newGate =
         builder.create<catalyst::quantum::CustomOp>(
@@ -29,7 +29,7 @@ inline void createGate(mlir::Operation *SwitchOutGate,
             /*out_ctrl_qubits=*/mlir::TypeRange(),
             /*params=*/mlir::ValueRange(),
             /*in_qubits=*/mlir::ValueRange({TargetQubit}),
-            /*gate_name=*/"PauliZ",
+            /*gate_name=*/NewGateTy,
             /*adjoint=*/false,
             /*in_ctrl_qubits=*/mlir::ValueRange(),
             /*in_ctrl_values=*/mlir::ValueRange());
