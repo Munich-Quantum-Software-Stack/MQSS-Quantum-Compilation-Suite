@@ -62,11 +62,9 @@ static bool SameQubits(tupleVectorsQubitIDs Gate1CtrlTarget,
   auto &[Gate2Ctrls, Gate2Targets] = Gate2CtrlTarget;
 
   if (Comparekey.KeyGate1 == "Control" && Comparekey.KeyGate2 == "Target") {
-
     return equivalence_check(Gate1Ctrls, Gate2Targets);
   }
   if (Comparekey.KeyGate1 == "Target" && Comparekey.KeyGate2 == "Control") {
-
     return equivalence_check(Gate1Targets, Gate2Ctrls);
   }
   if (Comparekey.KeyGate1 == "Target" && Comparekey.KeyGate2 == "Target") {

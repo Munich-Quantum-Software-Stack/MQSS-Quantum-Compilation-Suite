@@ -20,8 +20,6 @@ namespace {
  * modifications etc.
  **/
 
-
-
 class CommonCommuteCxRx
     : public PassWrapper<CommonCommuteCxRx, OperationPass<mlir::ModuleOp>> {
 
@@ -148,6 +146,48 @@ class CommonCommuteCxZ : public PassWrapper<CommonCommuteCxZ, OperationPass<mlir
   }
 };
 
+class CommonCommuteRxCx
+    : public PassWrapper<CommonCommuteRxCx, OperationPass<mlir::ModuleOp>> {
+
+    public:
+    MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteRxCx)
+
+  [[nodiscard]] StringRef getArgument() const override {
+      return "CommonCommuteRxCxPass";
+  }
+  [[nodiscard]] StringRef getDescription() const override {
+    return "This pass searches for the gate Op pattern Rx followed by CNOT and commutes them.";
+  }
+
+  void runOnOperation() override {
+#ifdef BUILD_CUDAQ_ENABLED
+    auto &analysis = getAnalysis<QuakeAnalysis>();
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
+#endif
+
+    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
+
+    llvm::outs() << "\n[Applying Pass: CommonCommuteRxCx]\n";
+
+    auto kernels = analysis.getDialectInfo().QuantumKernels;
+
+    auto FirstGateTy = Gate::RX;
+    auto SecondGateTy = Gate::CNOT;
+
+    Comparety CompareKey{"Target", "Target"};
+    for (auto kernel : kernels) {
+
+      auto ops = kernel.getFunctionBody().getOps().begin();
+      auto *curr_op = &*ops;
+
+      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy,
+                         CompareKey);
+    }
+  }
+};
+
 } // namespace
 
 #ifdef BUILD_CUDAQ_ENABLED
@@ -157,9 +197,11 @@ std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteCxRxPass() {
 std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteCxXPass() {
   return std::make_unique<CommonCommuteCxX>();
 }
-
 std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteCxZPass(){
   return std::make_unique<CommonCommuteCxZ>();
+}
+std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteRxCxPass(){
+  return std::make_unique<CommonCommuteRxCx>();
 }
 #endif
 
@@ -174,6 +216,9 @@ std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteCxXPass() {
 
 std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteCxZPass() {
   return std::make_unique<CommonCommuteCxZ>();
+}
+std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteRxCxPass() {
+  return std::make_unique<CommonCommuteRxCx>();
 }
 
 #endif

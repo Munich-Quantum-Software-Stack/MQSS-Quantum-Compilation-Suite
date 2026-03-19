@@ -22,6 +22,11 @@ def CommonCommuteCxZPass : Pass<"CommonCommuteCxZPass"> {
   let constructor = "mqss_catalyst::opt::CommonCommuteCxZPass()";
 }
 
+def CommonCommuteRxCxPass : Pass<"CommonCommuteRxCxPass"> {
+  let summary = "This pass searches for the gate Op pattern Rx followed by CNOT and commutes them.";
+  let constructor = "mqss_catalyst::opt::CommonCommuteRxCxPass()";
+}
+
 def CommonSwitchHXPass : Pass<"CommonSwitchHXPass"> {
   let summary = "This pass searches for the gate Op pattern Hadamard followed by "
                 "X and switched it to Z followed by Hadamard";

@@ -15,7 +15,8 @@
 
 enum class QubitRole {
     Control,
-    Target
+    Target,
+    Rotation
 };
 
 static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable = {
@@ -33,9 +34,9 @@ static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable = 
     {"H", {QubitRole::Target}},
 
     // Rotations
-    {"RX", {QubitRole::Target}},
-    {"RY", {QubitRole::Target}},
-    {"RZ", {QubitRole::Target}},
+    {"RX", {QubitRole::Rotation, QubitRole::Target}},
+    {"RY", {QubitRole::Rotation,QubitRole::Target}},
+    {"RZ", {QubitRole::Rotation,QubitRole::Target}},
 
     // Two-qubit symmetric gates
     {"SWAP", {QubitRole::Target, QubitRole::Target}}
@@ -101,9 +102,9 @@ public:
 
             std::vector<QubitRole> OpRoles = getGateOpRoles(g.getGateName()); // Now we can separate out the Qubits into Ctrl/Target
             assert(!OpRoles.empty() && "Found a gate Op with empty Operand Roles(Control/Target)");
-            assert((OpRoles.size() == g.getQubitOperands().size()) && "Operand Roles not equals No. of Qubit Operands");
+            assert((OpRoles.size() == g.getOperands().size()) && "Operand Roles not equals No. of Qubit Operands");
 
-            for (unsigned i = 0; i < g.getQubitOperands().size(); i++) {
+            for (unsigned i = 0; i < g.getOperands().size(); i++) {
               QubitID ID;
               QubitRole role = OpRoles[i];
               

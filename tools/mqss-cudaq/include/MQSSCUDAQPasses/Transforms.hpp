@@ -58,6 +58,7 @@ std::unique_ptr<mlir::Pass> CommonCxCancellationPass();
 std::unique_ptr<mlir::Pass> CommonCommuteCxRxPass();
 std::unique_ptr<mlir::Pass> CommonCommuteCxXPass();
 std::unique_ptr<mlir::Pass> CommonCommuteCxZPass();
+std::unique_ptr<mlir::Pass> CommonCommuteRxCxPass();
 
 // Gate Pattern Switch passes
 std::unique_ptr<mlir::Pass> CommonSwitchHXPass();

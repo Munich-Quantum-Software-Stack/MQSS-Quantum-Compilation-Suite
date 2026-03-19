@@ -18,7 +18,7 @@ class CommonSwitchHX
     MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHX)
 
   [[nodiscard]] StringRef getArgument() const override {
-      return "CommonSwitchHX";
+      return "CommonSwitchHXPass";
   }
   [[nodiscard]] StringRef getDescription() const override {
       return "This pass searches for the gate Op pattern Hadamard followed by "
