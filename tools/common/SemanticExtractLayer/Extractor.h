@@ -66,10 +66,8 @@ struct QuantumOpView {
 };
 
 struct DialectInfo {
-
-  SmallVector<func::FuncOp, 16> QuantumKernels;
   std::vector<Operation *> GateOps;
-  std::unordered_map<Operation *, QuantumOpView> OpQuantumView;
+  std::map<Operation *, QuantumOpView> OpQuantumView;
 };
 
 using tupleVectorsQubitIDs =
@@ -79,18 +77,19 @@ class MyModuleAnalysis {
 
 public:
   virtual ~MyModuleAnalysis() = default;
-  virtual std::vector<Operation *>
-  getGateOps() = 0; // Pure virtual functions that need to be implemented by
-                    // derived classes
 
-  virtual void fetchQuantumKernels() = 0;
+  virtual SmallVector<func::FuncOp, 16> fetchQuantumKernels() = 0;
 
-  virtual void gatherOpInfo() = 0;
+  virtual void gatherOpInfo() = 0; // Pure virtual functions that need to be implemented by
+                                  // derived classes
 
   virtual mlir::LogicalResult verifyModule() = 0;
 
-  DialectInfo getDialectInfo() { return Info; }
+  llvm::DenseMap<func::FuncOp, DialectInfo> getKernelDialectInfo(){
+    return KernelDialectInfo;
+  }
 
 protected:
   DialectInfo Info;
+  llvm::DenseMap<func::FuncOp, DialectInfo> KernelDialectInfo;
 };

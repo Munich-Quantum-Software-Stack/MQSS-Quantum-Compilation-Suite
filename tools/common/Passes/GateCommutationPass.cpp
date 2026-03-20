@@ -42,23 +42,16 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
-
     llvm::outs() << "\n[Applying Pass: CommonCommuteCxRx]\n";
-
-    auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::CNOT;
     auto SecondGateTy = Gate::RX;
 
     Comparety CompareKey{"Target", "Target"};
-    for (auto kernel : kernels) {
 
-      auto ops = kernel.getFunctionBody().getOps().begin();
-      auto *curr_op = &*ops;
-
-      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy,
-                         CompareKey);
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
+    for(auto &[kernel, Info] : KernelDialectInfo){
+      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy, CompareKey);
     }
 
     if (failed(analysis.verifyModule())) {
@@ -91,22 +84,16 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
-
     llvm::outs() << "\n[Applying Pass: CommonCommuteCxX]\n";
-
-    auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::CNOT;
     auto SecondGateTy = Gate::PauliX;
 
     Comparety CompareKey{"Target", "Target"};
-    for (auto kernel : kernels) {
 
-      auto ops = kernel.getFunctionBody().getOps().begin();
-      auto *curr_op = &*ops;
-
-      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy,
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
+    for (auto &[kernel, Info] : KernelDialectInfo) {
+      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
                          CompareKey);
     }
     if (failed(analysis.verifyModule())) {
@@ -139,22 +126,16 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
-
     llvm::outs() << "\n[Applying Pass: CommonCommuteXCx]\n";
-
-    auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::PauliX;
     auto SecondGateTy = Gate::CNOT;
 
     Comparety CompareKey{"Target", "Target"};
-    for (auto kernel : kernels) {
-
-      auto ops = kernel.getFunctionBody().getOps().begin();
-      auto *curr_op = &*ops;
-
-      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy,
+    
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
+    for (auto &[kernel, Info] : KernelDialectInfo) {
+      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
                          CompareKey);
     }
     if (failed(analysis.verifyModule())) {
@@ -187,25 +168,18 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
-
     llvm::outs() << "\n[Applying Pass: CommonCommuteCxZ]\n";
-
-    auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::CNOT;
     auto SecondGateTy = Gate::PauliZ;
 
     // Compare the Control Qubit of Gate1 with Target Qubit of Gate2.
-    Comparety CompareKeys{"Control", "Target"};
+    Comparety CompareKey{"Control", "Target"};
 
-    for (auto kernel : kernels) {
-
-      auto ops = kernel.getFunctionBody().getOps().begin();
-      auto *curr_op = &*ops;
-
-      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy,
-                         CompareKeys);
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
+    for (auto &[kernel, Info] : KernelDialectInfo) {
+      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
+                         CompareKey);
     }
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
@@ -237,26 +211,20 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
-
     llvm::outs() << "\n[Applying Pass: CommonCommuteZCx]\n";
-
-    auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::PauliZ;
     auto SecondGateTy = Gate::CNOT;
 
     // Compare the Control Qubit of Gate1 with Target Qubit of Gate2.
-    Comparety CompareKeys{"Target", "Control"};
+    Comparety CompareKey{"Target", "Control"};
 
-    for (auto kernel : kernels) {
-
-      auto ops = kernel.getFunctionBody().getOps().begin();
-      auto *curr_op = &*ops;
-
-      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy,
-                         CompareKeys);
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
+    for (auto &[kernel, Info] : KernelDialectInfo) {
+      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
+                         CompareKey);
     }
+
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
@@ -286,22 +254,16 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
-
     llvm::outs() << "\n[Applying Pass: CommonCommuteRxCx]\n";
-
-    auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::RX;
     auto SecondGateTy = Gate::CNOT;
 
     Comparety CompareKey{"Target", "Target"};
-    for (auto kernel : kernels) {
 
-      auto ops = kernel.getFunctionBody().getOps().begin();
-      auto *curr_op = &*ops;
-
-      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy,
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
+    for (auto &[kernel, Info] : KernelDialectInfo) {
+      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
                          CompareKey);
     }
 

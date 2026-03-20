@@ -18,7 +18,7 @@ public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCxCancellation)
 
   [[nodiscard]] StringRef getArgument() const override {
-    return "CommonCxCancellation";
+    return "CommonCxCancellationPass";
   }
   [[nodiscard]] StringRef getDescription() const override {
     return "This pass removes the pattern CNot, CNot if both gates operates on "
@@ -46,22 +46,16 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
-
     llvm::outs() << "\n[Applying Pass: CommonCxCancellation]\n";
 
-    auto kernels = analysis.getDialectInfo().QuantumKernels;
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
 
     // Empty CompareKey meaning - both control and target qubit operands
     // of the gates to be cancelled will be compared
     Comparety CompareKey;
-    for (auto kernel : kernels) {
 
-      auto ops = kernel.getFunctionBody().getOps().begin();
-      auto *curr_op = &*ops;
-
-      performCancellation(curr_op, OpQuantumView, Gate::CNOT, CompareKey);
-   
+    for(auto &[kernel, Info] : KernelDialectInfo){
+      performCancellation(Info.OpQuantumView, Gate::CNOT, CompareKey);
     }
 
     if (failed(analysis.verifyModule())) {

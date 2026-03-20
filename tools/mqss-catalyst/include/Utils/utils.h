@@ -15,6 +15,18 @@ isCatalystQuantumGateOp(mlir::Operation *op) {
   return nullptr;
 }
 
+inline bool hasQuantumEffect(Operation *op) {
+    for (auto type : op->getOperandTypes()) {
+        if (isa<catalyst::quantum::QubitType>(type))
+            return true;
+    }
+    for (auto type : op->getResultTypes()) {
+        if (isa<catalyst::quantum::QubitType>(type))
+            return true;
+    }
+    return false;
+}
+
 inline void createGate(mlir::Operation *SwitchOutGate,
                                llvm::StringRef NewGateTy,
                                const Value TargetQubit,

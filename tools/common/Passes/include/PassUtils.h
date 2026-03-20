@@ -8,11 +8,38 @@
 using namespace mlir;
 
 struct CommuteTy {
-  Operation *Op1;
-  Operation *Op2;
+  Operation *Op1=nullptr;
+  Operation *Op2=nullptr;
+};
 
-public:
-  CommuteTy(Operation *Op1, Operation *Op2) : Op1(Op1), Op2(Op2) {}
+struct CommuteInfoTy{
+
+  public:
+
+  void gather(Operation *Op1, Operation *Op2){
+    CommuteTy Commute{Op1,Op2};
+    CommuteCandidates.push_back(Commute);
+  }
+  
+  bool isScheduled(Operation *KeyOp){
+    if(CommuteCandidates.empty())
+      return false;
+
+    for(auto Cand : CommuteCandidates){
+        if(Cand.Op1 == KeyOp || Cand.Op2 == KeyOp)
+          return true;
+    }
+    return false;
+  }
+
+  std::vector<CommuteTy> getCommutationCandidates(){
+    return CommuteCandidates;
+  }
+
+  private:
+  std::vector<CommuteTy> CommuteCandidates;
+
+
 };
 
 
@@ -86,7 +113,7 @@ static bool isContained(QubitID KeyQubit, std::vector<QubitID> QubitList) {
 
 static bool
 touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
-           std::unordered_map<Operation *, QuantumOpView> OpQuantumView) {
+           std::map<Operation *, QuantumOpView> OpQuantumView) {
 
   for (auto Op1Qubit : Op1QubitIDs) {
     auto Op1Qubitbase = Op1Qubit.base;
@@ -114,31 +141,32 @@ touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
 }
 
 static std::vector<CommuteTy>
-performCommutation(Operation *curr_op,
-                   std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
+performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
                    Gate Gate1Ty, Gate Gate2Ty, Comparety CompareKey) {
 
- std::vector<CommuteTy> CommmuteCandidates;
- while (curr_op) {
+  CommuteInfoTy CommutationInfo;
+  for (auto &[FirstGateOp, FirstGateOpQView] : OpQuantumView) {
+    auto FirstGateTy = FirstGateOpQView.GateTy;
 
-    auto curr_op_qView = OpQuantumView[curr_op];
-    // llvm::outs() << "curr op: " << *curr_op << "\n";
-    // Only continue with the analysis if current op is a CNOT
-    if (curr_op_qView.GateTy != Gate1Ty) {
-      curr_op = curr_op->getNextNode();
+    if (!FirstGateOpQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
       continue;
-    }
 
-    auto *next_op = curr_op->getNextNode();
-    if (!next_op)
-      break;
+    if (FirstGateTy != Gate1Ty)
+      continue;
 
-    while (next_op) {
-      auto nextOpView = OpQuantumView[next_op];
+    if (CommutationInfo.isScheduled(FirstGateOp))
+      continue;
+
+    auto *NextOp = FirstGateOp->getNextNode();
+    if (!NextOp)
+      continue;
+
+    while (NextOp) {
+      auto nextOpView = OpQuantumView[NextOp];
       // llvm::outs() << "next op: " << *next_op << "\n";
       if (nextOpView.hasSideEffects && nextOpView.GateTy != Gate2Ty &&
-          (touchesAny(next_op, curr_op_qView.ControlQubits, OpQuantumView) ||
-           touchesAny(next_op, curr_op_qView.TargetQubits, OpQuantumView))) {
+          (touchesAny(NextOp, FirstGateOpQView.ControlQubits, OpQuantumView) ||
+           touchesAny(NextOp, FirstGateOpQView.TargetQubits, OpQuantumView))) {
 
         // llvm::outs().indent(4) << "Found intervening ops!\n";
         break;
@@ -147,38 +175,34 @@ performCommutation(Operation *curr_op,
       if (nextOpView.GateTy == Gate2Ty) {
 
         if (SameQubits(
-                {curr_op_qView.ControlQubits, curr_op_qView.TargetQubits},
+                {FirstGateOpQView.ControlQubits, FirstGateOpQView.TargetQubits},
                 {nextOpView.ControlQubits, nextOpView.TargetQubits},
                 CompareKey)) {
-          CommuteTy comm{curr_op, next_op};
-          CommmuteCandidates.emplace_back(comm);
+          CommutationInfo.gather(FirstGateOp, NextOp);
         }
         // llvm::outs().indent(4) << "Not same Qubits!\n";
         break;
       }
 
-      next_op = next_op->getNextNode();
+      NextOp = NextOp->getNextNode();
     }
-
-    curr_op = curr_op->getNextNode();
   }
 
-  if (!CommmuteCandidates.empty()){
-    Commute(CommmuteCandidates);
-  }
-  else
+  auto CommuteCandidates = CommutationInfo.getCommutationCandidates();
+  if (!CommuteCandidates.empty()) {
+    Commute(CommuteCandidates);
+  } else
     llvm::outs() << "No Commutation Candidates!!\n";
 
-  return CommmuteCandidates;
+  return CommuteCandidates;
 }
 
 static void performCommuteAndSwitch(
-    Operation *curr_op,
-    std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
+    std::map<Operation *, QuantumOpView> OpQuantumView,
     Gate FirstGateTy, Gate SecondGateTy, Gate ReplaceGateTy, Comparety CompareKey) {
 
   auto CommutedOps =
-      performCommutation(curr_op, OpQuantumView, FirstGateTy, SecondGateTy, CompareKey);
+      performCommutation(OpQuantumView, FirstGateTy, SecondGateTy, CompareKey);
 
   for (auto &[Op1, Op2] : CommutedOps) {
     if (OpQuantumView.count(Op2)) {
@@ -211,65 +235,58 @@ static void performCommuteAndSwitch(
   }
 }
 
-static void performCancellation(
-    Operation *curr_op,
-    std::unordered_map<Operation *, QuantumOpView> OpQuantumView,
-    Gate GateToCancel, Comparety CompareKey) {
-  // Iterate operation-by-operation starting from the first operation
-  // in the kernel
+
+static void
+performCancellation(std::map<Operation*, QuantumOpView> OpQuantumView,
+                    Gate GateToCancel, Comparety CompareKey) {
+
   SmallSetVector<Operation *, 16> ToErase;
-  while (curr_op) {
+  for (auto &[FirstGateOp, FirstGateQView] : OpQuantumView) {
 
-    auto curr_op_qView = OpQuantumView[curr_op];
-    // Only continue with the analysis if current op is a CNOT
-    if (curr_op_qView.GateTy != GateToCancel) {
-      curr_op = curr_op->getNextNode();
+    auto FirstGateTy = FirstGateQView.GateTy;
+    if (!FirstGateQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
       continue;
-    }
 
-    auto *next_op = curr_op->getNextNode();
-    if (!next_op)
-      break;
+    if (FirstGateTy != GateToCancel)
+      continue;
 
-    // Now, iterate operation-by-operation:
-    // 1. If an intervening Non-CNOT operation, with side-effects is found:
-    // abandon
-    // 2. If a CNOT is found, check if the two CNOTs operate on the same
-    // Qubits
-    //    - If yes, the two CNOTs can be erased
-    //    - Otherwise, abandon
-    while (next_op) {
+    if(ToErase.count(FirstGateOp))
+      continue;
 
-      auto nextOpView = OpQuantumView[next_op];
+    auto *NextOp = FirstGateOp->getNextNode();
+    if (!NextOp)
+      continue;
+
+    while (NextOp) {
+
+      auto nextOpView = OpQuantumView[NextOp];
       // TODO: Should the "touchesAny" check be there?
       if (nextOpView.hasSideEffects && (nextOpView.GateTy != GateToCancel) &&
-          (touchesAny(next_op, curr_op_qView.ControlQubits, OpQuantumView) ||
-           touchesAny(next_op, curr_op_qView.TargetQubits, OpQuantumView))) {
+          (touchesAny(NextOp, FirstGateQView.ControlQubits, OpQuantumView) ||
+           touchesAny(NextOp, FirstGateQView.TargetQubits, OpQuantumView))) {
         break;
       }
 
       if (nextOpView.GateTy == GateToCancel) {
 
         if (SameQubits(
-                {curr_op_qView.ControlQubits, curr_op_qView.TargetQubits},
+                {FirstGateQView.ControlQubits, FirstGateQView.TargetQubits},
                 {nextOpView.ControlQubits, nextOpView.TargetQubits},
                 CompareKey)) {
-          ToErase.insert(curr_op);
-          ToErase.insert(next_op);
-          next_op = next_op->getNextNode();
+          ToErase.insert(FirstGateOp);
+          ToErase.insert(NextOp);
+          NextOp = NextOp->getNextNode();
         }
 
         break;
       }
 
-      next_op = next_op->getNextNode();
+      NextOp = NextOp->getNextNode();
     }
-
-    curr_op = next_op;
   }
 
   for (auto *Op : ToErase) {
-    llvm::outs() << "-->Erasing: " << *Op << "\n";
+    llvm::outs() << "-->To Erase: " << *Op << "\n";
     cancel(Op);
   }
 }

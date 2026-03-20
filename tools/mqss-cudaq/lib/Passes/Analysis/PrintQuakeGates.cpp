@@ -62,20 +62,21 @@ public:
   }
 
   void runOnOperation() override {
-  
+
     auto circuit = getOperation();
     auto &analysis = getAnalysis<QuakeAnalysis>();
 
-
     llvm::outs() << "\n[Print-quake-gates-pass:]\n";
-    for(auto *op : analysis.getGateOps()){
-        op->dump();
+    auto DialectInfo = analysis.getKernelDialectInfo();
+    for (auto &[Kernel, Info] : DialectInfo) {
+      for (auto &[gateop, View] : Info.OpQuantumView) {
+        if (View.hasSideEffects && View.GateTy != Gate::UNKNOWN)
+          llvm::outs() << "GateOp: " << *gateop << "\n";
+      }
     }
-
     // Since this is an "Analysis" pass, preserve the module analysis
     // Therefore, later passes will reuse the cached module analyses.
     markAnalysesPreserved<MyModuleAnalysis>();
-
   }
 
 private:

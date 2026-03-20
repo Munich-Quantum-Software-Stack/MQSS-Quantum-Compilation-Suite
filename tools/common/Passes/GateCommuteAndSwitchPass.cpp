@@ -1,10 +1,10 @@
 
 
+#include "include/PassUtils.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "include/PassUtils.h"
 
 using namespace mlir;
 using namespace llvm;
@@ -14,16 +14,16 @@ namespace {
 class CommonSwitchHX
     : public PassWrapper<CommonSwitchHX, OperationPass<mlir::ModuleOp>> {
 
-    public:
-    MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHX)
+public:
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHX)
 
   [[nodiscard]] StringRef getArgument() const override {
-      return "CommonSwitchHXPass";
+    return "CommonSwitchHXPass";
   }
   [[nodiscard]] StringRef getDescription() const override {
-      return "This pass searches for the gate Op pattern - Hadamard followed by "
-             "PauliX and switches it to PauliZ followed by "
-             "Hadamard";
+    return "This pass searches for the gate Op pattern - Hadamard followed by "
+           "PauliX and switches it to PauliZ followed by "
+           "Hadamard";
   }
 
   void runOnOperation() override {
@@ -34,24 +34,20 @@ class CommonSwitchHX
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
-
     llvm::outs() << "\n[Applying Pass: CommonSwitchHX]\n";
-
-    auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::H;
     auto SecondGateTy = Gate::PauliX;
     auto ReplaceGateTy = Gate::PauliZ;
 
     Comparety CompareKey{"Target", "Target"};
-    for (auto kernel : kernels) {
 
-      auto ops = kernel.getFunctionBody().getOps().begin();
-      auto *curr_op = &*ops;
-
-      performCommuteAndSwitch(curr_op, OpQuantumView, FirstGateTy, SecondGateTy, ReplaceGateTy, CompareKey);
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
+    for (auto &[kernel, Info] : KernelDialectInfo) {
+      performCommuteAndSwitch(Info.OpQuantumView, FirstGateTy, SecondGateTy,
+                              ReplaceGateTy, CompareKey);
     }
+
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
@@ -62,16 +58,16 @@ class CommonSwitchHX
 class CommonSwitchHZ
     : public PassWrapper<CommonSwitchHZ, OperationPass<mlir::ModuleOp>> {
 
-    public:
-    MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHZ)
+public:
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHZ)
 
   [[nodiscard]] StringRef getArgument() const override {
-      return "CommonSwitchHZPass";
+    return "CommonSwitchHZPass";
   }
   [[nodiscard]] StringRef getDescription() const override {
-      return "This pass searches for the gate Op pattern - Hadamard followed by "
-             "PauliZ and switches it to PauliX followed by "
-             "Hadamard";
+    return "This pass searches for the gate Op pattern - Hadamard followed by "
+           "PauliZ and switches it to PauliX followed by "
+           "Hadamard";
   }
 
   void runOnOperation() override {
@@ -82,23 +78,18 @@ class CommonSwitchHZ
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    auto OpQuantumView = analysis.getDialectInfo().OpQuantumView;
-
     llvm::outs() << "\n[Applying Pass: CommonSwitchHZ]\n";
-
-    auto kernels = analysis.getDialectInfo().QuantumKernels;
 
     auto FirstGateTy = Gate::H;
     auto SecondGateTy = Gate::PauliZ;
     auto ReplaceGateTy = Gate::PauliX;
 
     Comparety CompareKey{"Target", "Target"};
-    for (auto kernel : kernels) {
-
-      auto ops = kernel.getFunctionBody().getOps().begin();
-      auto *curr_op = &*ops;
-
-      performCommuteAndSwitch(curr_op, OpQuantumView, FirstGateTy, SecondGateTy, ReplaceGateTy, CompareKey);
+    
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
+    for (auto &[kernel, Info] : KernelDialectInfo) {
+      performCommuteAndSwitch(Info.OpQuantumView, FirstGateTy, SecondGateTy,
+                              ReplaceGateTy, CompareKey);
     }
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"

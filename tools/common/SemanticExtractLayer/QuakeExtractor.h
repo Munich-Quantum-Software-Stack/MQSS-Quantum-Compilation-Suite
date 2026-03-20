@@ -21,24 +21,24 @@ class QuakeAnalysis : public MyModuleAnalysis {
 
 public:
   QuakeAnalysis(ModuleOp module) : module(module) {
-    fetchQuantumKernels();
     gatherOpInfo();
   }
 
-  void fetchQuantumKernels() override {
+  SmallVector<func::FuncOp, 16> fetchQuantumKernels() override {
 
+    SmallVector<func::FuncOp, 16> QuantumKernels;
     auto walkResult = module.walk([&](Operation *op) {
       // Check if it is a quantum kernel
       // TODO (Akshay): Check here for catalyst kernel?
       if (auto funcOp = dyn_cast<func::FuncOp>(op)) {
 
         if (funcOp->hasAttr(cudaq::entryPointAttrName)) {
-          Info.QuantumKernels.push_back(funcOp);
+          QuantumKernels.push_back(funcOp);
           return WalkResult::advance();
         }
         for (auto arg : funcOp.getArguments()) {
           if (isa<quake::RefType, quake::VeqType>(arg.getType())) {
-            Info.QuantumKernels.push_back(funcOp);
+            QuantumKernels.push_back(funcOp);
             return WalkResult::advance();
           }
         }
@@ -55,20 +55,24 @@ public:
       return WalkResult::advance();
     });
 
+    return QuantumKernels;
     //   return std::make_tuple(Info.QuantumKernels, walkResult);
   }
 
   // Gather Information (QuantumView) about every operation
   void gatherOpInfo() override {
 
-    for (auto kernel : Info.QuantumKernels) {
+    auto QuantumKernels = fetchQuantumKernels();
+
+    for (auto kernel : QuantumKernels) {
 
       kernel.getBody().walk([&](Operation *Op) {
-        QuantumOpView OpView;
-        if (!mlir::isMemoryEffectFree(Op))
-          OpView.hasSideEffects = true;
 
         if (Op->getDialect()->getNamespace() == "quake") {
+          QuantumOpView OpView;
+          if (!mlir::isMemoryEffectFree(Op))
+            OpView.hasSideEffects = true;
+
           if (auto gate = dyn_cast<quake::OperatorInterface>(Op)) {
             // OpView.InputQubits = gate.getControls();
             for (auto t : gate.getControls()) {
@@ -108,28 +112,11 @@ public:
             ID.index = extract_refop.getConstantIndex();
             OpView.TargetQubits.push_back(ID);
           }
+          Info.OpQuantumView[Op] = OpView;
         }
-        Info.OpQuantumView[Op] = OpView;
+        
       });
-    }
-  }
-
-  std::vector<Operation *> getGateOps() override {
-
-    auto QuantumKernels = Info.QuantumKernels;
-    if (QuantumKernels.empty()) {
-      llvm::outs() << "Empty kernels\n";
-      return {};
-    }
-
-    for (auto kernel : Info.QuantumKernels) {
-      kernel->walk([&](Operation *Op) {
-        if (Op->getDialect()->getNamespace() == "quake") {
-          auto [isQGateOp, GateTy] = isQuakeQuantumGate(Op);
-          if (isQGateOp)
-            Info.GateOps.push_back(Op);
-        }
-      });
+      KernelDialectInfo[kernel] = Info;
     }
   }
 
