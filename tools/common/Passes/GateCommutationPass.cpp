@@ -11,6 +11,55 @@ using namespace llvm;
 
 namespace {
 
+enum class PassMode {
+    CommuteCxRx,
+    CommuteCxX,
+    CommuteXCx,
+    CommuteCxZ,
+    CommuteZCx,
+    CommuteRxCx,
+    NA
+};
+
+struct SharedPassLogic{
+
+  void run(llvm::DenseMap<func::FuncOp, DialectInfo> KernelDialectInfo,
+           PassMode Mode) {
+
+    PassInfoty PassInfo;
+    if (Mode == PassMode::CommuteCxRx) {
+      PassInfo.FirstGateTy = Gate::CNOT;
+      PassInfo.SecondGateTy = Gate::RX;
+      PassInfo.CompareKey = {"Target", "Target"};
+    }
+    else if (Mode == PassMode::CommuteCxX) {
+      PassInfo.FirstGateTy = Gate::CNOT;
+      PassInfo.SecondGateTy = Gate::PauliX;
+      PassInfo.CompareKey = {"Target", "Target"};
+    } else if (Mode == PassMode::CommuteXCx) {
+      PassInfo.FirstGateTy = Gate::PauliX;
+      PassInfo.SecondGateTy = Gate::CNOT;
+      PassInfo.CompareKey = {"Target", "Target"};
+    } else if (Mode == PassMode::CommuteCxZ) {
+      PassInfo.FirstGateTy = Gate::CNOT;
+      PassInfo.SecondGateTy = Gate::PauliZ;
+      PassInfo.CompareKey = {"Control", "Target"};
+    } else if (Mode == PassMode::CommuteZCx) {
+      PassInfo.FirstGateTy = Gate::PauliZ;
+      PassInfo.SecondGateTy = Gate::CNOT;
+      PassInfo.CompareKey = {"Target", "Control"};
+    }
+    else if (Mode == PassMode::CommuteRxCx) {
+      PassInfo.FirstGateTy = Gate::RX;
+      PassInfo.SecondGateTy = Gate::CNOT;
+      PassInfo.CompareKey = {"Target", "Target"};
+    }
+    for (auto &[kernel, Info] : KernelDialectInfo) {
+      performCommutation(Info.OpQuantumView, PassInfo);
+    }
+  }
+};
+
 /**
  * @brief Commutes two quantum operations if they match a specific pattern.
  *
@@ -44,15 +93,8 @@ public:
 
     llvm::outs() << "\n[Applying Pass: CommonCommuteCxRx]\n";
 
-    auto FirstGateTy = Gate::CNOT;
-    auto SecondGateTy = Gate::RX;
-
-    Comparety CompareKey{"Target", "Target"};
-
-    auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    for(auto &[kernel, Info] : KernelDialectInfo){
-      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy, CompareKey);
-    }
+    SharedPassLogic PassLogic;
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxRx);
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
@@ -86,16 +128,9 @@ public:
 
     llvm::outs() << "\n[Applying Pass: CommonCommuteCxX]\n";
 
-    auto FirstGateTy = Gate::CNOT;
-    auto SecondGateTy = Gate::PauliX;
+    SharedPassLogic PassLogic;
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxX);
 
-    Comparety CompareKey{"Target", "Target"};
-
-    auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    for (auto &[kernel, Info] : KernelDialectInfo) {
-      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
-                         CompareKey);
-    }
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
@@ -127,17 +162,10 @@ public:
 #endif
 
     llvm::outs() << "\n[Applying Pass: CommonCommuteXCx]\n";
-
-    auto FirstGateTy = Gate::PauliX;
-    auto SecondGateTy = Gate::CNOT;
-
-    Comparety CompareKey{"Target", "Target"};
     
-    auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    for (auto &[kernel, Info] : KernelDialectInfo) {
-      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
-                         CompareKey);
-    }
+    SharedPassLogic PassLogic;
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteXCx);
+
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
@@ -170,17 +198,8 @@ public:
 
     llvm::outs() << "\n[Applying Pass: CommonCommuteCxZ]\n";
 
-    auto FirstGateTy = Gate::CNOT;
-    auto SecondGateTy = Gate::PauliZ;
-
-    // Compare the Control Qubit of Gate1 with Target Qubit of Gate2.
-    Comparety CompareKey{"Control", "Target"};
-
-    auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    for (auto &[kernel, Info] : KernelDialectInfo) {
-      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
-                         CompareKey);
-    }
+    SharedPassLogic PassLogic;
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxZ);
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
@@ -213,17 +232,8 @@ public:
 
     llvm::outs() << "\n[Applying Pass: CommonCommuteZCx]\n";
 
-    auto FirstGateTy = Gate::PauliZ;
-    auto SecondGateTy = Gate::CNOT;
-
-    // Compare the Control Qubit of Gate1 with Target Qubit of Gate2.
-    Comparety CompareKey{"Target", "Control"};
-
-    auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    for (auto &[kernel, Info] : KernelDialectInfo) {
-      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
-                         CompareKey);
-    }
+    SharedPassLogic PassLogic;
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteZCx);
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
@@ -256,16 +266,8 @@ public:
 
     llvm::outs() << "\n[Applying Pass: CommonCommuteRxCx]\n";
 
-    auto FirstGateTy = Gate::RX;
-    auto SecondGateTy = Gate::CNOT;
-
-    Comparety CompareKey{"Target", "Target"};
-
-    auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    for (auto &[kernel, Info] : KernelDialectInfo) {
-      performCommutation(Info.OpQuantumView, FirstGateTy, SecondGateTy,
-                         CompareKey);
-    }
+    SharedPassLogic PassLogic;
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteRxCx);
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"

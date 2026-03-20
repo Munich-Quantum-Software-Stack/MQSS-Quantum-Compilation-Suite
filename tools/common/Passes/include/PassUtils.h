@@ -7,6 +7,16 @@
 
 using namespace mlir;
 
+
+struct PassInfoty{
+
+   Gate FirstGateTy = Gate::UNKNOWN;
+   Gate SecondGateTy = Gate::UNKNOWN;
+   Gate ReplaceGateTy = Gate::UNKNOWN;
+   Comparety CompareKey;
+
+};
+
 struct CommuteTy {
   Operation *Op1=nullptr;
   Operation *Op2=nullptr;
@@ -38,8 +48,6 @@ struct CommuteInfoTy{
 
   private:
   std::vector<CommuteTy> CommuteCandidates;
-
-
 };
 
 
@@ -142,7 +150,11 @@ touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
 
 static std::vector<CommuteTy>
 performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
-                   Gate Gate1Ty, Gate Gate2Ty, Comparety CompareKey) {
+                   PassInfoty PassInfo) {
+
+  auto Gate1Ty=PassInfo.FirstGateTy;
+  auto Gate2Ty = PassInfo.SecondGateTy;
+  auto CompareKey= PassInfo.CompareKey;
 
   CommuteInfoTy CommutationInfo;
   for (auto &[FirstGateOp, FirstGateOpQView] : OpQuantumView) {
@@ -163,7 +175,7 @@ performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
 
     while (NextOp) {
       auto nextOpView = OpQuantumView[NextOp];
-      // llvm::outs() << "next op: " << *next_op << "\n";
+      // llvm::outs() << "next op: " << *NextOp << "\n";
       if (nextOpView.hasSideEffects && nextOpView.GateTy != Gate2Ty &&
           (touchesAny(NextOp, FirstGateOpQView.ControlQubits, OpQuantumView) ||
            touchesAny(NextOp, FirstGateOpQView.TargetQubits, OpQuantumView))) {
@@ -197,12 +209,12 @@ performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
   return CommuteCandidates;
 }
 
-static void performCommuteAndSwitch(
-    std::map<Operation *, QuantumOpView> OpQuantumView,
-    Gate FirstGateTy, Gate SecondGateTy, Gate ReplaceGateTy, Comparety CompareKey) {
+static void
+performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
+                        PassInfoty PassInfo) {
 
   auto CommutedOps =
-      performCommutation(OpQuantumView, FirstGateTy, SecondGateTy, CompareKey);
+      performCommutation(OpQuantumView, PassInfo);
 
   for (auto &[Op1, Op2] : CommutedOps) {
     if (OpQuantumView.count(Op2)) {
@@ -225,16 +237,15 @@ static void performCommuteAndSwitch(
       //  TODO: Can we do better? Do not like the use of MACROS
 
 #ifdef BUILD_CUDAQ_ENABLED
-      createGate(Op2, parseGateTy(ReplaceGateTy), builder);
+      createGate(Op2, parseGateTy(PassInfo.ReplaceGateTy), builder);
 #endif
 #ifdef BUILD_CATALYST_ENABLED
-      createGate(Op2, parseGateTy(ReplaceGateTy), target.base, builder);
+      createGate(Op2, parseGateTy(PassInfo.ReplaceGateTy), target.base, builder);
 #endif
       builder.eraseOp(Op2);
     }
   }
 }
-
 
 static void
 performCancellation(std::map<Operation*, QuantumOpView> OpQuantumView,

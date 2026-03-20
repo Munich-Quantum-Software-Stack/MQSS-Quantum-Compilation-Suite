@@ -11,6 +11,36 @@ using namespace llvm;
 
 namespace {
 
+enum class PassMode {
+    SwitchHX,
+    SwitchHZ,
+    NA
+};
+
+struct SharedPassLogic{
+
+  void run(llvm::DenseMap<func::FuncOp, DialectInfo> KernelDialectInfo, PassMode Mode) {
+
+    PassInfoty PassInfo;
+    if(Mode == PassMode::SwitchHX){   
+        PassInfo.FirstGateTy = Gate::H;
+        PassInfo.SecondGateTy = Gate::PauliX;
+        PassInfo.ReplaceGateTy = Gate::PauliZ;
+        PassInfo.CompareKey = {"Target", "Target"};
+    }
+    else if(Mode == PassMode::SwitchHZ){
+        PassInfo.FirstGateTy = Gate::H;
+        PassInfo.SecondGateTy = Gate::PauliZ;
+        PassInfo.ReplaceGateTy = Gate::PauliX;
+        PassInfo.CompareKey = {"Target", "Target"};
+    }
+    
+    for (auto &[kernel, Info] : KernelDialectInfo) {
+      performCommuteAndSwitch(Info.OpQuantumView, PassInfo);
+    }
+  }
+};
+
 class CommonSwitchHX
     : public PassWrapper<CommonSwitchHX, OperationPass<mlir::ModuleOp>> {
 
@@ -34,19 +64,10 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    llvm::outs() << "\n[Applying Pass: CommonSwitchHX]\n";
+    llvm::outs() << "\n[Applying Pass: CommonSwitchHX]\n";    
 
-    auto FirstGateTy = Gate::H;
-    auto SecondGateTy = Gate::PauliX;
-    auto ReplaceGateTy = Gate::PauliZ;
-
-    Comparety CompareKey{"Target", "Target"};
-
-    auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    for (auto &[kernel, Info] : KernelDialectInfo) {
-      performCommuteAndSwitch(Info.OpQuantumView, FirstGateTy, SecondGateTy,
-                              ReplaceGateTy, CompareKey);
-    }
+    SharedPassLogic PassLogic;
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchHX);
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
@@ -80,17 +101,9 @@ public:
 
     llvm::outs() << "\n[Applying Pass: CommonSwitchHZ]\n";
 
-    auto FirstGateTy = Gate::H;
-    auto SecondGateTy = Gate::PauliZ;
-    auto ReplaceGateTy = Gate::PauliX;
+    SharedPassLogic PassLogic;
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchHZ);
 
-    Comparety CompareKey{"Target", "Target"};
-    
-    auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    for (auto &[kernel, Info] : KernelDialectInfo) {
-      performCommuteAndSwitch(Info.OpQuantumView, FirstGateTy, SecondGateTy,
-                              ReplaceGateTy, CompareKey);
-    }
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
