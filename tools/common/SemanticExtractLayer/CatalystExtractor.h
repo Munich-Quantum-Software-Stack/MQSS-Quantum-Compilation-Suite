@@ -82,6 +82,7 @@ public:
 
     for (auto kernel : QuantumKernels) {
 
+      QuantumOpInfo QInfo;
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quantum") {
 
@@ -119,15 +120,21 @@ public:
             }
           }
           // llvm::outs() << "Op: " << *Op << "," << OpView.hasSideEffects << ", gatety:" << OpView.GateTy << "\n";
-          Info.OpQuantumView[Op] = OpView;
+          QInfo[Op] = OpView;
         }
       });
-      KernelDialectInfo[kernel] = Info;
+      KernelDialectInfo[kernel] = QInfo;
     }
   }
+
+  const llvm::DenseMap<func::FuncOp, QuantumOpInfo>  getKernelDialectInfo() override {
+    return KernelDialectInfo;
+  }
+
 
   mlir::LogicalResult verifyModule() override { return module.verify(); }
 
 private:
   ModuleOp module;
+  llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo;
 };

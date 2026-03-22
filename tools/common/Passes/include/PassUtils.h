@@ -8,6 +8,11 @@
 using namespace mlir;
 
 
+struct Comparety{
+  std::string KeyGate1="";
+  std::string KeyGate2="";
+};
+
 struct PassInfoty{
 
    Gate FirstGateTy = Gate::UNKNOWN;

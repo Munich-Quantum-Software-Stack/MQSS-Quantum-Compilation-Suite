@@ -48,11 +48,6 @@ inline StringRef parseGateTy(const Gate &GateTy) {
 }
 
 
-struct Comparety{
-  std::string KeyGate1="";
-  std::string KeyGate2="";
-};
-
 struct QubitID {
   Value base;
   std::size_t index;
@@ -65,10 +60,7 @@ struct QuantumOpView {
   bool hasSideEffects = false;
 };
 
-struct DialectInfo {
-  std::vector<Operation *> GateOps;
-  std::map<Operation *, QuantumOpView> OpQuantumView;
-};
+using QuantumOpInfo = std::map<Operation *, QuantumOpView>;
 
 using tupleVectorsQubitIDs =
     std::tuple<std::vector<QubitID>, std::vector<QubitID>>;
@@ -85,11 +77,6 @@ public:
 
   virtual mlir::LogicalResult verifyModule() = 0;
 
-  llvm::DenseMap<func::FuncOp, DialectInfo> getKernelDialectInfo(){
-    return KernelDialectInfo;
-  }
+  virtual const llvm::DenseMap<func::FuncOp, QuantumOpInfo> getKernelDialectInfo() = 0;
 
-protected:
-  DialectInfo Info;
-  llvm::DenseMap<func::FuncOp, DialectInfo> KernelDialectInfo;
 };

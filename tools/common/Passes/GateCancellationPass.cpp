@@ -55,7 +55,7 @@ public:
     Comparety CompareKey;
 
     for(auto &[kernel, Info] : KernelDialectInfo){
-      performCancellation(Info.OpQuantumView, Gate::CNOT, CompareKey);
+      performCancellation(Info, Gate::CNOT, CompareKey);
     }
 
     if (failed(analysis.verifyModule())) {

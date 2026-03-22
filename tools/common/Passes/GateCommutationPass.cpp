@@ -23,7 +23,7 @@ enum class PassMode {
 
 struct SharedPassLogic{
 
-  void run(llvm::DenseMap<func::FuncOp, DialectInfo> KernelDialectInfo,
+  void run(llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo,
            PassMode Mode) {
 
     PassInfoty PassInfo;
@@ -55,7 +55,7 @@ struct SharedPassLogic{
       PassInfo.CompareKey = {"Target", "Target"};
     }
     for (auto &[kernel, Info] : KernelDialectInfo) {
-      performCommutation(Info.OpQuantumView, PassInfo);
+      performCommutation(Info, PassInfo);
     }
   }
 };

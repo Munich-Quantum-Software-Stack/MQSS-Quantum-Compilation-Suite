@@ -66,6 +66,7 @@ public:
 
     for (auto kernel : QuantumKernels) {
 
+      QuantumOpInfo QInfo;
       kernel.getBody().walk([&](Operation *Op) {
 
         if (Op->getDialect()->getNamespace() == "quake") {
@@ -112,11 +113,11 @@ public:
             ID.index = extract_refop.getConstantIndex();
             OpView.TargetQubits.push_back(ID);
           }
-          Info.OpQuantumView[Op] = OpView;
+          QInfo[Op] = OpView;
         }
         
       });
-      KernelDialectInfo[kernel] = Info;
+      KernelDialectInfo[kernel] = QInfo;
     }
   }
 
@@ -125,7 +126,12 @@ public:
     
   }
 
+  const llvm::DenseMap<func::FuncOp, QuantumOpInfo>  getKernelDialectInfo() override {
+    return KernelDialectInfo;
+  }
+
 private:
   ModuleOp module;
+  llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo;
 };
 
