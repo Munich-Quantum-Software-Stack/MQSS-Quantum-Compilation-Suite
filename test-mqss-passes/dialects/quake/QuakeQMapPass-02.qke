@@ -1,0 +1,31 @@
+module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__ghzILm5EE = "_ZN3ghzILm5EEclEv"}} {
+  func.func @__nvqpp__mlirgen__ghzILm5EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %cst = arith.constant 2.250000e+00 : f64
+    %cst_0 = arith.constant 3.141600e+00 : f64
+    %cst_1 = arith.constant 1.500000e+00 : f64
+    %0 = quake.alloca !quake.veq<5>
+    %1 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+    %2 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
+    quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+    %3 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
+    %4 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+    quake.x [%3] %4 : (!quake.ref, !quake.ref) -> ()
+    %5 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+    %6 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+    quake.x [%5] %6 : (!quake.ref, !quake.ref) -> ()
+    %7 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+    quake.rx (%cst_1) %7 : (f64, !quake.ref) -> ()
+    %8 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
+    quake.ry (%cst_0) %8 : (f64, !quake.ref) -> ()
+    %9 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
+    quake.rz (%cst) %9 : (f64, !quake.ref) -> ()
+    %10 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+    quake.t %10 : (!quake.ref) -> ()
+    %measOut = quake.mz %0 : (!quake.veq<5>) -> !cc.stdvec<!quake.measure>
+    return
+  }
+  func.func @_ZN3ghzILm5EEclEv(%arg0: !cc.ptr<i8>) {
+    return
+  }
+}
+

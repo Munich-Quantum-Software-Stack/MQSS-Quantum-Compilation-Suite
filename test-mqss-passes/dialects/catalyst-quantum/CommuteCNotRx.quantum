@@ -1,0 +1,31 @@
+// RUN: %mqss-catalyst-opt %s --CommonCommuteCxRxPass 2>&1 | FileCheck %s
+module {
+  func.func @CommuteCNot_Z_test() {
+   
+    %cst = arith.constant 5.141600e+00 : f64
+    %cst_0 = arith.constant 2.400000e+00 : f64
+
+    %qreg = quantum.alloc(3) : !quantum.reg
+
+    %q0 = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+    %q1 = quantum.extract %qreg[1] : !quantum.reg -> !quantum.bit
+
+    %q0_1, %q1_1 = quantum.custom "CNOT"() %q0, %q1 : !quantum.bit, !quantum.bit
+    %q2 = quantum.extract %qreg[2] : !quantum.reg -> !quantum.bit
+    %q2_1 = quantum.custom "RX"(%cst_0) %q1 : !quantum.bit
+
+    // CHECK: %out_qubits = quantum.custom "RX"(%cst_0) %2 : !quantum.bit
+    // CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %1, %2 : !quantum.bit, !quantum.bit
+
+    %q1_2 = quantum.custom "PauliZ"() %q0 : !quantum.bit
+    %q1_3, %q0_2 = quantum.custom "CNOT"() %q1_2, %q0_1 : !quantum.bit, !quantum.bit
+    %q1_4 = quantum.custom "PauliZ"() %q1_3 : !quantum.bit
+    %q0_3, %q1_5 = quantum.custom "CNOT"() %q0_2, %q1_4 : !quantum.bit, !quantum.bit
+    %q1_6 = quantum.custom "RX"(%cst) %q1_5 : !quantum.bit
+    %q1_7 = quantum.custom "PauliZ"() %q1_6 : !quantum.bit
+
+    %meas = quantum.compbasis qreg %qreg : !quantum.obs
+
+    return
+  }
+}

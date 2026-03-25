@@ -15,6 +15,23 @@ using namespace mlir;
 
 enum Gate { CNOT, PauliX, H, Hadamard, RX, PauliZ, Y, UNKNOWN };
 
+struct QubitID {
+  Value base;
+  std::size_t index;
+};
+
+struct QuantumOpView {
+  Gate GateTy = Gate::UNKNOWN; //<---------- Important to initialize enums
+  std::vector<QubitID> ControlQubits = {};
+  std::vector<QubitID> TargetQubits = {};
+  bool hasSideEffects = false;
+};
+
+
+using QuantumOpInfo = std::map<Operation *, QuantumOpView>;
+
+
+
 inline Gate parseGateTy(const StringRef &GateTy) {
   if (GateTy == "CNOT")
     return CNOT;
@@ -47,23 +64,11 @@ inline StringRef parseGateTy(const Gate &GateTy) {
   return "UNKNOWN";
 }
 
-
-struct QubitID {
-  Value base;
-  std::size_t index;
-};
-
-struct QuantumOpView {
-  Gate GateTy = Gate::UNKNOWN; //<---------- Important to initialize enums
-  std::vector<QubitID> ControlQubits = {};
-  std::vector<QubitID> TargetQubits = {};
-  bool hasSideEffects = false;
-};
-
-using QuantumOpInfo = std::map<Operation *, QuantumOpView>;
-
 using tupleVectorsQubitIDs =
     std::tuple<std::vector<QubitID>, std::vector<QubitID>>;
+
+
+    
 
 class MyModuleAnalysis {
 

@@ -123,6 +123,16 @@ add_subdirectory(cmake/modules)
 
 include(FetchContent)
 
+#########################LLVM-LIT TESTING SETTINGS###############################
+
+set(LLVM_EXTERNAL_LIT "/workspaces/compilers/MQSS-Catalyst-Compiler/mlir/llvm-project/build/bin/llvm-lit")
+
+message(CMAKESRCDIR= "${CMAKE_SOURCE_DIR}")
+add_custom_target(check-all
+  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/dialects/catalyst-quantum
+)
+
+################################-MQSS Settings-###############################
 
 add_executable(mqss-catalyst-opt catalyst.cpp)
 

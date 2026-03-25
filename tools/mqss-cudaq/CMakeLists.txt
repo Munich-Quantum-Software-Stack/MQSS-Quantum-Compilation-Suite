@@ -102,83 +102,19 @@ include(FetchContent)
 set(COMMON_LIBRARIES ${CUDAQ_MLIR_RUNTIME_PATH}/libcudaq-mlir-runtime.so
                      pthread)
 
-# ##############################################################################
+#########################LLVM-LIT TESTING SETTINGS###############################
 
-##################################-MQSS Settings-###############################
+set(LLVM_EXTERNAL_LIT "/workspaces/compilers/MQSS-Catalyst-Compiler/mlir/llvm-project/build/bin/llvm-lit")
+
+message(CMAKESRCDIR= "${CMAKE_SOURCE_DIR}")
+add_custom_target(check-all
+  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/dialects/quake
+)
+
+################################-MQSS Settings-###############################
 
 add_subdirectory(lib)
 add_subdirectory(include)
-# include_directories(
-#   BEFORE
-#   ${CMAKE_SOURCE_DIR}/include
-#   ${CMAKE_SOURCE_DIR}/include/Passes/
-#   )
-
-# message(CMAKE_BIN_DIR= "${CMAKE_BINARY_DIR}")
-
-# file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/Passes)
-# # file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/Optimizer)
-
-# # set(LLVM_TARGET_DEFINITIONS
-# #     ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes/Transforms.td)
-# # # Generate .inc files from TableGen
-# # mlir_tablegen(include/Passes/Transforms.h.inc -gen-pass-decls -name
-# #               MQSSOptTransforms)
-# # add_public_tablegen_target(MQSSTransformsPassIncGen)
-
-# # set(LLVM_TARGET_DEFINITIONS
-# #     ${CMAKE_CURRENT_SOURCE_DIR}/include/Passes/Decompositions.td)
-# # # Generate .inc files from TableGen
-# # mlir_tablegen(include/Passes/Decompositions.h.inc -gen-pass-decls -name
-# #               MQSSOptDecompositions)
-# # add_public_tablegen_target(MQSSDecompositionsPassIncGen)
-
-# include_directories(BEFORE ${CMAKE_BINARY_DIR}/include)
-
-# file(GLOB SRC_ANALYSIS "${CMAKE_SOURCE_DIR}/lib/Passes/Analysis/*.cpp")
-
-# # file(GLOB SRC_TRANSFORMS
-# #      "${CMAKE_SOURCE_DIR}/lib/Passes/Transforms/*.cpp")
-
-# message(STATUS "CURRENT SOURCE DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
-
-# add_mlir_library(
-#   MLIRPasses
-#   SHARED
-#   # ${SRC_CODEGEN}
-#   # ${SRC_DECOMPOSITIONS}
-#   ${SRC_ANALYSIS}
-#   #${SRC_TRANSFORMS}
-#   # DEPENDS
-#   # # MQSSTransformsPassIncGen
-#   # # MQSSDecompositionsPassIncGen
-#   # LINK_LIBS
-#   # PUBLIC
-#   # SupportQuake
-#   # Interfaces
-#   # MQT::CoreIR
-#   # MQT::CoreNA
-#   # MQT::QMapSC
-#   # MQT::QMapSCHeuristic
-#   MLIRTensorDialect
-#   MLIRIR
-#   MLIRPass
-#   MLIRTransforms
-#   )
-
-
-# message(STATUS "CMAKE_SRC = ${CMAKE_CURRENT_SOURCE_DIR}")
-
-# target_compile_options(MLIRPasses PRIVATE -fexceptions -frtti)
-
-
-# # Create an alias target for convenience
-# add_library(MQSS::MLIRPasses ALIAS MLIRPasses)
-
-# install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
-
-#################################################################################
-# Enable FetchContent for integration
 
 #1. Define the executable and its source file
 add_executable(mqss-cudaq-opt cudaq.cpp)
