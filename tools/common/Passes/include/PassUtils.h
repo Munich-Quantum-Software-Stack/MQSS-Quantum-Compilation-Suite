@@ -17,7 +17,7 @@ struct PassInfoty{
 
    Gate FirstGateTy = Gate::UNKNOWN;
    Gate SecondGateTy = Gate::UNKNOWN;
-   Gate ReplaceGateTy = Gate::UNKNOWN;
+   std::tuple<Gate, Gate> Replacetuple;
    Comparety CompareKey;
 
 };
@@ -239,15 +239,20 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
 
       // Since gate creation has dialect specific semantics, need to have
       //  dialect specific APIs to create the gates.
-      //  TODO: Can we do better? Do not like the use of MACROS
+      //  TODO: 1. Can we do better? Do not like the use of MACROS
+      //        2. What if Op1 is to be switched out and replaced?
 
+      auto *OpToSwitchOut =
+          std::get<0>(PassInfo.Replacetuple) == PassInfo.FirstGateTy ? Op1
+                                                                     : Op2;
+      auto ReplacementGateTy = std::get<1>(PassInfo.Replacetuple);
 #ifdef BUILD_CUDAQ_ENABLED
-      createGate(Op2, parseGateTy(PassInfo.ReplaceGateTy), builder);
+      createGate(OpToSwitchOut, parseGateTy(ReplacementGateTy), builder);
 #endif
 #ifdef BUILD_CATALYST_ENABLED
-      createGate(Op2, parseGateTy(PassInfo.ReplaceGateTy), target.base, builder);
+      createGate(OpToSwitchOut, parseGateTy(ReplacementGateTy), target.base, builder);
 #endif
-      builder.eraseOp(Op2);
+      builder.eraseOp(OpToSwitchOut);
     }
   }
 }
