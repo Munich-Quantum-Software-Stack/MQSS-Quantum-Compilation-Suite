@@ -28,9 +28,9 @@
 6.122637e-02 dialects/quake/XGateAndHadamardSwitchPass.qke
 -1.574039e-03 dialects/quake/YGateAndHadamardSwitchPass.qke
 -1.053810e-03 dialects/quake/ZGateAndHadamardSwitchPass.qke
-1.864171e-02 dialects/catalyst-quantum/CommuteCNotRx.quantum
-1.848245e-02 dialects/catalyst-quantum/CommuteCNotZPass.quantum
-1.859927e-02 dialects/catalyst-quantum/CommuteRxCNotPass.quantum
-1.829386e-02 dialects/catalyst-quantum/DoubleCnotCancellation.quantum
-1.917362e-02 dialects/catalyst-quantum/HadamardXGateSwitchPass.quantum
-1.856732e-02 dialects/catalyst-quantum/HadamardZGateSwitchPass.quantum
+2.294087e-02 dialects/catalyst-quantum/CommuteCNotRx.quantum
+2.207994e-02 dialects/catalyst-quantum/CommuteCNotZPass.quantum
+2.370095e-02 dialects/catalyst-quantum/CommuteRxCNotPass.quantum
+2.077818e-02 dialects/catalyst-quantum/DoubleCnotCancellation.quantum
+2.112198e-02 dialects/catalyst-quantum/HadamardXGateSwitchPass.quantum
+2.118230e-02 dialects/catalyst-quantum/HadamardZGateSwitchPass.quantum

@@ -71,14 +71,16 @@ public:
 
         if (Op->getDialect()->getNamespace() == "quake") {
           QuantumOpView OpView;
-          if (!mlir::isMemoryEffectFree(Op))
+          if (!mlir::isMemoryEffectFree(Op)){
             OpView.hasSideEffects = true;
+            llvm::outs() << "Side effect op: " << *Op << "\n";
+          }
 
           if (auto gate = dyn_cast<quake::OperatorInterface>(Op)) {
-            // OpView.InputQubits = gate.getControls();
-            for (auto t : gate.getControls()) {
+            // Gather the Control Qubits
+            for (auto ctrl : gate.getControls()) {
               if (auto ext_ref =
-                      dyn_cast<quake::ExtractRefOp>(t.getDefiningOp())) {
+                      dyn_cast<quake::ExtractRefOp>(ctrl.getDefiningOp())) {
                 QubitID ID;
                 Value base = ext_ref.getVeq();
                 auto index = ext_ref.getConstantIndex();
@@ -87,6 +89,7 @@ public:
                 OpView.ControlQubits.push_back(ID);
               }
             }
+            // Gather the Target Qubits
             for (auto t : gate.getTargets()) {
               if (auto ext_ref =
                       dyn_cast<quake::ExtractRefOp>(t.getDefiningOp())) {
@@ -98,13 +101,15 @@ public:
                 OpView.TargetQubits.push_back(ID);
               }
             }
+            // Gather Parameters if any (E.g. Rotation Angle)
+            for(auto p : gate.getParameters()){
+              OpView.Params.push_back(p);
+            }
 
             auto [isQGateOp, GateTy] = isQuakeQuantumGate(Op);
             if (isQGateOp){
               OpView.GateTy = parseGateTy(GateTy);
             }
-
-            // OpView.OutputQubits = OpView.InputQubits;
           }
           else if(auto extract_refop = dyn_cast<quake::ExtractRefOp>(Op)){
             //Do something

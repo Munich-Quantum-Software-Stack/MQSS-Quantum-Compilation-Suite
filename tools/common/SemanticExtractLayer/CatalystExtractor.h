@@ -29,9 +29,9 @@ static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         {"H", {QubitRole::Target}},
 
         // Rotations
-        {"RX", {QubitRole::Rotation, QubitRole::Target}},
-        {"RY", {QubitRole::Rotation, QubitRole::Target}},
-        {"RZ", {QubitRole::Rotation, QubitRole::Target}},
+        {"RX", {QubitRole::Target}},
+        {"RY", {QubitRole::Target}},
+        {"RZ", {QubitRole::Target}},
 
         // Two-qubit symmetric gates
         {"SWAP", {QubitRole::Target, QubitRole::Target}}
@@ -98,22 +98,29 @@ public:
             std::vector<QubitRole> OpRoles =
                 getGateOpRoles(g.getGateName()); // Now we can separate out the
                                                  // Qubits into Ctrl/Target
+
             assert(!OpRoles.empty() &&
                    "Found a gate Op with empty Operand Roles(Control/Target)");
-            assert((OpRoles.size() == g.getOperands().size()) &&
+            assert((OpRoles.size() == g.getQubitOperands().size()) &&
                    "Operand Roles not equals No. of Qubit Operands");
 
-            for (unsigned i = 0; i < g.getOperands().size(); i++) {
+            for(auto p : g.getParams()){
+              OpView.Params.push_back(p);
+            }
+          
+            for (unsigned i = 0; i < g.getQubitOperands().size(); i++) {
               QubitID ID;
               QubitRole role = OpRoles[i];
+             
+              auto gop=g.getQubitOperands()[i];
 
               if (role == QubitRole::Control) {
-                ID.base = g->getOperand(i);
+                ID.base = gop;
                 ID.index = -1;
                 OpView.ControlQubits.push_back(ID);
               }
               if (role == QubitRole::Target) {
-                ID.base = g->getOperand(i);
+                ID.base = gop;
                 ID.index = -1;
                 OpView.TargetQubits.push_back(ID);
               }

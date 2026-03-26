@@ -10,8 +10,11 @@
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 
+using namespace llvm;
 inline std::tuple<bool, llvm::StringLiteral>
+
 isQuakeQuantumGate(mlir::Operation *op) {
+  
   if (auto x = dyn_cast<quake::XOp>(op)) {
     if (x.getControls().size() == 0)
       return {true, "PauliX"};
