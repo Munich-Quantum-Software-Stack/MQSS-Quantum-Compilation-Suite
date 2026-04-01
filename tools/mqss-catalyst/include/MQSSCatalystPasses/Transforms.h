@@ -83,6 +83,7 @@ std::unique_ptr<mlir::Pass> CommonCommuteRxCxPass();
 std::unique_ptr<mlir::Pass> CommonCommuteXCxPass();
 
 std::unique_ptr<mlir::Pass> CommonSwitchHXPass();
+std::unique_ptr<mlir::Pass> CommonSwitchHYPass();
 std::unique_ptr<mlir::Pass> CommonSwitchXHPass();
 std::unique_ptr<mlir::Pass> CommonSwitchHZPass();
 

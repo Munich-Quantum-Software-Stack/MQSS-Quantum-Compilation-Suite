@@ -11,9 +11,11 @@
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 
 using namespace llvm;
-inline std::tuple<bool, llvm::StringLiteral>
+using namespace mlir;
 
-isQuakeQuantumGate(mlir::Operation *op) {
+inline std::tuple<bool, StringLiteral>
+
+isQuakeQuantumGate(Operation *op) {
   
   if (auto x = dyn_cast<quake::XOp>(op)) {
     if (x.getControls().size() == 0)
@@ -31,26 +33,27 @@ isQuakeQuantumGate(mlir::Operation *op) {
     return {true, "PauliZ"};
 
   if (auto x = dyn_cast<quake::YOp>(op))
-    return {true, "Y"};
+    return {true, "PauliY"};
 
   return {false, ""};
 }
 
-inline void createGate(mlir::Operation *SwitchOutGate,
-                               llvm::StringRef NewGateTy,
-                               mlir::IRRewriter &builder) {
-
-  auto gate = dyn_cast<quake::OperatorInterface>(SwitchOutGate);
-
-  quake::OperatorInterface OpInterface;
+inline void createQuakeGate(Location loc, llvm::StringRef NewGateTy,
+                       const std::vector<Value> TargetQubits,
+                       mlir::IRRewriter &builder) {
 
   if (NewGateTy == "PauliZ") {
-        builder.create<quake::ZOp>(gate.getLoc(), false, mlir::ValueRange(),
-                                    mlir::ValueRange(), gate.getTargets());
+        builder.create<quake::ZOp>(loc, false, mlir::ValueRange(),
+                                    mlir::ValueRange(), TargetQubits);
   }
   else if (NewGateTy == "PauliX") {
     auto newGate =
-        builder.create<quake::XOp>(gate.getLoc(), false, mlir::ValueRange(),
-                                    mlir::ValueRange(), gate.getTargets());
+        builder.create<quake::XOp>(loc, false, mlir::ValueRange(),
+                                    mlir::ValueRange(), TargetQubits);
+  }
+    else if (NewGateTy == "PauliY") {
+    auto newGate =
+        builder.create<quake::YOp>(loc, false, mlir::ValueRange(),
+                                    mlir::ValueRange(), TargetQubits);
   }
 }

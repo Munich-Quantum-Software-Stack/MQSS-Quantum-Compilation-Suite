@@ -13,6 +13,7 @@ namespace {
 
 enum class PassMode {
     SwitchHX,
+    SwitchHY,
     SwitchHZ,
     SwitchXH,
     NA
@@ -27,6 +28,12 @@ struct SharedPassLogic{
         PassInfo.FirstGateTy = Gate::H;
         PassInfo.SecondGateTy = Gate::PauliX;
         PassInfo.Replacetuple={PassInfo.SecondGateTy, Gate::PauliZ};
+        PassInfo.CompareKey = {"Target", "Target"};
+    }
+    else if(Mode == PassMode::SwitchHY){
+        PassInfo.FirstGateTy = Gate::H;
+        PassInfo.SecondGateTy = Gate::PauliY;
+        PassInfo.Replacetuple={PassInfo.SecondGateTy, Gate::PauliY};
         PassInfo.CompareKey = {"Target", "Target"};
     }
     else if(Mode == PassMode::SwitchHZ){
@@ -153,6 +160,41 @@ public:
   }
 };
 
+class CommonSwitchHY
+    : public PassWrapper<CommonSwitchHY, OperationPass<mlir::ModuleOp>> {
+
+public:
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHZ)
+
+  [[nodiscard]] StringRef getArgument() const override {
+    return "CommonSwitchHYPass";
+  }
+  [[nodiscard]] StringRef getDescription() const override {
+    return "This pass searches for the gate Op pattern - Hadamard followed by "
+           "PauliY and switches it to PauliY followed by "
+           "Hadamard";
+  }
+
+  void runOnOperation() override {
+#ifdef BUILD_CUDAQ_ENABLED
+    auto &analysis = getAnalysis<QuakeAnalysis>();
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
+#endif
+
+    llvm::outs() << "\n[Applying Pass: CommonSwitchHY]\n";
+
+    SharedPassLogic PassLogic;
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchHY);
+
+    if (failed(analysis.verifyModule())) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : MLIR Module verification failed\n";
+    }
+  }
+};
+
 } // namespace
 
 #ifdef BUILD_CUDAQ_ENABLED
@@ -165,6 +207,9 @@ std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonSwitchXHPass() {
 std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonSwitchHZPass() {
   return std::make_unique<CommonSwitchHZ>();
 }
+std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonSwitchHYPass() {
+  return std::make_unique<CommonSwitchHY>();
+}
 #endif
 
 #ifdef BUILD_CATALYST_ENABLED
@@ -176,5 +221,8 @@ std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonSwitchXHPass() {
 }
 std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonSwitchHZPass() {
   return std::make_unique<CommonSwitchHZ>();
+}
+std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonSwitchHYPass() {
+  return std::make_unique<CommonSwitchHY>();
 }
 #endif

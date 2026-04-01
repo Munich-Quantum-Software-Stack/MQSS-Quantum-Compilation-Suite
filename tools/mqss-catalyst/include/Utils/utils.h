@@ -27,23 +27,27 @@ inline bool hasQuantumEffect(Operation *op) {
     return false;
 }
 
-inline void createGate(mlir::Operation *SwitchOutGate,
+inline void createCatalystGate(Location loc,
                                llvm::StringRef NewGateTy,
-                               const Value TargetQubit,
+                               const std::vector<Value> TargetQubits,
                                mlir::IRRewriter &builder) {
 
-  if (NewGateTy == "PauliZ" || NewGateTy == "PauliX") {
+    if (NewGateTy == "PauliZ" || NewGateTy == "PauliX" ||
+        NewGateTy == "PauliY") {
 
-    auto newGate =
-        builder.create<catalyst::quantum::CustomOp>(
-            SwitchOutGate->getLoc(),
-            /*out_qubits=*/mlir::TypeRange({TargetQubit.getType()}),
+        std::vector<mlir::Type> TargetQubitTys;
+        for(auto t : TargetQubits){
+          TargetQubitTys.push_back(t.getType());
+        }
+        auto newGate = builder.create<catalyst::quantum::CustomOp>(
+            loc,
+            /*out_qubits=*/mlir::TypeRange(TargetQubitTys),
             /*out_ctrl_qubits=*/mlir::TypeRange(),
             /*params=*/mlir::ValueRange(),
-            /*in_qubits=*/mlir::ValueRange({TargetQubit}),
+            /*in_qubits=*/mlir::ValueRange(TargetQubits),
             /*gate_name=*/NewGateTy,
             /*adjoint=*/false,
             /*in_ctrl_qubits=*/mlir::ValueRange(),
             /*in_ctrl_values=*/mlir::ValueRange());
-  }
+    }
 }

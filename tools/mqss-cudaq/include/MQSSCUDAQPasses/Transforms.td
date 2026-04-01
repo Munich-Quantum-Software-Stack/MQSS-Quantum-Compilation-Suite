@@ -43,6 +43,13 @@ def CommonSwitchHXPass : Pass<"CommonSwitchHXPass"> {
   let constructor = "mqss_cudaq::opt::CommonSwitchHXPass()";
 }
 
+def CommonSwitchHYPass : Pass<"CommonSwitchHYPass"> {
+  let summary = "This pass searches for the gate Op pattern - Hadamard followed by "
+                "PauliY and switches it to PauliY followed by "
+                "Hadamard";
+  let constructor = "mqss_cudaq::opt::CommonSwitchHYPass()";
+}
+
 def CommonSwitchXHPass : Pass<"CommonSwitchXHPass"> {
   let summary = "This pass searches for the gate Op pattern - PauliX followed by "
                 "Hadamard and switches it to Hadamard followed by "

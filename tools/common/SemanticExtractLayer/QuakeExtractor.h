@@ -73,7 +73,6 @@ public:
           QuantumOpView OpView;
           if (!mlir::isMemoryEffectFree(Op)){
             OpView.hasSideEffects = true;
-            llvm::outs() << "Side effect op: " << *Op << "\n";
           }
 
           if (auto gate = dyn_cast<quake::OperatorInterface>(Op)) {

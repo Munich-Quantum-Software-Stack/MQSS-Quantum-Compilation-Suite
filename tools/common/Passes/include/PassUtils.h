@@ -227,13 +227,6 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
       assert(Op2TargetQubits.size() == 1 &&
              "Currently, Can only switch single qubit gates!");
 
-      auto target = OpQuantumView[Op2].TargetQubits[0];
-
-      llvm::outs() << "Switch out: " << *Op2 << " target: " << target.base
-                   << " , Ctrl: " << OpQuantumView[Op2].ControlQubits.size()
-                   << "\n";
-
-
       mlir::IRRewriter builder(Op2->getContext());
       builder.setInsertionPointAfter(Op2);
 
@@ -245,12 +238,23 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
       auto *OpToSwitchOut =
           std::get<0>(PassInfo.Replacetuple) == PassInfo.FirstGateTy ? Op1
                                                                      : Op2;
+
+      std::vector<Value> targetQubitsbaseVector;
+      for (auto Op : OpToSwitchOut->getOperands()) {
+        targetQubitsbaseVector.push_back(Op);
+        llvm::outs() << "Switch out: " << *Op2 << " target: " << Op
+                     << " , Ctrl: " << OpQuantumView[Op2].ControlQubits.size()
+                     << "\n";
+      }
+
       auto ReplacementGateTy = std::get<1>(PassInfo.Replacetuple);
 #ifdef BUILD_CUDAQ_ENABLED
-      createGate(OpToSwitchOut, parseGateTy(ReplacementGateTy), builder);
+      createQuakeGate(Op2->getLoc(), parseGateTy(ReplacementGateTy),
+                 targetQubitsbaseVector, builder);
 #endif
 #ifdef BUILD_CATALYST_ENABLED
-      createGate(OpToSwitchOut, parseGateTy(ReplacementGateTy), target.base, builder);
+      createCatalystGate(Op2->getLoc(), parseGateTy(ReplacementGateTy),
+                 targetQubitsbaseVector, builder);
 #endif
       builder.eraseOp(OpToSwitchOut);
     }
