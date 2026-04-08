@@ -12,12 +12,6 @@ using namespace llvm;
 namespace {
 
 enum class PassMode {
-    SwitchHX,
-    SwitchHY,
-    SwitchHZ,
-    SwitchZH,
-    SwitchXH,
-    SwitchYH,
     SwitchXYZH,
     SwitchHXYZ,
     NA

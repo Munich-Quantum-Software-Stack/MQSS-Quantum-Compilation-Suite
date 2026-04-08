@@ -13,7 +13,7 @@
 using namespace llvm;
 using namespace mlir;
 
-enum Gate { CNOT, PauliX, H, Hadamard, RX, PauliZ, PauliY, UNKNOWN };
+enum Gate { CNOT, PauliX, PauliZ, PauliY, H, Hadamard, RX, RY, RZ, UNKNOWN };
 
 struct QubitID {
   Value base;
@@ -42,6 +42,10 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return H;
   if (GateTy == "RX")
     return RX;
+  if (GateTy == "RY")
+    return RY;
+  if (GateTy == "RZ")
+    return RZ;
   if (GateTy == "PauliZ")
     return PauliZ;
   if (GateTy == "PauliY")
@@ -58,6 +62,10 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "H";
   if (GateTy == Gate::RX)
     return "RX";
+  if (GateTy == Gate::RY)
+    return "RY";
+  if (GateTy == Gate::RZ)
+    return "RZ";
   if (GateTy == Gate::PauliZ)
     return "PauliZ";
   if (GateTy == Gate::PauliY)

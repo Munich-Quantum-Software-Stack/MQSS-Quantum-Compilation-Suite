@@ -1,9 +1,10 @@
 
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "llvm/Support/raw_ostream.h"
 #include "PassIncludes.h"
+#include <cmath>
 
 using namespace mlir;
 
@@ -67,6 +68,15 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
     llvm::outs().indent(4) << "---------------------------------------------\n";
   }
 }
+
+static bool checkDoublePiMultiplies(double angle) {
+  const double pi = std::numbers::pi;
+  const double doublePi = 2 * pi;
+  if (std::fmod(angle, doublePi) == 0)
+    return true;
+  return false;
+}
+
 
 static void cancel(Operation *Op) {
   mlir::IRRewriter rewriter(Op->getContext());
@@ -276,9 +286,46 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
   }
 }
 
+static void performNullRotationCancellation(
+    std::map<Operation *, QuantumOpView> OpQuantumView,
+    std::vector<Gate> GatesToCancel) {
+
+  SmallSetVector<Operation *, 16> ToErase;
+  for (auto &[GateOp, FirstGateQView] : OpQuantumView) {
+
+    auto GateTy = FirstGateQView.GateTy;
+
+    if (!is_contained(GatesToCancel, GateTy)) {
+      // It is assumed that GatesToCancel will contain : RX, RY, RZ
+      continue;
+    }
+    auto parameters = FirstGateQView.Params;
+    bool deleteGate = true;
+    for (auto param : parameters) {
+      if (auto constOp = param.getDefiningOp<mlir::arith::ConstantOp>()) {
+        if (auto floatAttr = dyn_cast<mlir::FloatAttr>(constOp.getValue())) {
+          double v = floatAttr.getValueAsDouble();
+          if (!checkDoublePiMultiplies(v) && v != 0) {
+            deleteGate = false;
+            break;
+          }
+        }
+      }
+    }
+
+    if (deleteGate)
+      ToErase.insert(GateOp);
+  }
+
+  for (auto gop : ToErase) {
+    llvm::outs() << "--->Erasing: " << *gop << "\n";
+    cancel(gop);
+  }
+}
+
 static void
 performCancellation(std::map<Operation*, QuantumOpView> OpQuantumView,
-                    Gate GateToCancel, Comparety CompareKey) {
+                    std::vector<Gate> GatesToCancel, Comparety CompareKey) {
 
   SmallSetVector<Operation *, 16> ToErase;
   for (auto &[FirstGateOp, FirstGateQView] : OpQuantumView) {
@@ -287,7 +334,7 @@ performCancellation(std::map<Operation*, QuantumOpView> OpQuantumView,
     if (!FirstGateQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
       continue;
 
-    if (FirstGateTy != GateToCancel)
+    if (is_contained(GatesToCancel, FirstGateTy))
       continue;
 
     if(ToErase.count(FirstGateOp))
@@ -301,13 +348,13 @@ performCancellation(std::map<Operation*, QuantumOpView> OpQuantumView,
 
       auto nextOpView = OpQuantumView[NextOp];
       // TODO: Should the "touchesAny" check be there?
-      if (nextOpView.hasSideEffects && (nextOpView.GateTy != GateToCancel) &&
+      if (nextOpView.hasSideEffects && (nextOpView.GateTy != FirstGateTy) &&
           (touchesAny(NextOp, FirstGateQView.ControlQubits, OpQuantumView) ||
            touchesAny(NextOp, FirstGateQView.TargetQubits, OpQuantumView))) {
         break;
       }
 
-      if (nextOpView.GateTy == GateToCancel) {
+      if (nextOpView.GateTy == FirstGateTy) {
 
         if (SameQubits(
                 {FirstGateQView.ControlQubits, FirstGateQView.TargetQubits},

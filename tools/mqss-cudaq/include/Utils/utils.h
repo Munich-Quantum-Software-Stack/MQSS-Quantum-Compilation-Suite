@@ -25,6 +25,10 @@ isQuakeQuantumGate(Operation *op) {
 
   if (auto x = dyn_cast<quake::RxOp>(op))
     return {true, "RX"};
+  if (auto x = dyn_cast<quake::RyOp>(op))
+    return {true, "RY"};
+  if (auto x = dyn_cast<quake::RzOp>(op))
+    return {true, "RZ"};
 
   if (auto x = dyn_cast<quake::HOp>(op))
     return {true, "H"};

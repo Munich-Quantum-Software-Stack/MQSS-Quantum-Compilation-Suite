@@ -2,9 +2,14 @@
 
 include "mlir/Pass/PassBase.td"
 
-def CommonCxCancellationPass : Pass<"CommonCxCancellationPass"> {
-  let summary = "This pass removes the pattern CNot, CNot if both gates operates on the same control and targets. ";
-  let constructor = "mqss_catalyst::opt::CommonCxCancellationPass()";
+def CommonGateCancellationPass : Pass<"CommonGateCancellationPass"> {
+  let summary = "This pass removes the pattern Gate, Gate if both gates operates on the same control and targets. ";
+  let constructor = "mqss_catalyst::opt::CommonGateCancellationPass()";
+}
+
+def CommonNullRotationCancellationPass : Pass<"CommonNullRotationCancellationPass"> {
+  let summary = "TThis pass removes the gates RX, RZ, RZ having NULL rotation angles.";
+  let constructor = "mqss_catalyst::opt::CommonNullRotationCancellationPass()";
 }
 
 def CommonCommuteCxRxPass : Pass<"CommonCommuteCxRxPass"> {

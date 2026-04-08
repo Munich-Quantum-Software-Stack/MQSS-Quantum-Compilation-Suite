@@ -72,7 +72,8 @@ namespace mqss_catalyst::opt {
  CustomExamplePass. This `mlir::Pass` object has to be passed to an
  `mlir::PassManager` to transform any given MLIR module.
  */
-std::unique_ptr<mlir::Pass> CommonCxCancellationPass();
+std::unique_ptr<mlir::Pass> CommonGateCancellationPass();
+std::unique_ptr<mlir::Pass> CommonNullRotationCancellationPass();
 
 std::unique_ptr<mlir::Pass> CommonCommuteCxRxPass();
 std::unique_ptr<mlir::Pass> CommonCommuteCxXPass();
