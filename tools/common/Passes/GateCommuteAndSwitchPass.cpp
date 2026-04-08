@@ -15,7 +15,11 @@ enum class PassMode {
     SwitchHX,
     SwitchHY,
     SwitchHZ,
+    SwitchZH,
     SwitchXH,
+    SwitchYH,
+    SwitchXYZH,
+    SwitchHXYZ,
     NA
 };
 
@@ -24,28 +28,27 @@ struct SharedPassLogic{
   void run(llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo, PassMode Mode) {
 
     PassInfoty PassInfo;
-    if(Mode == PassMode::SwitchHX){   
-        PassInfo.FirstGateTy = Gate::H;
-        PassInfo.SecondGateTy = Gate::PauliX;
-        PassInfo.Replacetuple={PassInfo.SecondGateTy, Gate::PauliZ};
+
+    if(Mode == PassMode::SwitchXYZH){
+        PassInfo.FirstGateTy.push_back(Gate::PauliX);
+        PassInfo.FirstGateTy.push_back(Gate::PauliY);
+        PassInfo.FirstGateTy.push_back(Gate::PauliZ);
+
+        PassInfo.SecondGateTy.push_back(Gate::H);
+        PassInfo.ReplacementMap[Gate::PauliX] = Gate::PauliZ;
+        PassInfo.ReplacementMap[Gate::PauliY] = Gate::PauliY;
+        PassInfo.ReplacementMap[Gate::PauliZ] = Gate::PauliX;
         PassInfo.CompareKey = {"Target", "Target"};
     }
-    else if(Mode == PassMode::SwitchHY){
-        PassInfo.FirstGateTy = Gate::H;
-        PassInfo.SecondGateTy = Gate::PauliY;
-        PassInfo.Replacetuple={PassInfo.SecondGateTy, Gate::PauliY};
-        PassInfo.CompareKey = {"Target", "Target"};
-    }
-    else if(Mode == PassMode::SwitchHZ){
-        PassInfo.FirstGateTy = Gate::H;
-        PassInfo.SecondGateTy = Gate::PauliZ;
-        PassInfo.Replacetuple={PassInfo.SecondGateTy, Gate::PauliX};
-        PassInfo.CompareKey = {"Target", "Target"};
-    }
-    else if(Mode == PassMode::SwitchXH){   
-        PassInfo.FirstGateTy = Gate::PauliX;
-        PassInfo.SecondGateTy = Gate::H;
-        PassInfo.Replacetuple={PassInfo.FirstGateTy, Gate::PauliZ};
+    else if(Mode == PassMode::SwitchHXYZ){
+        PassInfo.FirstGateTy.push_back(Gate::H);
+        PassInfo.SecondGateTy.push_back(Gate::PauliX);
+        PassInfo.SecondGateTy.push_back(Gate::PauliY);
+        PassInfo.SecondGateTy.push_back(Gate::PauliZ);
+
+        PassInfo.ReplacementMap[Gate::PauliX] = Gate::PauliZ;
+        PassInfo.ReplacementMap[Gate::PauliY] = Gate::PauliY;
+        PassInfo.ReplacementMap[Gate::PauliZ] = Gate::PauliX;
         PassInfo.CompareKey = {"Target", "Target"};
     }
     
@@ -55,18 +58,18 @@ struct SharedPassLogic{
   }
 };
 
-class CommonSwitchHX
-    : public PassWrapper<CommonSwitchHX, OperationPass<mlir::ModuleOp>> {
+class CommonSwitchHXYZ
+    : public PassWrapper<CommonSwitchHXYZ, OperationPass<mlir::ModuleOp>> {
 
 public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHX)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHXYZ)
 
   [[nodiscard]] StringRef getArgument() const override {
-    return "CommonSwitchHXPass";
+    return "CommonSwitchHXYZPass";
   }
   [[nodiscard]] StringRef getDescription() const override {
     return "This pass searches for the gate Op pattern - Hadamard followed by "
-           "PauliX and switches it to PauliZ followed by "
+           "Pauli{X,Y,Z} gate and switches it to Pauli{X,Y,Z} followed by "
            "Hadamard";
   }
 
@@ -78,10 +81,10 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    llvm::outs() << "\n[Applying Pass: CommonSwitchHX]\n";    
+    llvm::outs() << "\n[Applying Pass: CommonSwitchHXYZ]\n";
 
     SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchHX);
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchHXYZ);
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
@@ -90,19 +93,20 @@ public:
   }
 };
 
-class CommonSwitchXH
-    : public PassWrapper<CommonSwitchXH, OperationPass<mlir::ModuleOp>> {
+
+class CommonSwitchXYZH
+    : public PassWrapper<CommonSwitchXYZH, OperationPass<mlir::ModuleOp>> {
 
 public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchXH)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchXYZH)
 
   [[nodiscard]] StringRef getArgument() const override {
-    return "CommonSwitchXHPass";
+    return "CommonSwitchXYZHPass";
   }
   [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for the gate Op pattern - PauliX followed by "
-           "Hadamard and switches it to Hadamard followed by "
-           "PauliZ";
+    return "This pass searches for the gate Op pattern - Pauli{X,Y,Z} followed by "
+           "Hadamard gate and switches it to Hadamard followed by "
+           "Pauli{X,Y,Z}";
   }
 
   void runOnOperation() override {
@@ -113,10 +117,10 @@ public:
     auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
 #endif
 
-    llvm::outs() << "\n[Applying Pass: CommonSwitchXH]\n";    
+    llvm::outs() << "\n[Applying Pass: CommonSwitchXYZH]\n";
 
     SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchXH);
+    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchXYZH);
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
@@ -125,104 +129,24 @@ public:
   }
 };
 
-class CommonSwitchHZ
-    : public PassWrapper<CommonSwitchHZ, OperationPass<mlir::ModuleOp>> {
-
-public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHZ)
-
-  [[nodiscard]] StringRef getArgument() const override {
-    return "CommonSwitchHZPass";
-  }
-  [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for the gate Op pattern - Hadamard followed by "
-           "PauliZ and switches it to PauliX followed by "
-           "Hadamard";
-  }
-
-  void runOnOperation() override {
-#ifdef BUILD_CUDAQ_ENABLED
-    auto &analysis = getAnalysis<QuakeAnalysis>();
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
-#endif
-
-    llvm::outs() << "\n[Applying Pass: CommonSwitchHZ]\n";
-
-    SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchHZ);
-
-    if (failed(analysis.verifyModule())) {
-      llvm::errs() << "[" << getArgument() << "]"
-                   << " : MLIR Module verification failed\n";
-    }
-  }
-};
-
-class CommonSwitchHY
-    : public PassWrapper<CommonSwitchHY, OperationPass<mlir::ModuleOp>> {
-
-public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonSwitchHZ)
-
-  [[nodiscard]] StringRef getArgument() const override {
-    return "CommonSwitchHYPass";
-  }
-  [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for the gate Op pattern - Hadamard followed by "
-           "PauliY and switches it to PauliY followed by "
-           "Hadamard";
-  }
-
-  void runOnOperation() override {
-#ifdef BUILD_CUDAQ_ENABLED
-    auto &analysis = getAnalysis<QuakeAnalysis>();
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
-#endif
-
-    llvm::outs() << "\n[Applying Pass: CommonSwitchHY]\n";
-
-    SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchHY);
-
-    if (failed(analysis.verifyModule())) {
-      llvm::errs() << "[" << getArgument() << "]"
-                   << " : MLIR Module verification failed\n";
-    }
-  }
-};
 
 } // namespace
 
 #ifdef BUILD_CUDAQ_ENABLED
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonSwitchHXPass() {
-  return std::make_unique<CommonSwitchHX>();
+std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonSwitchXYZHPass() {
+  return std::make_unique<CommonSwitchXYZH>();
 }
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonSwitchXHPass() {
-  return std::make_unique<CommonSwitchXH>();
-}
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonSwitchHZPass() {
-  return std::make_unique<CommonSwitchHZ>();
-}
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonSwitchHYPass() {
-  return std::make_unique<CommonSwitchHY>();
+std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonSwitchHXYZPass() {
+  return std::make_unique<CommonSwitchHXYZ>();
 }
 #endif
 
 #ifdef BUILD_CATALYST_ENABLED
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonSwitchHXPass() {
-  return std::make_unique<CommonSwitchHX>();
+
+std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonSwitchXYZHPass() {
+  return std::make_unique<CommonSwitchXYZH>();
 }
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonSwitchXHPass() {
-  return std::make_unique<CommonSwitchHX>();
-}
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonSwitchHZPass() {
-  return std::make_unique<CommonSwitchHZ>();
-}
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonSwitchHYPass() {
-  return std::make_unique<CommonSwitchHY>();
+std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonSwitchHXYZPass() {
+  return std::make_unique<CommonSwitchHXYZ>();
 }
 #endif

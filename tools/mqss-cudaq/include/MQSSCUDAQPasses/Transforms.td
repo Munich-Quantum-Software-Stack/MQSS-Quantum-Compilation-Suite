@@ -36,29 +36,16 @@ def CommonCommuteRxCxPass : Pass<"CommonCommuteRxCxPass"> {
   let constructor = "mqss_cudaq::opt::CommonCommuteRxCxPass()";
 }
 
-
-def CommonSwitchHXPass : Pass<"CommonSwitchHXPass"> {
-  let summary = "This pass searches for the gate Op pattern Hadamard followed by "
-                "PauliX and switched it to PauliZ followed by Hadamard";
-  let constructor = "mqss_cudaq::opt::CommonSwitchHXPass()";
-}
-
-def CommonSwitchHYPass : Pass<"CommonSwitchHYPass"> {
+def CommonSwitchHXYZPass : Pass<"CommonSwitchHXYZPass"> {
   let summary = "This pass searches for the gate Op pattern - Hadamard followed by "
-                "PauliY and switches it to PauliY followed by "
+                "Pauli{X,Y,Z} gate and switches it to Pauli{X,Y,Z} followed by "
                 "Hadamard";
-  let constructor = "mqss_cudaq::opt::CommonSwitchHYPass()";
+  let constructor = "mqss_cudaq::opt::CommonSwitchHXYZPass()";
 }
 
-def CommonSwitchXHPass : Pass<"CommonSwitchXHPass"> {
-  let summary = "This pass searches for the gate Op pattern - PauliX followed by "
-                "Hadamard and switches it to Hadamard followed by "
-                "PauliZ";
-  let constructor = "mqss_cudaq::opt::CommonSwitchXHPass()";
-}
-
-def CommonSwitchHZPass : Pass<"CommonSwitchHZPass"> {
-  let summary = "This pass searches for the gate Op pattern Hadamard followed by "
-                "PauliZ and switched it to PauliX followed by Hadamard";
-  let constructor = "mqss_cudaq::opt::CommonSwitchHZPass()";
+def CommonSwitchXYZHPass : Pass<"CommonSwitchXYZHPass"> {
+  let summary = "This pass searches for the gate Op pattern - Pauli{X,Y,Z} followed by "
+                "Hadamard gate and switches it to Hadamard followed by "
+                "Pauli{X,Y,Z}";
+  let constructor = "mqss_cudaq::opt::CommonSwitchXYZHPass()";
 }

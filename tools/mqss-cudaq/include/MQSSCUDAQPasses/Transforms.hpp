@@ -64,10 +64,9 @@ std::unique_ptr<mlir::Pass> CommonCommuteRxCxPass();
 std::unique_ptr<mlir::Pass> CommonCommuteXCxPass();
 
 // Gate Pattern Switch passes
-std::unique_ptr<mlir::Pass> CommonSwitchHXPass();
-std::unique_ptr<mlir::Pass> CommonSwitchHYPass();
-std::unique_ptr<mlir::Pass> CommonSwitchXHPass();
-std::unique_ptr<mlir::Pass> CommonSwitchHZPass();
+
+std::unique_ptr<mlir::Pass> CommonSwitchXYZHPass();
+std::unique_ptr<mlir::Pass> CommonSwitchHXYZPass();
 
 } // namespace mqss_cudaq::opt
 

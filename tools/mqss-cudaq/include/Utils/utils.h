@@ -42,6 +42,7 @@ inline void createQuakeGate(Location loc, llvm::StringRef NewGateTy,
                        const std::vector<Value> TargetQubits,
                        mlir::IRRewriter &builder) {
 
+
   if (NewGateTy == "PauliZ") {
         builder.create<quake::ZOp>(loc, false, mlir::ValueRange(),
                                     mlir::ValueRange(), TargetQubits);

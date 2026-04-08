@@ -15,9 +15,9 @@ struct Comparety{
 
 struct PassInfoty{
 
-   Gate FirstGateTy = Gate::UNKNOWN;
-   Gate SecondGateTy = Gate::UNKNOWN;
-   std::tuple<Gate, Gate> Replacetuple;
+   std::vector<Gate> FirstGateTy;
+   std::vector<Gate> SecondGateTy;
+   std::unordered_map<Gate, Gate>ReplacementMap;
    Comparety CompareKey;
 
 };
@@ -168,7 +168,7 @@ performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
     if (!FirstGateOpQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
       continue;
 
-    if (FirstGateTy != Gate1Ty)
+    if (!is_contained(Gate1Ty, FirstGateTy))
       continue;
 
     if (CommutationInfo.isScheduled(FirstGateOp))
@@ -181,7 +181,7 @@ performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
     while (NextOp) {
       auto nextOpView = OpQuantumView[NextOp];
       // llvm::outs() << "next op: " << *NextOp << "\n";
-      if (nextOpView.hasSideEffects && nextOpView.GateTy != Gate2Ty &&
+      if (nextOpView.hasSideEffects && !is_contained(Gate2Ty,nextOpView.GateTy) &&
           (touchesAny(NextOp, FirstGateOpQView.ControlQubits, OpQuantumView) ||
            touchesAny(NextOp, FirstGateOpQView.TargetQubits, OpQuantumView))) {
 
@@ -189,7 +189,7 @@ performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
         break;
       }
 
-      if (nextOpView.GateTy == Gate2Ty) {
+      if (is_contained(Gate2Ty, nextOpView.GateTy)) {
 
         if (SameQubits(
                 {FirstGateOpQView.ControlQubits, FirstGateOpQView.TargetQubits},
@@ -235,9 +235,25 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
       //  TODO: 1. Can we do better? Do not like the use of MACROS
       //        2. What if Op1 is to be switched out and replaced?
 
-      auto *OpToSwitchOut =
-          std::get<0>(PassInfo.Replacetuple) == PassInfo.FirstGateTy ? Op1
-                                                                     : Op2;
+      auto Op1Ty = OpQuantumView[Op1].GateTy;
+      auto Op2Ty = OpQuantumView[Op2].GateTy;
+
+      Operation *OpToSwitchOut = nullptr;
+      StringRef ReplacementGateTy = "";
+      for (auto &[Gatety, ReplaceWithTy] : PassInfo.ReplacementMap) {
+        if (Gatety == Op1Ty) {
+          OpToSwitchOut = Op1;
+          ReplacementGateTy = parseGateTy(ReplaceWithTy);
+          break;
+        } else if (Gatety == Op2Ty) {
+          OpToSwitchOut = Op2;
+          ReplacementGateTy = parseGateTy(ReplaceWithTy);
+          break;
+        }
+      }
+
+      assert(OpToSwitchOut && "Op to switch out cannot be NULL!!");
+      assert(!ReplacementGateTy.empty() && "Need the replacementgatety!!");
 
       std::vector<Value> targetQubitsbaseVector;
       for (auto Op : OpToSwitchOut->getOperands()) {
@@ -247,14 +263,13 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
                      << "\n";
       }
 
-      auto ReplacementGateTy = std::get<1>(PassInfo.Replacetuple);
 #ifdef BUILD_CUDAQ_ENABLED
-      createQuakeGate(Op2->getLoc(), parseGateTy(ReplacementGateTy),
-                 targetQubitsbaseVector, builder);
+      createQuakeGate(Op2->getLoc(), ReplacementGateTy, targetQubitsbaseVector,
+                      builder);
 #endif
 #ifdef BUILD_CATALYST_ENABLED
-      createCatalystGate(Op2->getLoc(), parseGateTy(ReplacementGateTy),
-                 targetQubitsbaseVector, builder);
+      createCatalystGate(Op2->getLoc(), ReplacementGateTy,
+                         targetQubitsbaseVector, builder);
 #endif
       builder.eraseOp(OpToSwitchOut);
     }

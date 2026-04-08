@@ -28,30 +28,30 @@ struct SharedPassLogic{
 
     PassInfoty PassInfo;
     if (Mode == PassMode::CommuteCxRx) {
-      PassInfo.FirstGateTy = Gate::CNOT;
-      PassInfo.SecondGateTy = Gate::RX;
+      PassInfo.FirstGateTy.push_back(Gate::CNOT);
+      PassInfo.SecondGateTy.push_back(Gate::RX);
       PassInfo.CompareKey = {"Target", "Target"};
     }
     else if (Mode == PassMode::CommuteCxX) {
-      PassInfo.FirstGateTy = Gate::CNOT;
-      PassInfo.SecondGateTy = Gate::PauliX;
+      PassInfo.FirstGateTy.push_back(Gate::CNOT);
+      PassInfo.SecondGateTy.push_back(Gate::PauliX);
       PassInfo.CompareKey = {"Target", "Target"};
     } else if (Mode == PassMode::CommuteXCx) {
-      PassInfo.FirstGateTy = Gate::PauliX;
-      PassInfo.SecondGateTy = Gate::CNOT;
+      PassInfo.FirstGateTy.push_back(Gate::PauliX);
+      PassInfo.SecondGateTy.push_back(Gate::CNOT);
       PassInfo.CompareKey = {"Target", "Target"};
     } else if (Mode == PassMode::CommuteCxZ) {
-      PassInfo.FirstGateTy = Gate::CNOT;
-      PassInfo.SecondGateTy = Gate::PauliZ;
+      PassInfo.FirstGateTy.push_back(Gate::CNOT);
+      PassInfo.SecondGateTy.push_back(Gate::PauliZ);
       PassInfo.CompareKey = {"Control", "Target"};
     } else if (Mode == PassMode::CommuteZCx) {
-      PassInfo.FirstGateTy = Gate::PauliZ;
-      PassInfo.SecondGateTy = Gate::CNOT;
+      PassInfo.FirstGateTy.push_back(Gate::PauliZ);
+      PassInfo.SecondGateTy.push_back(Gate::CNOT);
       PassInfo.CompareKey = {"Target", "Control"};
     }
     else if (Mode == PassMode::CommuteRxCx) {
-      PassInfo.FirstGateTy = Gate::RX;
-      PassInfo.SecondGateTy = Gate::CNOT;
+      PassInfo.FirstGateTy.push_back(Gate::RX);
+      PassInfo.SecondGateTy.push_back(Gate::CNOT);
       PassInfo.CompareKey = {"Target", "Target"};
     }
     for (auto &[kernel, Info] : KernelDialectInfo) {
