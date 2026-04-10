@@ -69,7 +69,13 @@ std::unique_ptr<mlir::Pass> CommonCommuteXCxPass();
 std::unique_ptr<mlir::Pass> CommonSwitchXYZHPass();
 std::unique_ptr<mlir::Pass> CommonSwitchHXYZPass();
 
+std::unique_ptr<mlir::Pass> CommonReductionPass();
+
 } // namespace mqss_cudaq::opt
+
+// namespace mq_cudaq::opt{
+//   std::unique_ptr<mlir::Pass> createLoopNormalizePass();
+// } // namespace mq_cudaq::opt
 
 /**
  * @def GEN_PASS_DECL
@@ -77,9 +83,12 @@ std::unique_ptr<mlir::Pass> CommonSwitchHXYZPass();
  */
 // declarative passes
 #define GEN_PASS_DECL
+
 /**
  * @def GEN_PASS_REGISTRATION
  * @brief Macro for pass registration
  */
 #define GEN_PASS_REGISTRATION
 #include "MQSSCUDAQPasses/Transforms.h.inc"
+
+

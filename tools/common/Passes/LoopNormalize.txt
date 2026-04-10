@@ -1,0 +1,54 @@
+/*******************************************************************************
+ * Copyright (c) 2022 - 2026 NVIDIA Corporation & Affiliates.                  *
+ * All rights reserved.                                                        *
+ *                                                                             *
+ * This source code and the accompanying materials are made available under    *
+ * the terms of the Apache License 2.0 which accompanies this distribution.    *
+ ******************************************************************************/
+
+#include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "mlir/Transforms/DialectConversion.h"
+#include "llvm/Support/raw_ostream.h"
+#include "include/PassUtils.h"
+
+
+namespace mqss_cudaq::opt {
+
+#define GEN_PASS_CLASSES
+#include "MQSSCUDAQPasses/Transforms.h.inc"
+
+} // namespace cudaq::opt
+
+// namespace mq_cudaq__opt {
+// #define GEN_PASS_DECL_LOOPNORMALIZEPASS
+// #include "MQSSCUDAQPasses/Transforms.h.inc"
+// // namespace mq_cudaq::opt
+// }
+
+// namespace mqss_cudaq::opt {
+// #define GEN_PASS_DECL_COMMONLOOPNORMALIZEPASS
+// #include "MQSSCUDAQPasses/Transforms.h.inc"
+// } // namespace mqss_cudaq::opt
+
+using namespace mlir;
+using namespace llvm;
+
+namespace {
+
+class LoopNormalizePass
+    : public mqss_cudaq::opt::CommonLoopNormalizePassBase<LoopNormalizePass> {
+public:
+    using Base = mqss_cudaq::opt::CommonLoopNormalizePassBase<LoopNormalizePass>;
+    using Base::Base;
+
+  void runOnOperation() override {
+    auto *op = getOperation();
+    auto *ctx = &getContext();
+    llvm::outs() << "Loop normalize op: " << op->getName() << "\n";
+  }
+};
+} // namespace
+
+std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonLoopNormalizePass() {
+  return std::make_unique<LoopNormalizePass>();
+}

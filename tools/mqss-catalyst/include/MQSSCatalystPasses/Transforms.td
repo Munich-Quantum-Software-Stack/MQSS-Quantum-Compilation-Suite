@@ -55,3 +55,18 @@ def CommonSwitchXYZHPass : Pass<"CommonSwitchXYZHPass"> {
                 "Pauli{X,Y,Z}";
   let constructor = "mqss_catalyst::opt::CommonSwitchXYZHPass()";
 }
+
+def CommonReductionPass : Pass<"CommonReductionPass", "mlir::ModuleOp"> {
+  let summary = "Perform Circuit Reduction, {HZH} -> X or {HXH} -> Z. ";
+ 
+  let description = [{
+    Perform Circuit Reduction, {HZH} -> X or {HXH} -> Z.
+  }];
+ 
+ let constructor = "mqss_catalyst::opt::CommonReductionPass()";
+
+  let options = [
+    Option<"mode", "mode", "std::string",
+      /*default=*//*default=*/"\"HXHToZ\"", "Select PassMode HXHToZ or HZHToX.">,
+  ];
+}

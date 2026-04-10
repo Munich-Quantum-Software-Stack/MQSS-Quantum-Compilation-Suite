@@ -13,6 +13,11 @@
 
 enum class QubitRole { Control, Target, Rotation };
 
+// static const StringSet<> rotationsSet = {"RX", "RY", "RZ"};
+// static const StringSet<> hermitianSet = {"Hadamard", "PauliX", "PauliY", "PauliZ",
+//                                          "H",        "X",      "Y",      "Z"};
+// static const StringSet<> multiQubitSet = {"CNOT", "CZ", "SWAP"};
+
 static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
     {
         // Controlled gates

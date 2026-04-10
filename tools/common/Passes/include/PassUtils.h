@@ -1,61 +1,64 @@
 
+#include "PassIncludes.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/Dialect/Arith/IR/Arith.h"
+
 #include "llvm/Support/raw_ostream.h"
-#include "PassIncludes.h"
+
 #include <cmath>
 
 using namespace mlir;
 
-
-struct Comparety{
-  std::string KeyGate1="";
-  std::string KeyGate2="";
+struct Comparety {
+  std::string KeyGate1 = "";
+  std::string KeyGate2 = "";
 };
 
-struct PassInfoty{
+struct PassInfoty {
+  std::vector<Gate> FirstGateTy;
+  std::vector<Gate> SecondGateTy;
+  std::unordered_map<Gate, Gate> ReplacementMap;
+  Comparety CompareKey;
+};
 
-   std::vector<Gate> FirstGateTy;
-   std::vector<Gate> SecondGateTy;
-   std::unordered_map<Gate, Gate>ReplacementMap;
-   Comparety CompareKey;
-
+struct ReductionPassInfoty {
+  std::vector<Gate> GatesToCancel;
+  Gate NewGateTy;
+  Comparety CompareKey;
 };
 
 struct CommuteTy {
-  Operation *Op1=nullptr;
-  Operation *Op2=nullptr;
+  Operation *Op1 = nullptr;
+  Operation *Op2 = nullptr;
 };
 
-struct CommuteInfoTy{
+struct CommuteInfoTy {
 
-  public:
-
-  void gather(Operation *Op1, Operation *Op2){
-    CommuteTy Commute{Op1,Op2};
+public:
+  void gather(Operation *Op1, Operation *Op2) {
+    CommuteTy Commute{Op1, Op2};
     CommuteCandidates.push_back(Commute);
   }
-  
-  bool isScheduled(Operation *KeyOp){
-    if(CommuteCandidates.empty())
+
+  bool isScheduled(Operation *KeyOp) {
+    if (CommuteCandidates.empty())
       return false;
 
-    for(auto Cand : CommuteCandidates){
-        if(Cand.Op1 == KeyOp || Cand.Op2 == KeyOp)
-          return true;
+    for (auto Cand : CommuteCandidates) {
+      if (Cand.Op1 == KeyOp || Cand.Op2 == KeyOp)
+        return true;
     }
     return false;
   }
 
-  std::vector<CommuteTy> getCommutationCandidates(){
+  std::vector<CommuteTy> getCommutationCandidates() {
     return CommuteCandidates;
   }
 
-  private:
+private:
   std::vector<CommuteTy> CommuteCandidates;
 };
-
 
 static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
 
@@ -76,7 +79,6 @@ static bool checkDoublePiMultiplies(double angle) {
     return true;
   return false;
 }
-
 
 static void cancel(Operation *Op) {
   mlir::IRRewriter rewriter(Op->getContext());
@@ -105,8 +107,8 @@ static bool equivalence_check(const std::vector<QubitID> &Op1,
 }
 
 static bool SameQubits(tupleVectorsQubitIDs Gate1CtrlTarget,
-                            tupleVectorsQubitIDs Gate2CtrlTarget,
-                            Comparety Comparekey) {
+                       tupleVectorsQubitIDs Gate2CtrlTarget,
+                       Comparety Comparekey) {
 
   auto &[Gate1Ctrls, Gate1Targets] = Gate1CtrlTarget;
   auto &[Gate2Ctrls, Gate2Targets] = Gate2CtrlTarget;
@@ -124,7 +126,6 @@ static bool SameQubits(tupleVectorsQubitIDs Gate1CtrlTarget,
           equivalence_check(Gate1Targets, Gate2Targets));
 }
 
-
 static bool isContained(QubitID KeyQubit, std::vector<QubitID> QubitList) {
 
   for (auto ctrl : QubitList) {
@@ -134,9 +135,8 @@ static bool isContained(QubitID KeyQubit, std::vector<QubitID> QubitList) {
   return false;
 }
 
-static bool
-touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
-           std::map<Operation *, QuantumOpView> OpQuantumView) {
+static bool touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
+                       std::map<Operation *, QuantumOpView> OpQuantumView) {
 
   for (auto Op1Qubit : Op1QubitIDs) {
     auto Op1Qubitbase = Op1Qubit.base;
@@ -163,13 +163,28 @@ touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
   return false;
 }
 
+static Operation* createNewGate(Location loc, llvm::StringRef NewGateTy,
+                          std::vector<Value> targetQubitsbaseVector,
+                          mlir::IRRewriter &builder) {
+
+  Operation *NewOp;
+#ifdef BUILD_CUDAQ_ENABLED
+  NewOp = createQuakeGate(loc, NewGateTy, targetQubitsbaseVector, builder);
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+  NewOp = createCatalystGate(loc, NewGateTy, targetQubitsbaseVector,
+                     builder);
+#endif
+  return NewOp;
+}
+
 static std::vector<CommuteTy>
 performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
                    PassInfoty PassInfo) {
 
-  auto Gate1Ty=PassInfo.FirstGateTy;
+  auto Gate1Ty = PassInfo.FirstGateTy;
   auto Gate2Ty = PassInfo.SecondGateTy;
-  auto CompareKey= PassInfo.CompareKey;
+  auto CompareKey = PassInfo.CompareKey;
 
   CommuteInfoTy CommutationInfo;
   for (auto &[FirstGateOp, FirstGateOpQView] : OpQuantumView) {
@@ -191,7 +206,8 @@ performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
     while (NextOp) {
       auto nextOpView = OpQuantumView[NextOp];
       // llvm::outs() << "next op: " << *NextOp << "\n";
-      if (nextOpView.hasSideEffects && !is_contained(Gate2Ty,nextOpView.GateTy) &&
+      if (nextOpView.hasSideEffects &&
+          !is_contained(Gate2Ty, nextOpView.GateTy) &&
           (touchesAny(NextOp, FirstGateOpQView.ControlQubits, OpQuantumView) ||
            touchesAny(NextOp, FirstGateOpQView.TargetQubits, OpQuantumView))) {
 
@@ -228,8 +244,7 @@ static void
 performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
                         PassInfoty PassInfo) {
 
-  auto CommutedOps =
-      performCommutation(OpQuantumView, PassInfo);
+  auto CommutedOps = performCommutation(OpQuantumView, PassInfo);
 
   for (auto &[Op1, Op2] : CommutedOps) {
     if (OpQuantumView.count(Op2)) {
@@ -273,14 +288,9 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
                      << "\n";
       }
 
-#ifdef BUILD_CUDAQ_ENABLED
-      createQuakeGate(Op2->getLoc(), ReplacementGateTy, targetQubitsbaseVector,
-                      builder);
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-      createCatalystGate(Op2->getLoc(), ReplacementGateTy,
-                         targetQubitsbaseVector, builder);
-#endif
+      createNewGate(Op2->getLoc(), ReplacementGateTy, targetQubitsbaseVector,
+                    builder);
+
       builder.eraseOp(OpToSwitchOut);
     }
   }
@@ -324,7 +334,7 @@ static void performNullRotationCancellation(
 }
 
 static void
-performCancellation(std::map<Operation*, QuantumOpView> OpQuantumView,
+performCancellation(std::map<Operation *, QuantumOpView> OpQuantumView,
                     std::vector<Gate> GatesToCancel, Comparety CompareKey) {
 
   SmallSetVector<Operation *, 16> ToErase;
@@ -334,10 +344,10 @@ performCancellation(std::map<Operation*, QuantumOpView> OpQuantumView,
     if (!FirstGateQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
       continue;
 
-    if (is_contained(GatesToCancel, FirstGateTy))
+    if (!is_contained(GatesToCancel, FirstGateTy))
       continue;
 
-    if(ToErase.count(FirstGateOp))
+    if (ToErase.count(FirstGateOp))
       continue;
 
     auto *NextOp = FirstGateOp->getNextNode();
@@ -370,6 +380,117 @@ performCancellation(std::map<Operation*, QuantumOpView> OpQuantumView,
 
       NextOp = NextOp->getNextNode();
     }
+  }
+
+  for (auto *Op : ToErase) {
+    llvm::outs() << "-->To Erase: " << *Op << "\n";
+    cancel(Op);
+  }
+}
+
+struct pipelinety {
+  Operation *GateOp;
+  QuantumOpView GateOpView;
+};
+
+static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
+                             const ReductionPassInfoty PassInfo) {
+
+  SmallSetVector<Operation *, 16> ToErase;
+
+  int i = 0;
+  auto FirstGateToCancelTy = PassInfo.GatesToCancel[i];
+
+  std::vector<pipelinety> pipeline;
+
+  for (auto &[GateOp, FirstGateQView] : OpQuantumView) {
+
+    auto FirstGateTy = FirstGateQView.GateTy;
+    if (!FirstGateQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
+      continue;
+
+    if (is_contained(PassInfo.GatesToCancel, FirstGateTy) &&
+        pipeline.size() != PassInfo.GatesToCancel.size()) {
+      pipeline.push_back({GateOp, FirstGateQView});
+    }
+
+    if (pipeline.size() == PassInfo.GatesToCancel.size()) {
+      bool patterncheck = true;
+      for (auto i = 0; i < pipeline.size(); i++) {
+        if (pipeline[i].GateOpView.GateTy != PassInfo.GatesToCancel[i]) {
+          break;
+        }
+      }
+
+      if (!patterncheck) {
+        pipeline.clear();
+        continue;
+      }
+
+      bool ChecksSatisfied = true;
+      for (int i = 0; i < pipeline.size() - 1; i++) {
+        auto FirstPatternOp = pipeline[i].GateOp;
+        auto FirstPatternOpQView = pipeline[i].GateOpView;
+        auto SecondPatternOp = pipeline[i + 1].GateOp;
+        auto SecondPatternOpQView = pipeline[i].GateOpView;
+
+        auto NextOp = FirstPatternOp->getNextNode();
+
+        bool InterveningOps = false;
+        while (NextOp != SecondPatternOp) {
+          auto nextOpView = OpQuantumView[NextOp];
+          if (nextOpView.hasSideEffects &&
+              (touchesAny(NextOp, FirstPatternOpQView.ControlQubits,
+                          OpQuantumView) ||
+               touchesAny(NextOp, FirstPatternOpQView.TargetQubits,
+                          OpQuantumView))) {
+            InterveningOps = true;
+            break;
+          }
+
+          NextOp = NextOp->getNextNode();
+        }
+
+        if (InterveningOps) {
+          ChecksSatisfied = false;
+          break;
+        }
+
+        if (!SameQubits({FirstPatternOpQView.ControlQubits,
+                         FirstPatternOpQView.TargetQubits},
+                        {SecondPatternOpQView.ControlQubits,
+                         SecondPatternOpQView.TargetQubits},
+                        PassInfo.CompareKey)) {
+          ChecksSatisfied = false;
+          break;
+        }
+      }
+
+      if (ChecksSatisfied) {
+        for (auto [GOp, View] : pipeline)
+          ToErase.insert(GOp);
+      }
+      pipeline.clear();
+    }
+  }
+
+  if (PassInfo.NewGateTy != Gate::UNKNOWN) {
+
+    std::vector<Value> targetQubitsbaseVector;
+    auto RefOp = ToErase[ToErase.size() - 1];
+    llvm::outs() << "Ref gate: " << *RefOp << "\n";
+    for (auto Op : RefOp->getOperands()) {
+      targetQubitsbaseVector.push_back(Op);
+      llvm::outs() << "Switch out target: " << Op << "\n";
+    }
+
+    mlir::IRRewriter builder(RefOp->getContext());
+    builder.setInsertionPointAfter(RefOp);
+
+    auto *NewOp = createNewGate(RefOp->getLoc(), parseGateTy(PassInfo.NewGateTy),
+                                targetQubitsbaseVector, builder);
+
+    llvm::outs() << "--->Created: " << *NewOp << "\n";
   }
 
   for (auto *Op : ToErase) {

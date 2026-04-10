@@ -85,6 +85,7 @@ std::unique_ptr<mlir::Pass> CommonCommuteXCxPass();
 
 std::unique_ptr<mlir::Pass> CommonSwitchXYZHPass();
 std::unique_ptr<mlir::Pass> CommonSwitchHXYZPass();
+std::unique_ptr<mlir::Pass> CommonReductionPass();
 
 /**
  * @brief Example MLIR pass that traverses a given MLIR/Quake.

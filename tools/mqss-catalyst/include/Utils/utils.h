@@ -5,7 +5,6 @@
 
 using namespace mlir;
 
-
 inline catalyst::quantum::CustomOp
 isCatalystQuantumGateOp(mlir::Operation *op) {
 
@@ -27,7 +26,7 @@ inline bool hasQuantumEffect(Operation *op) {
     return false;
 }
 
-inline void createCatalystGate(Location loc,
+inline catalyst::quantum::CustomOp createCatalystGate(Location loc,
                                llvm::StringRef NewGateTy,
                                const std::vector<Value> TargetQubits,
                                mlir::IRRewriter &builder) {
@@ -39,7 +38,7 @@ inline void createCatalystGate(Location loc,
         for(auto t : TargetQubits){
           TargetQubitTys.push_back(t.getType());
         }
-        auto newGate = builder.create<catalyst::quantum::CustomOp>(
+        return builder.create<catalyst::quantum::CustomOp>(
             loc,
             /*out_qubits=*/mlir::TypeRange(TargetQubitTys),
             /*out_ctrl_qubits=*/mlir::TypeRange(),
@@ -50,4 +49,5 @@ inline void createCatalystGate(Location loc,
             /*in_ctrl_qubits=*/mlir::ValueRange(),
             /*in_ctrl_values=*/mlir::ValueRange());
     }
+    return nullptr;
 }
