@@ -16,27 +16,6 @@
 using namespace mlir;
 using namespace llvm;
 
-
-#ifdef BUILD_CUDAQ_ENABLED
-namespace mqss_backend = mqss_cudaq::opt;
-
-namespace mqss_cudaq::opt {
-#define GEN_PASS_CLASSES
-#include "MQSSCUDAQPasses/Transforms.h.inc"
-
-} // namespace mqss_cudaq::opt
-#endif
-
-#ifdef BUILD_CATALYST_ENABLED
-namespace mqss_backend = mqss_catalyst::opt;
-
-namespace mqss_catalyst::opt {
-#define GEN_PASS_CLASSES
-#include "MQSSCatalystPasses/Transforms.h.inc"
-
-} // namespace mqss_catalyst::opt
-#endif
-
 namespace {
 
   enum class PassMode {
@@ -80,12 +59,8 @@ public:
     using Base::Base;
 
   void runOnOperation() override {
-#ifdef BUILD_CUDAQ_ENABLED
-    auto &analysis = getAnalysis<QuakeAnalysis>();
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
-#endif
+
+    auto &analysis = getAnalysis<DialectAnalysis>();
 
     llvm::outs() << "\n[Applying Pass: CommonReduction]\n";
 
@@ -111,14 +86,6 @@ public:
 
 } // namespace
 
-#ifdef BUILD_CUDAQ_ENABLED
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonReductionPass() {
+std::unique_ptr<mlir::Pass> mqss_backend::CommonReductionPass() {
   return std::make_unique<CommonReduction>();
 }
-#endif
-
-#ifdef BUILD_CATALYST_ENABLED
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonReductionPass() {
-  return std::make_unique<CommonReduction>();
-}
-#endif

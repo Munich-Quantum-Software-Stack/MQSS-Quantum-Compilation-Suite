@@ -12,16 +12,16 @@ using namespace llvm;
 namespace {
 
 enum class PassMode {
-    CommuteCxRx,
-    CommuteCxX,
-    CommuteXCx,
-    CommuteCxZ,
-    CommuteZCx,
-    CommuteRxCx,
-    NA
+  CommuteCxRx,
+  CommuteCxX,
+  CommuteXCx,
+  CommuteCxZ,
+  CommuteZCx,
+  CommuteRxCx,
+  NA
 };
 
-struct SharedPassLogic{
+struct SharedPassLogic {
 
   void run(llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo,
            PassMode Mode) {
@@ -31,8 +31,7 @@ struct SharedPassLogic{
       PassInfo.FirstGateTy.push_back(Gate::CNOT);
       PassInfo.SecondGateTy.push_back(Gate::RX);
       PassInfo.CompareKey = {"Target", "Target"};
-    }
-    else if (Mode == PassMode::CommuteCxX) {
+    } else if (Mode == PassMode::CommuteCxX) {
       PassInfo.FirstGateTy.push_back(Gate::CNOT);
       PassInfo.SecondGateTy.push_back(Gate::PauliX);
       PassInfo.CompareKey = {"Target", "Target"};
@@ -48,8 +47,7 @@ struct SharedPassLogic{
       PassInfo.FirstGateTy.push_back(Gate::PauliZ);
       PassInfo.SecondGateTy.push_back(Gate::CNOT);
       PassInfo.CompareKey = {"Target", "Control"};
-    }
-    else if (Mode == PassMode::CommuteRxCx) {
+    } else if (Mode == PassMode::CommuteRxCx) {
       PassInfo.FirstGateTy.push_back(Gate::RX);
       PassInfo.SecondGateTy.push_back(Gate::CNOT);
       PassInfo.CompareKey = {"Target", "Target"};
@@ -69,205 +67,35 @@ struct SharedPassLogic{
  * modifications etc.
  **/
 
-class CommonCommuteCxRx
-    : public PassWrapper<CommonCommuteCxRx, OperationPass<mlir::ModuleOp>> {
+class CommonCommute
+    : public mqss_backend::CommonCommutePassBase<CommonCommute> {
 
-public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteCxRx)
-
-  [[nodiscard]] StringRef getArgument() const override {
-    return "CommonCommuteCxRxPass";
-  }
-  [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for the gate Op pattern CNOT followed by Rx and "
-           "commutes them.";
-  }
+  using Base = mqss_backend::CommonCommutePassBase<CommonCommute>;
+  using Base::Base;
 
   void runOnOperation() override {
-#ifdef BUILD_CUDAQ_ENABLED
-    auto &analysis = getAnalysis<QuakeAnalysis>();
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
-#endif
 
-    llvm::outs() << "\n[Applying Pass: CommonCommuteCxRx]\n";
+    auto analysis = getAnalysis<DialectAnalysis>();
+
+    llvm::outs() << "\n[Applying Pass: CommonCommute]\n";
 
     SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxRx);
-
-    if (failed(analysis.verifyModule())) {
-      llvm::errs() << "[" << getArgument() << "]"
-                   << " : MLIR Module verification failed\n";
+    if (mode == "CX-RX")
+      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxRx);
+    else if (mode == "RX-CX")
+      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteRxCx);
+    else if (mode == "CX-X")
+      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxX);
+    else if (mode == "X-CX")
+      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteXCx);
+    else if (mode == "CX-Z")
+      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxZ);
+    else if (mode == "Z-CX")
+      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteZCx);
+    else {
+      getOperation()->emitError() << "invalid mode: " << mode;
+      signalPassFailure();
     }
-  }
-};
-
-class CommonCommuteCxX
-    : public PassWrapper<CommonCommuteCxX, OperationPass<mlir::ModuleOp>> {
-
-public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteCxX)
-
-  [[nodiscard]] StringRef getArgument() const override {
-    return "CommonCommuteCxXPass";
-  }
-  [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for the gate Op pattern CNOT followed by PAULIX "
-           "and commutes them.";
-  }
-
-  void runOnOperation() override {
-
-#ifdef BUILD_CUDAQ_ENABLED
-    auto &analysis = getAnalysis<QuakeAnalysis>();
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
-#endif
-
-    llvm::outs() << "\n[Applying Pass: CommonCommuteCxX]\n";
-
-    SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxX);
-
-    if (failed(analysis.verifyModule())) {
-      llvm::errs() << "[" << getArgument() << "]"
-                   << " : MLIR Module verification failed\n";
-    }
-  }
-};
-
-class CommonCommuteXCx
-    : public PassWrapper<CommonCommuteXCx, OperationPass<mlir::ModuleOp>> {
-
-public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteXCx)
-
-  [[nodiscard]] StringRef getArgument() const override {
-    return "CommonCommuteXCxPass";
-  }
-  [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for the gate Op pattern PAULIX followed by CNOT "
-           "and commutes them.";
-  }
-
-  void runOnOperation() override {
-
-#ifdef BUILD_CUDAQ_ENABLED
-    auto &analysis = getAnalysis<QuakeAnalysis>();
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
-#endif
-
-    llvm::outs() << "\n[Applying Pass: CommonCommuteXCx]\n";
-    
-    SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteXCx);
-
-    if (failed(analysis.verifyModule())) {
-      llvm::errs() << "[" << getArgument() << "]"
-                   << " : MLIR Module verification failed\n";
-    }
-  }
-};
-
-class CommonCommuteCxZ
-    : public PassWrapper<CommonCommuteCxZ, OperationPass<mlir::ModuleOp>> {
-
-public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteCxZ)
-
-  [[nodiscard]] StringRef getArgument() const override {
-    return "CommonCommuteCxZPass";
-  }
-  [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for the gate Op pattern CNOT followed by PAULIZ "
-           "and commutes them.";
-  }
-
-  void runOnOperation() override {
-
-#ifdef BUILD_CUDAQ_ENABLED
-    auto &analysis = getAnalysis<QuakeAnalysis>();
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
-#endif
-
-    llvm::outs() << "\n[Applying Pass: CommonCommuteCxZ]\n";
-
-    SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxZ);
-    if (failed(analysis.verifyModule())) {
-      llvm::errs() << "[" << getArgument() << "]"
-                   << " : MLIR Module verification failed\n";
-    }
-  }
-};
-
-class CommonCommuteZCx
-    : public PassWrapper<CommonCommuteZCx, OperationPass<mlir::ModuleOp>> {
-
-public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteZCx)
-
-  [[nodiscard]] StringRef getArgument() const override {
-    return "CommonCommuteZCxPass";
-  }
-  [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for the gate Op pattern PAULIZ followed by CNOT "
-           "and commutes them.";
-  }
-
-  void runOnOperation() override {
-
-#ifdef BUILD_CUDAQ_ENABLED
-    auto &analysis = getAnalysis<QuakeAnalysis>();
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
-#endif
-
-    llvm::outs() << "\n[Applying Pass: CommonCommuteZCx]\n";
-
-    SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteZCx);
-
-    if (failed(analysis.verifyModule())) {
-      llvm::errs() << "[" << getArgument() << "]"
-                   << " : MLIR Module verification failed\n";
-    }
-  }
-};
-
-class CommonCommuteRxCx
-    : public PassWrapper<CommonCommuteRxCx, OperationPass<mlir::ModuleOp>> {
-
-public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CommonCommuteRxCx)
-
-  [[nodiscard]] StringRef getArgument() const override {
-    return "CommonCommuteRxCxPass";
-  }
-  [[nodiscard]] StringRef getDescription() const override {
-    return "This pass searches for the gate Op pattern Rx followed by CNOT and "
-           "commutes them.";
-  }
-
-  void runOnOperation() override {
-#ifdef BUILD_CUDAQ_ENABLED
-    auto &analysis = getAnalysis<QuakeAnalysis>();
-#endif
-#ifdef BUILD_CATALYST_ENABLED
-    auto &analysis = getAnalysis<CatalystQuantumAnalysis>();
-#endif
-
-    llvm::outs() << "\n[Applying Pass: CommonCommuteRxCx]\n";
-
-    SharedPassLogic PassLogic;
-    PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteRxCx);
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
@@ -278,46 +106,6 @@ public:
 
 } // namespace
 
-#ifdef BUILD_CUDAQ_ENABLED
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteCxRxPass() {
-  return std::make_unique<CommonCommuteCxRx>();
+std::unique_ptr<mlir::Pass> mqss_backend::CommonCommutePass() {
+  return std::make_unique<CommonCommute>();
 }
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteCxXPass() {
-  return std::make_unique<CommonCommuteCxX>();
-}
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteXCxPass() {
-  return std::make_unique<CommonCommuteXCx>();
-}
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteCxZPass() {
-  return std::make_unique<CommonCommuteCxZ>();
-}
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteZCxPass() {
-  return std::make_unique<CommonCommuteZCx>();
-}
-std::unique_ptr<mlir::Pass> mqss_cudaq::opt::CommonCommuteRxCxPass() {
-  return std::make_unique<CommonCommuteRxCx>();
-}
-#endif
-
-#ifdef BUILD_CATALYST_ENABLED
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteCxRxPass() {
-  return std::make_unique<CommonCommuteCxRx>();
-}
-
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteCxXPass() {
-  return std::make_unique<CommonCommuteCxX>();
-}
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteXCxPass() {
-  return std::make_unique<CommonCommuteXCx>();
-}
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteCxZPass() {
-  return std::make_unique<CommonCommuteCxZ>();
-}
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteZCxPass() {
-  return std::make_unique<CommonCommuteZCx>();
-}
-std::unique_ptr<mlir::Pass> mqss_catalyst::opt::CommonCommuteRxCxPass() {
-  return std::make_unique<CommonCommuteRxCx>();
-}
-
-#endif

@@ -73,18 +73,8 @@ namespace mqss_catalyst::opt {
  `mlir::PassManager` to transform any given MLIR module.
  */
 std::unique_ptr<mlir::Pass> CommonGateCancellationPass();
-std::unique_ptr<mlir::Pass> CommonNullRotationCancellationPass();
-
-std::unique_ptr<mlir::Pass> CommonCommuteCxRxPass();
-std::unique_ptr<mlir::Pass> CommonCommuteCxXPass();
-std::unique_ptr<mlir::Pass> CommonCommuteCxZPass();
-std::unique_ptr<mlir::Pass> CommonCommuteZCxPass();
-std::unique_ptr<mlir::Pass> CommonCommuteRxCxPass();
-
-std::unique_ptr<mlir::Pass> CommonCommuteXCxPass();
-
-std::unique_ptr<mlir::Pass> CommonSwitchXYZHPass();
-std::unique_ptr<mlir::Pass> CommonSwitchHXYZPass();
+std::unique_ptr<mlir::Pass> CommonCommutePass();
+std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();
 
 /**

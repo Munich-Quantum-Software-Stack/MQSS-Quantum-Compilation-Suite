@@ -1,4 +1,4 @@
-// RUN: %mqss-catalyst-opt %s --CommonCommuteCxRxPass 2>&1 | FileCheck %s
+// RUN: %mqss-catalyst-opt %s --CommonCommutePass=mode=CX-RX 2>&1 | FileCheck %s
 module {
   func.func @CommuteCNot_Z_test() {
    
