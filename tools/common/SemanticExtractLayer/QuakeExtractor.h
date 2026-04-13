@@ -13,7 +13,6 @@
 
 
 #include "../../mqss-cudaq/include/Utils/utils.h"
-#include "Utils/Quake.hpp"
 
 
 

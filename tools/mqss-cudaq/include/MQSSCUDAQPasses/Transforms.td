@@ -36,7 +36,7 @@ def CommonCommutePass : Pass<"CommonCommutePass", "mlir::ModuleOp"> {
 
   let options = [
     Option<"mode", "mode", "std::string",
-      /*default=*//*default=*/"\"CXRX\"", "Select Pattern to Commute: CX-RX, RX-CX, CX-X, X-CX, CX-Z, Z-CX.">,
+      /*default=*//*default=*/"\"CX-RX\"", "Select Pattern to Commute: CX-RX, RX-CX, CX-X, X-CX, CX-Z, Z-CX.">,
   ];
 
 }

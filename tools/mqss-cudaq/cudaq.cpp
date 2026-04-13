@@ -6,17 +6,12 @@
  * the terms of the Apache License 2.0 which accompanies this distribution.    *
  ******************************************************************************/
 
-// #include "Decompositions.hpp"
-// #include "Examples.hpp"
-// #include "Optimizer/Pipelines.hpp"
-// #include "Passes/CodeGen.hpp"
-// #include "Interfaces/Extractor.hpp"
 #include "SemanticExtractLayer/Extractor.h"
 #include "MQSSCUDAQPasses/Examples.hpp"
 #include "MQSSCUDAQPasses/Transforms.hpp"
-#include "common/RuntimeMLIR.h"
-#include "cudaq/Optimizer/Dialect/CC/CCDialect.h"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
+
+#include "IR/Dialect/CC/CCDialect.h"
+#include "IR/Dialect/Quake/QuakeDialect.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"

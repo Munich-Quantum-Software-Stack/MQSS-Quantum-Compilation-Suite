@@ -6,9 +6,13 @@
  * the terms of the Apache License 2.0 which accompanies this distribution.    *
  ******************************************************************************/
 
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
+#include "IR/Dialect/Quake/QuakeDialect.h"
+#include "IR/Dialect/Quake/QuakeOps.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
+#include "mlir/Transforms/DialectConversion.h"
+
+#include "llvm/Support/Casting.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 using namespace mlir;

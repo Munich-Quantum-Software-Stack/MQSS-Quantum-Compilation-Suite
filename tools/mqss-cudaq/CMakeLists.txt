@@ -74,33 +74,19 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_CXX_STANDARD 20)
 
 # ###################### CUDAQ settings ###################################
+link_directories(${LLVM_BUILD_LIBRARY_DIR})
+add_definitions(${LLVM_DEFINITIONS})
 
+set(CUDAQ_MLIR_RUNTIME_PATH "${DIALECTS_BUILD_DIR}/tools/mqss-cudaq/")
 
-set(CUDAQ_MAIN_INCLUDE_DIR "${CUDAQ_SOURCE_DIR}/include")
-
-set(CUDAQ_BINARY_DIR "${CUDAQ_SOURCE_DIR}/build")
-set(CUDAQ_CMAKE_DIR "${CUDAQ_SOURCE_DIR}/cmake")
-set(CUDAQ_INCLUDE_DIR "${CUDAQ_SOURCE_DIR}/build/include")
-set(CUDAQ_LIBRARY_DIR "${CUDAQ_SOURCE_DIR}/build/lib")
-set(CUDAQ_TOOLS_DIR "${CUDAQ_SOURCE_DIR}/build/bin")
-set(CUDAQ_MLIR_RUNTIME_PATH "${CUDAQ_SOURCE_DIR}/build/lib")
+set(CUDAQ_BINARY_DIR "${DIALECTS_SRC_DIR}/build")
+set(CUDAQ_MAIN_INCLUDE_DIR "${DIALECTS_SRC_DIR}/tools/mqss-cudaq/include")
 
 include_directories(BEFORE ${CUDAQ_MAIN_INCLUDE_DIR}
-                    ${CUDAQ_BINARY_DIR}/include ${CUDAQ_SOURCE_DIR}/runtime)
-
-# Validate CUDAQ dependencies
-if(NOT EXISTS ${CUDAQ_BINARY_DIR}/lib/libcudaq-mlir-runtime.so)
-  message(
-    FATAL_ERROR
-      "Invalid CUDAQ dir: ${CUDAQ_SOURCE_DIR}. Cannot find libcudaq.so in build directory."
-  )
-endif()
+  ${CUDAQ_BINARY_DIR}/tools/mqss-cudaq/include
+)
 
 include(FetchContent)
-
-# Define the common libraries to link
-set(COMMON_LIBRARIES ${CUDAQ_MLIR_RUNTIME_PATH}/libcudaq-mlir-runtime.so
-                     pthread)
 
 #########################LLVM-LIT TESTING SETTINGS###############################
 
@@ -137,6 +123,8 @@ endif()
 target_link_libraries(mqss-cudaq-opt 
   PRIVATE 
     MLIRPasses
+    CCDialect
+    QuakeDialect
     # The missing MLIR dialects
     MLIRFuncDialect         # <--- Fixes the func.func error
     MLIRArithDialect        # <--- For constants and math

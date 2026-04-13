@@ -127,7 +127,6 @@ include(FetchContent)
 
 set(LLVM_EXTERNAL_LIT "/workspaces/compilers/MQSS-Catalyst-Compiler/mlir/llvm-project/build/bin/llvm-lit")
 
-message(CMAKESRCDIR= "${CMAKE_SOURCE_DIR}")
 add_custom_target(check-mqss
   COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/dialects/catalyst-quantum
 )
