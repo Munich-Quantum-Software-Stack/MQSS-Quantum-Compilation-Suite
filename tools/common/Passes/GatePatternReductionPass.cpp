@@ -55,8 +55,6 @@ class CommonReduction
     : public mqss_backend::CommonReductionPassBase<CommonReduction> {
 
 public:
-    using Base = mqss_backend::CommonReductionPassBase<CommonReduction>;
-    using Base::Base;
 
   void runOnOperation() override {
 

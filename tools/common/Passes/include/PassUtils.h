@@ -72,6 +72,14 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
   }
 }
 
+static std::vector<Value> getQubitValues(std::vector<QubitID> QubitVector) {
+  std::vector<Value> QubitValues;
+  for (auto v : QubitVector)
+    QubitValues.push_back(v.base);
+  return QubitValues;
+  ;
+}
+
 static bool checkDoublePiMultiplies(double angle) {
   const double pi = std::numbers::pi;
   const double doublePi = 2 * pi;
@@ -84,6 +92,17 @@ static void cancel(Operation *Op) {
   mlir::IRRewriter rewriter(Op->getContext());
   // Erase the operations
   rewriter.eraseOp(Op);
+}
+
+static Value normalizeValue(double param, mlir::IRRewriter &builder,
+                            Location loc) {
+
+  double pi = std::numbers::pi;
+  param =
+      param - (std::floor(param / (2 * pi)) * 2 * pi); // normalize the angle
+  auto valueAttr = builder.getFloatAttr(builder.getF64Type(), param);
+  auto constantOp = builder.create<mlir::arith::ConstantOp>(loc, valueAttr);
+  return constantOp.getResult();
 }
 
 static bool equivalence_check(const std::vector<QubitID> &Op1,
@@ -163,17 +182,20 @@ static bool touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
   return false;
 }
 
-static Operation* createNewGate(Location loc, llvm::StringRef NewGateTy,
-                          std::vector<Value> targetQubitsbaseVector,
-                          mlir::IRRewriter &builder) {
+static Operation *createNewGate(Location loc, llvm::StringRef NewGateTy,
+                                std::vector<Value> ControlQubitOps,
+                                std::vector<Value> TargetQubitOps,
+                                const mlir::ValueRange params,
+                                mlir::IRRewriter &builder, bool isAdj = false) {
 
   Operation *NewOp;
 #ifdef BUILD_CUDAQ_ENABLED
-  NewOp = createQuakeGate(loc, NewGateTy, targetQubitsbaseVector, builder);
+  NewOp = createQuakeGate(loc, NewGateTy, ControlQubitOps, TargetQubitOps,
+                          params, builder, isAdj);
 #endif
 #ifdef BUILD_CATALYST_ENABLED
-  NewOp = createCatalystGate(loc, NewGateTy, targetQubitsbaseVector,
-                     builder);
+  NewOp = createCatalystGate(loc, NewGateTy, ControlQubitOps, TargetQubitOps,
+                             params, builder, isAdj);
 #endif
   return NewOp;
 }
@@ -279,17 +301,13 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
 
       assert(OpToSwitchOut && "Op to switch out cannot be NULL!!");
       assert(!ReplacementGateTy.empty() && "Need the replacementgatety!!");
-
       std::vector<Value> targetQubitsbaseVector;
       for (auto Op : OpToSwitchOut->getOperands()) {
         targetQubitsbaseVector.push_back(Op);
-        llvm::outs() << "Switch out: " << *Op2 << " target: " << Op
-                     << " , Ctrl: " << OpQuantumView[Op2].ControlQubits.size()
-                     << "\n";
       }
 
-      createNewGate(Op2->getLoc(), ReplacementGateTy, targetQubitsbaseVector,
-                    builder);
+      createNewGate(Op2->getLoc(), ReplacementGateTy, {},
+                    targetQubitsbaseVector, {}, builder);
 
       builder.eraseOp(OpToSwitchOut);
     }
@@ -476,9 +494,11 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
 
   if (PassInfo.NewGateTy != Gate::UNKNOWN) {
 
-    std::vector<Value> targetQubitsbaseVector;
+    std::vector<Value> QubitsbaseVector;
     auto RefOp = ToErase[ToErase.size() - 1];
     llvm::outs() << "Ref gate: " << *RefOp << "\n";
+
+    std::vector<Value> targetQubitsbaseVector;
     for (auto Op : RefOp->getOperands()) {
       targetQubitsbaseVector.push_back(Op);
       llvm::outs() << "Switch out target: " << Op << "\n";
@@ -487,8 +507,64 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
     mlir::IRRewriter builder(RefOp->getContext());
     builder.setInsertionPointAfter(RefOp);
 
-    auto *NewOp = createNewGate(RefOp->getLoc(), parseGateTy(PassInfo.NewGateTy),
-                                targetQubitsbaseVector, builder);
+    auto ReOpParams = OpQuantumView[RefOp].Params;
+
+    auto RefOpCtrlQubits = OpQuantumView[RefOp].ControlQubits;
+    auto RefOptargetQubits = OpQuantumView[RefOp].TargetQubits;
+
+    auto isAdj = OpQuantumView[RefOp].isAdj;
+    auto *NewOp =
+        createNewGate(RefOp->getLoc(), parseGateTy(PassInfo.NewGateTy), {},
+                      targetQubitsbaseVector, {}, builder, isAdj);
+
+    llvm::outs() << "--->Created: " << *NewOp << "\n";
+  }
+
+  for (auto *Op : ToErase) {
+    llvm::outs() << "-->To Erase: " << *Op << "\n";
+    cancel(Op);
+  }
+}
+
+static void performArgAngelNormalization(
+    std::map<Operation *, QuantumOpView> OpQuantumView) {
+
+  SmallSetVector<Operation *, 16> ToErase;
+  for (auto &[GateOp, GateQView] : OpQuantumView) {
+    if (GateQView.GateTy != Gate::RX && GateQView.GateTy != Gate::RY &&
+        GateQView.GateTy != Gate::RZ) {
+      continue;
+    }
+
+    mlir::IRRewriter builder(GateOp->getContext());
+    builder.setInsertionPointAfter(GateOp);
+
+    std::vector<mlir::Value> nParameters;
+    for (auto param : GateQView.Params) {
+      if (auto constOp = param.getDefiningOp<mlir::arith::ConstantOp>()) {
+        if (auto floatAttr = dyn_cast<mlir::FloatAttr>(constOp.getValue())) {
+          double v = floatAttr.getValueAsDouble();
+
+          auto newVal = normalizeValue(v, builder, GateOp->getLoc());
+
+          if (newVal != param)
+            nParameters.push_back(newVal);
+        }
+      }
+    }
+
+    if (nParameters.empty())
+      continue;
+
+    ToErase.insert(GateOp);
+    ValueRange normalizedParams(nParameters);
+
+    auto GateCtrlQubits = getQubitValues(GateQView.ControlQubits);
+    auto GateTargetQubits = getQubitValues(GateQView.TargetQubits);
+
+    auto *NewOp = createNewGate(GateOp->getLoc(), parseGateTy(GateQView.GateTy),
+                                GateCtrlQubits, GateTargetQubits,
+                                GateQView.Params, builder, GateQView.isAdj);
 
     llvm::outs() << "--->Created: " << *NewOp << "\n";
   }

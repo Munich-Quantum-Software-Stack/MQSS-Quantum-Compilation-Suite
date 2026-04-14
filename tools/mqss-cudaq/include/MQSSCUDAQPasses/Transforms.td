@@ -73,3 +73,13 @@ def CommonReductionPass : Pass<"CommonReductionPass", "mlir::ModuleOp"> {
       /*default=*//*default=*/"\"HXHToZ\"", "Select PassMode HXHToZ or HZHToX.">,
   ];
 }
+
+def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::ModuleOp"> {
+  let summary = "Normalize Arg angle of RX, RY, RZ gates. ";
+ 
+  let description = [{
+    Normalize Arg angle of RX, RY, RZ gates.
+  }];
+ 
+ let constructor = "mqss_cudaq::opt::CommonNormalizeArgAnglePass()";
+}

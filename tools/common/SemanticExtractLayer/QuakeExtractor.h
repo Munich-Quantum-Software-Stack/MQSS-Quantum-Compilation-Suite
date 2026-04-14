@@ -76,6 +76,7 @@ public:
 
           if (auto gate = dyn_cast<quake::OperatorInterface>(Op)) {
             // Gather the Control Qubits
+            OpView.isAdj = gate.isAdj();
             for (auto ctrl : gate.getControls()) {
               if (auto ext_ref =
                       dyn_cast<quake::ExtractRefOp>(ctrl.getDefiningOp())) {

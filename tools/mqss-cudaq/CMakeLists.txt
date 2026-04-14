@@ -10,14 +10,14 @@ set(CMAKE_CXX_FLAGS "-w -fPIC")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions")
 
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost REQUIRED COMPONENTS program_options)
-message(STATUS "Boost version: ${Boost_VERSION}")
-if(NOT Boost_FOUND)
-  message(FATAL_ERROR "Boost library not found.")
-endif()
+# set(Boost_USE_STATIC_LIBS ON)
+# set(Boost_USE_MULTITHREADED ON)
+# set(Boost_USE_STATIC_RUNTIME OFF)
+# find_package(Boost REQUIRED COMPONENTS program_options)
+# message(STATUS "Boost version: ${Boost_VERSION}")
+# if(NOT Boost_FOUND)
+#   message(FATAL_ERROR "Boost library not found.")
+# endif()
 
 
 set(MLIR_DIR "/usr/local/llvm/lib/cmake/mlir")
@@ -116,9 +116,9 @@ target_include_directories(mqss-cudaq-opt
     #${CUDAQ_MLIR_RUNTIME_PATH}/include  # Path to CUDA-Q headers
 )
 
-if(BUILD_CUDAQ)
-  target_compile_definitions(mqss-cudaq-opt PRIVATE BUILD_CUDAQ_ENABLED)
-endif()
+# if(BUILD_CUDAQ)
+#   target_compile_definitions(mqss-cudaq-opt PRIVATE BUILD_CUDAQ_ENABLED)
+# endif()
 
 target_link_libraries(mqss-cudaq-opt 
   PRIVATE 

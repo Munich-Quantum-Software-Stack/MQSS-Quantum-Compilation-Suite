@@ -1,3 +1,6 @@
+
+// RUN: %mqss-cudaq-opt %s --CommonNormalizeArgAnglePass 2>&1 | FileCheck %s
+
 module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__testILm2EE = "_ZN4testILm2EEclEv"}} {
   func.func @__nvqpp__mlirgen__testILm2EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
     %cst = arith.constant 3.314160e+01 : f64
@@ -27,3 +30,21 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
+// CHECK: %1 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %cst_5 = arith.constant 1.300000e+00 : f64
+// CHECK: quake.rx (%cst_4) %0 : (f64, !quake.veq<2>) -> ()
+// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %cst_6 = arith.constant 2.000000e+00 : f64
+// CHECK: quake.ry (%cst_3) %0 : (f64, !quake.veq<2>) -> ()
+// CHECK: %3 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %cst_7 = arith.constant 3.141600e+00 : f64
+// CHECK: quake.rz (%cst_2) %0 : (f64, !quake.veq<2>) -> ()
+// CHECK: %4 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %cst_8 = arith.constant 5.0168146928204145 : f64
+// CHECK: quake.rx (%cst_1) %0 : (f64, !quake.veq<2>) -> ()
+// CHECK: %5 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %cst_9 = arith.constant 1.1504440784612413 : f64
+// CHECK: quake.ry (%cst_0) %0 : (f64, !quake.veq<2>) -> ()
+// CHECK: %6 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %cst_10 = arith.constant 1.7256734641020657 : f64
+// CHECK: quake.rz (%cst) %0 : (f64, !quake.veq<2>) -> ()

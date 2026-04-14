@@ -54,7 +54,7 @@ namespace mqss_cudaq::opt {
 // Gate Pattern Cancellation passes
 std::unique_ptr<mlir::Pass> CommonGateCancellationPass();
 std::unique_ptr<mlir::Pass> CommonCommutePass();
-
+std::unique_ptr<mlir::Pass> CommonNormalizeArgAnglePass();
 // Gate Pattern Switch passes
 
 std::unique_ptr<mlir::Pass> CommonSwitchPass();

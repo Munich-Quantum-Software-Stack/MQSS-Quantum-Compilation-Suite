@@ -38,6 +38,7 @@ struct QuantumOpView {
   std::vector<QubitID> ControlQubits = {};
   std::vector<QubitID> TargetQubits = {};
   std::vector<Value> Params = {};
+  bool isAdj = false;
   bool hasSideEffects = false;
 };
 

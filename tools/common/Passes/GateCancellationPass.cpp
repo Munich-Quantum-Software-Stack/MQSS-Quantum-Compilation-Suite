@@ -15,10 +15,7 @@ namespace {
 
 class CommonGateCancellation
     : public mqss_backend::CommonGateCancellationPassBase<CommonGateCancellation> {
-
-    using Base = mqss_backend::CommonGateCancellationPassBase<CommonGateCancellation>;
-    using Base::Base;
-
+      
   std::vector<Gate> GatesToCancel{CNOT, PauliX, PauliZ, PauliY, H, Hadamard};
 
   std::vector<Gate> RotationGatesToCancel{RX, RZ, RZ};

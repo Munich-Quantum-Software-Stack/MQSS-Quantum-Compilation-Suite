@@ -98,7 +98,9 @@ public:
 
           // Only consider operations on gates with side-effects
           if (auto g = isCatalystQuantumGateOp(Op)) {
+            // TODO isAdj initialization?
             OpView.GateTy = parseGateTy(g.getGateName());
+            OpView.isAdj = g.getAdjointFlag();                // Is this correct?
 
             std::vector<QubitRole> OpRoles =
                 getGateOpRoles(g.getGateName()); // Now we can separate out the
