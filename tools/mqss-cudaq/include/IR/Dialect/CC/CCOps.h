@@ -57,7 +57,7 @@ mlir::Value getByteSizeOfType(mlir::OpBuilder &builder, mlir::Location loc,
 //===----------------------------------------------------------------------===//
 
 #define GET_OP_CLASSES
-#include "IR/CC/CCOps.h.inc"
+#include "IR/Dialect/CC/CCOps.h.inc"
 
 namespace cudaq::cc {
 

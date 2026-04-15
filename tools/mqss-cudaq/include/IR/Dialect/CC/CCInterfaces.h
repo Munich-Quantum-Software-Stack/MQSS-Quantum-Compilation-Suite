@@ -30,4 +30,4 @@ public:
 // Generated logic
 //===----------------------------------------------------------------------===//
 
-#include "IR/CC/CCInterfaces.h.inc"
+#include "IR/Dialect/CC/CCInterfaces.h.inc"

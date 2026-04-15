@@ -1087,4 +1087,4 @@ VERIFY_OPS(INSTANTIATE_LINEAR_TYPE_VERIFY)
 using namespace cudaq;
 
 #define GET_OP_CLASSES
-#include "IR/Quake/QuakeOps.cpp.inc"
+#include "IR/Dialect/Quake/QuakeOps.cpp.inc"

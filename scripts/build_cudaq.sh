@@ -131,6 +131,7 @@ echo "Configuring MQSS Passes Repository CMake..."
 cmake -G Ninja \
   -S "${CURRENT_DIR}/tools/mqss-cudaq" \
   -B "${CURRENT_DIR}/build/tools/mqss-cudaq" \
+  -DBUILD_CUDAQ="${BUILD_CUDAQ}"\
   -DCOMMON_INCLUDE_DIR="${CURRENT_DIR}/common" \
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \

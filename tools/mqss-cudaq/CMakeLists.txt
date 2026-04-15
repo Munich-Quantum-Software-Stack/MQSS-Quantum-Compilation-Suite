@@ -104,6 +104,7 @@ add_subdirectory(include)
 
 #1. Define the executable and its source file
 add_executable(mqss-cudaq-opt cudaq.cpp)
+target_compile_definitions(mqss-cudaq-opt PRIVATE BUILD_CUDAQ_ENABLED)
 
 # 2. Link the required libraries
 # Note: We must include the Dialects to resolve those "undefined symbols"

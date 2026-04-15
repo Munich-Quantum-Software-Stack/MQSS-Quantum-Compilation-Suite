@@ -2800,4 +2800,4 @@ cudaq::cc::VarargCallOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
 //===----------------------------------------------------------------------===//
 
 #define GET_OP_CLASSES
-#include "IR/CC/CCOps.cpp.inc"
+#include "IR/Dialect/CC/CCOps.cpp.inc"
