@@ -302,13 +302,10 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
 
       assert(OpToSwitchOut && "Op to switch out cannot be NULL!!");
       assert(!ReplacementGateTy.empty() && "Need the replacementgatety!!");
-      std::vector<Value> targetQubitsbaseVector;
-      for (auto Op : OpToSwitchOut->getOperands()) {
-        targetQubitsbaseVector.push_back(Op);
-      }
 
-      createNewGate(Op2, ReplacementGateTy, {}, targetQubitsbaseVector, {},
-                    builder);
+      auto TargetQubitOps = OpQuantumView[OpToSwitchOut].TargetQubitOps;
+
+      createNewGate(Op2, ReplacementGateTy, {}, TargetQubitOps, {}, builder);
 
       builder.eraseOp(OpToSwitchOut);
     }
@@ -428,6 +425,12 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
     if (!FirstGateQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
       continue;
 
+    // Only perform pattern reduction on SAdj
+    if (FirstGateTy == Gate::S) {
+      if (!FirstGateQView.isAdj)
+        continue;
+    }
+
     if (is_contained(PassInfo.GatesToCancel, FirstGateTy) &&
         pipeline.size() != PassInfo.GatesToCancel.size()) {
       pipeline.push_back({GateOp, FirstGateQView});
@@ -499,23 +502,18 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
     auto RefOp = ToErase[ToErase.size() - 1];
     llvm::outs() << "Ref gate: " << *RefOp << "\n";
 
-    std::vector<Value> targetQubitsbaseVector;
-    for (auto Op : RefOp->getOperands()) {
-      targetQubitsbaseVector.push_back(Op);
-      llvm::outs() << "Switch out target: " << Op << "\n";
-    }
-
     mlir::IRRewriter builder(RefOp->getContext());
     builder.setInsertionPointAfter(RefOp);
 
-    auto ReOpParams = OpQuantumView[RefOp].Params;
+    auto RefOpParams = OpQuantumView[RefOp].Params;
 
-    auto RefOpCtrlQubits = OpQuantumView[RefOp].ControlQubits;
-    auto RefOptargetQubits = OpQuantumView[RefOp].TargetQubits;
+    auto RefOpCtrlQubits = OpQuantumView[RefOp].ControlQubitOps;
+    auto RefOptargetQubits = OpQuantumView[RefOp].TargetQubitOps;
 
     auto isAdj = OpQuantumView[RefOp].isAdj;
-    auto *NewOp = createNewGate(RefOp, parseGateTy(PassInfo.NewGateTy), {},
-                                targetQubitsbaseVector, {}, builder, isAdj);
+    auto *NewOp =
+        createNewGate(RefOp, parseGateTy(PassInfo.NewGateTy), RefOpCtrlQubits,
+                      RefOptargetQubits, RefOpParams, builder, isAdj);
 
     llvm::outs() << "--->Created: " << *NewOp << "\n";
   }
@@ -559,8 +557,8 @@ static void performArgAngelNormalization(
     ToErase.insert(GateOp);
     ValueRange normalizedParams(nParameters);
 
-    auto GateCtrlQubits = getQubitValues(GateQView.ControlQubits);
-    auto GateTargetQubits = getQubitValues(GateQView.TargetQubits);
+    auto GateCtrlQubits = GateQView.ControlQubitOps;
+    auto GateTargetQubits = GateQView.TargetQubitOps;
 
     auto *NewOp = createNewGate(GateOp, parseGateTy(GateQView.GateTy),
                                 GateCtrlQubits, GateTargetQubits,
@@ -589,7 +587,7 @@ performCNOTReversal(std::map<Operation *, QuantumOpView> OpQuantumView) {
     createNewGate(GateOp, "H", {}, GateQView.TargetQubitOps, GateQView.Params,
                   builder);
 
-    createNewGate(GateOp, "H", {} , GateQView.ControlQubitOps, GateQView.Params,
+    createNewGate(GateOp, "H", {}, GateQView.ControlQubitOps, GateQView.Params,
                   builder);
 
     createNewGate(GateOp, "CNOT", GateQView.TargetQubitOps,

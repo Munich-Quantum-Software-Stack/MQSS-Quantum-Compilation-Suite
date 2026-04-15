@@ -25,6 +25,7 @@ enum Gate {
   RX,
   RY,
   RZ,
+  S,
   UNKNOWN
 };
 
@@ -37,23 +38,24 @@ struct QuantumOpView {
   Gate GateTy = Gate::UNKNOWN; //<---------- Important to initialize enums
   std::vector<QubitID> ControlQubits = {};
   std::vector<QubitID> TargetQubits = {};
-  std::vector<Value> ControlQubitOps = {}; 
-  std::vector<Value> TargetQubitOps = {}; 
+  std::vector<Value> ControlQubitOps = {};
+  std::vector<Value> TargetQubitOps = {};
   std::vector<Value> Params = {};
   bool isAdj = false;
   bool hasSideEffects = false;
 };
 
-
 using QuantumOpInfo = std::map<Operation *, QuantumOpView>;
-
-
 
 inline Gate parseGateTy(const StringRef &GateTy) {
   if (GateTy == "CNOT")
     return CNOT;
   if (GateTy == "PauliX")
     return PauliX;
+  if (GateTy == "PauliZ")
+    return PauliZ;
+  if (GateTy == "PauliY")
+    return PauliY;
   if (GateTy == "Hadamard" || GateTy == "H")
     return H;
   if (GateTy == "RX")
@@ -62,12 +64,11 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return RY;
   if (GateTy == "RZ")
     return RZ;
-  if (GateTy == "PauliZ")
-    return PauliZ;
-  if(GateTy == "CZ")
+
+  if (GateTy == "CZ")
     return CZ;
-  if (GateTy == "PauliY")
-    return PauliY;
+  if (GateTy == "S")
+    return S;
   return UNKNOWN;
 }
 
@@ -86,18 +87,17 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "RZ";
   if (GateTy == Gate::PauliZ)
     return "PauliZ";
-  if(GateTy == Gate::CZ)
+  if (GateTy == Gate::CZ)
     return "CZ";
   if (GateTy == Gate::PauliY)
     return "PauliY";
+  if (GateTy == Gate::S)
+    return "S";
   return "UNKNOWN";
 }
 
 using tupleVectorsQubitIDs =
     std::tuple<std::vector<QubitID>, std::vector<QubitID>>;
-
-
-    
 
 class MyModuleAnalysis {
 
@@ -106,11 +106,11 @@ public:
 
   virtual SmallVector<func::FuncOp, 16> fetchQuantumKernels() = 0;
 
-  virtual void gatherOpInfo() = 0; // Pure virtual functions that need to be implemented by
-                                  // derived classes
+  virtual void gatherOpInfo() = 0; // Pure virtual functions that need to be
+                                   // implemented by derived classes
 
   virtual mlir::LogicalResult verifyModule() = 0;
 
-  virtual const llvm::DenseMap<func::FuncOp, QuantumOpInfo> getKernelDialectInfo() = 0;
-
+  virtual const llvm::DenseMap<func::FuncOp, QuantumOpInfo>
+  getKernelDialectInfo() = 0;
 };

@@ -125,11 +125,13 @@ public:
                 ID.base = gop;
                 ID.index = -1;
                 OpView.ControlQubits.push_back(ID);
+                OpView.ControlQubitOps.push_back(gop);
               }
               if (role == QubitRole::Target) {
                 ID.base = gop;
                 ID.index = -1;
                 OpView.TargetQubits.push_back(ID);
+                OpView.TargetQubitOps.push_back(gop);
               }
             }
           }

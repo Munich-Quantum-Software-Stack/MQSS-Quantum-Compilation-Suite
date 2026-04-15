@@ -33,6 +33,7 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
                    bool isAdj = false) {
 
   catalyst::quantum::CustomOp NewOp = nullptr;
+ 
   if (NewGateTy == "PauliZ" || NewGateTy == "PauliX" || NewGateTy == "PauliY" ||
       NewGateTy == "H" || NewGateTy == "RX" || NewGateTy == "RY" ||
       NewGateTy == "RZ") {
@@ -51,7 +52,6 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
         /*adjoint=*/isAdj,
         /*in_ctrl_qubits=*/mlir::ValueRange(),
         /*in_ctrl_values=*/mlir::ValueRange());
-
     OpToReplace->getResult(0).replaceAllUsesWith(NewOp->getResult(0));
   }
   if (NewGateTy == "CNOT") {

@@ -26,6 +26,14 @@ isQuakeQuantumGate(Operation *op) {
       return {true, "PauliX"};
     return {true, "CNOT"};
   }
+  if (auto x = dyn_cast<quake::ZOp>(op)) {
+    if (x.getControls().size() == 0)
+      return {true, "PauliZ"};
+    return {true, "CZ"};
+  }
+
+  if (auto x = dyn_cast<quake::YOp>(op))
+    return {true, "PauliY"};
 
   if (auto x = dyn_cast<quake::RxOp>(op))
     return {true, "RX"};
@@ -37,15 +45,9 @@ isQuakeQuantumGate(Operation *op) {
   if (auto x = dyn_cast<quake::HOp>(op))
     return {true, "H"};
 
-  if (auto x = dyn_cast<quake::ZOp>(op)) {
-    if (x.getControls().size() == 0)
-      return {true, "PauliZ"};
-    return {true, "CZ"};
+  else if(auto x = dyn_cast<quake::SOp>(op)){
+    return {true, "S"};
   }
-
-  if (auto x = dyn_cast<quake::YOp>(op))
-    return {true, "PauliY"};
-
   return {false, ""};
 }
 
@@ -71,25 +73,34 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
     return builder.create<quake::RzOp>(loc, isAdj, params, ControlQubits,
                                        TargetQubitOps);
   }
+  if(NewGateTy == "S"){
+    return builder.create<quake::SOp>(loc, false, params, ControlQubits,
+                                      TargetQubitOps);
+  }
 
   if (NewGateTy == "PauliZ") {
     return builder.create<quake::ZOp>(loc, false, mlir::ValueRange(),
                                       mlir::ValueRange(), TargetQubitOps);
-  } if (NewGateTy == "PauliX") {
+  }
+  if (NewGateTy == "PauliX") {
     return builder.create<quake::XOp>(loc, false, mlir::ValueRange(),
                                       mlir::ValueRange(), TargetQubitOps);
-  } if (NewGateTy == "PauliY") {
+  }
+  if (NewGateTy == "PauliY") {
     return builder.create<quake::YOp>(loc, false, mlir::ValueRange(),
                                       mlir::ValueRange(), TargetQubitOps);
-  }if (NewGateTy == "H") {
+  }
+  if (NewGateTy == "H") {
     return builder.create<quake::HOp>(loc, false, mlir::ValueRange(),
                                       mlir::ValueRange(), TargetQubitOps);
   }
-   if (NewGateTy == "CNOT") {
+  if (NewGateTy == "CNOT") {
     return builder.create<quake::XOp>(loc, ControlQubits, TargetQubitOps);
-  } if (NewGateTy == "CY") {
+  }
+  if (NewGateTy == "CY") {
     return builder.create<quake::YOp>(loc, ControlQubits, TargetQubitOps);
-  } if (NewGateTy == "CZ") {
+  }
+  if (NewGateTy == "CZ") {
     return builder.create<quake::ZOp>(loc, ControlQubits, TargetQubitOps);
   }
   return nullptr;

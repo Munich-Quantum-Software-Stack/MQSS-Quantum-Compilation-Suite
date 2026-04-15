@@ -6,11 +6,10 @@
  * the terms of the Apache License 2.0 which accompanies this distribution.    *
  ******************************************************************************/
 
-
-
 #include "include/PassUtils.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
+
 #include "llvm/Support/raw_ostream.h"
 
 using namespace mlir;
@@ -18,15 +17,12 @@ using namespace llvm;
 
 namespace {
 
-  enum class PassMode {
-    HXHToZ,
-    HZHToX,
-    NA
-};
+enum class PassMode { HXHToZ, HZHToX, SAdjZToS, NA };
 
-struct SharedPassLogic{
+struct SharedPassLogic {
 
-  void run(llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo, PassMode Mode) {
+  void run(llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo,
+           PassMode Mode) {
 
     ReductionPassInfoty PassInfo;
     if (Mode == PassMode::HXHToZ) {
@@ -36,13 +32,16 @@ struct SharedPassLogic{
       PassInfo.GatesToCancel.push_back(H);
       PassInfo.NewGateTy = Gate::PauliZ;
       PassInfo.CompareKey = {"Target", "Target"};
-    } 
-    else if (Mode == PassMode::HZHToX) {
+    } else if (Mode == PassMode::HZHToX) {
       PassInfo.GatesToCancel.push_back(H);
       PassInfo.GatesToCancel.push_back(PauliZ);
       PassInfo.GatesToCancel.push_back(H);
       PassInfo.NewGateTy = Gate::PauliX;
       PassInfo.CompareKey = {"Target", "Target"};
+    } else if (Mode == PassMode::SAdjZToS) {
+      PassInfo.GatesToCancel.push_back(S);
+      PassInfo.GatesToCancel.push_back(PauliZ);
+      PassInfo.NewGateTy = Gate::S;
     }
 
     for (auto &[kernel, QInfo] : KernelDialectInfo) {
@@ -55,7 +54,6 @@ class CommonReduction
     : public mqss_backend::CommonReductionPassBase<CommonReduction> {
 
 public:
-
   void runOnOperation() override {
 
     auto &analysis = getAnalysis<DialectAnalysis>();
@@ -64,12 +62,13 @@ public:
 
     SharedPassLogic PassLogic;
 
-    if(mode == "HZHToX"){
+    if (mode == "HZHToX") {
       PassLogic.run(analysis.getKernelDialectInfo(), PassMode::HZHToX);
-    }
-    else if(mode == "HXHToZ")
+    } else if (mode == "HXHToZ")
       PassLogic.run(analysis.getKernelDialectInfo(), PassMode::HXHToZ);
-    else{
+    else if (mode == "SAdjZToS")
+      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SAdjZToS);
+    else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
     }
@@ -80,7 +79,6 @@ public:
     }
   }
 };
-
 
 } // namespace
 
