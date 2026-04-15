@@ -182,7 +182,8 @@ static bool touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
   return false;
 }
 
-static Operation *createNewGate(Location loc, llvm::StringRef NewGateTy,
+static Operation *createNewGate(Operation *OpToReplace,
+                                llvm::StringRef NewGateTy,
                                 std::vector<Value> ControlQubitOps,
                                 std::vector<Value> TargetQubitOps,
                                 const mlir::ValueRange params,
@@ -190,12 +191,12 @@ static Operation *createNewGate(Location loc, llvm::StringRef NewGateTy,
 
   Operation *NewOp;
 #ifdef BUILD_CUDAQ_ENABLED
-  NewOp = createQuakeGate(loc, NewGateTy, ControlQubitOps, TargetQubitOps,
-                          params, builder, isAdj);
+  NewOp = createQuakeGate(OpToReplace->getLoc(), NewGateTy, ControlQubitOps,
+                          TargetQubitOps, params, builder, isAdj);
 #endif
 #ifdef BUILD_CATALYST_ENABLED
-  NewOp = createCatalystGate(loc, NewGateTy, ControlQubitOps, TargetQubitOps,
-                             params, builder, isAdj);
+  NewOp = createCatalystGate(OpToReplace, NewGateTy, ControlQubitOps,
+                             TargetQubitOps, params, builder, isAdj);
 #endif
   return NewOp;
 }
@@ -306,8 +307,8 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
         targetQubitsbaseVector.push_back(Op);
       }
 
-      createNewGate(Op2->getLoc(), ReplacementGateTy, {},
-                    targetQubitsbaseVector, {}, builder);
+      createNewGate(Op2, ReplacementGateTy, {}, targetQubitsbaseVector, {},
+                    builder);
 
       builder.eraseOp(OpToSwitchOut);
     }
@@ -513,9 +514,8 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
     auto RefOptargetQubits = OpQuantumView[RefOp].TargetQubits;
 
     auto isAdj = OpQuantumView[RefOp].isAdj;
-    auto *NewOp =
-        createNewGate(RefOp->getLoc(), parseGateTy(PassInfo.NewGateTy), {},
-                      targetQubitsbaseVector, {}, builder, isAdj);
+    auto *NewOp = createNewGate(RefOp, parseGateTy(PassInfo.NewGateTy), {},
+                                targetQubitsbaseVector, {}, builder, isAdj);
 
     llvm::outs() << "--->Created: " << *NewOp << "\n";
   }
@@ -562,11 +562,86 @@ static void performArgAngelNormalization(
     auto GateCtrlQubits = getQubitValues(GateQView.ControlQubits);
     auto GateTargetQubits = getQubitValues(GateQView.TargetQubits);
 
-    auto *NewOp = createNewGate(GateOp->getLoc(), parseGateTy(GateQView.GateTy),
+    auto *NewOp = createNewGate(GateOp, parseGateTy(GateQView.GateTy),
                                 GateCtrlQubits, GateTargetQubits,
                                 GateQView.Params, builder, GateQView.isAdj);
 
     llvm::outs() << "--->Created: " << *NewOp << "\n";
+  }
+
+  for (auto *Op : ToErase) {
+    llvm::outs() << "-->To Erase: " << *Op << "\n";
+    cancel(Op);
+  }
+}
+
+static void
+performCNOTReversal(std::map<Operation *, QuantumOpView> OpQuantumView) {
+
+  SmallSetVector<Operation *, 16> ToErase;
+  for (auto &[GateOp, GateQView] : OpQuantumView) {
+    if ((GateQView.GateTy != Gate::CNOT))
+      continue;
+
+    mlir::IRRewriter builder(GateOp->getContext());
+    builder.setInsertionPointAfter(GateOp);
+
+    createNewGate(GateOp, "H", {}, GateQView.TargetQubitOps, GateQView.Params,
+                  builder);
+
+    createNewGate(GateOp, "H", {} , GateQView.ControlQubitOps, GateQView.Params,
+                  builder);
+
+    createNewGate(GateOp, "CNOT", GateQView.TargetQubitOps,
+                  GateQView.ControlQubitOps, GateQView.Params, builder);
+
+    createNewGate(GateOp, "H", {}, GateQView.TargetQubitOps, GateQView.Params,
+                  builder);
+
+    createNewGate(GateOp, "H", {}, GateQView.ControlQubitOps, GateQView.Params,
+                  builder);
+    ToErase.insert(GateOp);
+  }
+
+  for (auto *Op : ToErase) {
+    llvm::outs() << "-->To Erase: " << *Op << "\n";
+    cancel(Op);
+  }
+}
+
+static void
+performDecomposition(std::map<Operation *, QuantumOpView> OpQuantumView,
+                     bool ReverseCNOT = false) {
+
+  if (ReverseCNOT) {
+    performCNOTReversal(OpQuantumView);
+    return;
+  }
+  SmallSetVector<Operation *, 16> ToErase;
+  for (auto &[GateOp, GateQView] : OpQuantumView) {
+    if ((GateQView.GateTy != Gate::CNOT) && (GateQView.GateTy != Gate::CZ))
+      continue;
+
+    mlir::IRRewriter builder(GateOp->getContext());
+    builder.setInsertionPointAfter(GateOp);
+
+    if (GateQView.GateTy == Gate::CNOT) {
+      createNewGate(GateOp, "H", GateQView.ControlQubitOps,
+                    GateQView.TargetQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "CZ", GateQView.ControlQubitOps,
+                    GateQView.TargetQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "H", GateQView.ControlQubitOps,
+                    GateQView.TargetQubitOps, GateQView.Params, builder);
+      ToErase.insert(GateOp);
+    } else {
+      createNewGate(GateOp, "H", GateQView.ControlQubitOps,
+                    GateQView.TargetQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "CNOT", GateQView.ControlQubitOps,
+                    GateQView.TargetQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "H", GateQView.ControlQubitOps,
+                    GateQView.TargetQubitOps, GateQView.Params, builder);
+      ToErase.insert(GateOp);
+    }
   }
 
   for (auto *Op : ToErase) {

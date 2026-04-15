@@ -26,36 +26,53 @@ inline bool hasQuantumEffect(Operation *op) {
 }
 
 inline catalyst::quantum::CustomOp
-createCatalystGate(Location loc, llvm::StringRef NewGateTy,
-                   const std::vector<Value> ControlQubits,
+createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
+                   const std::vector<Value> ControlQubitsOps,
                    const std::vector<Value> TargetQubitOps,
                    const mlir::ValueRange params, mlir::IRRewriter &builder,
                    bool isAdj = false) {
 
-  std::vector<Value> QubitOps;
-  for(auto q: ControlQubits){
-      QubitOps.push_back(q);
-  }
-  for(auto t: TargetQubitOps){
-      QubitOps.push_back(t);
-  }
-
-  if (NewGateTy == "PauliZ" || NewGateTy == "PauliX" || NewGateTy == "PauliY") {
+  catalyst::quantum::CustomOp NewOp = nullptr;
+  if (NewGateTy == "PauliZ" || NewGateTy == "PauliX" || NewGateTy == "PauliY" ||
+      NewGateTy == "H" || NewGateTy == "RX" || NewGateTy == "RY" ||
+      NewGateTy == "RZ") {
 
     std::vector<mlir::Type> TargetQubitTys;
-    for (auto t : QubitOps) {
+    for (auto t : TargetQubitOps) {
       TargetQubitTys.push_back(t.getType());
     }
-    return builder.create<catalyst::quantum::CustomOp>(
-        loc,
+    NewOp = builder.create<catalyst::quantum::CustomOp>(
+        OpToReplace->getLoc(),
         /*out_qubits=*/mlir::TypeRange(TargetQubitTys),
         /*out_ctrl_qubits=*/mlir::TypeRange(),
         /*params=*/params,
-        /*in_qubits=*/mlir::ValueRange(QubitOps),
+        /*in_qubits=*/mlir::ValueRange(TargetQubitOps),
         /*gate_name=*/NewGateTy,
-        /*adjoint=*/false,
+        /*adjoint=*/isAdj,
         /*in_ctrl_qubits=*/mlir::ValueRange(),
         /*in_ctrl_values=*/mlir::ValueRange());
+
+    OpToReplace->getResult(0).replaceAllUsesWith(NewOp->getResult(0));
   }
-  return nullptr;
+  if (NewGateTy == "CNOT") {
+
+    Value control = ControlQubitsOps[0];
+    Value target = TargetQubitOps[0];
+
+    auto newGate = builder.create<catalyst::quantum::CustomOp>(
+        OpToReplace->getLoc(),
+        /*out_qubits=*/mlir::TypeRange{control.getType(), target.getType()},
+        /*out_ctrl_qubits=*/mlir::TypeRange{},
+        /*params=*/mlir::ValueRange{},
+        /*in_qubits=*/mlir::ValueRange{control, target},
+        /*gate_name=*/builder.getStringAttr("CNOT"), // or gateName if API
+                                                     // accepts StringRef
+        /*adjoint=*/isAdj,
+        /*in_ctrl_qubits=*/mlir::ValueRange{},
+        /*in_ctrl_values=*/mlir::ValueRange{});
+
+    OpToReplace->getResult(0).replaceAllUsesWith(newGate->getResult(0));
+    OpToReplace->getResult(1).replaceAllUsesWith(newGate->getResult(1));
+  }
+  return NewOp;
 }

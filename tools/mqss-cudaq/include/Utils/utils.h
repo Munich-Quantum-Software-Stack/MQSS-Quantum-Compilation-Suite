@@ -20,7 +20,7 @@ using namespace mlir;
 inline std::tuple<bool, StringLiteral>
 
 isQuakeQuantumGate(Operation *op) {
-  
+
   if (auto x = dyn_cast<quake::XOp>(op)) {
     if (x.getControls().size() == 0)
       return {true, "PauliX"};
@@ -51,38 +51,46 @@ isQuakeQuantumGate(Operation *op) {
 
 inline quake::OperatorInterface
 createQuakeGate(Location loc, llvm::StringRef NewGateTy,
-                   const std::vector<Value> ControlQubits,
-                   const std::vector<Value> TargetQubitOps,
-                   const mlir::ValueRange params, mlir::IRRewriter &builder,
-                   bool isAdj = false) {
+                const std::vector<Value> ControlQubits,
+                const std::vector<Value> TargetQubitOps,
+                const mlir::ValueRange params, mlir::IRRewriter &builder,
+                bool isAdj = false) {
 
-  if(NewGateTy == "RX"){
+  if (NewGateTy == "RX") {
     // TODO: Can this create an gate?
-    return builder.create<quake::RxOp>(
-        loc, isAdj, params, ControlQubits, TargetQubitOps);
+    return builder.create<quake::RxOp>(loc, isAdj, params, ControlQubits,
+                                       TargetQubitOps);
   }
-  if(NewGateTy == "RY"){
+  if (NewGateTy == "RY") {
     // TODO: Can this create an gate?
-    return builder.create<quake::RyOp>(
-        loc, isAdj, params, ControlQubits, TargetQubitOps);
+    return builder.create<quake::RyOp>(loc, isAdj, params, ControlQubits,
+                                       TargetQubitOps);
   }
-  if(NewGateTy == "RZ"){
+  if (NewGateTy == "RZ") {
     // TODO: Can this create an gate?
-    return builder.create<quake::RzOp>(
-        loc, isAdj, params, ControlQubits, TargetQubitOps);
+    return builder.create<quake::RzOp>(loc, isAdj, params, ControlQubits,
+                                       TargetQubitOps);
   }
 
   if (NewGateTy == "PauliZ") {
     return builder.create<quake::ZOp>(loc, false, mlir::ValueRange(),
-                                    mlir::ValueRange(), TargetQubitOps);
-  }
-  else if (NewGateTy == "PauliX") {
+                                      mlir::ValueRange(), TargetQubitOps);
+  } if (NewGateTy == "PauliX") {
     return builder.create<quake::XOp>(loc, false, mlir::ValueRange(),
-                                    mlir::ValueRange(), TargetQubitOps);
-  }
-  else if (NewGateTy == "PauliY") {
+                                      mlir::ValueRange(), TargetQubitOps);
+  } if (NewGateTy == "PauliY") {
     return builder.create<quake::YOp>(loc, false, mlir::ValueRange(),
-                                    mlir::ValueRange(), TargetQubitOps);
+                                      mlir::ValueRange(), TargetQubitOps);
+  }if (NewGateTy == "H") {
+    return builder.create<quake::HOp>(loc, false, mlir::ValueRange(),
+                                      mlir::ValueRange(), TargetQubitOps);
+  }
+   if (NewGateTy == "CNOT") {
+    return builder.create<quake::XOp>(loc, ControlQubits, TargetQubitOps);
+  } if (NewGateTy == "CY") {
+    return builder.create<quake::YOp>(loc, ControlQubits, TargetQubitOps);
+  } if (NewGateTy == "CZ") {
+    return builder.create<quake::ZOp>(loc, ControlQubits, TargetQubitOps);
   }
   return nullptr;
 }

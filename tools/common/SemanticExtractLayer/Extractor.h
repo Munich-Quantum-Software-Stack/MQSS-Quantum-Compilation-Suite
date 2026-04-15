@@ -37,6 +37,8 @@ struct QuantumOpView {
   Gate GateTy = Gate::UNKNOWN; //<---------- Important to initialize enums
   std::vector<QubitID> ControlQubits = {};
   std::vector<QubitID> TargetQubits = {};
+  std::vector<Value> ControlQubitOps = {}; 
+  std::vector<Value> TargetQubitOps = {}; 
   std::vector<Value> Params = {};
   bool isAdj = false;
   bool hasSideEffects = false;

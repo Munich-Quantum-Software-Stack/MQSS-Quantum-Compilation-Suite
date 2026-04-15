@@ -86,6 +86,7 @@ public:
                 ID.base = base;
                 ID.index = index;
                 OpView.ControlQubits.push_back(ID);
+                OpView.ControlQubitOps.push_back(ext_ref);
               }
             }
             // Gather the Target Qubits
@@ -98,6 +99,7 @@ public:
                 ID.base = base;
                 ID.index = index;
                 OpView.TargetQubits.push_back(ID);
+                OpView.TargetQubitOps.push_back(ext_ref);
               }
             }
             // Gather Parameters if any (E.g. Rotation Angle)
