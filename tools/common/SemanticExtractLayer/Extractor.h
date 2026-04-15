@@ -26,6 +26,7 @@ enum Gate {
   RY,
   RZ,
   S,
+  SAdj,
   UNKNOWN
 };
 
@@ -69,6 +70,8 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return CZ;
   if (GateTy == "S")
     return S;
+  if (GateTy == "SAdj")
+    return SAdj;
   return UNKNOWN;
 }
 
@@ -93,6 +96,8 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "PauliY";
   if (GateTy == Gate::S)
     return "S";
+  if (GateTy == Gate::SAdj)
+    return "SAdj";
   return "UNKNOWN";
 }
 

@@ -425,12 +425,6 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
     if (!FirstGateQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
       continue;
 
-    // Only perform pattern reduction on SAdj
-    if (FirstGateTy == Gate::S) {
-      if (!FirstGateQView.isAdj)
-        continue;
-    }
-
     if (is_contained(PassInfo.GatesToCancel, FirstGateTy) &&
         pipeline.size() != PassInfo.GatesToCancel.size()) {
       pipeline.push_back({GateOp, FirstGateQView});
@@ -499,6 +493,8 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
   if (PassInfo.NewGateTy != Gate::UNKNOWN) {
 
     std::vector<Value> QubitsbaseVector;
+
+     // TODO: Is it correct to take this as the RefOp?
     auto RefOp = ToErase[ToErase.size() - 1];
     llvm::outs() << "Ref gate: " << *RefOp << "\n";
 

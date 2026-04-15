@@ -17,7 +17,7 @@ using namespace llvm;
 
 namespace {
 
-enum class PassMode { HXHToZ, HZHToX, SAdjZToS, NA };
+enum class PassMode { HXHToZ, HZHToX, SAdjZToS, SZToSAdj, NA };
 
 struct SharedPassLogic {
 
@@ -39,9 +39,13 @@ struct SharedPassLogic {
       PassInfo.NewGateTy = Gate::PauliX;
       PassInfo.CompareKey = {"Target", "Target"};
     } else if (Mode == PassMode::SAdjZToS) {
-      PassInfo.GatesToCancel.push_back(S);
+      PassInfo.GatesToCancel.push_back(SAdj);
       PassInfo.GatesToCancel.push_back(PauliZ);
       PassInfo.NewGateTy = Gate::S;
+    } else if (Mode == PassMode::SZToSAdj) {
+      PassInfo.GatesToCancel.push_back(S);
+      PassInfo.GatesToCancel.push_back(PauliZ);
+      PassInfo.NewGateTy = Gate::SAdj;
     }
 
     for (auto &[kernel, QInfo] : KernelDialectInfo) {
@@ -68,6 +72,8 @@ public:
       PassLogic.run(analysis.getKernelDialectInfo(), PassMode::HXHToZ);
     else if (mode == "SAdjZToS")
       PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SAdjZToS);
+    else if (mode == "SZToSAdj")
+      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SZToSAdj);
     else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();

@@ -46,6 +46,8 @@ isQuakeQuantumGate(Operation *op) {
     return {true, "H"};
 
   else if(auto x = dyn_cast<quake::SOp>(op)){
+    if(x.isAdj())
+      return {true, "SAdj"};
     return {true, "S"};
   }
   return {false, ""};
@@ -74,7 +76,11 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
                                        TargetQubitOps);
   }
   if(NewGateTy == "S"){
-    return builder.create<quake::SOp>(loc, false, params, ControlQubits,
+    return builder.create<quake::SOp>(loc, isAdj, params, ControlQubits,
+                                      TargetQubitOps);
+  }
+   if(NewGateTy == "SAdj"){
+    return builder.create<quake::SOp>(loc, true, params, ControlQubits,
                                       TargetQubitOps);
   }
 

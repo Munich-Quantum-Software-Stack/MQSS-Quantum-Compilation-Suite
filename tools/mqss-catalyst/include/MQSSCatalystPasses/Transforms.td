@@ -58,18 +58,18 @@ def CommonSwitchPass : Pass<"CommonSwitchPass", "mlir::ModuleOp"> {
 }
 
 def CommonReductionPass : Pass<"CommonReductionPass", "mlir::ModuleOp"> {
-  let summary = "Perform Circuit Reduction, {HZH} -> X, {HXH} -> Z or {SAdjZ} -> S. ";
+  let summary = "Perform Circuit Reduction, {HZH} -> X, {HXH} -> Z, {SAdjZ} -> S or {SZ} -> SAdj. ";
  
   let description = [{
     Perform Circuit Gate Pattern Reduction.
-    Supported modes: {HZH} -> X, {HXH} -> Z or {SAdjZ} -> S
+    Supported modes: {HZH} -> X, {HXH} -> Z, {SAdjZ} -> S or {SZ} -> SAdj.
   }];
  
  let constructor = "mqss_catalyst::opt::CommonReductionPass()";
 
   let options = [
     Option<"mode", "mode", "std::string",
-      /*default=*//*default=*/"\"HXHToZ\"", "Select PassMode HXHToZ ,HZHToX or SAdjZToS.">,
+      /*default=*//*default=*/"\"HXHToZ\"", "Select PassMode HXHToZ , HZHToX, SAdjZToS or SZToSAdj.">,
   ];
 }
 
