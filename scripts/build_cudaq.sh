@@ -14,9 +14,19 @@ BUILD_TYPE="Debug"  # Default: Release mode
 
 # Default directories (can be overridden by arguments)
 MLIR_DIR="/usr/local/llvm/lib/cmake/mlir"
-CLANG_DIR="/usr/local/llvm/lib/cmake/clang"
 LLVM_DIR="/usr/local/llvm/lib/cmake/llvm"
 INSTALL_DIR="${INSTALL_PATH:-$HOME/.passes}"
+
+CUDAQ_DIR="/workspaces/executables/cudaq"
+
+# Fetch OS specific cuda-quantum installer
+# CUDAQ_BINARY_REPO="https://github.com/NVIDIA/cuda-quantum/releases/download/0.14.0/install_cuda_quantum_cu13.$(uname -m)"
+# Install command: bash install_cuda_quantum*.$(uname -m) --accept -- --installpath <my/path/>
+# export <path to bin/cudaq-quake>
+# export <path to bin/cudaq-opt>
+
+CC="gcc"
+CXX="g++"
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
@@ -65,65 +75,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 BUILD_DIR=${CURRENT_DIR}"/build"
-DEPS_DIR="${BUILD_DIR}/_deps"
-CUDAQ_DIR="${DEPS_DIR}/cuda-quantum"
-CUDAQ_REPO="https://github.com/NVIDIA/cuda-quantum.git"
 
 # Create directories if they don't exist
 mkdir -p "${BUILD_DIR}"
-mkdir -p "${DEPS_DIR}"
 
-# Clone the CUDA Quantum repository
-echo "Cloning CUDA Quantum repository into ${CUDAQ_DIR}..."
-if [ ! -d "${CUDAQ_DIR}" ]; then
-  git clone "${CUDAQ_REPO}" "${CUDAQ_DIR}"
-  if [ $? -ne 0 ]; then
-    echo "Failed to clone CUDA Quantum repository."
-    exit 1
-  fi
-else
-  echo "CUDA Quantum repository already exists at ${CUDAQ_DIR}. Skipping clone."
-fi
-
-# Navigate to the CUDA Quantum directory
-cd "${CUDAQ_DIR}" || { echo "Failed to navigate to ${CUDAQ_DIR}."; exit 1; }
-
-# Create a build directory
-mkdir -p build && cd build || { echo "Failed to create or navigate to build directory."; exit 1; }
-
-# Configure CUDA Quantum using CMake
-echo "Configuring CUDA Quantum with CMake..."
-export PATH="/usr/local/cmake-3.29/bin:$PATH"
-
-# 2. Verify it works (Optional)
-echo "Using CMake: $(which cmake)"
-cmake --version
-
-cmake -G Ninja \
-  -DMLIR_DIR="${MLIR_DIR}" \
-  -DClang_DIR="${CLANG_DIR}" \
-  -DLLVM_DIR="${LLVM_DIR}" \
-  ..
-
-if [ $? -ne 0 ]; then
-  echo "CMake configuration failed."
-  exit 1
-fi
-
-# Build the cudaq-mlir-runtime target using Ninja
-echo "Building cudaq-mlir-runtime target with ${NUM_JOBS} jobs..."
-ninja -j"${NUM_JOBS}" cudaq-mlir-runtime
-ninja -j"${NUM_JOBS}" cudaq-opt
-ninja -j"${NUM_JOBS}" cudaq-quake
-
-if [ $? -ne 0 ]; then
-  echo "Failed to build cudaq-mlir-runtime target."
-  exit 1
-fi
-
-echo "Build completed successfully!"
-
-echo ${CUDAQ_DIR}
 cd  "${BUILD_DIR}" || { echo "Failed to navigate back to the original directory."; exit 1; }
 
 echo "Configuring MQSS Passes Repository CMake..."
@@ -132,16 +87,16 @@ cmake -G Ninja \
   -S "${CURRENT_DIR}/tools/mqss-cudaq" \
   -B "${CURRENT_DIR}/build/tools/mqss-cudaq" \
   -DBUILD_CUDAQ="${BUILD_CUDAQ}"\
-  -DCOMMON_INCLUDE_DIR="${CURRENT_DIR}/common" \
-  -DCMAKE_C_COMPILER=gcc \
-  -DCMAKE_CXX_COMPILER=g++ \
+  -DCMAKE_C_COMPILER="${CC}" \
+  -DCMAKE_CXX_COMPILER="${CXX}" \
+  -DMLIR_DIR="${MLIR_DIR}"\
+  -DLLVM_DIR="${LLVM_DIR}"\
   -DBUILD_MLIR_PASSES_DOCS="${BUILD_DOCS}" \
-  -DBUILD_MLIR_PASSES_TESTS="${BUILD_TESTS}"\
   -DCUDAQ_SOURCE_DIR="${CUDAQ_DIR}" \
-  -DDIALECTS_BUILD_DIR="${CURRENT_DIR}/build" \
-  -DDIALECTS_SRC_DIR="${CURRENT_DIR}" \
+  -DMQSS_SRC_DIR="${CURRENT_DIR}" \
 	-DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 echo "Building MQSS Repository Passes with ${NUM_JOBS} jobs..."
 ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/mqss-cudaq"
-echo "Build of MQSS Repository Passes completed successfully!..."
+echo "SUCCESSFULL!"
+echo " "

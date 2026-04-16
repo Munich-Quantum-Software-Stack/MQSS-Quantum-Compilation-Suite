@@ -106,15 +106,14 @@ include_directories(SYSTEM ${LLVM_INCLUDE_DIRS}
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
-set(CATALYST_MLIR_RUNTIME_PATH "${DIALECTS_BUILD_DIR}/tools/mqss-catalyst/")
+set(CATALYST_MLIR_RUNTIME_PATH "${MQSS_BUILD_DIR}/tools/mqss-catalyst/")
 
-set(CATALYST_BINARY_DIR "${DIALECTS_SRC_DIR}/build")
-set(CATALYST_MAIN_INCLUDE_DIR "${DIALECTS_SRC_DIR}/tools/mqss-catalyst/include")
+set(MQSS_BUILD_DIR "${MQSS_SRC_DIR}/build")
+set(MQSS_CATALYST_MAIN_INCLUDE_DIR "${MQSS_SRC_DIR}/tools/mqss-catalyst/include")
 
-include_directories(BEFORE ${CATALYST_MAIN_INCLUDE_DIR}
-  ${CATALYST_BINARY_DIR}/tools/mqss-catalyst/include
+include_directories(BEFORE ${MQSS_CATALYST_MAIN_INCLUDE_DIR}
+  ${MQSS_BUILD_DIR}/tools/mqss-catalyst/include
 )
-
 
 add_subdirectory(include) # Must come first to set up targets
 add_subdirectory(lib)

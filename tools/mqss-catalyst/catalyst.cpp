@@ -1,12 +1,5 @@
 
 
-// #include "Decompositions.hpp"
-// #include "Examples.hpp"
-// #include "Optimizer/Pipelines.hpp"
-// #include "Passes/CodeGen.hpp"
-// #include "Transforms.hpp"
-// #include "Interfaces/Extractor.hpp"
-
 #include "IR/QuantumDialect.h"
 #include "MQSSCatalystPasses/Analysis.h"
 #include "MQSSCatalystPasses/Transforms.h"
@@ -48,8 +41,6 @@ int main(int argc, char **argv) {
   });
   mlir::registerPass(
       []() -> std::unique_ptr<mlir::Pass> { return mlir::createCSEPass(); });
-
-  llvm::outs() << "Dialects and Passes have been registered!\n";
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));

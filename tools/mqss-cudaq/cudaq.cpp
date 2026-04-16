@@ -6,7 +6,7 @@
  * the terms of the Apache License 2.0 which accompanies this distribution.    *
  ******************************************************************************/
 
-#include "SemanticExtractLayer/Extractor.h"
+
 #include "MQSSCUDAQPasses/Examples.hpp"
 #include "MQSSCUDAQPasses/Transforms.hpp"
 
@@ -29,7 +29,6 @@
 #include <mlir/Pass/PassRegistry.h>
 
 using namespace mlir;
-
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
@@ -60,8 +59,6 @@ int main(int argc, char **argv) {
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mqss_cudaq::opt::createPrintQuakeGatesPass(llvm::outs());
   });
-
-  llvm::outs() << "Dialects and Passes have been registered!\n";
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));

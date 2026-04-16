@@ -81,7 +81,7 @@ static std::vector<Value> getQubitValues(std::vector<QubitID> QubitVector) {
 }
 
 static bool checkDoublePiMultiplies(double angle) {
-  const double pi = std::numbers::pi;
+  const double pi = numbers::pi;
   const double doublePi = 2 * pi;
   if (std::fmod(angle, doublePi) == 0)
     return true;
@@ -97,7 +97,7 @@ static void cancel(Operation *Op) {
 static Value normalizeValue(double param, mlir::IRRewriter &builder,
                             Location loc) {
 
-  double pi = std::numbers::pi;
+  double pi = numbers::pi;
   param =
       param - (std::floor(param / (2 * pi)) * 2 * pi); // normalize the angle
   auto valueAttr = builder.getFloatAttr(builder.getF64Type(), param);

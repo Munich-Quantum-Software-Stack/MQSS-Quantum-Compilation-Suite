@@ -5,6 +5,15 @@ CURRENT_DIR=$(pwd)
 CATALYST_COMPILER_DIR="/workspaces/compilers/MQSS-Catalyst-Compiler"
 LLVM_BUILD_DIR="${CATALYST_COMPILER_DIR}/mlir/llvm-project/build"
 
+LLVM_DIR="${LLVM_BUILD_DIR}/lib/cmake/llvm"
+MLIR_DIR="${LLVM_BUILD_DIR}/lib/cmake/mlir"
+
+# Fetch OS specific cuda-quantum installer
+# CATALYST_BINARY_REPO="https://github.com/PennyLaneAI/catalyst/releases/download/v0.14.1/pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl"
+# Install command: python3 -m pip install ./pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl 
+# export <path to bin/catalyst>
+
+
 BUILD_TYPE="Debug"
 BUILD_CATALYST=ON
 
@@ -61,7 +70,6 @@ fi
 # 	-DLLVM_ENABLE_ZSTD=$(ENABLE_ZSTD) \
 # 	-DCMAKE_CXX_VISIBILITY_PRESET=$(SYMBOL_VISIBILITY)
 
-
 cmake -G Ninja \
   -S "${CURRENT_DIR}/tools/mqss-catalyst" \
   -B "${CURRENT_DIR}/build/tools/mqss-catalyst" \
@@ -71,8 +79,8 @@ cmake -G Ninja \
   -DQUANTUM_ENABLE_BINDINGS_PYTHON=ON \
   -DPython3_EXECUTABLE="${PYTHON}" \
   -DPython3_NumPy_INCLUDE_DIRS="$($PYTHON -c 'import numpy as np; print(np.get_include())')" \
-  -DMLIR_DIR="${LLVM_BUILD_DIR}/lib/cmake/mlir" \
-  -DLLVM_DIR="${LLVM_BUILD_DIR}/lib/cmake/llvm" \
+  -DMLIR_DIR="${MLIR_DIR}" \
+  -DLLVM_DIR="${LLVM_DIR}" \
   -DMLIR_LIB_DIR="${LLVM_BUILD_DIR}/lib" \
   -DCMAKE_C_COMPILER="${C_COMPILER}" \
   -DCMAKE_CXX_COMPILER="${CXX_COMPILER}" \
@@ -82,8 +90,8 @@ cmake -G Ninja \
   -DLLVM_ENABLE_LLD="${ENABLE_LLD}" \
   -DLLVM_ENABLE_ZLIB="${ENABLE_ZLIB}" \
   -DLLVM_ENABLE_ZSTD="${ENABLE_ZSTD}" \
-  -DDIALECTS_BUILD_DIR="${CURRENT_DIR}/build" \
-  -DDIALECTS_SRC_DIR="${CURRENT_DIR}" \
+  -DMQSS_BUILD_DIR="${CURRENT_DIR}/build" \
+  -DMQSS_SRC_DIR="${CURRENT_DIR}" \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   -DCATALYST_ENABLE_WARNINGS="${STRICT_WARNINGS}"
 

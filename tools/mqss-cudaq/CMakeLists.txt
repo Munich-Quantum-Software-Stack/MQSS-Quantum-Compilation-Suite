@@ -20,9 +20,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions")
 # endif()
 
 
-set(MLIR_DIR "/usr/local/llvm/lib/cmake/mlir")
-set(LLVM_DIR "/usr/local/llvm/lib/cmake/llvm")
-set(CLANG_DIR "/usr/local/llvm/lib/cmake/clang")
+set(MLIR_DIR "${MLIR_DIR}")
+set(LLVM_DIR "${LLVM_DIR}")
 
 include_directories(${MLIR_INCLUDE_DIRS})
 
@@ -40,7 +39,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 
-# ################ MLIR Settings ###########################################
+# ################ LLVM/MLIR Settings ###########################################
 # Find MLIR. (MLIR is usually installed as part of an LLVM distribution.)
 find_package(MLIR REQUIRED CONFIG)
 message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
@@ -56,6 +55,9 @@ include(AddMLIR)
 include(AddLLVM)
 # Add LLVM, Clang and MLIR headers to the include path
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
+
+link_directories(${LLVM_BUILD_LIBRARY_DIR})
+add_definitions(${LLVM_DEFINITIONS})
 
 # ############### ADDITIONAL PACKAGES #######################################
 # Tell where to search for Find<package>.cmake files
@@ -73,17 +75,13 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 # Restore the original CXX flags and compiler
 set(CMAKE_CXX_STANDARD 20)
 
-# ###################### CUDAQ settings ###################################
-link_directories(${LLVM_BUILD_LIBRARY_DIR})
-add_definitions(${LLVM_DEFINITIONS})
+# ###################### MQSS settings ###################################
 
-set(CUDAQ_MLIR_RUNTIME_PATH "${DIALECTS_BUILD_DIR}/tools/mqss-cudaq/")
+set(MQSS_BUILD_DIR "${MQSS_SRC_DIR}/build")
+set(MQSS_CUDAQ_MAIN_INCLUDE_DIR "${MQSS_SRC_DIR}/tools/mqss-cudaq/include")
 
-set(CUDAQ_BINARY_DIR "${DIALECTS_SRC_DIR}/build")
-set(CUDAQ_MAIN_INCLUDE_DIR "${DIALECTS_SRC_DIR}/tools/mqss-cudaq/include")
-
-include_directories(BEFORE ${CUDAQ_MAIN_INCLUDE_DIR}
-  ${CUDAQ_BINARY_DIR}/tools/mqss-cudaq/include
+include_directories(BEFORE ${MQSS_CUDAQ_MAIN_INCLUDE_DIR}
+  ${MQSS_BUILD_DIR}/tools/mqss-cudaq/include
 )
 
 include(FetchContent)
@@ -114,7 +112,7 @@ target_include_directories(mqss-cudaq-opt
   PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../common
-    #${CUDAQ_MLIR_RUNTIME_PATH}/include  # Path to CUDA-Q headers
+    ${CUDAQ_SOURCE_DIR}/include  # Path to CUDA-Q headers
 )
 
 # if(BUILD_CUDAQ)
