@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   // 2. Explicitly register the standard dialects
   // registerAllDialects(registry) often fails due to linker stripping symbols
   registry.insert<mlir::func::FuncDialect, mlir::arith::ArithDialect,
-                  mlir::cf::ControlFlowDialect>();
+                  mlir::cf::ControlFlowDialect, mlir::LLVM::LLVMDialect>();
 
   // 3. Keep your custom dialects
   registry.insert<mlir::tensor::TensorDialect>();

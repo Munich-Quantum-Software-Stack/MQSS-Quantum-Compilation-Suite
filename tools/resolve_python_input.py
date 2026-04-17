@@ -2,10 +2,11 @@
 import argparse
 import importlib.util
 import inspect
-import os
+import os, re
 import pathlib
 import sys
 from typing import Any
+import shutil
 
 # Official Catalyst debugging API
 from catalyst.debug import get_compilation_stage
@@ -115,6 +116,7 @@ def extract_ir(fn: Any, stage: str) -> str:
 
 
 def write_ir(ir_text: str, out_dir: str, func_name: str, stage: str) -> str:
+
     out_path = os.path.join(out_dir, f"{func_name}-{stage}.mlir")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(ir_text)
@@ -122,6 +124,19 @@ def write_ir(ir_text: str, out_dir: str, func_name: str, stage: str) -> str:
             f.write("\n")
     return out_path
 
+
+def clean(func_name:str):
+    pattern = re.compile(rf"^{re.escape(func_name)}(?:_\d+)?$")
+    base_dir = pathlib.Path(".")
+    matches = [
+        p for p in base_dir.iterdir()
+        if p.is_dir() and pattern.match(p.name)
+    ]
+
+    names = [p.name for p in matches]
+    print(names)
+    for d in names:
+        shutil.rmtree(d)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -147,8 +162,7 @@ def main():
     ir_text = extract_ir(fn, args.stage)
     out_path = write_ir(ir_text, args.out_dir, args.function, args.stage)
 
-    # Print only the path so bash can capture it cleanly.
-    print(out_path)
+    clean(args.function)
 
 
 if __name__ == "__main__":

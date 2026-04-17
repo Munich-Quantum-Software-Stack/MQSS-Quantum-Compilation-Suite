@@ -128,6 +128,7 @@ target_link_libraries(mqss-cudaq-opt
     MLIRFuncDialect         # <--- Fixes the func.func error
     MLIRArithDialect        # <--- For constants and math
     MLIRControlFlowDialect  # <--- For branching/returns
+    MLIRLLVMDialect
     MLIRTransforms
     
     # SupportQuake            # MQSS/Quake support

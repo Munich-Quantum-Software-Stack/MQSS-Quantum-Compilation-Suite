@@ -6,19 +6,23 @@
 usage() {
   cat <<'EOF'
 Usage:
-  mytool.sh <input.{cpp|py}> [options] [-- <tool args>]
+  ./mqss-cc <input.{cpp|py}> [options] --passes=<pass-name>=mode=<mode>
 
-Common:
-  --out-dir DIR
+options:
+  Common:
+    --out-dir DIR
 
-Python-only:
-  --function NAME
-  --stage NAME
-  --resolver PATH
+  Python-only:
+    --function NAME
+    --stage NAME
+    --resolver PATH
 
-Examples:
-  mytool.sh test.cpp --out-dir build
-  mytool.sh test.py --function circuit --stage mlir_opt --out-dir build
+  Example Usage:
+  1. For cudaq-quake
+      ./mqss-cc test.cpp --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
+
+  2. For catalyst-quantum
+      ./mqss-cc test.py --function circuit --stage QuantumCompilationStage --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 EOF
 }
 
@@ -32,6 +36,9 @@ export CUDA_QUAKE="/workspaces/executables/cudaq/bin/cudaq-quake"
 MQSS_CUDAQ_OPT="/workspaces/MQSS-Passes-Suite/build/tools/mqss-cudaq/bin/mqss-cudaq-opt"
 MQSS_CATALYST_OPT="/workspaces/MQSS-Passes-Suite/build/tools/mqss-catalyst/bin/mqss-catalyst-opt"
 
+for p in "$MQSS_CUDAQ_OPT" "$MQSS_CATALYST_OPT"; do
+  [[ -e "$p" ]] || { echo "Missing: $p, please check the build"; exit 1; }
+done
 
 if [[ $# -lt 1 ]]; then
   usage
@@ -48,7 +55,7 @@ fi
 
 EXT="${INPUT_FILE##*.}"
 FUNCTION_NAME=""
-RESOLVER="workspaces/MQSS-Passes-Suite/tools/resolve_python_input.py"
+RESOLVER="/workspaces/MQSS-Passes-Suite/tools/resolve_python_input.py"
 STAGE="QuantumCompilationStage"
 OUT_DIR=""
 TOOL_ARGS=()
@@ -126,16 +133,16 @@ done
 
 
 # Dispatch to correct optimizer
-if [[ "$INPUT_FILE" == *.cpp ]]; then
+if [[ "${EXT}" == "cpp" ]]; then
     echo " "
     echo "Converting the input to MLIR and applying specified optimization passes.."
     filename=$(basename "$INPUT_FILE")
     GENERATED_MLIR="${filename%.*}.qke"
     "${CUDA_QUAKE}" "${INPUT_FILE}" -o "${GENERATED_MLIR}"
-    "${MQSS_CUDAQ_OPT}" "${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${GENERATED_MLIR}"
+    "${MQSS_CUDAQ_OPT}" "${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
     # TODO: Further convert to QIR?
 
-elif [[ "$INPUT_FILE" == *.py ]]; then
+elif [[ "${EXT}" == "py" ]]; then
     echo "Emitting arguments for now..."
     echo " "
     echo "Function name: ${FUNCTION_NAME}"
@@ -144,8 +151,19 @@ elif [[ "$INPUT_FILE" == *.py ]]; then
     echo "Passes: ${PASSES}"
     echo "Out Dir: ${OUT_DIR}"
     echo " "
+    echo "Resolving the python input to extract MLIR..."
+    COMMAND="$(
+    python3 "${RESOLVER}" \
+      --input "${INPUT_FILE}" \
+      --function "${FUNCTION_NAME}" \
+      --stage "${STAGE}" \
+      --out-dir "${OUT_DIR}"
+    )"
 
-    #"${MQSS_CATALYST_OPT}" "${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${GENERATED_MLIR}"
+    MLIR_FILE="${OUT_DIR}/${FUNCTION_NAME}-${STAGE}.mlir"
+    echo "${MLIR_FILE}"
+
+    "${MQSS_CATALYST_OPT}" "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
     # TODO: Further convert to QIR?
 else
     echo "Unknown input type: $INPUT_FILE"

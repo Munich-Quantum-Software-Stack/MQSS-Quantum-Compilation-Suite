@@ -3,12 +3,21 @@
 CURRENT_DIR=$(pwd)
 
 CATALYST_COMPILER_DIR="/workspaces/compilers/MQSS-Catalyst-Compiler"
-LLVM_BUILD_DIR="${CATALYST_COMPILER_DIR}/mlir/llvm-project/build"
 
+
+# Fetch the correct LLVM toolchain (21.1.8) and set the path to lib/cmake/llvm and lib/cmake/mlir
+# Note: Using MQT's setup-mlir scripts to download the LLVM/MLIR setup.
+#       Refer to https://github.com/munich-quantum-software/setup-mlir/ for more details
+
+# cd $DEPS_DIR
+# curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | 
+#       bash -s -- -v 21.1.8 -p /workspaces/temp/llvm-21-toolchain
+
+LLVM_BUILD_DIR="/workspaces/temp/llvm-21-toolchain"
 LLVM_DIR="${LLVM_BUILD_DIR}/lib/cmake/llvm"
 MLIR_DIR="${LLVM_BUILD_DIR}/lib/cmake/mlir"
 
-# Fetch OS specific cuda-quantum installer
+# Fetch OS specific cuda-quantum installer. This is needed to get the catalyst python jit framework
 # CATALYST_BINARY_REPO="https://github.com/PennyLaneAI/catalyst/releases/download/v0.14.1/pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl"
 # Install command: python3 -m pip install ./pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl 
 # export <path to bin/catalyst>

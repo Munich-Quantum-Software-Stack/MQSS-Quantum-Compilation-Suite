@@ -2,8 +2,9 @@
 
 # Define directories
 CURRENT_DIR=$(pwd)
+BUILD_DIR=${CURRENT_DIR}"/build"
+DEPS_DIR=$BUILD_DIR"/_deps"
 
-INSTALL_PATH="${INSTALL_PATH:-$HOME/.passes}"
 # Default values
 NUM_JOBS=4  # Default number of jobs
 BUILD_DOCS=OFF  # Default: Do not build documentation
@@ -12,9 +13,17 @@ BUILD_Quake=OFF
 BUILD_CUDAQ=ON
 BUILD_TYPE="Debug"  # Default: Release mode
 
-# Default directories (can be overridden by arguments)
-MLIR_DIR="/usr/local/llvm/lib/cmake/mlir"
-LLVM_DIR="/usr/local/llvm/lib/cmake/llvm"
+# Fetch the correct LLVM toolchain (16.0.6) and set this path
+# cd $DEPS_DIR
+# wget https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.6/clang+llvm-16.0.6-aarch64-linux-gnu.tar.xz
+# tar -xvf clang+llvm-16.0.6-aarch64-linux-gnu.tar.xz 
+LLVM_LIB_DIR="/workspaces/temp/clang+llvm-16.0.6-aarch64-linux-gnu/lib"
+#LLVM_LIB_DIR="/usr/local/llvm/lib"
+
+MLIR_DIR="${LLVM_LIB_DIR}/cmake/mlir"
+LLVM_DIR="${LLVM_LIB_DIR}/cmake/llvm"
+
+INSTALL_PATH="${INSTALL_PATH:-$HOME/.passes}"
 INSTALL_DIR="${INSTALL_PATH:-$HOME/.passes}"
 
 CUDAQ_DIR="/workspaces/executables/cudaq"
@@ -73,8 +82,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-BUILD_DIR=${CURRENT_DIR}"/build"
 
 # Create directories if they don't exist
 mkdir -p "${BUILD_DIR}"
