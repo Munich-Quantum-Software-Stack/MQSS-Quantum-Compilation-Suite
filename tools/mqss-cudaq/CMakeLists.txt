@@ -42,8 +42,6 @@ endif()
 # ################ LLVM/MLIR Settings ###########################################
 # Find MLIR. (MLIR is usually installed as part of an LLVM distribution.)
 find_package(MLIR REQUIRED CONFIG)
-message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
-
 # Append MLIR's CMake modules.
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
@@ -90,7 +88,6 @@ include(FetchContent)
 
 set(LLVM_EXTERNAL_LIT "/workspaces/compilers/MQSS-Catalyst-Compiler/mlir/llvm-project/build/bin/llvm-lit")
 
-message(CMAKESRCDIR= "${CMAKE_SOURCE_DIR}")
 add_custom_target(check-mqss
   COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/dialects/quake
 )
@@ -139,7 +136,7 @@ target_link_libraries(mqss-cudaq-opt
 
 # 4. Ensure it outputs to build/bin
 set_target_properties(mqss-cudaq-opt PROPERTIES 
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${INSTALL_DIR}/bin"
 )
 
 # (Optional) Verify links

@@ -3,12 +3,13 @@ CATALYST_CCDB = build/tools/mqss-catalyst/compile_commands.json
 CUDAQ_CCDB    = build/tools/mqss-cudaq/compile_commands.json
 MERGED_CCDB   = build/compile_commands.json
 
+MQSS_INSTALL_DIR = /workspaces/mqss-install
 
 .PHONY: mqss-cudaq mqss-catalyst all
 
 
 mqss-cudaq:
-	./scripts/build_cudaq.sh
+	./scripts/build_cudaq.sh --install-dir ${MQSS_INSTALL_DIR}
 	$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
 
 mqss-catalyst:
@@ -21,8 +22,8 @@ ccdb-clean:
 	rm -f $(MERGED_CCDB)
 
 clean:
-	rm -rf build/tools/mqss-catalyst
-	rm -rf build/tools/mqss-cudaq 
+	rm -rf ${MQSS_INSTALL_DIR}/bin/mqss-catalyst
+	rm -rf ${MQSS_INSTALL_DIR}/bin/mqss-cudaq 
 
 merge-one:
 	@if [ ! -f $(MERGED_CCDB) ]; then \
