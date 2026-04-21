@@ -48,7 +48,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/Pass/PassRegistry.h"
 
 #include "llvm/Support/raw_ostream.h"
-
+#include "mlir/Pass/PassManager.h"
 #include <stdexcept>
 
 /**

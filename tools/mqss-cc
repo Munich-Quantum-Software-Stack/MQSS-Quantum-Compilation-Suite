@@ -2,11 +2,42 @@
 
 # Simple driver for selecting the correct optimizer
 
+############# Pretty-print variables#################
+
+msg() {
+  printf '%s\n' "$1"
+}
+
+blank() {
+  printf '\n'
+}
+
+section() {
+  blank
+  printf '====== %s ======\n' "$1"
+  blank
+}
+
+info() {
+  printf '[INFO] %s\n' "$1"
+}
+
+ok() {
+  printf '[OK]   %s\n' "$1"
+}
+
+warn() {
+  printf '[WARN] %s\n' "$1"
+}
+
+step() {
+  printf '  -> %s\n' "$1"
+}
 
 usage() {
   cat <<'EOF'
 Usage:
-  ./mqss-cc <input.{cpp|py}> [options] --passes=<pass-name>=mode=<mode>
+  mqss-cc <input.{cpp|py}> [options] --passes=<pass-name>=mode=<mode>
 
 options:
   Common:
@@ -19,22 +50,22 @@ options:
 
   Example Usage:
   1. For cudaq-quake
-      ./mqss-cc test.cpp --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
+      mqss-cc test.cpp --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 
   2. For catalyst-quantum
-      ./mqss-cc test.py --function circuit --stage QuantumCompilationStage --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
+      mqss-cc test.py --function circuit --stage QuantumCompilationStage --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 EOF
 }
 
-INPUT_FILE=""
 
 PASSES=""
 OTHER_ARGS=()
 
+MQSS_INSTALL_DIR="/workspaces/mqss-install"
 # The following paths should be set on the command-line
-export CUDA_QUAKE="/workspaces/executables/cudaq/bin/cudaq-quake"
-MQSS_CUDAQ_OPT="/workspaces/MQSS-Passes-Suite/build/tools/mqss-cudaq/bin/mqss-cudaq-opt"
-MQSS_CATALYST_OPT="/workspaces/MQSS-Passes-Suite/build/tools/mqss-catalyst/bin/mqss-catalyst-opt"
+export CUDA_QUAKE="/workspaces/MQSS-Passes-Suite/build/_deps/cudaq/bin/cudaq-quake"
+MQSS_CUDAQ_OPT="${MQSS_INSTALL_DIR}/bin/mqss-cudaq-opt"
+MQSS_CATALYST_OPT="${MQSS_INSTALL_DIR}/bin/mqss-catalyst-opt"
 
 for p in "$MQSS_CUDAQ_OPT" "$MQSS_CATALYST_OPT"; do
   [[ -e "$p" ]] || { echo "Missing: $p, please check the build"; exit 1; }
@@ -134,8 +165,8 @@ done
 
 # Dispatch to correct optimizer
 if [[ "${EXT}" == "cpp" ]]; then
-    echo " "
-    echo "Converting the input to MLIR and applying specified optimization passes.."
+    blank
+    info "Converting the input to MLIR and applying specified optimization passes.."
     filename=$(basename "$INPUT_FILE")
     GENERATED_MLIR="${filename%.*}.qke"
     "${CUDA_QUAKE}" "${INPUT_FILE}" -o "${GENERATED_MLIR}"
@@ -143,15 +174,22 @@ if [[ "${EXT}" == "cpp" ]]; then
     # TODO: Further convert to QIR?
 
 elif [[ "${EXT}" == "py" ]]; then
-    echo "Emitting arguments for now..."
-    echo " "
-    echo "Function name: ${FUNCTION_NAME}"
-    echo "Stage: ${STAGE}"
-    echo "Resolver file: ${RESOLVER}"
-    echo "Passes: ${PASSES}"
-    echo "Out Dir: ${OUT_DIR}"
-    echo " "
-    echo "Resolving the python input to extract MLIR..."
+    blank
+    msg "Python job details..."
+    info "Function name: ${FUNCTION_NAME}"
+    info "Stage: ${STAGE}"
+    info "Resolver file: ${RESOLVER}"
+    info "Passes: ${PASSES}"
+    info "Out Dir: ${OUT_DIR}"
+
+    if python3.11 -c "import catalyst"; then
+     info "Catalyst python package found in current env"
+    else
+      warn "Catalyst python package not found"
+      warn "Please enable the python virtual environment: source  MQSS-Passes-Suite/build/_deps/venv/bin/activate"
+      exit 1
+    fi
+     
     COMMAND="$(
     python3 "${RESOLVER}" \
       --input "${INPUT_FILE}" \
@@ -161,11 +199,16 @@ elif [[ "${EXT}" == "py" ]]; then
     )"
 
     MLIR_FILE="${OUT_DIR}/${FUNCTION_NAME}-${STAGE}.mlir"
-    echo "${MLIR_FILE}"
+    if [[ -e "${MLIR_FILE}" ]]; then
+      info "MLIR Extracted: ${MLIR_FILE}"
+    else
+      warn "MLIR dialect could not be extracted"
+      exit 1
+    fi
 
     "${MQSS_CATALYST_OPT}" "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
     # TODO: Further convert to QIR?
 else
-    echo "Unknown input type: $INPUT_FILE"
+    warn "Unknown input type: $INPUT_FILE"
     exit 1
 fi

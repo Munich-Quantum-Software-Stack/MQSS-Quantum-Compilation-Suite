@@ -5,19 +5,26 @@ MERGED_CCDB   = build/compile_commands.json
 
 MQSS_INSTALL_DIR = /workspaces/mqss-install
 
+INSTALL_DIR := $(HOME)/.local/bin
+INSTALL_PATH := $(INSTALL_DIR)/$(SCRIPT)
+
+SRC_SCRIPT=tools/mqss-cc
+
 .PHONY: mqss-cudaq mqss-catalyst all
 
-
 mqss-cudaq:
-	./scripts/build_cudaq.sh --install-dir ${MQSS_INSTALL_DIR}
+	./scripts/build_cudaq.sh --install-dir ${INSTALL_DIR}
 	$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
 
 mqss-catalyst:
-	./scripts/build_catalyst.sh
+	./scripts/build_catalyst.sh --install-dir ${INSTALL_DIR}
 	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
 all: mqss-cudaq mqss-catalyst
-
+	@mkdir -p ~/.local/bin
+	@export PATH="$HOME/.local/bin:$PATH"
+	@ln -sf $(abspath $(SRC_SCRIPT)) $(INSTALL_PATH)
+	
 ccdb-clean:
 	rm -f $(MERGED_CCDB)
 

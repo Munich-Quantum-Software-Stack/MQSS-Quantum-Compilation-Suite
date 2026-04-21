@@ -1,9 +1,12 @@
 
-file(GLOB SOURCES "${CMAKE_SOURCE_DIR}/../common/Passes/*.cpp")
+
+
+file(GLOB SOURCES "${MQSS_COMMON}/Passes/*.cpp")
 
 set(PASS_ANALYSIS_SOURCES
   Analysis/PrintQuakeGates.cpp
   ${SOURCES}
+  ${MQSS_COMMON}/Passes/pass_pipeline/pipeline.cpp
 )
 
 
@@ -29,6 +32,6 @@ target_include_directories(MLIRPasses
   PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_BINARY_DIR}/include
-    ${CMAKE_SOURCE_DIR}/../common
+    ${MQSS_COMMON}
 )
 

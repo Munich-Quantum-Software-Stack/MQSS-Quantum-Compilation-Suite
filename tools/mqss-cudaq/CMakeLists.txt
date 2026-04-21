@@ -77,6 +77,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(MQSS_BUILD_DIR "${MQSS_SRC_DIR}/build")
 set(MQSS_CUDAQ_MAIN_INCLUDE_DIR "${MQSS_SRC_DIR}/tools/mqss-cudaq/include")
+set(MQSS_COMMON "${MQSS_SRC_DIR}/tools/common")
 
 include_directories(BEFORE ${MQSS_CUDAQ_MAIN_INCLUDE_DIR}
   ${MQSS_BUILD_DIR}/tools/mqss-cudaq/include
@@ -136,7 +137,7 @@ target_link_libraries(mqss-cudaq-opt
 
 # 4. Ensure it outputs to build/bin
 set_target_properties(mqss-cudaq-opt PROPERTIES 
-    RUNTIME_OUTPUT_DIRECTORY "${INSTALL_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${INSTALL_DIR}"
 )
 
 # (Optional) Verify links

@@ -163,7 +163,7 @@ target_link_libraries(mqss-catalyst-opt
 
 # 4. Ensure it outputs to build/bin
 set_target_properties(mqss-catalyst-opt PROPERTIES 
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${INSTALL_DIR}"
 )
 
 # (Optional) Verify links

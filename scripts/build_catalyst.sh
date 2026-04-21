@@ -22,6 +22,11 @@ info() {
   printf '[INFO] %s\n' "$1"
 }
 
+fail() {
+  printf '[FAILED] %s\n' "$1"
+}
+
+
 ok() {
   printf '[OK]   %s\n' "$1"
 }
@@ -205,6 +210,7 @@ cmake -G Ninja \
   -DLLVM_ENABLE_ZLIB="${ENABLE_ZLIB}" \
   -DLLVM_ENABLE_ZSTD="${ENABLE_ZSTD}" \
   -DMQSS_BUILD_DIR="${CURRENT_DIR}/build" \
+  -DINSTALL_DIR="${INSTALL_DIR}" \
   -DMQSS_SRC_DIR="${CURRENT_DIR}" \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   -DCATALYST_ENABLE_WARNINGS="${STRICT_WARNINGS}"
@@ -216,4 +222,13 @@ info "Building MQSS Repository Passes with ${NUM_JOBS} jobs..."
 
 ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/mqss-catalyst"
 blank
-ok "Successfully installed MQSS-CATALYST"
+if [[ -e "${INSTALL_DIR}/bin/mqss-catalyst-opt" ]]; then
+    ok "Successfully installed MQSS-CATALYST"
+else
+    fail "MQSS-CATALYST not installed"
+    exit 1
+fi
+
+info "Creating symlink..."
+
+#export PATH="${INSTALL_DIR}/bin:$PATH"
