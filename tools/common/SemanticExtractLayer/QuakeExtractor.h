@@ -85,8 +85,8 @@ public:
                 auto index = ext_ref.getConstantIndex();
                 ID.base = base;
                 ID.index = index;
-                OpView.ControlQubits.push_back(ID);
-                OpView.ControlQubitOps.push_back(ext_ref);
+                OpView.ControlInQubits.push_back(ID);
+                OpView.ControlInQubitOps.push_back(ext_ref);
               }
             }
             // Gather the Target Qubits
@@ -98,8 +98,8 @@ public:
                 auto index = ext_ref.getConstantIndex();
                 ID.base = base;
                 ID.index = index;
-                OpView.TargetQubits.push_back(ID);
-                OpView.TargetQubitOps.push_back(ext_ref);
+                OpView.TargetInQubits.push_back(ID);
+                OpView.TargetInQubitOps.push_back(ext_ref);
               }
             }
             // Gather Parameters if any (E.g. Rotation Angle)
@@ -117,7 +117,7 @@ public:
             QubitID ID;
             ID.base = extract_refop.getVeq();
             ID.index = extract_refop.getConstantIndex();
-            OpView.TargetQubits.push_back(ID);
+            OpView.TargetInQubits.push_back(ID);
           }
           QInfo[Op] = OpView;
         }

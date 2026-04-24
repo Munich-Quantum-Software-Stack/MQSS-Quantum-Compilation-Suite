@@ -62,7 +62,7 @@ DEPS_DIR=$BUILD_DIR"/_deps"
 #       Refer to https://github.com/munich-quantum-software/setup-mlir/ for more details
 mkdir -p "${BUILD_DIR}"
 mkdir -p "${DEPS_DIR}"
-INSTALL_DIR="${BUILD_DIR}"
+INSTALL_DIR="${BUILD_DIR}/bin"
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
@@ -91,6 +91,8 @@ info "Checking LLVM-21 toolchain"
 
 LLVM_VERSION="21.1.8"
 LLVM_BIN_DIR="${DEPS_DIR}/LLVM-${LLVM_VERSION}-toolchain"
+
+#LLVM_BIN_DIR="/workspaces/compilers/MQSS-Catalyst-Compiler/mlir/llvm-project/build"
 
 if [[ -e "$LLVM_BIN_DIR" ]]; then
     ok "Found LLVM-${LLVM_VERSION}-toolchain at: ${LLVM_BIN_DIR}"

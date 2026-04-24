@@ -120,22 +120,31 @@ public:
               QubitRole role = OpRoles[i];
              
               auto gop=g.getQubitOperands()[i];
-
+              auto resop = g->getResults()[i];
+              
               if (role == QubitRole::Control) {
                 ID.base = gop;
                 ID.index = -1;
-                OpView.ControlQubits.push_back(ID);
-                OpView.ControlQubitOps.push_back(gop);
+                OpView.ControlInQubits.push_back(ID);
+                OpView.ControlInQubitOps.push_back(gop);
+                OpView.ControlOutQubits.push_back(resop);
               }
               if (role == QubitRole::Target) {
                 ID.base = gop;
                 ID.index = -1;
-                OpView.TargetQubits.push_back(ID);
-                OpView.TargetQubitOps.push_back(gop);
+                OpView.TargetInQubits.push_back(ID);
+                OpView.TargetInQubitOps.push_back(gop);
+                OpView.TargetOutQubits.push_back(resop);
               }
             }
           }
-          // llvm::outs() << "Op: " << *Op << "," << OpView.hasSideEffects << ", gatety:" << OpView.GateTy << "\n";
+          // llvm::outs() << "Op: " << *Op << "\n";
+          // for(auto c : OpView.ControlQubits){
+          //   llvm::outs().indent(4) << " Ctrl: " << c.base << "\n";
+          // }
+          //  for(auto t : OpView.TargetQubits){
+          //   llvm::outs().indent(4) << " t: " << t.base << "\n";
+          // }
           QInfo[Op] = OpView;
         }
       });

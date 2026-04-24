@@ -87,6 +87,7 @@ include(FetchContent)
 
 #########################LLVM-LIT TESTING SETTINGS###############################
 
+# TODO: Change this path. Should point to llvm-lit in an LLVM toolchain within build/_Deps
 set(LLVM_EXTERNAL_LIT "/workspaces/compilers/MQSS-Catalyst-Compiler/mlir/llvm-project/build/bin/llvm-lit")
 
 add_custom_target(check-mqss

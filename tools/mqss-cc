@@ -4,6 +4,7 @@
 
 ############# Pretty-print variables#################
 
+
 msg() {
   printf '%s\n' "$1"
 }
@@ -61,15 +62,18 @@ EOF
 PASSES=""
 OTHER_ARGS=()
 
-MQSS_INSTALL_DIR="/workspaces/mqss-install"
-# The following paths should be set on the command-line
-export CUDA_QUAKE="/workspaces/MQSS-Passes-Suite/build/_deps/cudaq/bin/cudaq-quake"
-MQSS_CUDAQ_OPT="${MQSS_INSTALL_DIR}/bin/mqss-cudaq-opt"
-MQSS_CATALYST_OPT="${MQSS_INSTALL_DIR}/bin/mqss-catalyst-opt"
+# MQSS_INSTALL_DIR="/workspaces/mqss-install"
+# # The following paths should be set on the command-line
 
-for p in "$MQSS_CUDAQ_OPT" "$MQSS_CATALYST_OPT"; do
-  [[ -e "$p" ]] || { echo "Missing: $p, please check the build"; exit 1; }
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+export CUDA_QUAKE="${CURRENT_DIR}/../build/_deps/cudaq/bin/cudaq-quake"
+
+for cmd in mqss-cudaq-opt mqss-catalyst-opt mqss-cc; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "$cmd not found"
+    fi
 done
+
 
 if [[ $# -lt 1 ]]; then
   usage
@@ -86,8 +90,8 @@ fi
 
 EXT="${INPUT_FILE##*.}"
 FUNCTION_NAME=""
-RESOLVER="/workspaces/MQSS-Passes-Suite/tools/resolve_python_input.py"
-STAGE="QuantumCompilationStage"
+RESOLVER="${SCRIPT_DIR}/resolve_python_input.py"
+STAGE="HLOLoweringStage"
 OUT_DIR=""
 TOOL_ARGS=()
 
@@ -170,7 +174,7 @@ if [[ "${EXT}" == "cpp" ]]; then
     filename=$(basename "$INPUT_FILE")
     GENERATED_MLIR="${filename%.*}.qke"
     "${CUDA_QUAKE}" "${INPUT_FILE}" -o "${GENERATED_MLIR}"
-    "${MQSS_CUDAQ_OPT}" "${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+    mqss-cudaq-opt "${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
     # TODO: Further convert to QIR?
 
 elif [[ "${EXT}" == "py" ]]; then
@@ -206,7 +210,7 @@ elif [[ "${EXT}" == "py" ]]; then
       exit 1
     fi
 
-    "${MQSS_CATALYST_OPT}" "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
+    mqss-catalyst-opt "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
     # TODO: Further convert to QIR?
 else
     warn "Unknown input type: $INPUT_FILE"

@@ -5,32 +5,33 @@ MERGED_CCDB   = build/compile_commands.json
 
 MQSS_INSTALL_DIR = /workspaces/mqss-install
 
-INSTALL_DIR := $(HOME)/.local/bin
-INSTALL_PATH := $(INSTALL_DIR)/$(SCRIPT)
+INSTALL_PATH := $(HOME)/.local/bin
 
 SRC_SCRIPT=tools/mqss-cc
+RESOLVER_SCRIPT=tools/resolve_python_input.py
 
 .PHONY: mqss-cudaq mqss-catalyst all
 
 mqss-cudaq:
-	./scripts/build_cudaq.sh --install-dir ${INSTALL_DIR}
+	./scripts/build_cudaq.sh --install-dir ${INSTALL_PATH}
 	$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
 
 mqss-catalyst:
-	./scripts/build_catalyst.sh --install-dir ${INSTALL_DIR}
+	./scripts/build_catalyst.sh --install-dir ${INSTALL_PATH}
 	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
-all: mqss-cudaq mqss-catalyst
+all:  mqss-catalyst mqss-cudaq
 	@mkdir -p ~/.local/bin
 	@export PATH="$HOME/.local/bin:$PATH"
+	@ln -sf $(abspath $(RESOLVER_SCRIPT)) $(INSTALL_PATH)
 	@ln -sf $(abspath $(SRC_SCRIPT)) $(INSTALL_PATH)
 	
 ccdb-clean:
 	rm -f $(MERGED_CCDB)
 
 clean:
-	rm -rf ${MQSS_INSTALL_DIR}/bin/mqss-catalyst
-	rm -rf ${MQSS_INSTALL_DIR}/bin/mqss-cudaq 
+	rm -rf ${MQSS_INSTALL_DIR}/mqss-catalyst
+	rm -rf ${MQSS_INSTALL_DIR}/mqss-cudaq 
 
 merge-one:
 	@if [ ! -f $(MERGED_CCDB) ]; then \

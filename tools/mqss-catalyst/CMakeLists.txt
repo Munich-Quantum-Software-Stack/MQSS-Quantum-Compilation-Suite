@@ -123,7 +123,7 @@ add_subdirectory(cmake/modules)
 include(FetchContent)
 
 #########################LLVM-LIT TESTING SETTINGS###############################
-
+# TODO: Change this path. Should point to llvm-lit in an LLVM toolchain within build/_Deps
 set(LLVM_EXTERNAL_LIT "/workspaces/compilers/MQSS-Catalyst-Compiler/mlir/llvm-project/build/bin/llvm-lit")
 
 add_custom_target(check-mqss
@@ -153,6 +153,7 @@ target_link_libraries(mqss-catalyst-opt
     MLIRFuncDialect         # <--- Fixes the func.func error
     MLIRArithDialect        # <--- For constants and math
     MLIRControlFlowDialect  # <--- For branching/returns
+    MLIRLinalgDialect
     MLIRLLVMDialect
     MLIRTransforms
     

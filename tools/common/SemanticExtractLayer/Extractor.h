@@ -37,10 +37,14 @@ struct QubitID {
 
 struct QuantumOpView {
   Gate GateTy = Gate::UNKNOWN; //<---------- Important to initialize enums
-  std::vector<QubitID> ControlQubits = {};
-  std::vector<QubitID> TargetQubits = {};
-  std::vector<Value> ControlQubitOps = {};
-  std::vector<Value> TargetQubitOps = {};
+  std::vector<QubitID> ControlInQubits = {};
+  std::vector<QubitID> TargetInQubits = {};
+
+  std::vector<Value> ControlOutQubits = {};         // Needed for catalyst-quantum (value semantics)
+  std::vector<Value> TargetOutQubits = {};         // Needed for catalyst-quantum (value semantics)
+
+  std::vector<Value> ControlInQubitOps = {};
+  std::vector<Value> TargetInQubitOps = {};
   std::vector<Value> Params = {};
   bool isAdj = false;
   bool hasSideEffects = false;
@@ -103,6 +107,10 @@ inline StringRef parseGateTy(const Gate &GateTy) {
 
 using tupleVectorsQubitIDs =
     std::tuple<std::vector<QubitID>, std::vector<QubitID>>;
+
+  using tupleVectorsValues =
+    std::tuple<std::vector<Value>, std::vector<Value>>;
+
 
 class MyModuleAnalysis {
 

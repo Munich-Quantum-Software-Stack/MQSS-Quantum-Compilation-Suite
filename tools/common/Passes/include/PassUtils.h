@@ -9,6 +9,7 @@
 #include <cmath>
 
 using namespace mlir;
+using namespace llvm;
 
 struct Comparety {
   std::string KeyGate1 = "";
@@ -125,9 +126,49 @@ static bool equivalence_check(const std::vector<QubitID> &Op1,
   return true;
 }
 
+static bool equivalence_check(const std::vector<Value> &Op1,
+                              const std::vector<Value> &Op2) {
+  if (Op1.size() != Op2.size())
+    return false;
+
+  for (const auto &q1 : Op1) {
+    bool found = false;
+    for (const auto &q2 : Op2) {
+      if (q1 == q2) {
+        found = true;
+        break;
+      }
+    }
+    if (!found)
+      return false;
+  }
+
+  return true;
+}
+
 static bool SameQubits(tupleVectorsQubitIDs Gate1CtrlTarget,
                        tupleVectorsQubitIDs Gate2CtrlTarget,
                        Comparety Comparekey) {
+
+  auto &[Gate1Ctrls, Gate1Targets] = Gate1CtrlTarget;
+  auto &[Gate2Ctrls, Gate2Targets] = Gate2CtrlTarget;
+
+  if (Comparekey.KeyGate1 == "Control" && Comparekey.KeyGate2 == "Target") {
+    return equivalence_check(Gate1Ctrls, Gate2Targets);
+  }
+  if (Comparekey.KeyGate1 == "Target" && Comparekey.KeyGate2 == "Control") {
+    return equivalence_check(Gate1Targets, Gate2Ctrls);
+  }
+  if (Comparekey.KeyGate1 == "Target" && Comparekey.KeyGate2 == "Target") {
+    return equivalence_check(Gate1Targets, Gate2Targets);
+  }
+  return (equivalence_check(Gate1Ctrls, Gate2Ctrls) &&
+          equivalence_check(Gate1Targets, Gate2Targets));
+}
+
+static bool SameQubitValues(tupleVectorsValues Gate1CtrlTarget,
+                            tupleVectorsValues Gate2CtrlTarget,
+                            Comparety Comparekey) {
 
   auto &[Gate1Ctrls, Gate1Targets] = Gate1CtrlTarget;
   auto &[Gate2Ctrls, Gate2Targets] = Gate2CtrlTarget;
@@ -167,12 +208,12 @@ static bool touchesAny(Operation *Op2, std::vector<QubitID> Op1QubitIDs,
       } else {
         if (OpQuantumView.count(Op2op.getDefiningOp())) {
           auto OpView = OpQuantumView[Op2op.getDefiningOp()];
-          for (auto ctrl : OpView.ControlQubits) {
+          for (auto ctrl : OpView.ControlInQubits) {
             if (ctrl.base == Op1Qubitbase && ctrl.index == Op1Qubitidx)
               return true;
           }
-          if (isContained(Op1Qubit, OpView.ControlQubits) ||
-              isContained(Op1Qubit, OpView.TargetQubits))
+          if (isContained(Op1Qubit, OpView.ControlInQubits) ||
+              isContained(Op1Qubit, OpView.TargetInQubits))
             return true;
         }
         // return false;
@@ -231,8 +272,10 @@ performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
       // llvm::outs() << "next op: " << *NextOp << "\n";
       if (nextOpView.hasSideEffects &&
           !is_contained(Gate2Ty, nextOpView.GateTy) &&
-          (touchesAny(NextOp, FirstGateOpQView.ControlQubits, OpQuantumView) ||
-           touchesAny(NextOp, FirstGateOpQView.TargetQubits, OpQuantumView))) {
+          (touchesAny(NextOp, FirstGateOpQView.ControlInQubits,
+                      OpQuantumView) ||
+           touchesAny(NextOp, FirstGateOpQView.TargetInQubits,
+                      OpQuantumView))) {
 
         // llvm::outs().indent(4) << "Found intervening ops!\n";
         break;
@@ -240,12 +283,14 @@ performCommutation(std::map<Operation *, QuantumOpView> OpQuantumView,
 
       if (is_contained(Gate2Ty, nextOpView.GateTy)) {
 
-        if (SameQubits(
-                {FirstGateOpQView.ControlQubits, FirstGateOpQView.TargetQubits},
-                {nextOpView.ControlQubits, nextOpView.TargetQubits},
-                CompareKey)) {
+        if (SameQubits({FirstGateOpQView.ControlInQubits,
+                        FirstGateOpQView.TargetInQubits},
+                       {nextOpView.ControlInQubits, nextOpView.TargetInQubits},
+                       CompareKey)) {
           CommutationInfo.gather(FirstGateOp, NextOp);
         }
+        // TODO: For catalyst - Check equivalence b/w result Qubits of FirstOp
+        // and OpQubits of Next Op. See performCancellation for reference
         // llvm::outs().indent(4) << "Not same Qubits!\n";
         break;
       }
@@ -271,7 +316,7 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
 
   for (auto &[Op1, Op2] : CommutedOps) {
     if (OpQuantumView.count(Op2)) {
-      auto Op2TargetQubits = OpQuantumView[Op2].TargetQubits;
+      auto Op2TargetQubits = OpQuantumView[Op2].TargetInQubits;
       assert(Op2TargetQubits.size() == 1 &&
              "Currently, Can only switch single qubit gates!");
 
@@ -303,9 +348,9 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
       assert(OpToSwitchOut && "Op to switch out cannot be NULL!!");
       assert(!ReplacementGateTy.empty() && "Need the replacementgatety!!");
 
-      auto TargetQubitOps = OpQuantumView[OpToSwitchOut].TargetQubitOps;
+      auto TargetInQubitOps = OpQuantumView[OpToSwitchOut].TargetInQubitOps;
 
-      createNewGate(Op2, ReplacementGateTy, {}, TargetQubitOps, {}, builder);
+      createNewGate(Op2, ReplacementGateTy, {}, TargetInQubitOps, {}, builder);
 
       builder.eraseOp(OpToSwitchOut);
     }
@@ -375,17 +420,25 @@ performCancellation(std::map<Operation *, QuantumOpView> OpQuantumView,
       auto nextOpView = OpQuantumView[NextOp];
       // TODO: Should the "touchesAny" check be there?
       if (nextOpView.hasSideEffects && (nextOpView.GateTy != FirstGateTy) &&
-          (touchesAny(NextOp, FirstGateQView.ControlQubits, OpQuantumView) ||
-           touchesAny(NextOp, FirstGateQView.TargetQubits, OpQuantumView))) {
+          (touchesAny(NextOp, FirstGateQView.ControlInQubits, OpQuantumView) ||
+           touchesAny(NextOp, FirstGateQView.TargetInQubits, OpQuantumView))) {
         break;
       }
 
       if (nextOpView.GateTy == FirstGateTy) {
 
         if (SameQubits(
-                {FirstGateQView.ControlQubits, FirstGateQView.TargetQubits},
-                {nextOpView.ControlQubits, nextOpView.TargetQubits},
+                {FirstGateQView.ControlInQubits, FirstGateQView.TargetInQubits},
+                {nextOpView.ControlInQubits, nextOpView.TargetInQubits},
                 CompareKey)) {
+          ToErase.insert(FirstGateOp);
+          ToErase.insert(NextOp);
+          NextOp = NextOp->getNextNode();
+        } else if (SameQubitValues({FirstGateQView.ControlOutQubits,
+                                    FirstGateQView.TargetOutQubits},
+                                   {nextOpView.ControlInQubitOps,
+                                    nextOpView.TargetInQubitOps},
+                                   CompareKey)) {
           ToErase.insert(FirstGateOp);
           ToErase.insert(NextOp);
           NextOp = NextOp->getNextNode();
@@ -398,9 +451,14 @@ performCancellation(std::map<Operation *, QuantumOpView> OpQuantumView,
     }
   }
 
-  for (auto *Op : ToErase) {
-    llvm::outs() << "-->To Erase: " << *Op << "\n";
-    cancel(Op);
+  for (auto *op : ToErase) {
+    llvm::outs() << "--> Erasing: " << *op << "\n";
+
+    for (unsigned i = 0; i < op->getNumResults(); ++i) {
+      op->getResult(i).replaceAllUsesWith(op->getOperand(i));
+    }
+
+    cancel(op);
   }
 }
 
@@ -456,9 +514,9 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
         while (NextOp != SecondPatternOp) {
           auto nextOpView = OpQuantumView[NextOp];
           if (nextOpView.hasSideEffects &&
-              (touchesAny(NextOp, FirstPatternOpQView.ControlQubits,
+              (touchesAny(NextOp, FirstPatternOpQView.ControlInQubits,
                           OpQuantumView) ||
-               touchesAny(NextOp, FirstPatternOpQView.TargetQubits,
+               touchesAny(NextOp, FirstPatternOpQView.TargetInQubits,
                           OpQuantumView))) {
             InterveningOps = true;
             break;
@@ -472,14 +530,17 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
           break;
         }
 
-        if (!SameQubits({FirstPatternOpQView.ControlQubits,
-                         FirstPatternOpQView.TargetQubits},
-                        {SecondPatternOpQView.ControlQubits,
-                         SecondPatternOpQView.TargetQubits},
+        if (!SameQubits({FirstPatternOpQView.ControlInQubits,
+                         FirstPatternOpQView.TargetInQubits},
+                        {SecondPatternOpQView.ControlInQubits,
+                         SecondPatternOpQView.TargetInQubits},
                         PassInfo.CompareKey)) {
           ChecksSatisfied = false;
           break;
         }
+        // TODO: For catalyst - Check equivalence b/w result Qubits of FirstOp
+        // and OpQubits of Next Op
+        //      See performCancellation for reference
       }
 
       if (ChecksSatisfied) {
@@ -494,7 +555,7 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
 
     std::vector<Value> QubitsbaseVector;
 
-     // TODO: Is it correct to take this as the RefOp?
+    // TODO: Is it correct to take this as the RefOp?
     auto RefOp = ToErase[ToErase.size() - 1];
     llvm::outs() << "Ref gate: " << *RefOp << "\n";
 
@@ -503,8 +564,8 @@ static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
 
     auto RefOpParams = OpQuantumView[RefOp].Params;
 
-    auto RefOpCtrlQubits = OpQuantumView[RefOp].ControlQubitOps;
-    auto RefOptargetQubits = OpQuantumView[RefOp].TargetQubitOps;
+    auto RefOpCtrlQubits = OpQuantumView[RefOp].ControlInQubitOps;
+    auto RefOptargetQubits = OpQuantumView[RefOp].TargetInQubitOps;
 
     auto isAdj = OpQuantumView[RefOp].isAdj;
     auto *NewOp =
@@ -553,8 +614,8 @@ static void performArgAngelNormalization(
     ToErase.insert(GateOp);
     ValueRange normalizedParams(nParameters);
 
-    auto GateCtrlQubits = GateQView.ControlQubitOps;
-    auto GateTargetQubits = GateQView.TargetQubitOps;
+    auto GateCtrlQubits = GateQView.ControlInQubitOps;
+    auto GateTargetQubits = GateQView.TargetInQubitOps;
 
     auto *NewOp = createNewGate(GateOp, parseGateTy(GateQView.GateTy),
                                 GateCtrlQubits, GateTargetQubits,
@@ -580,20 +641,20 @@ performCNOTReversal(std::map<Operation *, QuantumOpView> OpQuantumView) {
     mlir::IRRewriter builder(GateOp->getContext());
     builder.setInsertionPointAfter(GateOp);
 
-    createNewGate(GateOp, "H", {}, GateQView.TargetQubitOps, GateQView.Params,
+    createNewGate(GateOp, "H", {}, GateQView.TargetInQubitOps, GateQView.Params,
                   builder);
 
-    createNewGate(GateOp, "H", {}, GateQView.ControlQubitOps, GateQView.Params,
+    createNewGate(GateOp, "H", {}, GateQView.ControlInQubitOps,
+                  GateQView.Params, builder);
+
+    createNewGate(GateOp, "CNOT", GateQView.TargetInQubitOps,
+                  GateQView.ControlInQubitOps, GateQView.Params, builder);
+
+    createNewGate(GateOp, "H", {}, GateQView.TargetInQubitOps, GateQView.Params,
                   builder);
 
-    createNewGate(GateOp, "CNOT", GateQView.TargetQubitOps,
-                  GateQView.ControlQubitOps, GateQView.Params, builder);
-
-    createNewGate(GateOp, "H", {}, GateQView.TargetQubitOps, GateQView.Params,
-                  builder);
-
-    createNewGate(GateOp, "H", {}, GateQView.ControlQubitOps, GateQView.Params,
-                  builder);
+    createNewGate(GateOp, "H", {}, GateQView.ControlInQubitOps,
+                  GateQView.Params, builder);
     ToErase.insert(GateOp);
   }
 
@@ -620,20 +681,20 @@ performDecomposition(std::map<Operation *, QuantumOpView> OpQuantumView,
     builder.setInsertionPointAfter(GateOp);
 
     if (GateQView.GateTy == Gate::CNOT) {
-      createNewGate(GateOp, "H", GateQView.ControlQubitOps,
-                    GateQView.TargetQubitOps, GateQView.Params, builder);
-      createNewGate(GateOp, "CZ", GateQView.ControlQubitOps,
-                    GateQView.TargetQubitOps, GateQView.Params, builder);
-      createNewGate(GateOp, "H", GateQView.ControlQubitOps,
-                    GateQView.TargetQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "H", GateQView.ControlInQubitOps,
+                    GateQView.TargetInQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "CZ", GateQView.ControlInQubitOps,
+                    GateQView.TargetInQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "H", GateQView.ControlInQubitOps,
+                    GateQView.TargetInQubitOps, GateQView.Params, builder);
       ToErase.insert(GateOp);
     } else {
-      createNewGate(GateOp, "H", GateQView.ControlQubitOps,
-                    GateQView.TargetQubitOps, GateQView.Params, builder);
-      createNewGate(GateOp, "CNOT", GateQView.ControlQubitOps,
-                    GateQView.TargetQubitOps, GateQView.Params, builder);
-      createNewGate(GateOp, "H", GateQView.ControlQubitOps,
-                    GateQView.TargetQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "H", GateQView.ControlInQubitOps,
+                    GateQView.TargetInQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "CNOT", GateQView.ControlInQubitOps,
+                    GateQView.TargetInQubitOps, GateQView.Params, builder);
+      createNewGate(GateOp, "H", GateQView.ControlInQubitOps,
+                    GateQView.TargetInQubitOps, GateQView.Params, builder);
       ToErase.insert(GateOp);
     }
   }

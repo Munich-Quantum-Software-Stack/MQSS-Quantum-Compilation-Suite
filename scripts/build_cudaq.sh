@@ -62,7 +62,7 @@ CXX="g++"
 NUM_JOBS=4  # Default number of jobs
 BUILD_DOCS=OFF  # Default: Do not build documentation
 #BUILD_TYPE="Debug"  # Default: Release mode
-INSTALL_DIR="${BUILD_DIR}"
+INSTALL_DIR="${BUILD_DIR}/bin"
 
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
