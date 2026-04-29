@@ -20,7 +20,7 @@ mqss-catalyst:
 	./scripts/build_catalyst.sh --install-dir ${INSTALL_PATH}
 	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
-all:  mqss-catalyst mqss-cudaq
+all: mqss-catalyst mqss-cudaq
 	@mkdir -p ~/.local/bin
 	@export PATH="$HOME/.local/bin:$PATH"
 	@ln -sf $(abspath $(RESOLVER_SCRIPT)) $(INSTALL_PATH)

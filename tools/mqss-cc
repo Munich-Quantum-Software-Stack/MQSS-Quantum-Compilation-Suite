@@ -66,7 +66,7 @@ OTHER_ARGS=()
 # # The following paths should be set on the command-line
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-export CUDA_QUAKE="${CURRENT_DIR}/../build/_deps/cudaq/bin/cudaq-quake"
+export CUDA_QUAKE="/workspaces/MQSS-Passes-Suite/build/_deps/cudaq/bin/cudaq-quake"
 
 for cmd in mqss-cudaq-opt mqss-catalyst-opt mqss-cc; do
     if ! command -v "$cmd" >/dev/null 2>&1; then

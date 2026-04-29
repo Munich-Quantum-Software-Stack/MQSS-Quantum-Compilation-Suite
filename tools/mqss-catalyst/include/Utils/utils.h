@@ -27,8 +27,8 @@ inline bool hasQuantumEffect(Operation *op) {
 
 inline catalyst::quantum::CustomOp
 createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
-                   const std::vector<Value> ControlQubitsOps,
-                   const std::vector<Value> TargetQubitOps,
+                   const SmallVector<mlir::Value, 2> ControlQubitsOps,
+                   const SmallVector<mlir::Value, 2> TargetQubitOps,
                    const mlir::ValueRange params, mlir::IRRewriter &builder,
                    bool isAdj = false) {
 

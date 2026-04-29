@@ -54,6 +54,7 @@ struct SharedPassLogic {
     }
     for (auto &[kernel, Info] : KernelDialectInfo) {
       performCommutation(Info, PassInfo);
+      kernel->dump();
     }
   }
 };

@@ -55,8 +55,8 @@ isQuakeQuantumGate(Operation *op) {
 
 inline quake::OperatorInterface
 createQuakeGate(Location loc, llvm::StringRef NewGateTy,
-                const std::vector<Value> ControlQubits,
-                const std::vector<Value> TargetQubitOps,
+                const SmallVector<mlir::Value, 2> ControlQubits,
+                const SmallVector<mlir::Value, 2> TargetQubitOps,
                 const mlir::ValueRange params, mlir::IRRewriter &builder,
                 bool isAdj = false) {
 

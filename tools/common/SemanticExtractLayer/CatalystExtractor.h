@@ -1,4 +1,6 @@
 
+#include "../../mqss-catalyst/include/Utils/utils.h"
+#include "Extractor.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
@@ -6,16 +8,12 @@
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-#include "../../mqss-catalyst/include/Utils/utils.h"
-#include "Extractor.h"
-
 #include "llvm/Support/raw_ostream.h"
 
-enum class QubitRole { Control, Target, Rotation };
-
 // static const StringSet<> rotationsSet = {"RX", "RY", "RZ"};
-// static const StringSet<> hermitianSet = {"Hadamard", "PauliX", "PauliY", "PauliZ",
-//                                          "H",        "X",      "Y",      "Z"};
+// static const StringSet<> hermitianSet = {"Hadamard", "PauliX", "PauliY",
+// "PauliZ",
+//                                          "H",        "X",      "Y", "Z"};
 // static const StringSet<> multiQubitSet = {"CNOT", "CZ", "SWAP"};
 
 static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
@@ -54,9 +52,7 @@ static const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
 class CatalystQuantumAnalysis : public MyModuleAnalysis {
 
 public:
-  CatalystQuantumAnalysis(ModuleOp module) : module(module){
-    gatherOpInfo();
-  }
+  CatalystQuantumAnalysis(ModuleOp module) : module(module) { gatherOpInfo(); }
 
   SmallVector<func::FuncOp, 16> fetchQuantumKernels() override {
 
@@ -91,16 +87,15 @@ public:
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quantum") {
 
-          QuantumOpView OpView;
-          if (hasQuantumEffect(Op)){
-            OpView.hasSideEffects = true;
+          QuantumOpView view;
+          if (hasQuantumEffect(Op)) {
+            view.hasSideEffects = true;
           }
-
           // Only consider operations on gates with side-effects
           if (auto g = isCatalystQuantumGateOp(Op)) {
             // TODO isAdj initialization?
-            OpView.GateTy = parseGateTy(g.getGateName());
-            OpView.isAdj = g.getAdjointFlag();                // Is this correct?
+            view.GateTy = parseGateTy(g.getGateName());
+            view.isAdjoint = g.getAdjointFlag(); // Is this correct?
 
             std::vector<QubitRole> OpRoles =
                 getGateOpRoles(g.getGateName()); // Now we can separate out the
@@ -111,30 +106,30 @@ public:
             assert((OpRoles.size() == g.getQubitOperands().size()) &&
                    "Operand Roles not equals No. of Qubit Operands");
 
-            for(auto p : g.getParams()){
-              OpView.Params.push_back(p);
+            for (auto p : g.getParams()) {
+              view.params.push_back(p);
             }
-          
+
             for (unsigned i = 0; i < g.getQubitOperands().size(); i++) {
               QubitID ID;
               QubitRole role = OpRoles[i];
-             
-              auto gop=g.getQubitOperands()[i];
+
+              auto gop = g.getQubitOperands()[i];
               auto resop = g->getResults()[i];
-              
+
               if (role == QubitRole::Control) {
                 ID.base = gop;
                 ID.index = -1;
-                OpView.ControlInQubits.push_back(ID);
-                OpView.ControlInQubitOps.push_back(gop);
-                OpView.ControlOutQubits.push_back(resop);
+                view.getQubits(QubitRole::Control).ids.push_back(ID);
+                view.getQubits(QubitRole::Control).in.push_back(gop);
+                view.getQubits(QubitRole::Control).out.push_back(resop);
               }
               if (role == QubitRole::Target) {
                 ID.base = gop;
                 ID.index = -1;
-                OpView.TargetInQubits.push_back(ID);
-                OpView.TargetInQubitOps.push_back(gop);
-                OpView.TargetOutQubits.push_back(resop);
+                view.getQubits(QubitRole::Target).ids.push_back(ID);
+                view.getQubits(QubitRole::Target).in.push_back(gop);
+                view.getQubits(QubitRole::Target).out.push_back(resop);
               }
             }
           }
@@ -145,17 +140,17 @@ public:
           //  for(auto t : OpView.TargetQubits){
           //   llvm::outs().indent(4) << " t: " << t.base << "\n";
           // }
-          QInfo[Op] = OpView;
+          QInfo[Op] = view;
         }
       });
       KernelDialectInfo[kernel] = QInfo;
     }
   }
 
-  const llvm::DenseMap<func::FuncOp, QuantumOpInfo>  getKernelDialectInfo() override {
+  const llvm::DenseMap<func::FuncOp, QuantumOpInfo>
+  getKernelDialectInfo() override {
     return KernelDialectInfo;
   }
-
 
   mlir::LogicalResult verifyModule() override { return module.verify(); }
 
