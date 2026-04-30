@@ -14,8 +14,9 @@ using namespace llvm;
 namespace {
 
 class CommonGateCancellation
-    : public mqss_backend::CommonGateCancellationPassBase<CommonGateCancellation> {
-      
+    : public mqss_backend::CommonGateCancellationPassBase<
+          CommonGateCancellation> {
+
   std::vector<Gate> GatesToCancel{CNOT, PauliX, PauliZ, PauliY, H, Hadamard};
 
   std::vector<Gate> RotationGatesToCancel{RX, RZ, RZ};
@@ -42,17 +43,23 @@ class CommonGateCancellation
     // Empty CompareKey meaning - both control and target qubit operands
     // of the gates to be cancelled will be compared
 
+    int count = 0;
     if (mode == "CancelGate") {
       Comparety CompareKey;
 
       for (auto &[kernel, Info] : KernelDialectInfo) {
+        llvm::outs() << ++count << ". kernel: " << kernel.getSymName() << "\n";
         performCancellation(Info, GatesToCancel, CompareKey);
+        llvm::outs() << "\n";
       }
-    }
-    else if(mode == "CancelNullRotation"){
-      for (auto &[kernel, Info] : KernelDialectInfo)
+    } else if (mode == "CancelNullRotation") {
+
+      for (auto &[kernel, Info] : KernelDialectInfo) {
+        llvm::outs() << ++count << ". kernel: " << kernel.getSymName() << "\n";
         performNullRotationCancellation(Info, RotationGatesToCancel);
-    } else{
+        llvm::outs() << "\n";
+      }
+    } else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
     }
@@ -65,7 +72,6 @@ class CommonGateCancellation
 };
 
 } // namespace
-
 
 std::unique_ptr<mlir::Pass> mqss_backend::CommonGateCancellationPass() {
   return std::make_unique<CommonGateCancellation>();

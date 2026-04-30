@@ -29,7 +29,7 @@ struct SharedPassLogic {
       PassInfo.ReplacementMap[Gate::PauliX] = Gate::PauliZ;
       PassInfo.ReplacementMap[Gate::PauliY] = Gate::PauliY;
       PassInfo.ReplacementMap[Gate::PauliZ] = Gate::PauliX;
-      PassInfo.CompareKey = {"Target", "Target"};
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     } else if (Mode == PassMode::SwitchHXYZ) {
       PassInfo.FirstGateTy.push_back(Gate::H);
       PassInfo.SecondGateTy.push_back(Gate::PauliX);
@@ -39,7 +39,7 @@ struct SharedPassLogic {
       PassInfo.ReplacementMap[Gate::PauliX] = Gate::PauliZ;
       PassInfo.ReplacementMap[Gate::PauliY] = Gate::PauliY;
       PassInfo.ReplacementMap[Gate::PauliZ] = Gate::PauliX;
-      PassInfo.CompareKey = {"Target", "Target"};
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     }
 
     for (auto &[kernel, QInfo] : KernelDialectInfo) {

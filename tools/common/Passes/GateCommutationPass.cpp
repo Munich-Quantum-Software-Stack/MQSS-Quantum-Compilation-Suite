@@ -30,31 +30,33 @@ struct SharedPassLogic {
     if (Mode == PassMode::CommuteCxRx) {
       PassInfo.FirstGateTy.push_back(Gate::CNOT);
       PassInfo.SecondGateTy.push_back(Gate::RX);
-      PassInfo.CompareKey = {"Target", "Target"};
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     } else if (Mode == PassMode::CommuteCxX) {
       PassInfo.FirstGateTy.push_back(Gate::CNOT);
       PassInfo.SecondGateTy.push_back(Gate::PauliX);
-      PassInfo.CompareKey = {"Target", "Target"};
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     } else if (Mode == PassMode::CommuteXCx) {
       PassInfo.FirstGateTy.push_back(Gate::PauliX);
       PassInfo.SecondGateTy.push_back(Gate::CNOT);
-      PassInfo.CompareKey = {"Target", "Target"};
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     } else if (Mode == PassMode::CommuteCxZ) {
       PassInfo.FirstGateTy.push_back(Gate::CNOT);
       PassInfo.SecondGateTy.push_back(Gate::PauliZ);
-      PassInfo.CompareKey = {"Control", "Target"};
+      PassInfo.CompareKey = {QubitRole::Control, QubitRole::Target};
     } else if (Mode == PassMode::CommuteZCx) {
       PassInfo.FirstGateTy.push_back(Gate::PauliZ);
       PassInfo.SecondGateTy.push_back(Gate::CNOT);
-      PassInfo.CompareKey = {"Target", "Control"};
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Control};
     } else if (Mode == PassMode::CommuteRxCx) {
       PassInfo.FirstGateTy.push_back(Gate::RX);
       PassInfo.SecondGateTy.push_back(Gate::CNOT);
-      PassInfo.CompareKey = {"Target", "Target"};
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     }
+    int count=0;
     for (auto &[kernel, Info] : KernelDialectInfo) {
+      llvm::outs() << ++count << ". kernel: " << kernel.getSymName() << "\n";
       performCommutation(Info, PassInfo);
-      kernel->dump();
+      llvm::outs() << "\n";
     }
   }
 };

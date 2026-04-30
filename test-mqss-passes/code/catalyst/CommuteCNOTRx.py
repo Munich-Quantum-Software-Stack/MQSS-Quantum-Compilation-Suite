@@ -1,5 +1,8 @@
 
 
+# mqss-cc /workspaces/MQSS-Passes-Suite/test-mqss-passes/code/catalyst/CommuteCNOTRx.py --function circuit \
+#     --stage HLOLoweringStage --out-dir output/ --passes=CommonCommutePass=mode=CX-RX
+
 from catalyst import qjit
 import pennylane as qml
 

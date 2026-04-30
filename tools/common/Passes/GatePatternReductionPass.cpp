@@ -24,13 +24,13 @@ struct SharedPassLogic {
       PassInfo.GatesToCancel.push_back(PauliX);
       PassInfo.GatesToCancel.push_back(H);
       PassInfo.NewGateTy = Gate::PauliZ;
-      PassInfo.CompareKey = {"Target", "Target"};
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     } else if (Mode == PassMode::HZHToX) {
       PassInfo.GatesToCancel.push_back(H);
       PassInfo.GatesToCancel.push_back(PauliZ);
       PassInfo.GatesToCancel.push_back(H);
       PassInfo.NewGateTy = Gate::PauliX;
-      PassInfo.CompareKey = {"Target", "Target"};
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     } else if (Mode == PassMode::SAdjZToS) {
       PassInfo.GatesToCancel.push_back(SAdj);
       PassInfo.GatesToCancel.push_back(PauliZ);
