@@ -6,13 +6,17 @@ config.name = "test-mqss-passes"
 
 config.test_format = lit.formats.ShTest()
 
-config.suffixes = ['.qke','.quantum']
+config.suffixes = ['.qke','.quantum', 'mlir', '.cpp', '.test']
 
 config.test_source_root = os.path.dirname(__file__)
 
 
 config.substitutions.append(
     ('%mqss-cudaq-opt', '/root/.local/bin/mqss-cudaq-opt')
+)
+
+config.substitutions.append(
+    ('%cudaq-quake', '/workspaces/MQSS-Passes-Suite/build/_deps/cudaq/bin/cudaq-quake ')
 )
 
 config.substitutions.append(

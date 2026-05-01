@@ -88,10 +88,19 @@ include(FetchContent)
 #########################LLVM-LIT TESTING SETTINGS###############################
 
 # TODO: Change this path. Should point to llvm-lit in an LLVM toolchain within build/_Deps
-set(LLVM_EXTERNAL_LIT "/workspaces/compilers/MQSS-Catalyst-Compiler/mlir/llvm-project/build/bin/llvm-lit")
+find_program(LLVM_EXTERNAL_LIT
+  NAMES llvm-lit lit
+  REQUIRED
+)
 
 add_custom_target(check-mqss
   COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/dialects/quake
+  USES_TERMINAL
+)
+
+add_custom_target(check-mqss-code
+  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/code/cudaq/tests
+  USES_TERMINAL
 )
 
 ################################-MQSS Settings-###############################

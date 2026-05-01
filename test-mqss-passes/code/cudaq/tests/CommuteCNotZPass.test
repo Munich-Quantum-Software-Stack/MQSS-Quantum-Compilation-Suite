@@ -1,0 +1,10 @@
+// test-mqss-passes/code/cudaq/tests/CommuteCNotZPass.test
+
+// RUN: %cudaq-quake %S/../CommuteCNotZPass.cpp \
+// RUN:   | %mqss-cudaq-opt -CommonCommutePass=mode=CX-Z \
+// RUN:   | FileCheck %s
+
+// CHECK: %7 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
+// CHECK: quake.z %7 : (!quake.ref) -> ()
+// CHECK: quake.x [%5] %6 : (!quake.ref, !quake.ref) -> ()
+// CHECK: %8 = quake.extract_ref %0[0] : (!quake.veq<3>) -> !quake.ref

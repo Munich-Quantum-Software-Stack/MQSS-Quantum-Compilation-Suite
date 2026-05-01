@@ -115,6 +115,8 @@ VENV_DIR="${DEPS_DIR}/venv"
 mkdir -p $VENV_DIR
 python3.11 -m venv $VENV_DIR
 
+source "${VENV_DIR}/bin/activate"
+
 CATALYST_SITE_PACKAGE="${VENV_DIR}/lib64/python3.11/site-packages/catalyst"
 
 if [[ -e "${CATALYST_SITE_PACKAGE}" ]]; then
@@ -124,8 +126,6 @@ else
     python3.11 -m pip install ${DEPS_DIR}/./pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl 
     wget -P $DEPS_DIR $CATALYST_BINARY_REPO
 fi
-
-source "${DEPS_DIR}/venv/bin/activate"  
 
 if [[ -e "${LLVM_DIR}" && -e "${MLIR_DIR}" && -e "${CATALYST_SITE_PACKAGE}" ]]; then
     blank
@@ -215,6 +215,7 @@ cmake -G Ninja \
   -DINSTALL_DIR="${INSTALL_DIR}" \
   -DMQSS_SRC_DIR="${CURRENT_DIR}" \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DLLVM_EXTERNAL_LIT=$(which lit) \
   -DCATALYST_ENABLE_WARNINGS="${STRICT_WARNINGS}"
 
 
@@ -230,7 +231,3 @@ else
     fail "MQSS-CATALYST not installed"
     exit 1
 fi
-
-info "Creating symlink..."
-
-#export PATH="${INSTALL_DIR}/bin:$PATH"

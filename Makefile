@@ -5,7 +5,7 @@ MERGED_CCDB   = build/compile_commands.json
 
 MQSS_INSTALL_DIR = /workspaces/mqss-install
 
-INSTALL_PATH := $(HOME)/.local/bin
+INSTALL_PATH := $(HOME)/.local
 
 SRC_SCRIPT=tools/mqss-cc
 RESOLVER_SCRIPT=tools/resolve_python_input.py
@@ -25,7 +25,7 @@ all: mqss-catalyst mqss-cudaq
 	@export PATH="$HOME/.local/bin:$PATH"
 	@ln -sf $(abspath $(RESOLVER_SCRIPT)) $(INSTALL_PATH)
 	@ln -sf $(abspath $(SRC_SCRIPT)) $(INSTALL_PATH)
-	
+
 ccdb-clean:
 	rm -f $(MERGED_CCDB)
 
