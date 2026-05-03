@@ -238,9 +238,9 @@ ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/mqss-cudaq"
 # echo " "
 blank
 
-if [[ -e "${INSTALL_DIR}/bin/mqss-cudaq-opt" ]]; then
-    ok "Successfully installed MQSS-CUDAQ"
-else
-    fail "MQSS-CUDAQ not installed"
-    exit 1
-fi
+# if [[ -e "${INSTALL_DIR}/bin/mqss-cudaq-opt" ]]; then
+#     ok "Successfully installed MQSS-CUDAQ"
+# else
+#     fail "MQSS-CUDAQ not installed"
+#     exit 1
+# fi

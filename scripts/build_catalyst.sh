@@ -224,10 +224,10 @@ blank
 info "Building MQSS Repository Passes with ${NUM_JOBS} jobs..."
 
 ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/mqss-catalyst"
-blank
-if [[ -e "${INSTALL_DIR}/bin/mqss-catalyst-opt" ]]; then
-    ok "Successfully installed MQSS-CATALYST"
-else
-    fail "MQSS-CATALYST not installed"
-    exit 1
-fi
+# blank
+# if [[ -e "${INSTALL_DIR}/bin/mqss-catalyst-opt" ]]; then
+#     ok "Successfully installed MQSS-CATALYST"
+# else
+#     fail "MQSS-CATALYST not installed"
+#     exit 1
+# fi

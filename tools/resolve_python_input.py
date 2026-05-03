@@ -3,7 +3,7 @@ import argparse
 import importlib.util
 import inspect
 import os, re
-import pathlib
+import pathlib, tempfile
 import sys
 from typing import Any
 import shutil
@@ -153,18 +153,27 @@ def main():
     parser.add_argument("--out-dir", required=False, help="Directory to write extracted MLIR into")
     args = parser.parse_args()
 
-    module = load_module_from_path(args.input)
-    fn = resolve_function(module, args.function)
+    input_path = os.path.abspath(args.input)
 
-    # Force JIT compilation at least once.
-    best_effort_compile(fn)
+    with tempfile.TemporaryDirectory(prefix="catalyst-ir-") as tmpdir:
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmpdir)
 
-    ir_text = extract_ir(fn, args.stage)
-    if(args.out_dir != None):
-        out_path = write_ir(ir_text, args.out_dir, args.function, args.stage)
-        clean(args.function)
+            module = load_module_from_path(input_path)
+            fn = resolve_function(module, args.function)
+
+            best_effort_compile(fn)
+
+            ir_text = extract_ir(fn, args.stage)
+
+        finally:
+            os.chdir(old_cwd)
+
+    if args.out_dir is not None:
+        os.makedirs(args.out_dir, exist_ok=True)
+        write_ir(ir_text, args.out_dir, args.function, args.stage)
     else:
-        print("Extracted MLIR IR", file=sys.stderr)
         sys.stdout.write(ir_text)
         if not ir_text.endswith("\n"):
             sys.stdout.write("\n")
