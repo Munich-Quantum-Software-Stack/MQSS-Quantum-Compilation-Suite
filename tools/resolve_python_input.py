@@ -150,7 +150,7 @@ def main():
             "QuantumCompilationStage, HLOLoweringStage, BufferizationStage"
         ),
     )
-    parser.add_argument("--out-dir", required=True, help="Directory to write extracted MLIR into")
+    parser.add_argument("--out-dir", required=False, help="Directory to write extracted MLIR into")
     args = parser.parse_args()
 
     module = load_module_from_path(args.input)
@@ -160,9 +160,14 @@ def main():
     best_effort_compile(fn)
 
     ir_text = extract_ir(fn, args.stage)
-    out_path = write_ir(ir_text, args.out_dir, args.function, args.stage)
-
-    clean(args.function)
+    if(args.out_dir != None):
+        out_path = write_ir(ir_text, args.out_dir, args.function, args.stage)
+        clean(args.function)
+    else:
+        print("Extracted MLIR IR", file=sys.stderr)
+        sys.stdout.write(ir_text)
+        if not ir_text.endswith("\n"):
+            sys.stdout.write("\n")
 
 
 if __name__ == "__main__":

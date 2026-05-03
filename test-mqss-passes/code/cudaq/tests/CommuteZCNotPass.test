@@ -1,0 +1,8 @@
+// test-mqss-passes/code/cudaq/tests/CommuteZCNotPass.test
+
+// RUN: %mqss-cc %S/../CommuteZCNotPass.cpp --passes=CommonCommutePass=mode=Z-CX | FileCheck %s
+
+// CHECK: %7 = quake.extract_ref %0[0] : (!quake.veq<3>) -> !quake.ref
+// CHECK-NEXT: quake.x [%6] %7 : (!quake.ref, !quake.ref) -> ()
+// CHECK-NEXT: quake.z %5 : (!quake.ref) -> ()
+// CHECK: %8 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref

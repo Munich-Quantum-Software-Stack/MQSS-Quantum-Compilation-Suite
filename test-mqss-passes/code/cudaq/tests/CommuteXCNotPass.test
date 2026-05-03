@@ -1,0 +1,8 @@
+// test-mqss-passes/code/cudaq/tests/CommuteXCNotPass.test
+
+// RUN: %mqss-cc %S/../CommuteXCNotPass.cpp --passes=CommonCommutePass=mode=X-CX | FileCheck %s
+
+// CHECK: quake.x [%2] %3 : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.x %1 : (!quake.ref) -> ()
+// CHECK: %4 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.x %4 : (!quake.ref) -> ()

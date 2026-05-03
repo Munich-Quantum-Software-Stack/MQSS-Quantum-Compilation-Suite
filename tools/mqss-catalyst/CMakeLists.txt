@@ -133,6 +133,12 @@ add_custom_target(check-mqss
   USES_TERMINAL
 )
 
+add_custom_target(check-mqss-code
+  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/code/catalyst/tests
+  USES_TERMINAL
+)
+
+
 ################################-MQSS Settings-###############################
 
 add_executable(mqss-catalyst-opt catalyst.cpp)

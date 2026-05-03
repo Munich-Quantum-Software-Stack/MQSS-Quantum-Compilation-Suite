@@ -173,8 +173,14 @@ if [[ "${EXT}" == "cpp" ]]; then
     info "Converting the input to MLIR and applying specified optimization passes.."
     filename=$(basename "$INPUT_FILE")
     GENERATED_MLIR="${filename%.*}.qke"
-    "${CUDA_QUAKE}" "${INPUT_FILE}" -o "${GENERATED_MLIR}"
-    mqss-cudaq-opt "${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+    
+    if [[ "${OUT_DIR}" != "" ]]; then
+      "${CUDA_QUAKE}" "${INPUT_FILE}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+      mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+    else
+      "${CUDA_QUAKE}" "${INPUT_FILE}" \
+      | mqss-cudaq-opt "${PASS_ARGS[@]}"
+    fi
     # TODO: Further convert to QIR?
 
 elif [[ "${EXT}" == "py" ]]; then
@@ -193,24 +199,33 @@ elif [[ "${EXT}" == "py" ]]; then
       warn "Please enable the python virtual environment: source  MQSS-Passes-Suite/build/_deps/venv/bin/activate"
       exit 1
     fi
-     
-    COMMAND="$(
-    python3 "${RESOLVER}" \
-      --input "${INPUT_FILE}" \
-      --function "${FUNCTION_NAME}" \
-      --stage "${STAGE}" \
-      --out-dir "${OUT_DIR}"
-    )"
 
-    MLIR_FILE="${OUT_DIR}/${FUNCTION_NAME}-${STAGE}.mlir"
-    if [[ -e "${MLIR_FILE}" ]]; then
-      info "MLIR Extracted: ${MLIR_FILE}"
+    COMMAND=""
+    if [[ "${OUT_DIR}" != "" ]]; then
+      COMMAND="$(
+      python3 "${RESOLVER}" \
+        --input "${INPUT_FILE}" \
+        --function "${FUNCTION_NAME}" \
+        --stage "${STAGE}" \
+        --out-dir "${OUT_DIR}"
+      )"
+      MLIR_FILE="${OUT_DIR}/${FUNCTION_NAME}-${STAGE}.mlir"
+      if [[ -e "${MLIR_FILE}" ]]; then
+        info "MLIR Extracted: ${MLIR_FILE}"
+      else
+        warn "MLIR dialect could not be extracted"
+        exit 1
+      fi
+      mqss-catalyst-opt "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
+
     else
-      warn "MLIR dialect could not be extracted"
-      exit 1
+      python3 "${RESOLVER}" \
+        --input "${INPUT_FILE}" \
+        --function "${FUNCTION_NAME}" \
+        --stage "${STAGE}" | mqss-catalyst-opt "${PASS_ARGS[@]}"
     fi
 
-    mqss-catalyst-opt "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
+    
     # TODO: Further convert to QIR?
 else
     warn "Unknown input type: $INPUT_FILE"

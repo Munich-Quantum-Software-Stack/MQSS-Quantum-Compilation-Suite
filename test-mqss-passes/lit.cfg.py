@@ -16,6 +16,10 @@ config.substitutions.append(
 )
 
 config.substitutions.append(
+    ('%mqss-cc', '/root/.local/bin/mqss-cc')
+)
+
+config.substitutions.append(
     ('%cudaq-quake', '/workspaces/MQSS-Passes-Suite/build/_deps/cudaq/bin/cudaq-quake ')
 )
 

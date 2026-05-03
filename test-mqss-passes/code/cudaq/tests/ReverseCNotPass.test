@@ -1,0 +1,13 @@
+// test-mqss-passes/code/cudaq/tests/ReverseCNotPass.test
+
+// RUN: %mqss-cc %S/../ReverseCNotPass.cpp --passes=CommonDecompositionPass=mode=ReverseCx | FileCheck %s
+
+// CHECK: quake.h %4 : (!quake.ref) -> ()
+// CHECK: quake.h %3 : (!quake.ref) -> ()
+// CHECK: quake.x [%4] %3 : (!quake.ref, !quake.ref) -> ()
+// CHECK-NEXT: quake.h %4 : (!quake.ref) -> ()
+// CHECK: quake.h %3 : (!quake.ref) -> ()
+
+
+
+

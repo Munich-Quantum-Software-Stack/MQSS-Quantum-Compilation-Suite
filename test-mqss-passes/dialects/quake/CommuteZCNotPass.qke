@@ -1,3 +1,6 @@
+
+// RUN: %mqss-cudaq-opt %s --CommonCommutePass=mode=Z-CX 2>&1 | FileCheck %s
+
 module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__testILm3EE = "_ZN4testILm3EEclEv"}} {
   func.func @__nvqpp__mlirgen__testILm3EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
     %cst = arith.constant 5.141600e+00 : f64
@@ -30,3 +33,7 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
+// CHECK: %7 = quake.extract_ref %0[0] : (!quake.veq<3>) -> !quake.ref
+// CHECK: quake.x [%6] %7 : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.z %5 : (!quake.ref) -> ()
+// CHECK: %8 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref

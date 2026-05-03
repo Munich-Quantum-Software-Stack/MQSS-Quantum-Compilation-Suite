@@ -1,0 +1,13 @@
+// test-mqss-passes/code/cudaq/tests/HZHToXPass.test
+
+// RUN: %mqss-cc %S/../HZHToXPass.cpp --passes=CommonReductionPass=mode=HZHToX | FileCheck %s
+
+// CHECK: %1 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %3 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.x %3 : (!quake.ref) -> ()
+// CHECK: %4 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.h %4 : (!quake.ref) -> ()
+
+
+

@@ -23,9 +23,41 @@ template <std::size_t N> struct test {
   }
 };
 
+template <std::size_t N> struct test1 {
+  auto operator()() __qpu__ {
+
+    // Compile-time sized array like std::array
+    cudaq::qarray<N> q;
+    y(q[0]);
+    h(q[0]);
+    h(q[1]);
+    y(q[1]);
+    mz(q);
+  }
+};
+
+template <std::size_t N> struct test2 {
+  auto operator()() __qpu__ {
+
+    // Compile-time sized array like std::array
+    cudaq::qarray<N> q;
+    z(q[0]);
+    h(q[0]);
+    h(q[1]);
+    z(q[1]);
+    mz(q);
+  }
+};
+
 int main() {
   auto kernel = test<2>{};
   auto counts = cudaq::sample(kernel);
+  auto kernel1 = test1<2>{};
+  auto counts1 = cudaq::sample(kernel1);
+  auto kernel2 = test2<2>{};
+  auto counts2 = cudaq::sample(kernel2);
   counts.dump();
+  counts1.dump();
+  counts2.dump();
   return 0;
 }
