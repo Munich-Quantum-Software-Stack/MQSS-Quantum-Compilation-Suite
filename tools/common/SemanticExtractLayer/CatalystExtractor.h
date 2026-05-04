@@ -87,59 +87,7 @@ public:
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quantum") {
 
-          QuantumOpView view;
-          if (hasQuantumEffect(Op)) {
-            view.hasSideEffects = true;
-          }
-          // Only consider operations on gates with side-effects
-          if (auto g = isCatalystQuantumGateOp(Op)) {
-            // TODO isAdj initialization?
-            view.GateTy = parseGateTy(g.getGateName());
-            view.isAdjoint = g.getAdjointFlag(); // Is this correct?
-
-            std::vector<QubitRole> OpRoles =
-                getGateOpRoles(g.getGateName()); // Now we can separate out the
-                                                 // Qubits into Ctrl/Target
-
-            assert(!OpRoles.empty() &&
-                   "Found a gate Op with empty Operand Roles(Control/Target)");
-            assert((OpRoles.size() == g.getQubitOperands().size()) &&
-                   "Operand Roles not equals No. of Qubit Operands");
-
-            for (auto p : g.getParams()) {
-              view.params.push_back(p);
-            }
-
-            for (unsigned i = 0; i < g.getQubitOperands().size(); i++) {
-              QubitID ID;
-              QubitRole role = OpRoles[i];
-
-              auto gop = g.getQubitOperands()[i];
-              auto resop = g->getResults()[i];
-
-              if (role == QubitRole::Control) {
-                ID.base = gop;
-                ID.index = -1;
-                view.getQubits(QubitRole::Control).ids.push_back(ID);
-                view.getQubits(QubitRole::Control).in.push_back(gop);
-                view.getQubits(QubitRole::Control).out.push_back(resop);
-              }
-              if (role == QubitRole::Target) {
-                ID.base = gop;
-                ID.index = -1;
-                view.getQubits(QubitRole::Target).ids.push_back(ID);
-                view.getQubits(QubitRole::Target).in.push_back(gop);
-                view.getQubits(QubitRole::Target).out.push_back(resop);
-              }
-            }
-          }
-          // llvm::outs() << "Op: " << *Op << "\n";
-          // for(auto c : OpView.ControlQubits){
-          //   llvm::outs().indent(4) << " Ctrl: " << c.base << "\n";
-          // }
-          //  for(auto t : OpView.TargetQubits){
-          //   llvm::outs().indent(4) << " t: " << t.base << "\n";
-          // }
+          auto view = createQuantumView(Op);
           QInfo[Op] = view;
         }
       });
@@ -147,9 +95,27 @@ public:
     }
   }
 
+  void addOperation(Operation *NewOp) override{
+    auto funcOp = NewOp->getParentOfType<mlir::func::FuncOp>();
+    assert(funcOp && "Adding New O: Parent Function not found!");
+    assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
+    auto &QInfo = KernelDialectInfo[funcOp];
+    assert(!QInfo.count(NewOp) && "Adding New Op: Op already present in QunatumInfoMap");
+    auto view = createQuantumView(NewOp);
+    QInfo[NewOp] = view;
+  }
+
   const llvm::DenseMap<func::FuncOp, QuantumOpInfo>
   getKernelDialectInfo() override {
     return KernelDialectInfo;
+  }
+
+  const QuantumOpView getOpInfo(Operation *Op) override{
+    auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
+    assert(KernelDialectInfo.count(funcOp) && "Get Op Info: No QuantumOpInfo for funcOp");
+    auto QInfo = KernelDialectInfo[funcOp];
+    assert(QInfo.count(Op) && "Get Op Info: Op not present QuantumInfoMap");
+    return QInfo[Op];
   }
 
   mlir::LogicalResult verifyModule() override { return module.verify(); }
@@ -157,4 +123,61 @@ public:
 private:
   ModuleOp module;
   llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo;
+
+  QuantumOpView createQuantumView(Operation *Op) {
+    QuantumOpView view;
+    if (hasQuantumEffect(Op)) {
+      view.hasSideEffects = true;
+    }
+    // Only consider operations on gates with side-effects
+    if (auto g = isCatalystQuantumGateOp(Op)) {
+      // TODO isAdj initialization?
+      view.GateTy = parseGateTy(g.getGateName());
+      view.isAdjoint = g.getAdjointFlag(); // Is this correct?
+
+      std::vector<QubitRole> OpRoles =
+          getGateOpRoles(g.getGateName()); // Now we can separate out the
+                                           // Qubits into Ctrl/Target
+
+      assert(!OpRoles.empty() &&
+             "Found a gate Op with empty Operand Roles(Control/Target)");
+      assert((OpRoles.size() == g.getQubitOperands().size()) &&
+             "Operand Roles not equals No. of Qubit Operands");
+
+      for (auto p : g.getParams()) {
+        view.params.push_back(p);
+      }
+
+      for (unsigned i = 0; i < g.getQubitOperands().size(); i++) {
+        QubitID ID;
+        QubitRole role = OpRoles[i];
+
+        auto gop = g.getQubitOperands()[i];
+        auto resop = g->getResults()[i];
+
+        if (role == QubitRole::Control) {
+          ID.base = gop;
+          ID.index = -1;
+          view.getQubits(QubitRole::Control).ids.push_back(ID);
+          view.getQubits(QubitRole::Control).in.push_back(gop);
+          view.getQubits(QubitRole::Control).out.push_back(resop);
+        }
+        if (role == QubitRole::Target) {
+          ID.base = gop;
+          ID.index = -1;
+          view.getQubits(QubitRole::Target).ids.push_back(ID);
+          view.getQubits(QubitRole::Target).in.push_back(gop);
+          view.getQubits(QubitRole::Target).out.push_back(resop);
+        }
+      }
+    }
+    // llvm::outs() << "Op: " << *Op << "\n";
+    // for(auto c : OpView.ControlQubits){
+    //   llvm::outs().indent(4) << " Ctrl: " << c.base << "\n";
+    // }
+    //  for(auto t : OpView.TargetQubits){
+    //   llvm::outs().indent(4) << " t: " << t.base << "\n";
+    // }
+    return view;
+  }
 };

@@ -1,0 +1,12 @@
+
+
+// test-mqss-passes/code/catalyst/tests/CxToHCzHDecomposition.test
+
+// RUN: %mqss-cc %S/../CxToHCzHDecomposition.py --function circuit_CxToHCzH --passes=CommonDecompositionPass=mode=CxToHCzH | FileCheck %s
+
+
+// CHECK: %out_qubits = quantum.custom "H"() %2 : !quantum.bit
+// CHECK: %out_qubits_0:2 = quantum.custom "CZ"() %1, %out_qubits : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_1 = quantum.custom "H"() %out_qubits_0#1 : !quantum.bit
+// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_0#0 : !quantum.reg, !quantum.bit
+// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_1 : !quantum.reg, !quantum.bit

@@ -41,34 +41,6 @@ using tupleVectorsQubitIDs =
 using tupleVectorsValues =
     std::tuple<SmallVector<mlir::Value, 2>, SmallVector<mlir::Value, 2>>;
 
-// struct QuantumOpView {
-// public:
-//   Gate GateTy = Gate::UNKNOWN; //<---------- Important to initialize enums
-//   std::vector<QubitID> ControlInQubits = {};
-//   std::vector<QubitID> TargetInQubits = {};
-//   std::vector<Value> ControlInQubitOps = {};
-//   std::vector<Value> TargetInQubitOps = {};
-
-//   std::vector<Value> ControlOutQubits =
-//       {}; // Needed for catalyst-quantum (value semantics)
-//   std::vector<Value> TargetOutQubits =
-//       {}; // Needed for catalyst-quantum (value semantics)
-
-//   std::vector<Value> Params = {};
-//   bool isAdj = false;
-//   bool hasSideEffects = false;
-
-//   tupleVectorsValues getQubits(std::string QubitType) {
-//     if (QubitType == "control") {
-//       return {ControlInQubitOps, ControlOutQubits};
-//     }
-//     if (QubitType == "target") {
-//       return {TargetInQubitOps, TargetOutQubits};
-//     }
-//     return {};
-//   }
-// };
-
 enum class QubitRole {
   Control,
   Target
@@ -196,4 +168,8 @@ public:
 
   virtual const llvm::DenseMap<func::FuncOp, QuantumOpInfo>
   getKernelDialectInfo() = 0;
+
+  virtual void addOperation(Operation *NewOp) = 0;
+
+  virtual const QuantumOpView getOpInfo(Operation *Op)=0;
 };

@@ -1,6 +1,6 @@
 // test-mqss-passes/code/catalyst/tests/CommuteCNOTRx.test
 
-// RUN: %mqss-cc %S/../CommuteCNOTRx.py --function circuit --stage HLOLoweringStage --passes=CommonCommutePass=mode=CX-RX | FileCheck %s
+// RUN: %mqss-cc %S/../CommuteCNOTRx.py --function circuit_CommuteCNOTRx --passes=CommonCommutePass=mode=CX-RX | FileCheck %s
 
 // CHECK: %out_qubits_2 = quantum.custom "RX"(%cst) %3 : !quantum.bit
 // CHECK: %out_qubits_3:2 = quantum.custom "CNOT"() %2, %out_qubits_2 : !quantum.bit, !quantum.bit

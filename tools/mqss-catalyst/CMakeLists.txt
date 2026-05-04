@@ -150,6 +150,7 @@ target_include_directories(mqss-catalyst-opt
     # ${CMAKE_SOURCE_DIR}/include/Passes
     # 2. Build Includes (CRITICAL): Allows finding the generated .inc files
     ${CMAKE_CURRENT_BINARY_DIR}/include
+     ${MLIR_INCLUDE_DIRS}
 )
 
 # 2. Link the required libraries

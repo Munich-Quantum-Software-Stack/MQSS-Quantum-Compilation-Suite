@@ -45,6 +45,7 @@ struct PassInfoty {
   Comparety CompareKey;
 };
 
+
 struct ReductionPassInfoty {
   std::vector<Gate> GatesToCancel;
   Gate NewGateTy;
@@ -89,6 +90,7 @@ public:
 private:
   std::vector<CommuteTy> CommuteCandidates;
 };
+
 
 static std::vector<Value> getQubitValues(std::vector<QubitID> QubitVector) {
   std::vector<Value> QubitValues;
@@ -309,12 +311,12 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates,
     // The CompareKeys are used to determine which operand (Ctrl/Target) is replaced
 
     assert(!Op1QView.getQubits(KeyGate1).in.empty() && "Op1 does not have operand targets");
-    assert(!Op2QView.getQubits(KeyGate1).out.empty() && "Op2 does not have result targets");
+    assert(!Op2QView.getQubits(KeyGate2).out.empty() && "Op2 does not have result targets");
 
     auto Op1Operand = Op1QView.getQubits(KeyGate1).in[0];
-    auto Op2Operand = Op2QView.getQubits(KeyGate1).in[0];
+    auto Op2Operand = Op2QView.getQubits(KeyGate2).in[0];
 
-    auto Op2Result = Op2QView.getQubits(KeyGate1).out[0];
+    auto Op2Result = Op2QView.getQubits(KeyGate2).out[0];
     
     // Do something with the Operand of Rx (Op2)
     Op2->replaceUsesOfWith(Op2Operand, Op1Operand);

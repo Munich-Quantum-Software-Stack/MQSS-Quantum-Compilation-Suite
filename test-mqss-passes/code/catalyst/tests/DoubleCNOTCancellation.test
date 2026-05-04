@@ -1,6 +1,6 @@
 // test-mqss-passes/code/catalyst/tests/DoubleCNOTCancellation.test
 
-// RUN: %mqss-cc %S/../DoubleCNOTCancellation.py --function circuit --stage HLOLoweringStage --passes=CommonGateCancellationPass=mode=CancelGate | FileCheck %s
+// RUN: %mqss-cc %S/../DoubleCNOTCancellation.py --function circuit_DoubleCNOTCancellation --passes=CommonGateCancellationPass=mode=CancelGate | FileCheck %s
 
 // CHECK: out_qubits = quantum.custom "PauliX"() %1 : !quantum.bit
 // CHECK: %2 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit

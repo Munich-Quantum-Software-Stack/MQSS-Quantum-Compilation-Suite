@@ -8,7 +8,6 @@
 #include <cmath>
 #include "PassIncludes.h"
 
-
 static std::vector<CommuteTy>
 performCommutation(std::map<Operation *, QuantumOpView> QView,
                    PassInfoty PassInfo) {
@@ -56,14 +55,11 @@ performCommutation(std::map<Operation *, QuantumOpView> QView,
       if (is_contained(Gate2Ty, nextOpView.GateTy)) {
 
         if (SameQubits({Op1CtrlQubits.ids, Op1TargetQubits.ids},
-                       {Op2CtrlQubits.ids, Op2TargetQubits.ids},
-                       CompareKey)) {
+                       {Op2CtrlQubits.ids, Op2TargetQubits.ids}, CompareKey)) {
           CommutationInfo.gather(Op1, Op2);
-        } 
-        else if (SameQubitValues(
-                       {Op1CtrlQubits.out, Op1TargetQubits.out},
-                       {Op2CtrlQubits.in, Op2TargetQubits.in},
-                       CompareKey)) {
+        } else if (SameQubitValues({Op1CtrlQubits.out, Op1TargetQubits.out},
+                                   {Op2CtrlQubits.in, Op2TargetQubits.in},
+                                   CompareKey)) {
           // Example:
           // Original:
           //  %out_qubits_2:2 = quantum.custom "CNOT"() %2, %3 : !quantum.bit,
@@ -96,9 +92,9 @@ performCommutation(std::map<Operation *, QuantumOpView> QView,
     auto SSACommuteCands = SSACommuteCandidates.getCommutationCandidates();
     if (!SSACommuteCands.empty()) {
       Commute(SSACommuteCands, CompareKey);
-    }
-    else {
-      llvm::outs().indent(4) << "-----No Commutation candidates for the kernel----\n";
+    } else {
+      llvm::outs().indent(4)
+          << "-----No Commutation candidates for the kernel----\n";
     }
   }
 
@@ -115,7 +111,8 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
     auto *Op1 = Ops.Op1;
     auto *Op2 = Ops.Op2;
     if (OpQuantumView.count(Op2)) {
-      auto Op2TargetQubits = OpQuantumView[Op2].getQubits(QubitRole::Target).ids;
+      auto Op2TargetQubits =
+          OpQuantumView[Op2].getQubits(QubitRole::Target).ids;
       assert(Op2TargetQubits.size() == 1 &&
              "Currently, Can only switch single qubit gates!");
 
@@ -150,7 +147,8 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
       auto TargetInQubitOps =
           OpQuantumView[OpToSwitchOut].getQubits(QubitRole::Target).in;
 
-      createNewGate(OpToSwitchOut, ReplacementGateTy, {}, TargetInQubitOps, {}, builder);
+      createNewGate(OpToSwitchOut, ReplacementGateTy, {}, TargetInQubitOps, {},
+                    builder);
 
       builder.eraseOp(OpToSwitchOut);
     }
@@ -440,10 +438,26 @@ static void performArgAngelNormalization(
   }
 }
 
+
+// Performs CNOT Reversal, with SSA resolution (For value semantics)
+// For the following example input pattern:
+//   %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0 : !quantum.bit, !quantum.bit
+//   %out_qubits_2 = quantum.custom "PauliY"() %out_qubits_1#0 : !quantum.bit
+//   %out_qubits_3 = quantum.custom "PauliY"() %out_qubits_1#1 : !quantum.bit
+// Following the SSA resolution:
+//    %h1_ctrl = quantum.custom "Hadamard"() %out_qubits : !quantum.bit
+//    %h1_tgt = quantum.custom "Hadamard"() %out_qubits_0 : !quantum.bit
+//    %cnot_out:2 = quantum.custom "CNOT"() %h1_ctrl, %h1_tgt : !quantum.bit, !quantum.bit
+//    %h2_ctrl = quantum.custom "Hadamard"() %cnot_out#0 : !quantum.bit
+//    %h2_tgt = quantum.custom "Hadamard"() %cnot_out#1 : !quantum.bit
+//    %out_qubits_2 = quantum.custom "PauliY"() %h2_ctrl : !quantum.bit
+//    %out_qubits_3 = quantum.custom "PauliY"() %h2_tgt : !quantum.bit
 static void
-performCNOTReversal(std::map<Operation *, QuantumOpView> OpQuantumView) {
+performCNOTReversal(MyModuleAnalysis &analysis) {
 
   SmallSetVector<Operation *, 16> ToErase;
+  std::unordered_map<Operation *, std::vector<Operation *>> DecomposeMap;
+  for (auto &[kernel, OpQuantumView] : analysis.getKernelDialectInfo())
   for (auto &[GateOp, GateQView] : OpQuantumView) {
     if ((GateQView.GateTy != Gate::CNOT))
       continue;
@@ -451,21 +465,70 @@ performCNOTReversal(std::map<Operation *, QuantumOpView> OpQuantumView) {
     mlir::IRRewriter builder(GateOp->getContext());
     builder.setInsertionPointAfter(GateOp);
 
+    std::vector<Operation *> NewPattern;
     auto ControlInQubitOps = GateQView.getQubits(QubitRole::Control).in;
     auto TargetInQubitOps = GateQView.getQubits(QubitRole::Target).in;
-    createNewGate(GateOp, "H", {}, TargetInQubitOps, GateQView.params, builder);
+    auto NewGate1= createNewGate(GateOp, "H", {}, TargetInQubitOps, GateQView.params, builder);
 
-    createNewGate(GateOp, "H", {}, ControlInQubitOps, GateQView.params,
+    auto NewGate2 = createNewGate(GateOp, "H", {}, ControlInQubitOps, GateQView.params,
                   builder);
 
-    createNewGate(GateOp, "CNOT", TargetInQubitOps, ControlInQubitOps,
+    auto NewGate3 = createNewGate(GateOp, "CNOT", TargetInQubitOps, ControlInQubitOps,
                   GateQView.params, builder);
 
-    createNewGate(GateOp, "H", {}, TargetInQubitOps, GateQView.params, builder);
+    auto NewGate4 = createNewGate(GateOp, "H", {}, TargetInQubitOps, GateQView.params, builder);
 
-    createNewGate(GateOp, "H", {}, ControlInQubitOps, GateQView.params,
+    auto NewGate5  = createNewGate(GateOp, "H", {}, ControlInQubitOps, GateQView.params,
                   builder);
-    ToErase.insert(GateOp);
+
+    analysis.addOperation(NewGate1);
+    analysis.addOperation(NewGate2);
+    analysis.addOperation(NewGate3);
+    analysis.addOperation(NewGate4);
+    analysis.addOperation(NewGate5);
+    
+    DecomposeMap[GateOp] = {NewGate1, NewGate2, NewGate3, NewGate4, NewGate5};
+  }
+
+  for (auto &[Op, DecomposePattern] : DecomposeMap) {
+    auto Gate1 = DecomposePattern[0];
+    auto Gate2 = DecomposePattern[1];
+    auto Gate3 = DecomposePattern[2];
+    auto Gate4 = DecomposePattern[3];
+    auto Gate5 = DecomposePattern[4];
+    auto OpQInfo = analysis.getOpInfo(Op);
+
+    auto Gate1Tgt = analysis.getOpInfo(Gate1).getQubits(QubitRole::Target).out[0];
+    auto Gate2Tgt = analysis.getOpInfo(Gate2).getQubits(QubitRole::Target).out[0];
+
+    auto Gate3OpInfo = analysis.getOpInfo(Gate3);
+    auto Gate3CtrlOp = Gate3OpInfo.getQubits(QubitRole::Control).in[0];
+    auto Gate3TgtOp = Gate3OpInfo.getQubits(QubitRole::Target).in[0];
+
+    auto Gate3ResulCtrl = Gate3OpInfo.getQubits(QubitRole::Control).out[0];
+    auto Gate3ResulTgt = Gate3OpInfo.getQubits(QubitRole::Target).out[0];
+
+    auto Gate4OpInfo = analysis.getOpInfo(Gate4);
+    auto Gate5OpInfo = analysis.getOpInfo(Gate5);
+    auto Gate4OpTgt= Gate4OpInfo.getQubits(QubitRole::Target).in[0];
+    auto Gate5OpTgt= Gate5OpInfo.getQubits(QubitRole::Target).in[0];
+
+    Gate3->replaceUsesOfWith(Gate3CtrlOp, Gate1Tgt);
+    Gate3->replaceUsesOfWith(Gate3TgtOp, Gate2Tgt);
+    Gate4->replaceUsesOfWith(Gate4OpTgt, Gate3ResulCtrl);
+    Gate5->replaceUsesOfWith(Gate5OpTgt, Gate3ResulTgt);
+
+    auto OpResultCtrl = OpQInfo.getQubits(QubitRole::Control).out[0];
+    auto OpResultTgt = OpQInfo.getQubits(QubitRole::Target).out[0];
+
+
+    auto Gate4ResultTgt= Gate4OpInfo.getQubits(QubitRole::Target).out[0];
+    auto Gate5ResultTgt= Gate5OpInfo.getQubits(QubitRole::Target).out[0];
+
+    OpResultCtrl.replaceAllUsesWith(Gate4ResultTgt);
+    OpResultTgt.replaceAllUsesWith(Gate5ResultTgt);
+
+    ToErase.insert(Op);
   }
 
   for (auto *Op : ToErase) {
@@ -474,47 +537,111 @@ performCNOTReversal(std::map<Operation *, QuantumOpView> OpQuantumView) {
   }
 }
 
-static void
-performDecomposition(std::map<Operation *, QuantumOpView> OpQuantumView,
-                     bool ReverseCNOT = false) {
+
+// Perform CX to H-CZ-H or CZ to H-CX-H decomposition.
+// For Value Semantics, SSA form needs to be fixed. An example is shown here:
+// The SSA chain for the following example CNOT Op:
+//      %out_qubits:2 = quantum.custom "CNOT"() %1, %2 : !quantum.bit,
+//      !quantum.bit %3 = quantum.insert %0[ 0], %out_qubits#0 : !quantum.reg,
+//      !quantum.bit %4 = quantum.insert %3[ 1], %out_qubits#1 : !quantum.reg, !quantum.bit
+// Resolves as follows:
+//      %h1_out = quantum.custom "Hadamard"() %2 : !quantum.bit
+//      %cz_out:2 = quantum.custom "CZ"() %1, %h1_out : !quantum.bit, !quantum.bit 
+//      %h2_out = quantum.custom "Hadamard"() %cz_out#1 : !quantum.bit 
+//      %3 = quantum.insert %0[ 0], %cz_out#0 : !quantum.reg, !quantum.bit 
+//      %4 = quantum.insert %3[ 1], %h2_out : !quantum.reg, !quantum.bit
+// Explanation:
+//    1. %2 (target qubit) flows into the first Hadamard → produces %h1_out
+//    2. %1 (control qubit) and %h1_out flow into CZ → produces %cz_out#0
+//    3. (control) and %cz_out#1 (target) %cz_out#1 flows into the second
+//    4. Hadamard → produces %h2_out %cz_out#0 and %h2_out replace the
+//    original
+//    5. %out_qubits#0 and %out_qubits#1 in the two quantum.insert ops
+
+static void performDecomposition(MyModuleAnalysis &analysis,
+                                 bool ReverseCNOT = false) {
 
   if (ReverseCNOT) {
-    performCNOTReversal(OpQuantumView);
+      performCNOTReversal(analysis);
     return;
   }
-  SmallSetVector<Operation *, 16> ToErase;
-  for (auto &[GateOp, GateQView] : OpQuantumView) {
+
+  std::unordered_map<Operation *, std::vector<Operation *>> DecomposeMap;
+  for (auto &[kernel, OpQuantumView] : analysis.getKernelDialectInfo())
+    for (auto &[GateOp, GateQView] : OpQuantumView) {
+
     if ((GateQView.GateTy != Gate::CNOT) && (GateQView.GateTy != Gate::CZ))
       continue;
 
     mlir::IRRewriter builder(GateOp->getContext());
     builder.setInsertionPointAfter(GateOp);
 
-    llvm::outs() << "Decomposing CNOT\n";
     auto ControlInQubitOps = GateQView.getQubits(QubitRole::Control).in;
     auto TargetInQubitOps = GateQView.getQubits(QubitRole::Target).in;
 
+    std::vector<Operation *> NewPattern;
+    Operation *Gate1;
+    Operation *Gate2;
+    Operation *Gate3;
     if (GateQView.GateTy == Gate::CNOT) {
-      createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
-                    GateQView.params, builder);
-      createNewGate(GateOp, "CZ", ControlInQubitOps, TargetInQubitOps,
-                    GateQView.params, builder);
-      createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
-                    GateQView.params, builder);
-      ToErase.insert(GateOp);
+      Gate1 = createNewGate(GateOp, "H", ControlInQubitOps,
+                                 TargetInQubitOps, GateQView.params, builder);
+      Gate2 = createNewGate(GateOp, "CZ", ControlInQubitOps,
+                                 TargetInQubitOps, GateQView.params, builder);
+      Gate3 = createNewGate(GateOp, "H", ControlInQubitOps,
+                                 TargetInQubitOps, GateQView.params, builder);
     } else {
-      createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
-                    GateQView.params, builder);
-      createNewGate(GateOp, "CNOT", ControlInQubitOps, TargetInQubitOps,
-                    GateQView.params, builder);
-      createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
-                    GateQView.params, builder);
-      ToErase.insert(GateOp);
+      Gate1 = createNewGate(GateOp, "H", ControlInQubitOps,
+                                 TargetInQubitOps, GateQView.params, builder);
+      Gate2 = createNewGate(GateOp, "CNOT", ControlInQubitOps,
+                                 TargetInQubitOps, GateQView.params, builder);
+      Gate3 = createNewGate(GateOp, "H", ControlInQubitOps,
+                                 TargetInQubitOps, GateQView.params, builder);
     }
-  }
+    // Add the newly created operation into the KernelDialectInfo Map
+    analysis.addOperation(Gate1);
+    analysis.addOperation(Gate2);
+    analysis.addOperation(Gate3);
 
-  for (auto *Op : ToErase) {
+    DecomposeMap[GateOp] = {
+        Gate1,
+        Gate2,
+        Gate3,
+    };
+    }
+
+  for (auto [Op, DecomposePattern] : DecomposeMap) {
+
+    auto *Gate1 = DecomposePattern[0];
+    auto *Gate2 = DecomposePattern[1];
+    auto *Gate3 = DecomposePattern[2];
+    auto Gate1QView = analysis.getOpInfo(Gate1);
+    auto Gate2QView = analysis.getOpInfo(Gate2);
+    auto Gate3QView = analysis.getOpInfo(Gate3);
+    auto OpQview = analysis.getOpInfo(Op);
+
+    auto Gate1Result = Gate1QView.getQubits(QubitRole::Target).out[0];
+
+    auto Gate2TargetOp = Gate2QView.getQubits(QubitRole::Target).in[0];
+    auto Gate2ControlResult = Gate2QView.getQubits(QubitRole::Control).out[0];
+    auto Gate2TargetResult = Gate2QView.getQubits(QubitRole::Target).out[0];
+    Gate2->replaceUsesOfWith(Gate2TargetOp, Gate1Result);
+
+    auto Gate3TargetOp = Gate2QView.getQubits(QubitRole::Target).in[0];
+    auto Gate3Result = Gate3QView.getQubits(QubitRole::Target).out[0];
+
+    Gate3->replaceUsesOfWith(Gate3TargetOp, Gate2TargetResult);
+
+    auto OpTargetResult = OpQview.getQubits(QubitRole::Target).out[0];
+    auto OpControlResult = OpQview.getQubits(QubitRole::Control).out[0];
+
+    OpTargetResult.replaceAllUsesWith(Gate3Result);
+    OpControlResult.replaceAllUsesWith(Gate2ControlResult);
+
     llvm::outs() << "-->To Erase: " << *Op << "\n";
     cancel(Op);
+
   }
+
+  return;
 }

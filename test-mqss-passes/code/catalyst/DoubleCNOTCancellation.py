@@ -12,7 +12,7 @@ dev = qml.device("lightning.qubit", wires=2)
 @qjit(keep_intermediate=True)
 @qml.set_shots(1000)
 @qml.qnode(dev)
-def circuit():
+def circuit_DoubleCNOTCancellation():
     qml.PauliX(wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[0, 1])

@@ -15,18 +15,13 @@ enum class PassMode { CxToHCzH, CzToHCxH, ReverseCx, NA };
 
 struct SharedPassLogic {
 
-  void run(llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo,
-           PassMode passmode) {
+  void run(DialectAnalysis analysis, PassMode passmode) {
 
     if (passmode == PassMode::CxToHCzH || passmode == PassMode::CzToHCxH) {
-      for (auto &[kernel, QInfo] : KernelDialectInfo) {
-        performDecomposition(QInfo);
-      }
+        performDecomposition(analysis);
     }
     if (passmode == PassMode::ReverseCx) {
-      for (auto &[kernel, QInfo] : KernelDialectInfo) {
-        performDecomposition(QInfo, true);
-      }
+        performDecomposition(analysis, true);
     }
   }
 };
@@ -44,11 +39,11 @@ public:
     SharedPassLogic PassLogic;
 
     if (mode == "CxToHCzH") {
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CxToHCzH);
+      PassLogic.run(analysis, PassMode::CxToHCzH);
     } else if (mode == "CzToHCxH") {
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CzToHCxH);
+      PassLogic.run(analysis, PassMode::CzToHCxH);
     } else if (mode == "ReverseCx") {
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::ReverseCx);
+      PassLogic.run(analysis, PassMode::ReverseCx);
     } else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();

@@ -52,14 +52,15 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
         /*adjoint=*/isAdj,
         /*in_ctrl_qubits=*/mlir::ValueRange(),
         /*in_ctrl_values=*/mlir::ValueRange());
-    OpToReplace->getResult(0).replaceAllUsesWith(NewOp->getResult(0));
+    // TODO: Revisit this
+    // OpToReplace->getResult(0).replaceAllUsesWith(NewOp->getResult(0));
   }
   if (NewGateTy == "CNOT") {
 
     Value control = ControlQubitsOps[0];
     Value target = TargetQubitOps[0];
 
-    auto newGate = builder.create<catalyst::quantum::CustomOp>(
+    NewOp = builder.create<catalyst::quantum::CustomOp>(
         OpToReplace->getLoc(),
         /*out_qubits=*/mlir::TypeRange{control.getType(), target.getType()},
         /*out_ctrl_qubits=*/mlir::TypeRange{},
@@ -71,8 +72,26 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
         /*in_ctrl_qubits=*/mlir::ValueRange{},
         /*in_ctrl_values=*/mlir::ValueRange{});
 
-    OpToReplace->getResult(0).replaceAllUsesWith(newGate->getResult(0));
-    OpToReplace->getResult(1).replaceAllUsesWith(newGate->getResult(1));
+    // TODO: Revisit this
+    // OpToReplace->getResult(0).replaceAllUsesWith(NewOp->getResult(0));
+    // OpToReplace->getResult(1).replaceAllUsesWith(NewOp->getResult(1));
+  }
+  if(NewGateTy == "CZ"){
+    llvm::outs() << "Building CZ...\n";
+    Value control = ControlQubitsOps[0];
+    Value target = TargetQubitOps[0];
+
+    NewOp = builder.create<catalyst::quantum::CustomOp>(
+        OpToReplace->getLoc(),
+        /*out_qubits=*/mlir::TypeRange{control.getType(), target.getType()},
+        /*out_ctrl_qubits=*/mlir::TypeRange{},
+        /*params=*/mlir::ValueRange{},
+        /*in_qubits=*/mlir::ValueRange{control, target},
+        /*gate_name=*/builder.getStringAttr("CZ"), // or gateName if API
+                                                     // accepts StringRef
+        /*adjoint=*/isAdj,
+        /*in_ctrl_qubits=*/mlir::ValueRange{},
+        /*in_ctrl_values=*/mlir::ValueRange{});
   }
   return NewOp;
 }

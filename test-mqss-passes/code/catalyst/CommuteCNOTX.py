@@ -10,7 +10,7 @@ dev = qml.device("lightning.qubit", wires=2)
 @qjit(keep_intermediate=True) 
 @qml.set_shots(1000)
 @qml.qnode(dev)
-def kernel():
+def kernel_CommuteCNOTX():
     qml.CNOT(wires=[0, 1])
     qml.PauliX(wires=1)
     qml.CNOT(wires=[1, 0])
