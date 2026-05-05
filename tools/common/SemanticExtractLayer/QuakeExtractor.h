@@ -82,8 +82,23 @@ public:
     QInfo[NewOp] = view;
   }
 
-  const llvm::DenseMap<func::FuncOp, QuantumOpInfo>
-  getKernelDialectInfo() override {
+  bool UpdateOperands(Operation *Op, QubitRole Role, Value OrigValue,
+                      Value NewValue) {
+    auto funcOp = getOpParentFunc(Op);
+    assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
+    QuantumOpInfo &QInfo = KernelDialectInfo[funcOp];
+    assert(QInfo.count(Op) && "Updating Op: Op not present in QunatumInfoMap");
+    QuantumOpView OpQView = QInfo[Op];
+    auto &Operands = OpQView.getQubits(Role).in;
+    auto it = std::find(Operands.begin(), Operands.end(), OrigValue);
+    if (it == Operands.end()) {
+      return false; // originalValue not found
+    }
+    *it = NewValue;
+    return true;
+  }
+
+  llvm::DenseMap<func::FuncOp, QuantumOpInfo> getKernelDialectInfo() override {
     return KernelDialectInfo;
   }
 
@@ -151,5 +166,11 @@ private:
       view.getQubits(QubitRole::Target).ids.push_back(ID);
     }
     return view;
+  }
+  
+  mlir::func::FuncOp getOpParentFunc(Operation *Op){
+    auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
+    assert(funcOp && "Adding New O: Parent Function not found!");
+    return funcOp;
   }
 };

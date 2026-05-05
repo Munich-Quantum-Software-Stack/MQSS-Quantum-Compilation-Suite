@@ -8,8 +8,72 @@
 #include <cmath>
 #include "PassIncludes.h"
 
+
+static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
+
+  for (auto CandidatesInfo : CommmutationCandidates) {
+    llvm::outs() << "Commuting...\n";
+    auto *Cand1 = CandidatesInfo.Op1;
+    auto *Cand2 = CandidatesInfo.Op2;
+    llvm::outs().indent(4) << "Cand 1: " << *Cand1 << "\n";
+    llvm::outs().indent(4) << "Cand 2: " << *Cand2 << "\n";
+    Cand1->moveAfter(Cand2);
+
+    llvm::outs().indent(4) << "---------------------------------------------\n";
+  }
+}
+
+static void Commute(std::vector<CommuteTy> CommmutationCandidates,
+                    Comparety CompareKey, MyModuleAnalysis &analysis) {
+
+  auto KeyGate1 = CompareKey.KeyGate1;
+  auto KeyGate2 = CompareKey.KeyGate2;
+
+  for (auto OpInfo : CommmutationCandidates) {
+
+    llvm::outs().indent(4) << "SSA Commuting...\n";
+
+    auto *Op1 = OpInfo.Op1;
+    auto *Op2 = OpInfo.Op2;
+    auto Op1QView = OpInfo.Op1QView;
+    auto Op2QView = OpInfo.Op2QView;
+
+    llvm::outs().indent(4) << "Op1: " << *Op1 << "\n";
+    llvm::outs().indent(4) << "Op2: " << *Op2 << "\n";
+
+    // Get the Op1 and Op2 Qubits being compared
+    // E.g. commuting CNOT (Op1) and Rx (Op2)
+    Op1->moveAfter(Op2);
+    // Now, CNOT is after Rx
+    //auto Op1Operand = OpInfo.Op1QView.getQubits(KeyGate1).in[0];
+
+    // Replace operand (Ctrl/Target) of CNOT with the result of Rx (Ctrl/Target)
+    // The CompareKeys are used to determine which operand (Ctrl/Target) is replaced
+
+    assert(!Op1QView.getQubits(KeyGate1).in.empty() && "Op1 does not have operand targets");
+    assert(!Op2QView.getQubits(KeyGate2).out.empty() && "Op2 does not have result targets");
+
+    auto Op1Operand = Op1QView.getQubits(KeyGate1).in[0];
+    auto Op2Operand = Op2QView.getQubits(KeyGate2).in[0];
+
+    auto Op2Result = Op2QView.getQubits(KeyGate2).out[0];
+    
+    // Do something with the Operand of Rx (Op2)
+    Op2->replaceUsesOfWith(Op2Operand, Op1Operand);
+    Op1->replaceUsesOfWith(Op1Operand, Op2Result);
+
+    // Update the Op1 and Op2 operands in QuantumOpView
+    analysis.UpdateOperands(Op2, KeyGate2, Op2Operand, Op1Operand);
+    analysis.UpdateOperands(Op1, KeyGate1, Op1Operand, Op2Result);
+
+    llvm::outs().indent(4) << "---------------------------------------------\n";
+
+  }
+
+}
+
 static std::vector<CommuteTy>
-performCommutation(std::map<Operation *, QuantumOpView> QView,
+performCommutation(MyModuleAnalysis &analysis,
                    PassInfoty PassInfo) {
 
   auto Gate1Ty = PassInfo.FirstGateTy;
@@ -18,70 +82,71 @@ performCommutation(std::map<Operation *, QuantumOpView> QView,
 
   CommuteInfoTy CommutationInfo;
   CommuteInfoTy SSACommuteCandidates;
-  for (auto &[Op1, Op1QView] : QView) {
-    auto FirstGateTy = Op1QView.GateTy;
+  for (auto &[kernel, QView] : analysis.getKernelDialectInfo()) {
+    for (auto &[Op1, Op1QView] : QView) {
+      auto FirstGateTy = Op1QView.GateTy;
 
-    if (!Op1QView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
-      continue;
+      if (!Op1QView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
+        continue;
 
-    if (!is_contained(Gate1Ty, FirstGateTy))
-      continue;
+      if (!is_contained(Gate1Ty, FirstGateTy))
+        continue;
 
-    if (CommutationInfo.isScheduled(Op1))
-      continue;
+      if (CommutationInfo.isScheduled(Op1))
+        continue;
 
-    auto *Op2 = Op1->getNextNode();
-    if (!Op2)
-      continue;
+      auto *Op2 = Op1->getNextNode();
+      if (!Op2)
+        continue;
 
-    auto Op1CtrlQubits = Op1QView.getQubits(QubitRole::Control);
-    auto Op1TargetQubits = Op1QView.getQubits(QubitRole::Target);
+      auto Op1CtrlQubits = Op1QView.getQubits(QubitRole::Control);
+      auto Op1TargetQubits = Op1QView.getQubits(QubitRole::Target);
 
-    while (Op2) {
-      auto nextOpView = QView[Op2];
+      while (Op2) {
+        auto nextOpView = QView[Op2];
 
-      auto Op2CtrlQubits = nextOpView.getQubits(QubitRole::Control);
-      auto Op2TargetQubits = nextOpView.getQubits(QubitRole::Target);
-      // llvm::outs() << "next op: " << *NextOp << "\n";
-      if (nextOpView.hasSideEffects &&
-          !is_contained(Gate2Ty, nextOpView.GateTy) &&
-          (touchesAny(Op2, Op1CtrlQubits.ids, QView) ||
-           touchesAny(Op2, Op1TargetQubits.ids, QView))) {
+        auto Op2CtrlQubits = nextOpView.getQubits(QubitRole::Control);
+        auto Op2TargetQubits = nextOpView.getQubits(QubitRole::Target);
+        // llvm::outs() << "next op: " << *NextOp << "\n";
+        if (nextOpView.hasSideEffects &&
+            !is_contained(Gate2Ty, nextOpView.GateTy) &&
+            (touchesAny(Op2, Op1CtrlQubits.ids, QView) ||
+             touchesAny(Op2, Op1TargetQubits.ids, QView))) {
 
-        // llvm::outs().indent(4) << "Found intervening ops!\n";
-        break;
-      }
-
-      if (is_contained(Gate2Ty, nextOpView.GateTy)) {
-
-        if (SameQubits({Op1CtrlQubits.ids, Op1TargetQubits.ids},
-                       {Op2CtrlQubits.ids, Op2TargetQubits.ids}, CompareKey)) {
-          CommutationInfo.gather(Op1, Op2);
-        } else if (SameQubitValues({Op1CtrlQubits.out, Op1TargetQubits.out},
-                                   {Op2CtrlQubits.in, Op2TargetQubits.in},
-                                   CompareKey)) {
-          // Example:
-          // Original:
-          //  %out_qubits_2:2 = quantum.custom "CNOT"() %2, %3 : !quantum.bit,
-          //  !quantum.bit %out_ctrl = quantum.custom "RX"(%cst) %out_qubits_2#0
-          //  : !quantum.bit
-          // Commuted:
-          //  %new_ctrl = quantum.custom "RX"(%cst) %2 : !quantum.bit
-          //  %new_pair:2 = quantum.custom "CNOT"() %new_ctrl, %3 :
-          //  !quantum.bit, !quantum.bit
-          // llvm::outs() << "Gathering for SSA:\n";
-          // llvm::outs() << "Op1: " << *Op1 << "\n";
-          // llvm::outs() << "Op2: " << *Op2 << "\n";
-          SSACommuteCandidates.gather(Op1, Op2, Op1QView, nextOpView);
+          // llvm::outs().indent(4) << "Found intervening ops!\n";
+          break;
         }
-        // TODO: For catalyst - Cannot commute by checking the output qubits
-        // and input qubits of Gate Ops. If the check returns true, and the
-        // gates are commuted, it will break SSA form (Def-Use will be commuted
-        // to Use-Def). llvm::outs().indent(4) << "Not same Qubits!\n";
-        break;
-      }
 
-      Op2 = Op2->getNextNode();
+        if (is_contained(Gate2Ty, nextOpView.GateTy)) {
+
+          if (SameQubits({Op1CtrlQubits.ids, Op1TargetQubits.ids},
+                         {Op2CtrlQubits.ids, Op2TargetQubits.ids},
+                         CompareKey)) {
+            CommutationInfo.gather(Op1, Op2);
+          } else if (SameQubitValues({Op1CtrlQubits.out, Op1TargetQubits.out},
+                                     {Op2CtrlQubits.in, Op2TargetQubits.in},
+                                     CompareKey)) {
+            // Example:
+            // Original:
+            //  %out_qubits_2:2 = quantum.custom "CNOT"() %2, %3 : !quantum.bit,
+            //  !quantum.bit %out_ctrl = quantum.custom "RX"(%cst)
+            //  %out_qubits_2#0 : !quantum.bit
+            // Commuted:
+            //  %new_ctrl = quantum.custom "RX"(%cst) %2 : !quantum.bit
+            //  %new_pair:2 = quantum.custom "CNOT"() %new_ctrl, %3 :
+            //  !quantum.bit, !quantum.bit
+            SSACommuteCandidates.gather(Op1, Op2, Op1QView, nextOpView);
+          }
+          // TODO: For catalyst - Cannot commute by checking the output qubits
+          // and input qubits of Gate Ops. If the check returns true, and the
+          // gates are commuted, it will break SSA form (Def-Use will be
+          // commuted to Use-Def). llvm::outs().indent(4) << "Not same
+          // Qubits!\n";
+          break;
+        }
+
+        Op2 = Op2->getNextNode();
+      }
     }
   }
 
@@ -89,9 +154,9 @@ performCommutation(std::map<Operation *, QuantumOpView> QView,
   if (!CommuteCandidates.empty()) {
     Commute(CommuteCandidates);
   } else {
-    auto SSACommuteCands = SSACommuteCandidates.getCommutationCandidates();
-    if (!SSACommuteCands.empty()) {
-      Commute(SSACommuteCands, CompareKey);
+    CommuteCandidates = SSACommuteCandidates.getCommutationCandidates();
+    if (!CommuteCandidates.empty()) {
+      Commute(CommuteCandidates, CompareKey, analysis);
     } else {
       llvm::outs().indent(4)
           << "-----No Commutation candidates for the kernel----\n";
@@ -102,17 +167,23 @@ performCommutation(std::map<Operation *, QuantumOpView> QView,
 }
 
 static void
-performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
+performCommuteAndSwitch(MyModuleAnalysis &analysis,
                         PassInfoty PassInfo) {
 
-  auto CommutedOps = performCommutation(OpQuantumView, PassInfo);
+  auto CommutedOps = performCommutation(analysis, PassInfo);
 
   for (auto Ops : CommutedOps) {
+    
     auto *Op1 = Ops.Op1;
     auto *Op2 = Ops.Op2;
-    if (OpQuantumView.count(Op2)) {
+    auto funcOp = Op1->getParentOfType<mlir::func::FuncOp>();
+    auto KernelDialectInfo = analysis.getKernelDialectInfo();
+    assert(KernelDialectInfo.count(funcOp) && "Get Op Info: No QuantumOpInfo for funcOp");
+    auto Qview = KernelDialectInfo[funcOp];
+
+    if (Qview.count(Op2)) {
       auto Op2TargetQubits =
-          OpQuantumView[Op2].getQubits(QubitRole::Target).ids;
+          Qview[Op2].getQubits(QubitRole::Target).ids;
       assert(Op2TargetQubits.size() == 1 &&
              "Currently, Can only switch single qubit gates!");
 
@@ -124,8 +195,8 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
       //  TODO: 1. Can we do better? Do not like the use of MACROS
       //        2. What if Op1 is to be switched out and replaced?
 
-      auto Op1Ty = OpQuantumView[Op1].GateTy;
-      auto Op2Ty = OpQuantumView[Op2].GateTy;
+      auto Op1Ty = Qview[Op1].GateTy;
+      auto Op2Ty = Qview[Op2].GateTy;
 
       Operation *OpToSwitchOut = nullptr;
       StringRef ReplacementGateTy = "";
@@ -145,10 +216,16 @@ performCommuteAndSwitch(std::map<Operation *, QuantumOpView> OpQuantumView,
       assert(!ReplacementGateTy.empty() && "Need the replacementgatety!!");
 
       auto TargetInQubitOps =
-          OpQuantumView[OpToSwitchOut].getQubits(QubitRole::Target).in;
+          Qview[OpToSwitchOut].getQubits(QubitRole::Target).in;
 
-      createNewGate(OpToSwitchOut, ReplacementGateTy, {}, TargetInQubitOps, {},
+      auto *NewOp = createNewGate(OpToSwitchOut, ReplacementGateTy, {}, TargetInQubitOps, {},
                     builder);
+
+      analysis.addOperation(NewOp);
+      
+      OpToSwitchOut->replaceAllUsesWith(NewOp);
+      // TODO: Should the operands of the following Ops be updated in QuantumOpView?
+      //       after replacement?
 
       builder.eraseOp(OpToSwitchOut);
     }
@@ -496,7 +573,11 @@ performCNOTReversal(MyModuleAnalysis &analysis) {
     auto Gate3 = DecomposePattern[2];
     auto Gate4 = DecomposePattern[3];
     auto Gate5 = DecomposePattern[4];
-    auto OpQInfo = analysis.getOpInfo(Op);
+    auto OpQview = analysis.getOpInfo(Op);
+
+    if (OpQview.getQubits(QubitRole::Target).out.empty() &&
+        OpQview.getQubits(QubitRole::Control).out.empty())
+    continue;
 
     auto Gate1Tgt = analysis.getOpInfo(Gate1).getQubits(QubitRole::Target).out[0];
     auto Gate2Tgt = analysis.getOpInfo(Gate2).getQubits(QubitRole::Target).out[0];
@@ -505,21 +586,24 @@ performCNOTReversal(MyModuleAnalysis &analysis) {
     auto Gate3CtrlOp = Gate3OpInfo.getQubits(QubitRole::Control).in[0];
     auto Gate3TgtOp = Gate3OpInfo.getQubits(QubitRole::Target).in[0];
 
+    llvm::outs() << "Gate3 Op Info fine\n";
     auto Gate3ResulCtrl = Gate3OpInfo.getQubits(QubitRole::Control).out[0];
     auto Gate3ResulTgt = Gate3OpInfo.getQubits(QubitRole::Target).out[0];
 
+    llvm::outs() << "Gate3 Result Info fine\n";
     auto Gate4OpInfo = analysis.getOpInfo(Gate4);
     auto Gate5OpInfo = analysis.getOpInfo(Gate5);
     auto Gate4OpTgt= Gate4OpInfo.getQubits(QubitRole::Target).in[0];
     auto Gate5OpTgt= Gate5OpInfo.getQubits(QubitRole::Target).in[0];
+    llvm::outs() << "Gate4 and 5 Target Info fine\n";
 
     Gate3->replaceUsesOfWith(Gate3CtrlOp, Gate1Tgt);
     Gate3->replaceUsesOfWith(Gate3TgtOp, Gate2Tgt);
     Gate4->replaceUsesOfWith(Gate4OpTgt, Gate3ResulCtrl);
     Gate5->replaceUsesOfWith(Gate5OpTgt, Gate3ResulTgt);
 
-    auto OpResultCtrl = OpQInfo.getQubits(QubitRole::Control).out[0];
-    auto OpResultTgt = OpQInfo.getQubits(QubitRole::Target).out[0];
+    auto OpResultCtrl = OpQview.getQubits(QubitRole::Control).out[0];
+    auto OpResultTgt = OpQview.getQubits(QubitRole::Target).out[0];
 
 
     auto Gate4ResultTgt= Gate4OpInfo.getQubits(QubitRole::Target).out[0];
@@ -619,6 +703,10 @@ static void performDecomposition(MyModuleAnalysis &analysis,
     auto Gate2QView = analysis.getOpInfo(Gate2);
     auto Gate3QView = analysis.getOpInfo(Gate3);
     auto OpQview = analysis.getOpInfo(Op);
+
+    if (OpQview.getQubits(QubitRole::Target).out.empty() &&
+        OpQview.getQubits(QubitRole::Control).out.empty())
+    continue;
 
     auto Gate1Result = Gate1QView.getQubits(QubitRole::Target).out[0];
 

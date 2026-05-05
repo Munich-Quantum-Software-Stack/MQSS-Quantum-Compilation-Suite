@@ -15,8 +15,7 @@ enum class PassMode { SwitchXYZH, SwitchHXYZ, NA };
 
 struct SharedPassLogic {
 
-  void run(llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo,
-           PassMode Mode) {
+  void run(MyModuleAnalysis &analysis, PassMode Mode) {
 
     PassInfoty PassInfo;
 
@@ -42,9 +41,7 @@ struct SharedPassLogic {
       PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     }
 
-    for (auto &[kernel, QInfo] : KernelDialectInfo) {
-      performCommuteAndSwitch(QInfo, PassInfo);
-    }
+    performCommuteAndSwitch(analysis, PassInfo);
   }
 };
 
@@ -58,9 +55,9 @@ public:
 
     SharedPassLogic PassLogic;
     if (mode == "XYZHtoHXYZ")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchXYZH);
+      PassLogic.run(analysis, PassMode::SwitchXYZH);
     else if (mode == "HXYZtoXYZH")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SwitchHXYZ);
+      PassLogic.run(analysis, PassMode::SwitchHXYZ);
     else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
@@ -74,7 +71,6 @@ public:
 };
 
 } // namespace
-
 
 std::unique_ptr<mlir::Pass> mqss_backend::CommonSwitchPass() {
   return std::make_unique<CommonSwitch>();

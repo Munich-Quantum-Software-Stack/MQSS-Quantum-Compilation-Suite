@@ -166,10 +166,13 @@ public:
 
   virtual mlir::LogicalResult verifyModule() = 0;
 
-  virtual const llvm::DenseMap<func::FuncOp, QuantumOpInfo>
+  virtual llvm::DenseMap<func::FuncOp, QuantumOpInfo>
   getKernelDialectInfo() = 0;
 
   virtual void addOperation(Operation *NewOp) = 0;
 
-  virtual const QuantumOpView getOpInfo(Operation *Op)=0;
+  virtual bool UpdateOperands(Operation *Op, QubitRole Role, Value OrigValue,
+                              Value NewValue) = 0;
+
+  virtual const QuantumOpView getOpInfo(Operation *Op) = 0;
 };

@@ -23,8 +23,7 @@ enum class PassMode {
 
 struct SharedPassLogic {
 
-  void run(llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo,
-           PassMode Mode) {
+  void run(MyModuleAnalysis &analysis, PassMode Mode) {
 
     PassInfoty PassInfo;
     if (Mode == PassMode::CommuteCxRx) {
@@ -52,12 +51,7 @@ struct SharedPassLogic {
       PassInfo.SecondGateTy.push_back(Gate::CNOT);
       PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     }
-    int count=0;
-    for (auto &[kernel, Info] : KernelDialectInfo) {
-      llvm::outs() << ++count << ". kernel: " << kernel.getSymName() << "\n";
-      performCommutation(Info, PassInfo);
-      llvm::outs() << "\n";
-    }
+    performCommutation(analysis, PassInfo);
   }
 };
 
@@ -84,17 +78,17 @@ class CommonCommute
 
     SharedPassLogic PassLogic;
     if (mode == "CX-RX")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxRx);
+      PassLogic.run(analysis, PassMode::CommuteCxRx);
     else if (mode == "RX-CX")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteRxCx);
+      PassLogic.run(analysis, PassMode::CommuteRxCx);
     else if (mode == "CX-X")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxX);
+      PassLogic.run(analysis, PassMode::CommuteCxX);
     else if (mode == "X-CX")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteXCx);
+      PassLogic.run(analysis, PassMode::CommuteXCx);
     else if (mode == "CX-Z")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteCxZ);
+      PassLogic.run(analysis, PassMode::CommuteCxZ);
     else if (mode == "Z-CX")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::CommuteZCx);
+      PassLogic.run(analysis, PassMode::CommuteZCx);
     else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
