@@ -40,7 +40,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <stdexcept>
 // #include "qdmi.h"
-// #include "sc/heuristic/HeuristicMapper.hpp"
+#include "sc/heuristic/HeuristicMapper.hpp"
 
 /**
  * @def CUDAQ_PREFIX_FUNCTION
@@ -60,6 +60,9 @@ std::unique_ptr<mlir::Pass> CommonNormalizeArgAnglePass();
 
 std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();
+
+std::unique_ptr<mlir::Pass> createQuakeQMapPass(Architecture architecture,
+                               const Configuration settings);
 
 } // namespace mqss_cudaq::opt
 

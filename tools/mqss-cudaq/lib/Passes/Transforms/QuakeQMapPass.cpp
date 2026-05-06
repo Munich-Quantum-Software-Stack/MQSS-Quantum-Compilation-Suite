@@ -43,9 +43,67 @@ mapping configurations.
 
 #include "llvm/Support/raw_ostream.h"
 // #include "qdmi.h"
-// #include "sc/heuristic/HeuristicMapper.hpp"
+#include "sc/heuristic/HeuristicMapper.hpp"
 
 using namespace mlir;
+
+int64_t extractIndexFromQuakeExtractRefOp(Operation *op) {
+  if (auto extractRefOp = llvm::dyn_cast<quake::ExtractRefOp>(op)) {
+    auto rawIndexAttr =
+        extractRefOp->getAttrOfType<mlir::IntegerAttr>("rawIndex");
+    return rawIndexAttr.getInt();
+  }
+  return -1;
+}
+
+double extractDoubleArgumentValue(Operation *op) {
+  if (auto constantOp = dyn_cast<mlir::arith::ConstantOp>(op))
+    if (auto floatAttr = constantOp.getValue().dyn_cast<mlir::FloatAttr>())
+      return static_cast<float>(floatAttr.getValueAsDouble());
+  return -1.0;
+}
+
+// function to get the number of qubits in a given quantum kernel
+int getNumberOfQubits(func::FuncOp circuit) {
+  int numQubits = 0;
+  circuit.walk([&](quake::AllocaOp allocOp) {
+    if (auto qrefType = allocOp.getType().dyn_cast<quake::RefType>()) {
+      numQubits += 1;
+    } else if (auto qvecType = allocOp.getType().dyn_cast<quake::VeqType>()) {
+      numQubits += qvecType.getSize();
+    }
+  });
+  return numQubits;
+}
+
+// Function to get the number of classical bits allocated in a given
+// quantum kernel, it also stores information of the qiubit position
+int getNumberOfClassicalBits(
+    func::FuncOp circuit, std::map<int, int> &measurements) {
+  int numBits = 0;
+  circuit.walk([&](mlir::Operation *op) {
+    if (isa<quake::MxOp>(op) || isa<quake::MyOp>(op) || isa<quake::MzOp>(op)) {
+      for (auto operand : op->getOperands()) {
+        if (operand.getType()
+                .isa<quake::RefType>()) { // Check if it's qubit reference
+          int qubitIndex =
+              extractIndexFromQuakeExtractRefOp(operand.getDefiningOp());
+          assert(qubitIndex != -1 && "Non valid qubit index for measurement!");
+          measurements[qubitIndex] = numBits;
+          numBits += 1;
+        } else if (operand.getType().isa<quake::VeqType>()) {
+          auto qvecType = operand.getType().dyn_cast<quake::VeqType>();
+          numBits += qvecType.getSize();
+          for (int i = 0; i < numBits; i++) {
+            measurements[i] = i;
+          }
+        }
+      }
+    }
+  });
+  return numBits;
+}
+
 
 // loading rotation gates
 void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
@@ -54,9 +112,9 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     double angle = -1.0;
     assert(op->getOperands().size() == 2 && "ill-formed rotation gate!");
     Value operand1 = op->getOperands()[0];
-    angle = supportQuake::extractDoubleArgumentValue(operand1.getDefiningOp());
+    angle = extractDoubleArgumentValue(operand1.getDefiningOp());
     Value operand2 = op->getOperands()[1];
-    qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+    qubit = extractIndexFromQuakeExtractRefOp(
         operand2.getDefiningOp());
 #ifdef DEBUG
     llvm::errs() << "Operation ";
@@ -83,10 +141,10 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     if (op->getOperands().size() == 2) {
       int qubit_ctrl, qubit_target;
       Value operand1 = op->getOperands()[0];
-      qubit_ctrl = supportQuake::extractIndexFromQuakeExtractRefOp(
+      qubit_ctrl = extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
       Value operand2 = op->getOperands()[1];
-      qubit_target = supportQuake::extractIndexFromQuakeExtractRefOp(
+      qubit_target = extractIndexFromQuakeExtractRefOp(
           operand2.getDefiningOp());
 #ifdef DEBUG
       llvm::errs() << "Operation ";
@@ -107,7 +165,7 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // single qubit operations
     if (op->getOperands().size() == 1) {
       Value operand1 = op->getOperands()[0];
-      int qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+      int qubit =extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
 #ifdef DEBUG
       llvm::errs() << "Operation ";
@@ -132,7 +190,7 @@ void loadSTHGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // single qubit operations
     if (op->getOperands().size() == 1) {
       Value operand1 = op->getOperands()[0];
-      int qubit = supportQuake::extractIndexFromQuakeExtractRefOp(
+      int qubit =extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
 #ifdef DEBUG
       llvm::errs() << "Operation ";
@@ -163,7 +221,7 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
     assert(op->getOperands().size() == 1 && "ill-formed measurement gate!");
     Value operand = op->getOperands()[0];
     if (operand.getType().isa<quake::RefType>()) {
-      int qubitIndex = supportQuake::extractIndexFromQuakeExtractRefOp(
+      int qubitIndex =extractIndexFromQuakeExtractRefOp(
           operand.getDefiningOp());
       assert(qubitIndex != -1 && "Non valid qubit index for measurement!");
       qc.measure(static_cast<qc::Qubit>(qubitIndex),
@@ -186,14 +244,18 @@ namespace {
 
 class QuakeQMap : public PassWrapper<QuakeQMap, OperationPass<func::FuncOp>> {
 private:
-  Architecture &architecture;
-  const Configuration &settings;
+    Architecture architecture;      // copy, not reference
+    Configuration settings;         // copy, not reference
 
 public:
+
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeQMap)
 
-  QuakeQMap(Architecture &architecture, const Configuration &settings)
-      : architecture(architecture), settings(settings) {}
+  QuakeQMap(Architecture arch, const Configuration &cfg)
+        : architecture(std::move(arch)), settings(cfg) {}
+
+    // MLIR requires passes to be copyable for cloning
+    QuakeQMap(const QuakeQMap &other) = default;
 
   llvm::StringRef getArgument() const override { return "quake-to-qmap-pass"; }
   llvm::StringRef getDescription() const override {
@@ -211,8 +273,8 @@ public:
       return; // do nothing if the function is not cudaq kernel
 
     std::map<int, int> measurements; // key: qubit, value register index
-    int numQubits = supportQuake::getNumberOfQubits(circuit);
-    int numBits = supportQuake::getNumberOfClassicalBits(circuit, measurements);
+    int numQubits =getNumberOfQubits(circuit);
+    int numBits =getNumberOfClassicalBits(circuit, measurements);
 #ifdef DEBUG
     llvm::outs() << "Kernel name: " << funcName << "\n";
     llvm::errs() << "Number of input qubits " << numQubits << "\n";
@@ -243,9 +305,7 @@ public:
     //       I do not like to down the mapped circuit to QASM and
     //        then back to qc
     auto qcMapped = qc::QuantumComputation();
-    std::stringstream qasm{};
-    mapper->dumpResult(qasm, qc::Format::OpenQASM3);
-    qcMapped.import(qasm, qc::Format::OpenQASM3);
+    qcMapped = mapper->moveMappedCircuit();
     // cleaning the mlir::funcOp corresponding to the quake circuit
     for (auto &block : circuit.getBody()) {
       block.clear(); // Clears all operations in the current block
@@ -347,7 +407,8 @@ public:
 } // namespace
 
 std::unique_ptr<mlir::Pass>
-mqss::opt::createQuakeQMapPass(Architecture &architecture,
-                               const Configuration &settings) {
-  return std::make_unique<QuakeQMap>(architecture, settings);
+mqss_cudaq::opt::createQuakeQMapPass(Architecture architecture,
+                               const Configuration settings) {
+  return std::make_unique<QuakeQMap>(std::move(architecture),  // ← move here
+                                     std::move(settings));
 }

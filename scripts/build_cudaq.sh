@@ -132,8 +132,8 @@ else
 fi
 ################################## CMAKE dependence ###################################
 
-MIN_VER="3.19.0"
-MAX_VER="3.30.0"
+MIN_VER="3.0.0"
+MAX_VER="3.5.0"
 INSTALL_VER="3.29.0"
 
 CMAKE_DIR="${DEPS_DIR}/cmake-${INSTALL_VER}-linux-${CMAKE_ARCH}"

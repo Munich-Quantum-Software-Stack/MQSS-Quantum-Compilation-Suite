@@ -59,19 +59,37 @@ add_definitions(${LLVM_DEFINITIONS})
 
 # ############### ADDITIONAL PACKAGES #######################################
 # Tell where to search for Find<package>.cmake files
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+set(FETCHCONTENT_BASE_DIR ${MQSS_SRC_DIR}/build/_deps)
+
+set(CMAKE_MODULE_PATH "${MQSS_SRC_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # set(CMAKE_CXX_STANDARD 11) Find QDMI package find_package(qdmi REQUIRED) Find
 # QInfo package find_package(qinfo REQUIRED)
-# find_package(Z3 REQUIRED)
+find_package(Z3 REQUIRED)
 
 # find_package(mqt-qcec REQUIRED)
-# # Find the QMAP package
+# Find the QMAP package
 # set(CMAKE_CXX_STANDARD 17)
-# set(MQT_QMAP_TESTS OFF)
-# find_package(mqt-qmap REQUIRED)
+set(MQT_QMAP_TESTS OFF)
+find_package(mqt-qmap REQUIRED)
 # Restore the original CXX flags and compiler
 set(CMAKE_CXX_STANDARD 20)
+
+set(MQT_QMAP_INCLUDE_DIR "${mqt-qmap_SOURCE_DIR}/include/")
+set(MQT_QCEC_INCLUDE_DIR "${mqt-qcec_SOURCE_DIR}/include/")
+set(MQT_CORE_INCLUDE_DIR "${mqt-core_SOURCE_DIR}/include/mqt-core")
+# set(qdmi_INCLUDE_DIRS "${QDMI_INCLUDE_DIRS}/qdmi")
+# set(qinfo_INCLUDE_DIRS "${qinfo_SOURCE_DIR}/include/qinfo")
+
+include_directories(
+        BEFORE
+        ${nlohmann_json_SOURCE_DIR}/include
+        ${MQT_QMAP_INCLUDE_DIR}
+        ${MQT_CORE_INCLUDE_DIR}
+        ${MQT_CORE_INCLUDE_DIR}
+        # ${qdmi_INCLUDE_DIRS}
+        # ${qinfo_INCLUDE_DIRS}
+        )
 
 # ###################### MQSS settings ###################################
 
@@ -111,6 +129,7 @@ add_subdirectory(include)
 #1. Define the executable and its source file
 add_executable(mqss-cudaq-opt cudaq.cpp)
 target_compile_definitions(mqss-cudaq-opt PRIVATE BUILD_CUDAQ_ENABLED)
+target_compile_options(mqss-cudaq-opt PRIVATE -fexceptions)
 
 # 2. Link the required libraries
 # Note: We must include the Dialects to resolve those "undefined symbols"
@@ -138,6 +157,10 @@ target_link_libraries(mqss-cudaq-opt
     MLIRControlFlowDialect  # <--- For branching/returns
     MLIRLLVMDialect
     MLIRTransforms
+    MQT::CoreIR
+    MQT::CoreNA
+    MQT::QMapSC
+    MQT::QMapSCHeuristic
     
     # SupportQuake            # MQSS/Quake support
     # Interfaces              # MQSS Interfaces

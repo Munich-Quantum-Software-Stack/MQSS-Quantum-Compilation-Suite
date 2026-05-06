@@ -3,10 +3,12 @@ include(FetchContent)
 FetchContent_Declare(
   mqt-qmap
   GIT_REPOSITORY https://github.com/cda-tum/mqt-qmap.git
-  GIT_TAG fa598ff831d5e598e2ff9748137b86cbddad6f28)
+  GIT_TAG 186b9dcb5bc3395f865e734bc69dc6887071045f)
 
 FetchContent_MakeAvailable(mqt-qmap)
 
 FetchContent_GetProperties(mqt-qmap)
+
+message("nlohanmann: " "${nlohmann_json_SOURCE_DIR}/include")
 
 set(QMAP_INCLUDE_DIRS "${mqt-qmap_SOURCE_DIR}/include")

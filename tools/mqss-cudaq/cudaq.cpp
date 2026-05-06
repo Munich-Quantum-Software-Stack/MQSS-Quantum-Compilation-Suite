@@ -7,8 +7,6 @@
  ******************************************************************************/
 
 
-#include "MQSSCUDAQPasses/Examples.hpp"
-#include "MQSSCUDAQPasses/Transforms.hpp"
 
 #include "IR/Dialect/CC/CCDialect.h"
 #include "IR/Dialect/Quake/QuakeDialect.h"
@@ -27,6 +25,9 @@
 
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/Pass/PassRegistry.h>
+
+#include "MQSSCUDAQPasses/Examples.hpp"
+#include "MQSSCUDAQPasses/Transforms.hpp"
 
 using namespace mlir;
 
@@ -60,6 +61,34 @@ int main(int argc, char **argv) {
     return mqss_cudaq::opt::createPrintQuakeGatesPass(llvm::outs());
   });
 
+  // Defining test architecture
+  Architecture arch{};
+  /*
+      3
+     / \
+    4   2
+    |   |
+    0---1
+  */
+  const CouplingMap cm = {{0, 1}, {1, 0}, {1, 2}, {2, 1}, {2, 3},
+                          {3, 2}, {3, 4}, {4, 3}, {4, 0}, {0, 4}};
+  arch.loadCouplingMap(5, cm);
+  // Defining the settings of the mqt-mapper
+  Configuration settings{};
+  settings.heuristic = Heuristic::GateCountMaxDistance;
+  settings.layering = Layering::DisjointQubits;
+  settings.initialLayout = InitialLayout::Identity;
+  settings.preMappingOptimizations = false;
+  settings.postMappingOptimizations = false;
+  settings.lookaheadHeuristic = LookaheadHeuristic::None;
+  settings.debug = false;
+  settings.addMeasurementsToMappedCircuit = true;
+
+  mlir::registerPass([arch, settings]() mutable -> std::unique_ptr<mlir::Pass> {
+    return mqss_cudaq::opt::createQuakeQMapPass(arch, settings);
+  });
+
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));
 }
+
