@@ -9,6 +9,4 @@ FetchContent_MakeAvailable(mqt-qmap)
 
 FetchContent_GetProperties(mqt-qmap)
 
-message("nlohanmann: " "${nlohmann_json_SOURCE_DIR}/include")
-
 set(QMAP_INCLUDE_DIRS "${mqt-qmap_SOURCE_DIR}/include")

@@ -26,8 +26,7 @@ struct SharedPassLogic {
   }
 };
 
-class CommonDecomposition : public mqss_backend::CommonDecompositionPassBase<
-                                class CommonDecomposition> {
+class CommonDecomposition : public mqss_backend::CommonDecompositionPassBase<class CommonDecomposition> {
 
 public:
   void runOnOperation() override {

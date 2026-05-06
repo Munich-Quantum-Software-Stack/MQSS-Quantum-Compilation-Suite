@@ -61,8 +61,7 @@ std::unique_ptr<mlir::Pass> CommonNormalizeArgAnglePass();
 std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();
 
-std::unique_ptr<mlir::Pass> createQuakeQMapPass(Architecture architecture,
-                               const Configuration settings);
+std::unique_ptr<mlir::Pass> QuakeQMapPass();
 
 } // namespace mqss_cudaq::opt
 

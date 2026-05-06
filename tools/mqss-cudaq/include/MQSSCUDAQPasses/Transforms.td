@@ -100,3 +100,21 @@ def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::Mod
  
  let constructor = "mqss_cudaq::opt::CommonNormalizeArgAnglePass()";
 }
+
+def QuakeQMapPass : Pass<"QuakeQMapPass", "mlir::ModuleOp"> {
+  let summary = "Pass that maps a given quake module respecting the constraints of "
+           "a given quantum device, using mqt-qmap tool";
+ 
+  let description = [{
+    "Pass that maps a given quake module respecting the constraints of "
+    "a given quantum device, using mqt-qmap tool"
+  }];
+
+
+  let options = [
+    Option<"input", "input", "std::string",
+      /*default=*//*default=*/"\"\"", "Path to json input.">,
+  ];
+ 
+ let constructor = "mqss_cudaq::opt::QuakeQMapPass()";
+}

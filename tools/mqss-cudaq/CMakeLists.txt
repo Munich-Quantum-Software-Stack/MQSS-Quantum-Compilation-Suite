@@ -59,7 +59,7 @@ add_definitions(${LLVM_DEFINITIONS})
 
 # ############### ADDITIONAL PACKAGES #######################################
 # Tell where to search for Find<package>.cmake files
-set(FETCHCONTENT_BASE_DIR ${MQSS_SRC_DIR}/build/_deps)
+set(FETCHCONTENT_BASE_DIR ${MQSS_SRC_DIR}/build/_deps CACHE PATH "FetchContent cache dir")
 
 set(CMAKE_MODULE_PATH "${MQSS_SRC_DIR}/cmake" ${CMAKE_MODULE_PATH})
 

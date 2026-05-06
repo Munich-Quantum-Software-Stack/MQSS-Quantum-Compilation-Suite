@@ -31,7 +31,6 @@ mapping configurations.
 
 ******************************************************************************/
 
-#include "MQSSCUDAQPasses/Transforms.hpp"
 // #include "Support/CodeGen/Quake.hpp"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 
@@ -45,7 +44,122 @@ mapping configurations.
 // #include "qdmi.h"
 #include "sc/heuristic/HeuristicMapper.hpp"
 
+#include "MQSSCUDAQPasses/Transforms.hpp"
+
+namespace mqss_cudaq::opt {
+#define GEN_PASS_CLASSES
+#include "MQSSCUDAQPasses/Transforms.h.inc"
+
+} // namespace mqss_cudaq::opt
+
+
 using namespace mlir;
+
+struct PipelineConfig {
+  Architecture arch;
+  Configuration settings;
+
+  static PipelineConfig defaults() {
+    PipelineConfig config;
+    // Defining test architecture
+    /*
+        3
+       / \
+      4   2
+      |   |
+      0---1
+    */
+    const CouplingMap cm = {{0, 1}, {1, 0}, {1, 2}, {2, 1}, {2, 3},
+                            {3, 2}, {3, 4}, {4, 3}, {4, 0}, {0, 4}};
+    config.arch.loadCouplingMap(5, cm);
+    // Defining the settings of the mqt-mapper
+    config.settings.heuristic = Heuristic::GateCountMaxDistance;
+    config.settings.layering = Layering::DisjointQubits;
+    config.settings.initialLayout = InitialLayout::Identity;
+    config.settings.preMappingOptimizations = false;
+    config.settings.postMappingOptimizations = false;
+    config.settings.lookaheadHeuristic = LookaheadHeuristic::None;
+    config.settings.debug = false;
+    config.settings.addMeasurementsToMappedCircuit = true;
+    return config;
+  };
+
+  static PipelineConfig fromFile(const std::string &path) {
+    std::ifstream file(path);
+    if (!file.is_open())
+      throw std::runtime_error("Could not open config file: " + path);
+
+    nlohmann::json j;
+    file >> j;
+
+    PipelineConfig config;
+
+    // --- Architecture ---
+    const auto &arch = j.at("architecture");
+    CouplingMap cm;
+    for (const auto &pair : arch.at("coupling_map"))
+      cm.insert({pair[0].get<int>(), pair[1].get<int>()});
+    config.arch.loadCouplingMap(arch.at("num_qubits").get<int>(), cm);
+
+    // --- Mapper Settings ---
+    const auto &ms = j.at("mapper_settings");
+    config.settings.heuristic = heuristicFromString(ms.at("heuristic"));
+    config.settings.layering = layeringFromString(ms.at("layering"));
+    config.settings.initialLayout =
+        initialLayoutFromString(ms.at("initial_layout"));
+    config.settings.preMappingOptimizations =
+        ms.at("pre_mapping_optimizations").get<bool>();
+    config.settings.postMappingOptimizations =
+        ms.at("post_mapping_optimizations").get<bool>();
+    config.settings.lookaheadHeuristic =
+        lookaheadFromString(ms.at("lookahead_heuristic"));
+    config.settings.debug = ms.at("debug").get<bool>();
+    config.settings.addMeasurementsToMappedCircuit =
+        ms.at("add_measurements_to_mapped_circuit").get<bool>();
+
+    return config;
+  }
+
+private:
+  // -- String -> Enum helpers --
+  static Heuristic heuristicFromString(const std::string &s) {
+    if (s == "GateCountMaxDistance")
+      return Heuristic::GateCountMaxDistance;
+    if (s == "GateCountSumDistance")
+      return Heuristic::GateCountSumDistance;
+    // ... other variants
+    throw std::invalid_argument("Unknown heuristic: " + s);
+  }
+
+  static Layering layeringFromString(const std::string &s) {
+    if (s == "DisjointQubits")
+      return Layering::DisjointQubits;
+    if (s == "OddGates")
+      return Layering::OddGates;
+    // ... other variants
+    throw std::invalid_argument("Unknown layering: " + s);
+  }
+
+  static InitialLayout initialLayoutFromString(const std::string &s) {
+    if (s == "Identity")
+      return InitialLayout::Identity;
+    if (s == "Static")
+      return InitialLayout::Static;
+    if (s == "Dynamic")
+      return InitialLayout::Dynamic;
+    // ... other variants
+    throw std::invalid_argument("Unknown initial layout: " + s);
+  }
+
+  static LookaheadHeuristic lookaheadFromString(const std::string &s) {
+    if (s == "None")
+      return LookaheadHeuristic::None;
+    if (s == "GateCountMaxDistance")
+      return LookaheadHeuristic::GateCountMaxDistance;
+    // ... other variants
+    throw std::invalid_argument("Unknown lookahead heuristic: " + s);
+  }
+};
 
 int64_t extractIndexFromQuakeExtractRefOp(Operation *op) {
   if (auto extractRefOp = llvm::dyn_cast<quake::ExtractRefOp>(op)) {
@@ -242,39 +356,33 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
 
 namespace {
 
-class QuakeQMap : public PassWrapper<QuakeQMap, OperationPass<func::FuncOp>> {
-private:
-    Architecture architecture;      // copy, not reference
-    Configuration settings;         // copy, not reference
+class QuakeQMap : public mqss_cudaq::opt::QuakeQMapPassBase<class QuakeQMap> {
 
 public:
 
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeQMap)
+  // MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeQMap)
 
-  QuakeQMap(Architecture arch, const Configuration &cfg)
-        : architecture(std::move(arch)), settings(cfg) {}
+  // QuakeQMap(Architecture arch, const Configuration &cfg)
+  //       : architecture(std::move(arch)), settings(std::move(cfg)) {}
 
-    // MLIR requires passes to be copyable for cloning
-    QuakeQMap(const QuakeQMap &other) = default;
+  //   // MLIR requires passes to be copyable for cloning
+  //   QuakeQMap(const QuakeQMap &other) = default;
 
-  llvm::StringRef getArgument() const override { return "quake-to-qmap-pass"; }
-  llvm::StringRef getDescription() const override {
-    return "Pass that maps a given quake module respecting the constraints of "
-           "a given quantum device, using mqt-qmap tool";
-  }
+  // llvm::StringRef getArgument() const override { return "quake-to-qmap-pass"; }
+  // llvm::StringRef getDescription() const override {
+  //   return "Pass that maps a given quake module respecting the constraints of "
+  //          "a given quantum device, using mqt-qmap tool";
+  // }
 
-  void runOnOperation() override {
-    // Getting the function
-    auto circuit = getOperation();
-    // Get the function name
+  void performMapping(mlir::func::FuncOp circuit, Architecture architecture, Configuration settings) {
     StringRef funcName = circuit.getName();
     if (!(funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) !=
           std::string::npos))
       return; // do nothing if the function is not cudaq kernel
 
     std::map<int, int> measurements; // key: qubit, value register index
-    int numQubits =getNumberOfQubits(circuit);
-    int numBits =getNumberOfClassicalBits(circuit, measurements);
+    int numQubits = getNumberOfQubits(circuit);
+    int numBits = getNumberOfClassicalBits(circuit, measurements);
 #ifdef DEBUG
     llvm::outs() << "Kernel name: " << funcName << "\n";
     llvm::errs() << "Number of input qubits " << numQubits << "\n";
@@ -403,12 +511,24 @@ public:
     qcMapped.print(std::cout);
 #endif
   }
+
+  void runOnOperation() override {
+    // Getting the function
+    auto module = getOperation();
+
+    auto config = PipelineConfig::fromFile("/");
+    auto architecture=config.arch;
+    auto settings = config.settings;
+    module.walk([&](Operation *op){
+        if(auto funcOp = dyn_cast<mlir::func::FuncOp>(op))
+            performMapping(funcOp, architecture, settings);
+    });
+    // Get the function name
+    
+  }
 };
 } // namespace
 
-std::unique_ptr<mlir::Pass>
-mqss_cudaq::opt::createQuakeQMapPass(Architecture architecture,
-                               const Configuration settings) {
-  return std::make_unique<QuakeQMap>(std::move(architecture),  // ← move here
-                                     std::move(settings));
+std::unique_ptr<mlir::Pass> mqss_cudaq::opt::QuakeQMapPass() {
+  return std::make_unique<QuakeQMap>();
 }
