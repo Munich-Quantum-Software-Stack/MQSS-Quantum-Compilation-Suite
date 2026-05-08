@@ -250,6 +250,19 @@ static bool touchesAny(Operation *Op2, SmallVector<QubitID, 2> Op1QubitIDs,
   return false;
 }
 
+static bool touchesAny(Operation *Op2, SmallVector<mlir::Value, 2> Op1OutQubits) {
+
+  for (auto OutQubit : Op1OutQubits) {
+
+    for (auto Op2op : Op2->getOperands()) {
+      if ((Op2op == OutQubit)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 static Operation *createNewGate(Operation *OpToReplace,
                                 llvm::StringRef NewGateTy,
                                 SmallVector<mlir::Value, 2> ControlQubitOps,

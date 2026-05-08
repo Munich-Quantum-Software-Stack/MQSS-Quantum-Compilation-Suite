@@ -1,13 +1,12 @@
 
+
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-
-#include <cmath>
 #include "PassIncludes.h"
-
+#include <cmath>
 
 static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
 
@@ -45,19 +44,22 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates,
     // E.g. commuting CNOT (Op1) and Rx (Op2)
     Op1->moveAfter(Op2);
     // Now, CNOT is after Rx
-    //auto Op1Operand = OpInfo.Op1QView.getQubits(KeyGate1).in[0];
+    // auto Op1Operand = OpInfo.Op1QView.getQubits(KeyGate1).in[0];
 
     // Replace operand (Ctrl/Target) of CNOT with the result of Rx (Ctrl/Target)
-    // The CompareKeys are used to determine which operand (Ctrl/Target) is replaced
+    // The CompareKeys are used to determine which operand (Ctrl/Target) is
+    // replaced
 
-    assert(!Op1QView.getQubits(KeyGate1).in.empty() && "Op1 does not have operand targets");
-    assert(!Op2QView.getQubits(KeyGate2).out.empty() && "Op2 does not have result targets");
+    assert(!Op1QView.getQubits(KeyGate1).in.empty() &&
+           "Op1 does not have operand targets");
+    assert(!Op2QView.getQubits(KeyGate2).out.empty() &&
+           "Op2 does not have result targets");
 
     auto Op1Operand = Op1QView.getQubits(KeyGate1).in[0];
     auto Op2Operand = Op2QView.getQubits(KeyGate2).in[0];
 
     auto Op2Result = Op2QView.getQubits(KeyGate2).out[0];
-    
+
     // Do something with the Operand of Rx (Op2)
     Op2->replaceUsesOfWith(Op2Operand, Op1Operand);
     Op1->replaceUsesOfWith(Op1Operand, Op2Result);
@@ -67,14 +69,11 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates,
     analysis.UpdateOperands(Op1, KeyGate1, Op1Operand, Op2Result);
 
     llvm::outs().indent(4) << "---------------------------------------------\n";
-
   }
-
 }
 
-static std::vector<CommuteTy>
-performCommutation(MyModuleAnalysis &analysis,
-                   PassInfoty PassInfo) {
+static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
+                                                 PassInfoty PassInfo) {
 
   auto Gate1Ty = PassInfo.FirstGateTy;
   auto Gate2Ty = PassInfo.SecondGateTy;
@@ -109,12 +108,16 @@ performCommutation(MyModuleAnalysis &analysis,
         auto Op2TargetQubits = nextOpView.getQubits(QubitRole::Target);
         // llvm::outs() << "next op: " << *NextOp << "\n";
         if (nextOpView.hasSideEffects &&
-            !is_contained(Gate2Ty, nextOpView.GateTy) &&
-            (touchesAny(Op2, Op1CtrlQubits.ids, QView) ||
-             touchesAny(Op2, Op1TargetQubits.ids, QView))) {
+            !is_contained(Gate2Ty, nextOpView.GateTy)) {
+          if (touchesAny(Op2, Op1CtrlQubits.ids, QView) ||
+              touchesAny(Op2, Op1TargetQubits.ids, QView)) {
 
-          // llvm::outs().indent(4) << "Found intervening ops!\n";
-          break;
+            // llvm::outs().indent(4) << "Found intervening ops!\n";
+            break;
+          }
+          if (touchesAny(Op2, Op1TargetQubits.out)) {
+            break;
+          }
         }
 
         if (is_contained(Gate2Ty, nextOpView.GateTy)) {
@@ -123,9 +126,9 @@ performCommutation(MyModuleAnalysis &analysis,
                          {Op2CtrlQubits.ids, Op2TargetQubits.ids},
                          CompareKey)) {
             CommutationInfo.gather(Op1, Op2);
-          } else if (SameQubitValues({Op1CtrlQubits.out, Op1TargetQubits.out},
-                                     {Op2CtrlQubits.in, Op2TargetQubits.in},
-                                     CompareKey)) {
+          } else if (SameQubitValues(
+                         {Op1CtrlQubits.out, Op1TargetQubits.out},
+                         {Op2CtrlQubits.in, Op2TargetQubits.in}, CompareKey)) {
             // Example:
             // Original:
             //  %out_qubits_2:2 = quantum.custom "CNOT"() %2, %3 : !quantum.bit,
@@ -166,24 +169,23 @@ performCommutation(MyModuleAnalysis &analysis,
   return CommuteCandidates;
 }
 
-static void
-performCommuteAndSwitch(MyModuleAnalysis &analysis,
-                        PassInfoty PassInfo) {
+static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
+                                    PassInfoty PassInfo) {
 
   auto CommutedOps = performCommutation(analysis, PassInfo);
 
   for (auto Ops : CommutedOps) {
-    
+
     auto *Op1 = Ops.Op1;
     auto *Op2 = Ops.Op2;
     auto funcOp = Op1->getParentOfType<mlir::func::FuncOp>();
     auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    assert(KernelDialectInfo.count(funcOp) && "Get Op Info: No QuantumOpInfo for funcOp");
+    assert(KernelDialectInfo.count(funcOp) &&
+           "Get Op Info: No QuantumOpInfo for funcOp");
     auto Qview = KernelDialectInfo[funcOp];
 
     if (Qview.count(Op2)) {
-      auto Op2TargetQubits =
-          Qview[Op2].getQubits(QubitRole::Target).ids;
+      auto Op2TargetQubits = Qview[Op2].getQubits(QubitRole::Target).ids;
       assert(Op2TargetQubits.size() == 1 &&
              "Currently, Can only switch single qubit gates!");
 
@@ -218,13 +220,14 @@ performCommuteAndSwitch(MyModuleAnalysis &analysis,
       auto TargetInQubitOps =
           Qview[OpToSwitchOut].getQubits(QubitRole::Target).in;
 
-      auto *NewOp = createNewGate(OpToSwitchOut, ReplacementGateTy, {}, TargetInQubitOps, {},
-                    builder);
+      auto *NewOp = createNewGate(OpToSwitchOut, ReplacementGateTy, {},
+                                  TargetInQubitOps, {}, builder);
 
       analysis.addOperation(NewOp);
-      
+
       OpToSwitchOut->replaceAllUsesWith(NewOp);
-      // TODO: Should the operands of the following Ops be updated in QuantumOpView?
+      // TODO: Should the operands of the following Ops be updated in
+      // QuantumOpView?
       //       after replacement?
 
       builder.eraseOp(OpToSwitchOut);
@@ -299,10 +302,14 @@ performCancellation(std::map<Operation *, QuantumOpView> OpQuantumView,
       auto nextGateCtrlQubits = nextOpView.getQubits(QubitRole::Control);
       auto nextGateTargetQubits = nextOpView.getQubits(QubitRole::Target);
       // TODO: Should the "touchesAny" check be there?
-      if (nextOpView.hasSideEffects && (nextOpView.GateTy != FirstGateTy) &&
-          (touchesAny(NextOp, FirstGateCtrlQubits.ids, OpQuantumView) ||
-           touchesAny(NextOp, FirstGateTargetQubits.ids, OpQuantumView))) {
-        break;
+      if (nextOpView.hasSideEffects && (nextOpView.GateTy != FirstGateTy)) {
+        if (touchesAny(NextOp, FirstGateCtrlQubits.ids, OpQuantumView) ||
+            touchesAny(NextOp, FirstGateTargetQubits.ids, OpQuantumView)) {
+          break;
+        }
+        if (touchesAny(NextOp, FirstGateTargetQubits.out)) {
+          break;
+        }
       }
 
       if (nextOpView.GateTy == FirstGateTy) {
@@ -345,124 +352,160 @@ struct pipelinety {
   QuantumOpView GateOpView;
 };
 
-static void performReduction(std::map<Operation *, QuantumOpView> OpQuantumView,
+static void performReduction(MyModuleAnalysis &analysis,
                              const ReductionPassInfoty PassInfo) {
 
-  SmallSetVector<Operation *, 16> ToErase;
+  if (PassInfo.NewGateTy == Gate::UNKNOWN) {
+    return;
+  }
 
   int i = 0;
   auto FirstGateToCancelTy = PassInfo.GatesToCancel[i];
 
-  std::vector<pipelinety> pipeline;
+  for (auto &[FuncOp, OpQuantumView] : analysis.getKernelDialectInfo()) {
+    std::vector<pipelinety> pipeline;
+    std::vector<std::vector<pipelinety>> ToErase;
 
-  for (auto &[GateOp, FirstGateQView] : OpQuantumView) {
+    for (auto &[GateOp, FirstGateQView] : OpQuantumView) {
 
-    auto FirstGateTy = FirstGateQView.GateTy;
-    if (!FirstGateQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
-      continue;
-
-    if (is_contained(PassInfo.GatesToCancel, FirstGateTy) &&
-        pipeline.size() != PassInfo.GatesToCancel.size()) {
-      pipeline.push_back({GateOp, FirstGateQView});
-    }
-
-    if (pipeline.size() == PassInfo.GatesToCancel.size()) {
-      bool patterncheck = true;
-      for (auto i = 0; i < pipeline.size(); i++) {
-        if (pipeline[i].GateOpView.GateTy != PassInfo.GatesToCancel[i]) {
-          break;
-        }
-      }
-
-      if (!patterncheck) {
-        pipeline.clear();
+      auto FirstGateTy = FirstGateQView.GateTy;
+      if (!FirstGateQView.hasSideEffects || FirstGateTy == Gate::UNKNOWN)
         continue;
+
+      if (is_contained(PassInfo.GatesToCancel, FirstGateTy) &&
+          pipeline.size() != PassInfo.GatesToCancel.size()) {
+        pipeline.push_back({GateOp, FirstGateQView});
       }
 
-      bool ChecksSatisfied = true;
-      for (int i = 0; i < pipeline.size() - 1; i++) {
-        auto FirstPatternOp = pipeline[i].GateOp;
-        auto FirstPatternOpQView = pipeline[i].GateOpView;
-        auto SecondPatternOp = pipeline[i + 1].GateOp;
-        auto SecondPatternOpQView = pipeline[i].GateOpView;
+      if (pipeline.size() == PassInfo.GatesToCancel.size()) {
+        bool patterncheck = true;
+        for (auto i = 0; i < pipeline.size(); i++) {
+          if (pipeline[i].GateOpView.GateTy != PassInfo.GatesToCancel[i]) {
+            break;
+          }
+        }
 
-        auto NextOp = FirstPatternOp->getNextNode();
+        if (!patterncheck) {
+          pipeline.clear();
+          continue;
+        }
 
-        bool InterveningOps = false;
-        auto FirstGateCtrlQubits = FirstGateQView.getQubits(QubitRole::Control);
-        auto FirstGateTargetQubits =
-            FirstGateQView.getQubits(QubitRole::Target);
+        bool ChecksSatisfied = false;
+        for (int i = 0; i < pipeline.size() - 1; i++) {
+          auto FirstPatternOp = pipeline[i].GateOp;
+          auto FirstPatternOpQView = pipeline[i].GateOpView;
+          auto SecondPatternOp = pipeline[i + 1].GateOp;
+          auto SecondPatternOpQView = pipeline[i].GateOpView;
 
-        auto SecondGateCtrlQubits =
-            SecondPatternOpQView.getQubits(QubitRole::Control);
-        auto SecondGateTargetQubits =
-            SecondPatternOpQView.getQubits(QubitRole::Target);
+          auto NextOp = FirstPatternOp->getNextNode();
 
-        while (NextOp != SecondPatternOp) {
-          auto nextOpView = OpQuantumView[NextOp];
-          if (nextOpView.hasSideEffects &&
-              (touchesAny(NextOp, FirstGateCtrlQubits.ids, OpQuantumView) ||
-               touchesAny(NextOp, FirstGateTargetQubits.ids, OpQuantumView))) {
-            InterveningOps = true;
+          bool InterveningOps = false;
+          auto FirstGateCtrlQubits =
+              FirstPatternOpQView.getQubits(QubitRole::Control);
+          auto FirstGateTargetQubits =
+              FirstPatternOpQView.getQubits(QubitRole::Target);
+
+          auto SecondGateCtrlQubits =
+              SecondPatternOpQView.getQubits(QubitRole::Control);
+          auto SecondGateTargetQubits =
+              SecondPatternOpQView.getQubits(QubitRole::Target);
+
+          while (NextOp != SecondPatternOp) {
+            auto nextOpView = OpQuantumView[NextOp];
+            if (nextOpView.hasSideEffects) {
+              if (touchesAny(NextOp, FirstGateCtrlQubits.ids, OpQuantumView) ||
+                  touchesAny(NextOp, FirstGateTargetQubits.ids,
+                             OpQuantumView)) {
+                InterveningOps = true;
+                break;
+              }
+              auto FirstGateTargetOutQubits =
+                  FirstGateQView.getQubits(QubitRole::Target).out;
+              if (touchesAny(NextOp, FirstGateTargetOutQubits)) {
+                InterveningOps = true;
+                break;
+              }
+            }
+
+            NextOp = NextOp->getNextNode();
+          }
+
+          if (InterveningOps) {
+            ChecksSatisfied = false;
+            llvm::outs() << "Has intervening ops!\n";
             break;
           }
 
-          NextOp = NextOp->getNextNode();
+          if (SameQubits({FirstGateCtrlQubits.ids, FirstGateTargetQubits.ids},
+                         {SecondGateCtrlQubits.ids, SecondGateTargetQubits.ids},
+                         PassInfo.CompareKey)) {
+            ChecksSatisfied = true;
+            break;
+          } if (SameQubitValues(
+                         {FirstGateCtrlQubits.out, FirstGateTargetQubits.out},
+                         {SecondGateCtrlQubits.in, SecondGateTargetQubits.in},
+                         PassInfo.CompareKey)) {
+            ChecksSatisfied = true;
+            break;
+          }
+          llvm::outs().indent(4) << *pipeline[i].GateOp << "\n";
+          llvm::outs().indent(4) << *pipeline[i + 1].GateOp << "\n";
+          
+          // TODO: For catalyst - Check equivalence b/w result Qubits of FirstOp
+          // and OpQubits of Next Op
+          //      See performCancellation for reference
         }
-
-        if (InterveningOps) {
-          ChecksSatisfied = false;
-          break;
+        if (ChecksSatisfied) {
+          ToErase.push_back(pipeline);
         }
-
-        if (!SameQubits({FirstGateCtrlQubits.ids, FirstGateTargetQubits.ids},
-                        {SecondGateCtrlQubits.ids, SecondGateTargetQubits.ids},
-                        PassInfo.CompareKey)) {
-          ChecksSatisfied = false;
-          break;
-        }
-        // TODO: For catalyst - Check equivalence b/w result Qubits of FirstOp
-        // and OpQubits of Next Op
-        //      See performCancellation for reference
+        pipeline.clear();
       }
-
-      if (ChecksSatisfied) {
-        for (auto [GOp, View] : pipeline)
-          ToErase.insert(GOp);
-      }
-      pipeline.clear();
     }
-  }
-
-  if (PassInfo.NewGateTy != Gate::UNKNOWN) {
 
     std::vector<Value> QubitsbaseVector;
 
-    // TODO: Is it correct to take this as the RefOp?
-    auto RefOp = ToErase[ToErase.size() - 1];
-    llvm::outs() << "Ref gate: " << *RefOp << "\n";
+    for (auto pattern : ToErase) {
 
-    mlir::IRRewriter builder(RefOp->getContext());
-    builder.setInsertionPointAfter(RefOp);
+      // TODO: Is it correct to take this as the RefOp?
+      auto FirstOp = pattern[0].GateOp;
+      llvm::outs() << "Ref gate: " << *FirstOp << "\n";
 
-    auto RefOpParams = OpQuantumView[RefOp].params;
+      mlir::IRRewriter builder(FirstOp->getContext());
+      builder.setInsertionPointAfter(FirstOp);
 
-    auto RefOpCtrlQubits =
-        OpQuantumView[RefOp].getQubits(QubitRole::Control).in;
-    auto RefOptargetQubits =
-        OpQuantumView[RefOp].getQubits(QubitRole::Target).in;
+      auto RefOpParams = OpQuantumView[FirstOp].params;
 
-    auto isAdj = OpQuantumView[RefOp].isAdjoint;
-    auto *NewOp =
-        createNewGate(RefOp, parseGateTy(PassInfo.NewGateTy), RefOpCtrlQubits,
-                      RefOptargetQubits, RefOpParams, builder, isAdj);
+      auto RefOpCtrlQubits =
+          OpQuantumView[FirstOp].getQubits(QubitRole::Control).in;
+      auto RefOptargetQubits =
+          OpQuantumView[FirstOp].getQubits(QubitRole::Target).in;
 
-    llvm::outs() << "--->Created: " << *NewOp << "\n";
-  }
+      auto *NewOp = createNewGate(FirstOp, parseGateTy(PassInfo.NewGateTy),
+                                  RefOpCtrlQubits, RefOptargetQubits,
+                                  RefOpParams, builder);
 
-  for (auto *Op : ToErase) {
-    llvm::outs() << "-->To Erase: " << *Op << "\n";
-    cancel(Op);
+      assert(NewOp && "Replacement Gate not created!");
+      analysis.addOperation(NewOp);
+      auto FinalOp = pattern[pattern.size()-1].GateOp;
+      if (!FinalOp->getUsers().empty()) {
+        // TODO: Should be revisited!
+        auto NewOpResults = analysis.getOpInfo(NewOp)
+                                .getQubits(PassInfo.CompareKey.KeyGate2)
+                                .out[0];
+        FinalOp->replaceAllUsesWith(NewOp);
+      }
+      else {
+        for(auto entry : pattern){
+            cancel(entry.GateOp);
+        }
+      }
+
+      llvm::outs() << "--->Created: " << *NewOp << "\n";
+      // for (auto &[Op, view] : pattern) {
+      //   llvm::outs() << "-->To Erase: " << *Op << "\n";
+      //   cancel(Op);
+      // }
+    }
   }
 }
 
@@ -515,57 +558,60 @@ static void performArgAngelNormalization(
   }
 }
 
-
 // Performs CNOT Reversal, with SSA resolution (For value semantics)
 // For the following example input pattern:
-//   %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0 : !quantum.bit, !quantum.bit
-//   %out_qubits_2 = quantum.custom "PauliY"() %out_qubits_1#0 : !quantum.bit
-//   %out_qubits_3 = quantum.custom "PauliY"() %out_qubits_1#1 : !quantum.bit
+//   %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0 :
+//   !quantum.bit, !quantum.bit %out_qubits_2 = quantum.custom "PauliY"()
+//   %out_qubits_1#0 : !quantum.bit %out_qubits_3 = quantum.custom "PauliY"()
+//   %out_qubits_1#1 : !quantum.bit
 // Following the SSA resolution:
 //    %h1_ctrl = quantum.custom "Hadamard"() %out_qubits : !quantum.bit
 //    %h1_tgt = quantum.custom "Hadamard"() %out_qubits_0 : !quantum.bit
-//    %cnot_out:2 = quantum.custom "CNOT"() %h1_ctrl, %h1_tgt : !quantum.bit, !quantum.bit
-//    %h2_ctrl = quantum.custom "Hadamard"() %cnot_out#0 : !quantum.bit
-//    %h2_tgt = quantum.custom "Hadamard"() %cnot_out#1 : !quantum.bit
-//    %out_qubits_2 = quantum.custom "PauliY"() %h2_ctrl : !quantum.bit
-//    %out_qubits_3 = quantum.custom "PauliY"() %h2_tgt : !quantum.bit
-static void
-performCNOTReversal(MyModuleAnalysis &analysis) {
+//    %cnot_out:2 = quantum.custom "CNOT"() %h1_ctrl, %h1_tgt : !quantum.bit,
+//    !quantum.bit %h2_ctrl = quantum.custom "Hadamard"() %cnot_out#0 :
+//    !quantum.bit %h2_tgt = quantum.custom "Hadamard"() %cnot_out#1 :
+//    !quantum.bit %out_qubits_2 = quantum.custom "PauliY"() %h2_ctrl :
+//    !quantum.bit %out_qubits_3 = quantum.custom "PauliY"() %h2_tgt :
+//    !quantum.bit
+static void performCNOTReversal(MyModuleAnalysis &analysis) {
 
   SmallSetVector<Operation *, 16> ToErase;
   std::unordered_map<Operation *, std::vector<Operation *>> DecomposeMap;
   for (auto &[kernel, OpQuantumView] : analysis.getKernelDialectInfo())
-  for (auto &[GateOp, GateQView] : OpQuantumView) {
-    if ((GateQView.GateTy != Gate::CNOT))
-      continue;
+    for (auto &[GateOp, GateQView] : OpQuantumView) {
+      if ((GateQView.GateTy != Gate::CNOT))
+        continue;
 
-    mlir::IRRewriter builder(GateOp->getContext());
-    builder.setInsertionPointAfter(GateOp);
+      mlir::IRRewriter builder(GateOp->getContext());
+      builder.setInsertionPointAfter(GateOp);
 
-    std::vector<Operation *> NewPattern;
-    auto ControlInQubitOps = GateQView.getQubits(QubitRole::Control).in;
-    auto TargetInQubitOps = GateQView.getQubits(QubitRole::Target).in;
-    auto NewGate1= createNewGate(GateOp, "H", {}, TargetInQubitOps, GateQView.params, builder);
+      std::vector<Operation *> NewPattern;
+      auto ControlInQubitOps = GateQView.getQubits(QubitRole::Control).in;
+      auto TargetInQubitOps = GateQView.getQubits(QubitRole::Target).in;
+      auto NewGate1 = createNewGate(GateOp, "H", {}, TargetInQubitOps,
+                                    GateQView.params, builder);
 
-    auto NewGate2 = createNewGate(GateOp, "H", {}, ControlInQubitOps, GateQView.params,
-                  builder);
+      auto NewGate2 = createNewGate(GateOp, "H", {}, ControlInQubitOps,
+                                    GateQView.params, builder);
 
-    auto NewGate3 = createNewGate(GateOp, "CNOT", TargetInQubitOps, ControlInQubitOps,
-                  GateQView.params, builder);
+      auto NewGate3 =
+          createNewGate(GateOp, "CNOT", TargetInQubitOps, ControlInQubitOps,
+                        GateQView.params, builder);
 
-    auto NewGate4 = createNewGate(GateOp, "H", {}, TargetInQubitOps, GateQView.params, builder);
+      auto NewGate4 = createNewGate(GateOp, "H", {}, TargetInQubitOps,
+                                    GateQView.params, builder);
 
-    auto NewGate5  = createNewGate(GateOp, "H", {}, ControlInQubitOps, GateQView.params,
-                  builder);
+      auto NewGate5 = createNewGate(GateOp, "H", {}, ControlInQubitOps,
+                                    GateQView.params, builder);
 
-    analysis.addOperation(NewGate1);
-    analysis.addOperation(NewGate2);
-    analysis.addOperation(NewGate3);
-    analysis.addOperation(NewGate4);
-    analysis.addOperation(NewGate5);
-    
-    DecomposeMap[GateOp] = {NewGate1, NewGate2, NewGate3, NewGate4, NewGate5};
-  }
+      analysis.addOperation(NewGate1);
+      analysis.addOperation(NewGate2);
+      analysis.addOperation(NewGate3);
+      analysis.addOperation(NewGate4);
+      analysis.addOperation(NewGate5);
+
+      DecomposeMap[GateOp] = {NewGate1, NewGate2, NewGate3, NewGate4, NewGate5};
+    }
 
   for (auto &[Op, DecomposePattern] : DecomposeMap) {
     auto Gate1 = DecomposePattern[0];
@@ -577,10 +623,12 @@ performCNOTReversal(MyModuleAnalysis &analysis) {
 
     if (OpQview.getQubits(QubitRole::Target).out.empty() &&
         OpQview.getQubits(QubitRole::Control).out.empty())
-    continue;
+      continue;
 
-    auto Gate1Tgt = analysis.getOpInfo(Gate1).getQubits(QubitRole::Target).out[0];
-    auto Gate2Tgt = analysis.getOpInfo(Gate2).getQubits(QubitRole::Target).out[0];
+    auto Gate1Tgt =
+        analysis.getOpInfo(Gate1).getQubits(QubitRole::Target).out[0];
+    auto Gate2Tgt =
+        analysis.getOpInfo(Gate2).getQubits(QubitRole::Target).out[0];
 
     auto Gate3OpInfo = analysis.getOpInfo(Gate3);
     auto Gate3CtrlOp = Gate3OpInfo.getQubits(QubitRole::Control).in[0];
@@ -593,8 +641,8 @@ performCNOTReversal(MyModuleAnalysis &analysis) {
     llvm::outs() << "Gate3 Result Info fine\n";
     auto Gate4OpInfo = analysis.getOpInfo(Gate4);
     auto Gate5OpInfo = analysis.getOpInfo(Gate5);
-    auto Gate4OpTgt= Gate4OpInfo.getQubits(QubitRole::Target).in[0];
-    auto Gate5OpTgt= Gate5OpInfo.getQubits(QubitRole::Target).in[0];
+    auto Gate4OpTgt = Gate4OpInfo.getQubits(QubitRole::Target).in[0];
+    auto Gate5OpTgt = Gate5OpInfo.getQubits(QubitRole::Target).in[0];
     llvm::outs() << "Gate4 and 5 Target Info fine\n";
 
     Gate3->replaceUsesOfWith(Gate3CtrlOp, Gate1Tgt);
@@ -605,9 +653,8 @@ performCNOTReversal(MyModuleAnalysis &analysis) {
     auto OpResultCtrl = OpQview.getQubits(QubitRole::Control).out[0];
     auto OpResultTgt = OpQview.getQubits(QubitRole::Target).out[0];
 
-
-    auto Gate4ResultTgt= Gate4OpInfo.getQubits(QubitRole::Target).out[0];
-    auto Gate5ResultTgt= Gate5OpInfo.getQubits(QubitRole::Target).out[0];
+    auto Gate4ResultTgt = Gate4OpInfo.getQubits(QubitRole::Target).out[0];
+    auto Gate5ResultTgt = Gate5OpInfo.getQubits(QubitRole::Target).out[0];
 
     OpResultCtrl.replaceAllUsesWith(Gate4ResultTgt);
     OpResultTgt.replaceAllUsesWith(Gate5ResultTgt);
@@ -621,19 +668,20 @@ performCNOTReversal(MyModuleAnalysis &analysis) {
   }
 }
 
-
 // Perform CX to H-CZ-H or CZ to H-CX-H decomposition.
 // For Value Semantics, SSA form needs to be fixed. An example is shown here:
 // The SSA chain for the following example CNOT Op:
 //      %out_qubits:2 = quantum.custom "CNOT"() %1, %2 : !quantum.bit,
 //      !quantum.bit %3 = quantum.insert %0[ 0], %out_qubits#0 : !quantum.reg,
-//      !quantum.bit %4 = quantum.insert %3[ 1], %out_qubits#1 : !quantum.reg, !quantum.bit
+//      !quantum.bit %4 = quantum.insert %3[ 1], %out_qubits#1 : !quantum.reg,
+//      !quantum.bit
 // Resolves as follows:
 //      %h1_out = quantum.custom "Hadamard"() %2 : !quantum.bit
-//      %cz_out:2 = quantum.custom "CZ"() %1, %h1_out : !quantum.bit, !quantum.bit 
-//      %h2_out = quantum.custom "Hadamard"() %cz_out#1 : !quantum.bit 
-//      %3 = quantum.insert %0[ 0], %cz_out#0 : !quantum.reg, !quantum.bit 
-//      %4 = quantum.insert %3[ 1], %h2_out : !quantum.reg, !quantum.bit
+//      %cz_out:2 = quantum.custom "CZ"() %1, %h1_out : !quantum.bit,
+//      !quantum.bit %h2_out = quantum.custom "Hadamard"() %cz_out#1 :
+//      !quantum.bit %3 = quantum.insert %0[ 0], %cz_out#0 : !quantum.reg,
+//      !quantum.bit %4 = quantum.insert %3[ 1], %h2_out : !quantum.reg,
+//      !quantum.bit
 // Explanation:
 //    1. %2 (target qubit) flows into the first Hadamard → produces %h1_out
 //    2. %1 (control qubit) and %h1_out flow into CZ → produces %cz_out#0
@@ -646,7 +694,7 @@ static void performDecomposition(MyModuleAnalysis &analysis,
                                  bool ReverseCNOT = false) {
 
   if (ReverseCNOT) {
-      performCNOTReversal(analysis);
+    performCNOTReversal(analysis);
     return;
   }
 
@@ -654,44 +702,44 @@ static void performDecomposition(MyModuleAnalysis &analysis,
   for (auto &[kernel, OpQuantumView] : analysis.getKernelDialectInfo())
     for (auto &[GateOp, GateQView] : OpQuantumView) {
 
-    if ((GateQView.GateTy != Gate::CNOT) && (GateQView.GateTy != Gate::CZ))
-      continue;
+      if ((GateQView.GateTy != Gate::CNOT) && (GateQView.GateTy != Gate::CZ))
+        continue;
 
-    mlir::IRRewriter builder(GateOp->getContext());
-    builder.setInsertionPointAfter(GateOp);
+      mlir::IRRewriter builder(GateOp->getContext());
+      builder.setInsertionPointAfter(GateOp);
 
-    auto ControlInQubitOps = GateQView.getQubits(QubitRole::Control).in;
-    auto TargetInQubitOps = GateQView.getQubits(QubitRole::Target).in;
+      auto ControlInQubitOps = GateQView.getQubits(QubitRole::Control).in;
+      auto TargetInQubitOps = GateQView.getQubits(QubitRole::Target).in;
 
-    std::vector<Operation *> NewPattern;
-    Operation *Gate1;
-    Operation *Gate2;
-    Operation *Gate3;
-    if (GateQView.GateTy == Gate::CNOT) {
-      Gate1 = createNewGate(GateOp, "H", ControlInQubitOps,
-                                 TargetInQubitOps, GateQView.params, builder);
-      Gate2 = createNewGate(GateOp, "CZ", ControlInQubitOps,
-                                 TargetInQubitOps, GateQView.params, builder);
-      Gate3 = createNewGate(GateOp, "H", ControlInQubitOps,
-                                 TargetInQubitOps, GateQView.params, builder);
-    } else {
-      Gate1 = createNewGate(GateOp, "H", ControlInQubitOps,
-                                 TargetInQubitOps, GateQView.params, builder);
-      Gate2 = createNewGate(GateOp, "CNOT", ControlInQubitOps,
-                                 TargetInQubitOps, GateQView.params, builder);
-      Gate3 = createNewGate(GateOp, "H", ControlInQubitOps,
-                                 TargetInQubitOps, GateQView.params, builder);
-    }
-    // Add the newly created operation into the KernelDialectInfo Map
-    analysis.addOperation(Gate1);
-    analysis.addOperation(Gate2);
-    analysis.addOperation(Gate3);
+      std::vector<Operation *> NewPattern;
+      Operation *Gate1;
+      Operation *Gate2;
+      Operation *Gate3;
+      if (GateQView.GateTy == Gate::CNOT) {
+        Gate1 = createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
+                              GateQView.params, builder);
+        Gate2 = createNewGate(GateOp, "CZ", ControlInQubitOps, TargetInQubitOps,
+                              GateQView.params, builder);
+        Gate3 = createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
+                              GateQView.params, builder);
+      } else {
+        Gate1 = createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
+                              GateQView.params, builder);
+        Gate2 = createNewGate(GateOp, "CNOT", ControlInQubitOps,
+                              TargetInQubitOps, GateQView.params, builder);
+        Gate3 = createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
+                              GateQView.params, builder);
+      }
+      // Add the newly created operation into the KernelDialectInfo Map
+      analysis.addOperation(Gate1);
+      analysis.addOperation(Gate2);
+      analysis.addOperation(Gate3);
 
-    DecomposeMap[GateOp] = {
-        Gate1,
-        Gate2,
-        Gate3,
-    };
+      DecomposeMap[GateOp] = {
+          Gate1,
+          Gate2,
+          Gate3,
+      };
     }
 
   for (auto [Op, DecomposePattern] : DecomposeMap) {
@@ -706,7 +754,7 @@ static void performDecomposition(MyModuleAnalysis &analysis,
 
     if (OpQview.getQubits(QubitRole::Target).out.empty() &&
         OpQview.getQubits(QubitRole::Control).out.empty())
-    continue;
+      continue;
 
     auto Gate1Result = Gate1QView.getQubits(QubitRole::Target).out[0];
 
@@ -728,7 +776,6 @@ static void performDecomposition(MyModuleAnalysis &analysis,
 
     llvm::outs() << "-->To Erase: " << *Op << "\n";
     cancel(Op);
-
   }
 
   return;

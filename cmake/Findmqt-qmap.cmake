@@ -1,5 +1,7 @@
 include(FetchContent)
 
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+
 FetchContent_Declare(
   mqt-qmap
   GIT_REPOSITORY https://github.com/cda-tum/mqt-qmap.git

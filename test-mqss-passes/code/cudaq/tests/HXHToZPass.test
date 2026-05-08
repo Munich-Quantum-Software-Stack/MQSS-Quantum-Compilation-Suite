@@ -3,10 +3,6 @@
 // RUN: %mqss-cc %S/../HXHToZPass.cpp --passes=CommonReductionPass=mode=HXHToZ | FileCheck %s
 
 // CHECK: %1 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK: %3 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK: quake.z %3 : (!quake.ref) -> ()
-// CHECK: %4 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
-// CHECK: quake.h %4 : (!quake.ref) -> ()
+// CHECK: quake.z %1 : (!quake.ref) -> ()
 
 

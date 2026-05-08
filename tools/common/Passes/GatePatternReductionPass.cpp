@@ -14,8 +14,7 @@ enum class PassMode { HXHToZ, HZHToX, SAdjZToS, SZToSAdj, NA };
 
 struct SharedPassLogic {
 
-  void run(llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo,
-           PassMode Mode) {
+  void run(DialectAnalysis analysis, PassMode Mode) {
 
     ReductionPassInfoty PassInfo;
     if (Mode == PassMode::HXHToZ) {
@@ -35,15 +34,15 @@ struct SharedPassLogic {
       PassInfo.GatesToCancel.push_back(SAdj);
       PassInfo.GatesToCancel.push_back(PauliZ);
       PassInfo.NewGateTy = Gate::S;
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     } else if (Mode == PassMode::SZToSAdj) {
       PassInfo.GatesToCancel.push_back(S);
       PassInfo.GatesToCancel.push_back(PauliZ);
       PassInfo.NewGateTy = Gate::SAdj;
+      PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     }
 
-    for (auto &[kernel, QInfo] : KernelDialectInfo) {
-      performReduction(QInfo, PassInfo);
-    }
+    performReduction(analysis, PassInfo);
   }
 };
 
@@ -60,13 +59,13 @@ public:
     SharedPassLogic PassLogic;
 
     if (mode == "HZHToX") {
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::HZHToX);
+      PassLogic.run(analysis, PassMode::HZHToX);
     } else if (mode == "HXHToZ")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::HXHToZ);
+      PassLogic.run(analysis, PassMode::HXHToZ);
     else if (mode == "SAdjZToS")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SAdjZToS);
+      PassLogic.run(analysis, PassMode::SAdjZToS);
     else if (mode == "SZToSAdj")
-      PassLogic.run(analysis.getKernelDialectInfo(), PassMode::SZToSAdj);
+      PassLogic.run(analysis, PassMode::SZToSAdj);
     else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();

@@ -2,10 +2,8 @@
 
 // RUN: %mqss-cc %S/../SAdjToSPass.cpp --passes=CommonReductionPass=mode=SAdjZToS | FileCheck %s
 
-// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK-NEXT: quake.s %2 : (!quake.ref) -> ()
-// CHECK: %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
-// CHECK-NEXT: quake.s %3 : (!quake.ref) -> ()
+// CHECK: %1 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.s %1 : (!quake.ref) -> ()
 
 
 

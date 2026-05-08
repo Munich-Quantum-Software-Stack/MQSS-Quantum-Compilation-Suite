@@ -1,0 +1,11 @@
+
+// test-mqss-passes/code/cudaq/tests/StoSAdjPass.test
+
+// RUN: %mqss-cc %S/../StoSAdjPass.py --function circuit_SZToSAdj --passes=CommonReductionPass=mode=SZToSAdj,canonicalize | FileCheck %s
+
+
+// CHECK: %out_qubits = quantum.custom "S"() %1 adj : !quantum.bit
+// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_0 = quantum.custom "S"() %2 adj : !quantum.bit
+// CHECK: %3 = quantum.insert %0[ 0], %out_qubits : !quantum.reg, !quantum.bit
+// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_0 : !quantum.reg, !quantum.bit

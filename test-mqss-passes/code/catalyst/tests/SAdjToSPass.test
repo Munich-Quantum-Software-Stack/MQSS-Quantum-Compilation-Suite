@@ -1,0 +1,9 @@
+// test-mqss-passes/code/cudaq/tests/SAdjToSPass.test
+
+// RUN: %mqss-cc %S/../SAdjToSPass.py --function circuit_SAdjZToS --passes=CommonReductionPass=mode=SAdjZToS,canonicalize | FileCheck %s
+
+// CHECK: %out_qubits = quantum.custom "S"() %1 : !quantum.bit
+// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_0 = quantum.custom "S"() %2 : !quantum.bit
+// CHECK: %3 = quantum.insert %0[ 0], %out_qubits : !quantum.reg, !quantum.bit
+

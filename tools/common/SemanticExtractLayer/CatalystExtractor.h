@@ -30,6 +30,8 @@ static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         {"PauliZ", {QubitRole::Target}},
         {"Hadamard", {QubitRole::Target}},
         {"H", {QubitRole::Target}},
+        {"S", {QubitRole::Target}},
+        {"SAdj", {QubitRole::Target}},
 
         // Rotations
         {"RX", {QubitRole::Target}},
@@ -146,12 +148,18 @@ private:
     // Only consider operations on gates with side-effects
     if (auto g = isCatalystQuantumGateOp(Op)) {
       // TODO isAdj initialization?
-      view.GateTy = parseGateTy(g.getGateName());
+
+      auto gateName = g.getGateName();
       view.isAdjoint = g.getAdjointFlag(); // Is this correct?
 
+      if (gateName == "S" && view.isAdjoint)
+        gateName = "SAdj";
+
+      view.GateTy = parseGateTy(gateName);
+
       std::vector<QubitRole> OpRoles =
-          getGateOpRoles(g.getGateName()); // Now we can separate out the
-                                           // Qubits into Ctrl/Target
+          getGateOpRoles(gateName); // Now we can separate out the
+                                    // Qubits into Ctrl/Target
 
       assert(!OpRoles.empty() &&
              "Found a gate Op with empty Operand Roles(Control/Target)");

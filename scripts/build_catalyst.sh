@@ -19,24 +19,24 @@ section() {
 }
 
 info() {
-  printf '[INFO] %s\n' "$1"
+  printf '🔧 %s\n' "$1"
 }
 
 fail() {
-  printf '[FAILED] %s\n' "$1"
+  printf '❌ %s\n' "$1"
 }
 
 
 ok() {
-  printf '[OK]   %s\n' "$1"
+  printf '✅ %s\n' "$1"
 }
 
 warn() {
-  printf '[WARN] %s\n' "$1"
+  printf '⚠️ %s\n' "$1"
 }
 
 step() {
-  printf '  -> %s\n' "$1"
+  printf '-> %s\n' "$1"
 }
 
 ################## Architecture limitations ##################

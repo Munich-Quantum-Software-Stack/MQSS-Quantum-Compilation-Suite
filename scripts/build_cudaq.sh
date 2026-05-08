@@ -17,19 +17,24 @@ section() {
 }
 
 info() {
-  printf '[INFO] %s\n' "$1"
+  printf '🔧 %s\n' "$1"
 }
 
+fail() {
+  printf '❌ %s\n' "$1"
+}
+
+
 ok() {
-  printf '[OK]   %s\n' "$1"
+  printf '✅ %s\n' "$1"
 }
 
 warn() {
-  printf '[WARN] %s\n' "$1"
+  printf '⚠️ %s\n' "$1"
 }
 
 step() {
-  printf '  -> %s\n' "$1"
+  printf '-> %s\n' "$1"
 }
 
 ################## Architecture limitations ##################
@@ -171,7 +176,7 @@ if [[ "$cmake_ok" != true ]]; then
   info "Checking if cmake-$INSTALL_VER is already installed in $DEPS_DIR"
   if [[ -e "$CMAKE_BIN" ]]; then
     ok "Found CMake at: ${CMAKE_BIN}"
-    export PATH="${DEPS_DIR}/cmake-3.29/bin:$PATH"
+    export PATH="${DEPS_DIR}/cmake-3.29.0-linux-${CMAKE_ARCH}/bin:$PATH"
   else
     blank
     info "Installing CMake ${INSTALL_VER} ..."

@@ -36,12 +36,18 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
  
   if (NewGateTy == "PauliZ" || NewGateTy == "PauliX" || NewGateTy == "PauliY" ||
       NewGateTy == "H" || NewGateTy == "RX" || NewGateTy == "RY" ||
-      NewGateTy == "RZ") {
+      NewGateTy == "RZ" || NewGateTy == "S" || NewGateTy == "SAdj") {
 
     std::vector<mlir::Type> TargetQubitTys;
+    
     for (auto t : TargetQubitOps) {
       TargetQubitTys.push_back(t.getType());
     }
+    if(NewGateTy == "SAdj"){
+      NewGateTy = "S";
+      isAdj=true;
+    }
+
     NewOp = builder.create<catalyst::quantum::CustomOp>(
         OpToReplace->getLoc(),
         /*out_qubits=*/mlir::TypeRange(TargetQubitTys),
@@ -77,7 +83,6 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
     // OpToReplace->getResult(1).replaceAllUsesWith(NewOp->getResult(1));
   }
   if(NewGateTy == "CZ"){
-    llvm::outs() << "Building CZ...\n";
     Value control = ControlQubitsOps[0];
     Value target = TargetQubitOps[0];
 
