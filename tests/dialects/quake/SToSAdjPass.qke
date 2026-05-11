@@ -19,7 +19,6 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
 }
 
 
-// CHECK:  quake.s<adj> %1 : (!quake.ref) -> ()
-// CHECK:  %2 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
-// CHECK:  %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
-// CHECK:  quake.s<adj> %3 : (!quake.ref) -> ()
+// CHECK: quake.s<adj> %1 : (!quake.ref) -> ()
+// CHECK: %2 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.s<adj> %2 : (!quake.ref) -> ()

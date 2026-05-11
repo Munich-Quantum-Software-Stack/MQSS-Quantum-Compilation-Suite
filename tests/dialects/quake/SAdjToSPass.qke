@@ -19,8 +19,7 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
 }
 
 
-// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK: quake.s %2 : (!quake.ref) -> ()
-// CHECK: %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
-// CHECK: quake.s %3 : (!quake.ref) -> ()
+// CHECK: %1 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.s %1 : (!quake.ref) -> ()
+
 

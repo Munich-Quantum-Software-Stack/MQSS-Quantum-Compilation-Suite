@@ -360,20 +360,6 @@ class QuakeQMap : public mqss_cudaq::opt::QuakeQMapPassBase<class QuakeQMap> {
 
 public:
 
-  // MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(QuakeQMap)
-
-  // QuakeQMap(Architecture arch, const Configuration &cfg)
-  //       : architecture(std::move(arch)), settings(std::move(cfg)) {}
-
-  //   // MLIR requires passes to be copyable for cloning
-  //   QuakeQMap(const QuakeQMap &other) = default;
-
-  // llvm::StringRef getArgument() const override { return "quake-to-qmap-pass"; }
-  // llvm::StringRef getDescription() const override {
-  //   return "Pass that maps a given quake module respecting the constraints of "
-  //          "a given quantum device, using mqt-qmap tool";
-  // }
-
   void performMapping(mlir::func::FuncOp circuit, Architecture architecture, Configuration settings) {
     StringRef funcName = circuit.getName();
     if (!(funcName.find(std::string(CUDAQ_PREFIX_FUNCTION)) !=
@@ -514,9 +500,15 @@ public:
 
   void runOnOperation() override {
     // Getting the function
+    llvm::outs() << "\n[Applying Pass: QuakeQMap]\n";
     auto module = getOperation();
-
-    auto config = PipelineConfig::fromFile("/");
+    PipelineConfig config;
+    if(input != "")
+      config = PipelineConfig::fromFile(input);
+    else{
+      llvm::outs() << "--> No input file provided, using pass defaults!" << "\n\n";
+      config = PipelineConfig::defaults();
+    }
     auto architecture=config.arch;
     auto settings = config.settings;
     module.walk([&](Operation *op){
