@@ -1,14 +1,6 @@
 
-#include "../../mqss-catalyst/include/Utils/utils.h"
+#include "Utils/quantumutils.h"
 #include "Extractor.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Pass/PassRegistry.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
-#include "mlir/Transforms/DialectConversion.h"
-
-#include "llvm/Support/raw_ostream.h"
 
 // static const StringSet<> rotationsSet = {"RX", "RY", "RZ"};
 // static const StringSet<> hermitianSet = {"Hadamard", "PauliX", "PauliY",

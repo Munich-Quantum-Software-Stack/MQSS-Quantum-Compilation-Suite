@@ -112,12 +112,12 @@ find_program(LLVM_EXTERNAL_LIT
 )
 
 add_custom_target(check-mqss
-  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/dialects/quake
+  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../tests/dialects/quake
   USES_TERMINAL
 )
 
 add_custom_target(check-mqss-code
-  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/code/cudaq/tests
+  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../tests/code/cudaq/tests
   USES_TERMINAL
 )
 

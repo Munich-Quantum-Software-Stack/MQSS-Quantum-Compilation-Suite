@@ -110,6 +110,7 @@ set(CATALYST_MLIR_RUNTIME_PATH "${MQSS_BUILD_DIR}/tools/mqss-catalyst/")
 
 set(MQSS_BUILD_DIR "${MQSS_SRC_DIR}/build")
 set(MQSS_CATALYST_MAIN_INCLUDE_DIR "${MQSS_SRC_DIR}/tools/mqss-catalyst/include")
+set(MQSS_COMMON "${MQSS_SRC_DIR}/tools/common")
 
 include_directories(BEFORE ${MQSS_CATALYST_MAIN_INCLUDE_DIR}
   ${MQSS_BUILD_DIR}/tools/mqss-catalyst/include
@@ -129,12 +130,12 @@ find_program(LLVM_EXTERNAL_LIT
   REQUIRED
 )
 add_custom_target(check-mqss
-  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/dialects/catalyst-quantum
+  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../tests/dialects/catalyst-quantum
   USES_TERMINAL
 )
 
 add_custom_target(check-mqss-code
-  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../test-mqss-passes/code/catalyst/tests
+  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../tests/code/catalyst/tests
   USES_TERMINAL
 )
 

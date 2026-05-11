@@ -26,8 +26,8 @@
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/Pass/PassRegistry.h>
 
-#include "MQSSCUDAQPasses/Examples.hpp"
-#include "MQSSCUDAQPasses/Transforms.hpp"
+#include "MQSSQuakePasses/Examples.hpp"
+#include "MQSSQuakePasses/Transforms.hpp"
 
 using namespace mlir;
 

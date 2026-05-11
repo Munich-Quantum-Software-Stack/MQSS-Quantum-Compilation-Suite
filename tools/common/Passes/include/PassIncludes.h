@@ -1,8 +1,8 @@
 
 
 #ifdef BUILD_CUDAQ_ENABLED
-#include "MQSSCUDAQPasses/Pipelines.h"
-#include "MQSSCUDAQPasses/Transforms.hpp"
+#include "MQSSQuakePasses/Pipelines.h"
+#include "MQSSQuakePasses/Transforms.hpp"
 #include "SemanticExtractLayer/QuakeExtractor.h"
 namespace mqss_backend = mqss_cudaq::opt;
 
@@ -10,7 +10,7 @@ namespace mqss_backend = mqss_cudaq::opt;
 
 namespace mqss_cudaq::opt {
 #define GEN_PASS_CLASSES
-#include "MQSSCUDAQPasses/Transforms.h.inc"
+#include "MQSSQuakePasses/Transforms.h.inc"
 
 } // namespace mqss_cudaq::opt
 #endif

@@ -1,3 +1,3 @@
 add_subdirectory(IR)
-add_subdirectory(Passes)
+add_subdirectory(MQSSCatalystPasses)
 # add_subdirectory(Utils)

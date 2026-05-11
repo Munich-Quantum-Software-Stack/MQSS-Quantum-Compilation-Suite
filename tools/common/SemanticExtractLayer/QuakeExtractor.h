@@ -1,15 +1,7 @@
 
 
-#include "../../mqss-cudaq/include/Utils/utils.h"
+#include "Utils/quakeutils.h"
 #include "Extractor.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Pass/PassRegistry.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
-#include "mlir/Transforms/DialectConversion.h"
-
-#include "llvm/Support/raw_ostream.h"
 
 class QuakeAnalysis : public MyModuleAnalysis {
 

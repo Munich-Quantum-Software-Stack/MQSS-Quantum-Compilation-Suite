@@ -1,5 +1,5 @@
 add_subdirectory(IR)
-add_subdirectory(Passes)
+add_subdirectory(MQSSQuakePasses)
 # set(PASS_ANALYSIS_SOURCES
 #   Passes/Analysis/PrintQuakeGates.cpp
 # )

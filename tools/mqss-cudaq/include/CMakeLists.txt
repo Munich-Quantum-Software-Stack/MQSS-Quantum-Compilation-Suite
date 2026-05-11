@@ -7,4 +7,4 @@
 # ============================================================================ #
 
 add_subdirectory(IR)
-add_subdirectory(MQSSCUDAQPasses)
+add_subdirectory(MQSSQuakePasses)

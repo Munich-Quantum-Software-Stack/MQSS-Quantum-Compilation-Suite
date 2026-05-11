@@ -5,9 +5,11 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Pass/PassRegistry.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
