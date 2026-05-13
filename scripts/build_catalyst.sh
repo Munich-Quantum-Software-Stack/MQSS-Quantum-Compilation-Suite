@@ -56,7 +56,8 @@ esac
 
 CURRENT_DIR=$(pwd)
 BUILD_DIR=${CURRENT_DIR}"/build"
-DEPS_DIR=$BUILD_DIR"/_deps"
+
+DEPS_DIR=$CURRENT_DIR"/_deps/mqss-catalyst"
 # Fetch the correct LLVM toolchain (21.1.8) and set the path to lib/cmake/llvm and lib/cmake/mlir
 # Note: Using MQT's setup-mlir scripts to download the LLVM/MLIR setup.
 #       Refer to https://github.com/munich-quantum-software/setup-mlir/ for more details
@@ -109,21 +110,16 @@ LLVM_DIR="${LLVM_BIN_DIR}/lib/cmake/llvm"
 MLIR_DIR="${LLVM_BIN_DIR}/lib/cmake/mlir"
 
 info "Checking pennylane_catalyst-0.14.1 wheels"
-CATALYST_PYTHON="${DEPS_DIR}/pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl"
+CATALYST_PACAKGE="pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl"
 # Fetch OS specific catalyst installer. This is needed to get the catalyst python jit framework
 VENV_DIR="${DEPS_DIR}/venv"
-mkdir -p $VENV_DIR
-python3.11 -m venv $VENV_DIR
-
-source "${VENV_DIR}/bin/activate"
-
-CATALYST_SITE_PACKAGE="${VENV_DIR}/lib64/python3.11/site-packages/catalyst"
+CATALYST_SITE_PACKAGE="${VENV_DIR}/lib/python3.11/site-packages/catalyst"
 
 if [[ -e "${CATALYST_SITE_PACKAGE}" ]]; then
     info "Found Catalyst python package at: ${CATALYST_SITE_PACKAGE}"
 else
-    CATALYST_BINARY_REPO="https://github.com/PennyLaneAI/catalyst/releases/download/v0.14.1/pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl"
-    python3.11 -m pip install ${DEPS_DIR}/./pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl 
+    CATALYST_BINARY_REPO="https://github.com/PennyLaneAI/catalyst/releases/download/v0.14.1/${CATALYST_PACAKGE}"
+    python3.11 -m pip install ${DEPS_DIR}/${CATALYST_PACAKGE} 
     wget -P $DEPS_DIR $CATALYST_BINARY_REPO
 fi
 
@@ -144,8 +140,8 @@ BUILD_CATALYST=ON
 
 CATALYST_COMPILER_DIR="/workspaces/compilers/MQSS-Catalyst-Compiler"
 PYTHON="${PYTHON:-$(which python3)}"
-C_COMPILER="${C_COMPILER:-$(which clang)}"
-CXX_COMPILER="${CXX_COMPILER:-$(which clang++)}"
+C_COMPILER="${C_COMPILER:-$(which gcc)}"
+CXX_COMPILER="${CXX_COMPILER:-$(which g++)}"
 COMPILER_LAUNCHER="${COMPILER_LAUNCHER:-$(which ccache)}"
 
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -221,7 +217,7 @@ cmake -G Ninja \
 
 NUM_JOBS=4
 blank
-info "Building MQSS Repository Passes with ${NUM_JOBS} jobs..."
+info "Building MQSS Catalyst Passes with ${NUM_JOBS} jobs..."
 
 ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/mqss-catalyst"
 # blank

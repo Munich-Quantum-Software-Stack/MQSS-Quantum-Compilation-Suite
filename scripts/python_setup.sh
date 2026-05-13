@@ -1,61 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
 
-#!/bin/bash
+REQUIRED_VERSION="3.11.14"
 
-REQUIRED_VERSION="3.11.9"   # Specify exact version for pyenv
-CURRENT_DIR=$(pwd)
-
-BUILD_DIR=${CURRENT_DIR}"/build"
-DEPS_DIR=$BUILD_DIR"/_deps"
+CURRENT_DIR="$(pwd)"
+DEPS_DIR="${CURRENT_DIR}/_deps/mqss-catalyst"
 VENV_DIR="${DEPS_DIR}/venv"
 
-mkdir -p "${BUILD_DIR}"
 mkdir -p "${DEPS_DIR}"
 
-# ─── 1. Install pyenv if missing ─────────────────────────────────────────────
-if ! command -v pyenv &>/dev/null; then
-    echo "⚠️  pyenv not found. Installing..."
-    brew install pyenv
+echo "Using deps dir: ${DEPS_DIR}"
 
-    # Add pyenv init to shell profile
-    SHELL_PROFILE="$HOME/.zshrc"   # Change to ~/.bash_profile if using bash
-    echo '' >> "$SHELL_PROFILE"
-    echo '# pyenv setup' >> "$SHELL_PROFILE"
-    echo 'export PYENV_ROOT="$HOME/.pyenv"' >> "$SHELL_PROFILE"
-    echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> "$SHELL_PROFILE"
-    echo 'eval "$(pyenv init -)"' >> "$SHELL_PROFILE"
+# ─── 1. Ensure pyenv is installed ────────────────────────────────────────────
 
-    # Load pyenv into the CURRENT session without restarting terminal
-    export PYENV_ROOT="$HOME/.pyenv"
-    export PATH="$PYENV_ROOT/bin:$PATH"
-    eval "$(pyenv init -)"
+export PYENV_ROOT="${HOME}/.pyenv"
+export PATH="${PYENV_ROOT}/bin:${PYENV_ROOT}/shims:${PATH}"
 
-    echo "✅ pyenv installed."
+if ! command -v pyenv >/dev/null 2>&1; then
+    echo "pyenv not found. Installing pyenv..."
+
+    if ! command -v git >/dev/null 2>&1; then
+        echo "ERROR: git is required to install pyenv."
+        echo "Install it first, e.g.: sudo apt install git"
+        exit 1
+    fi
+
+    git clone https://github.com/pyenv/pyenv.git "${PYENV_ROOT}"
+
+    echo "pyenv installed at ${PYENV_ROOT}"
 fi
 
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
+# Initialize pyenv in this script
 eval "$(pyenv init -)"
-echo "🔍 pyenv python path: $(which python)"
 
-# ─── 3. Install Python 3.11 via pyenv (isolated, not system-wide) ────────────
-if ! pyenv versions --bare | grep -q "^$REQUIRED_VERSION$"; then
-    echo "⚠️  Python $REQUIRED_VERSION not found in pyenv. Installing..."
-    pyenv install "$REQUIRED_VERSION"
-    echo "✅ Python $REQUIRED_VERSION installed via pyenv."
+echo "pyenv path: $(command -v pyenv)"
+
+# ─── 2. Check/install Python 3.11.14 via pyenv ───────────────────────────────
+
+if ! pyenv versions --bare | grep -qx "${REQUIRED_VERSION}"; then
+    echo "Python ${REQUIRED_VERSION} not found in pyenv."
+
+    echo "Installing build dependencies may be required, e.g. on Ubuntu/Debian:"
+    echo "  sudo apt install -y build-essential libssl-dev zlib1g-dev \\"
+    echo "      libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \\"
+    echo "      xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev"
+
+    echo "Installing Python ${REQUIRED_VERSION}..."
+    pyenv install "${REQUIRED_VERSION}"
 else
-    echo "✅ Python $REQUIRED_VERSION already available in pyenv."
+    echo "Python ${REQUIRED_VERSION} already installed via pyenv."
 fi
 
-# ─── 4. Set the version locally for this project ─────────────────────────────
-pyenv local "$REQUIRED_VERSION"   # Creates a .python-version file in current dir
-echo "✅ Python $REQUIRED_VERSION set as local version."
+PYTHON_BIN="$(pyenv root)/versions/${REQUIRED_VERSION}/bin/python3.11"
 
-# ─── 5. Create virtual environment ───────────────────────────────────────────
-if [ -d "$VENV_DIR" ]; then
-    echo "📁 '$VENV_DIR' already exists. Skipping creation."
-else
-    echo "🔧 Creating virtual environment..."
-    python3 -m venv "$VENV_DIR"
-    echo "✅ Virtual environment created in '$VENV_DIR'."
+if [ ! -x "${PYTHON_BIN}" ]; then
+    echo "ERROR: Expected Python binary not found: ${PYTHON_BIN}"
+    exit 1
 fi
 
+echo "Using Python: ${PYTHON_BIN}"
+"${PYTHON_BIN}" --version
+
+# ─── 3. Create virtual environment ───────────────────────────────────────────
+
+if [ -d "${VENV_DIR}" ]; then
+    echo "Virtual environment already exists: ${VENV_DIR}"
+else
+    echo "Creating virtual environment at ${VENV_DIR}..."
+    "${PYTHON_BIN}" -m venv "${VENV_DIR}"
+fi
+
+# ─── 4. Verify Python inside venv ────────────────────────────────────────────
+
+VENV_PYTHON="${VENV_DIR}/bin/python"
+
+if [ ! -x "${VENV_PYTHON}" ]; then
+    echo "ERROR: venv Python not found: ${VENV_PYTHON}"
+    exit 1
+fi
+
+INSTALLED_VERSION="$("${VENV_PYTHON}" -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')"
+
+echo "Python inside venv: ${INSTALLED_VERSION}"
+
+if [ "${INSTALLED_VERSION}" != "${REQUIRED_VERSION}" ]; then
+    echo "ERROR: Expected Python ${REQUIRED_VERSION}, got ${INSTALLED_VERSION}"
+    exit 1
+fi
+
+
+echo "Done. Activate with:"
+echo "  source ${VENV_DIR}/bin/activate"

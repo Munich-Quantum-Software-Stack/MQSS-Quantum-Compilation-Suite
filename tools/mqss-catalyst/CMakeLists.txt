@@ -64,8 +64,8 @@ set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 # list(APPEND CMAKE_MODULE_PATH "${MHLO_CMAKE_DIR}")
-list(APPEND CMAKE_MODULE_PATH "${CURRENT_DIR}/tools/mqss-catalyst/cmake/modules")
-
+# list(APPEND CMAKE_MODULE_PATH "${CURRENT_DIR}/tools/mqss-catalyst/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 # Policy CMP0175 was introduced in CMake 4.31 and raises warnings in the upstream CMake modules.
 # Policy CMP0177 was introduced in CMake 4.31 and raises warnings in the upstream CMake modules.
 # TODO: Remove once they (and us) have updated their code to deal with it.
@@ -106,6 +106,44 @@ include_directories(SYSTEM ${LLVM_INCLUDE_DIRS}
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
+# ############### ADDITIONAL PACKAGES #######################################
+
+# Tell where to search for Find<package>.cmake files
+set(FETCHCONTENT_BASE_DIR ${MQSS_SRC_DIR}/_deps/mqss-catalyst CACHE PATH "FetchContent cache dir")
+
+set(CMAKE_MODULE_PATH "${MQSS_SRC_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+# set(CMAKE_CXX_STANDARD 11) Find QDMI package find_package(qdmi REQUIRED) Find
+# QInfo package find_package(qinfo REQUIRED)
+find_package(Z3 REQUIRED)
+
+# find_package(mqt-qcec REQUIRED)
+# Find the QMAP package
+# set(CMAKE_CXX_STANDARD 17)
+set(MQT_QMAP_TESTS OFF)
+find_package(mqt-qmap REQUIRED)
+# Restore the original CXX flags and compiler
+set(CMAKE_CXX_STANDARD 20)
+
+set(MQT_QMAP_INCLUDE_DIR "${mqt-qmap_SOURCE_DIR}/include/")
+set(MQT_QCEC_INCLUDE_DIR "${mqt-qcec_SOURCE_DIR}/include/")
+set(MQT_CORE_INCLUDE_DIR "${mqt-core_SOURCE_DIR}/include/mqt-core")
+# set(qdmi_INCLUDE_DIRS "${QDMI_INCLUDE_DIRS}/qdmi")
+# set(qinfo_INCLUDE_DIRS "${qinfo_SOURCE_DIR}/include/qinfo")
+
+message("MQT_CORE_INCLUDE_DIR = ${MQT_CORE_INCLUDE_DIR}")
+message("MQT_QMAP_INCLUDE_DIR = ${MQT_QMAP_INCLUDE_DIR}")
+include_directories(
+        BEFORE
+        ${nlohmann_json_SOURCE_DIR}/include
+        ${MQT_QMAP_INCLUDE_DIR}
+        ${MQT_CORE_INCLUDE_DIR}
+        # ${qdmi_INCLUDE_DIRS}
+        # ${qinfo_INCLUDE_DIRS}
+        )
+  
+########### MQSS Settings ########################
+
 set(CATALYST_MLIR_RUNTIME_PATH "${MQSS_BUILD_DIR}/tools/mqss-catalyst/")
 
 set(MQSS_BUILD_DIR "${MQSS_SRC_DIR}/build")
@@ -122,6 +160,8 @@ add_subdirectory(lib)
 add_subdirectory(cmake/modules)
 
 include(FetchContent)
+
+
 
 #########################LLVM-LIT TESTING SETTINGS###############################
 # TODO: Change this path. Should point to llvm-lit in an LLVM toolchain within build/_Deps
@@ -167,6 +207,10 @@ target_link_libraries(mqss-catalyst-opt
     MLIRLinalgDialect
     MLIRLLVMDialect
     MLIRTransforms
+    MQT::CoreIR
+    MQT::CoreNA
+    MQT::QMapSC
+    MQT::QMapSCHeuristic
     
     # SupportQuake            # MQSS/Quake support
     # Interfaces              # MQSS Interfaces

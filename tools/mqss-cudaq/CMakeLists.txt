@@ -10,6 +10,7 @@ set(CMAKE_CXX_FLAGS "-w -fPIC")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions")
 
+list(APPEND CMAKE_MODULE_PATH "${CURRENT_DIR}/tools/mqss-cudaq/cmake/modules")
 # set(Boost_USE_STATIC_LIBS ON)
 # set(Boost_USE_MULTITHREADED ON)
 # set(Boost_USE_STATIC_RUNTIME OFF)
@@ -45,7 +46,7 @@ find_package(MLIR REQUIRED CONFIG)
 # Append MLIR's CMake modules.
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
+# list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
 # Include the MLIR helper macros.
 include(TableGen)
@@ -58,8 +59,10 @@ link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
 # ############### ADDITIONAL PACKAGES #######################################
+
+set(MQSS_BUILD_DIR "${MQSS_SRC_DIR}/build")
 # Tell where to search for Find<package>.cmake files
-set(FETCHCONTENT_BASE_DIR ${MQSS_SRC_DIR}/build/_deps CACHE PATH "FetchContent cache dir")
+set(FETCHCONTENT_BASE_DIR ${MQSS_SRC_DIR}/_deps/mqss-cudaq CACHE PATH "FetchContent cache dir")
 
 set(CMAKE_MODULE_PATH "${MQSS_SRC_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
@@ -93,7 +96,6 @@ include_directories(
 
 # ###################### MQSS settings ###################################
 
-set(MQSS_BUILD_DIR "${MQSS_SRC_DIR}/build")
 set(MQSS_CUDAQ_MAIN_INCLUDE_DIR "${MQSS_SRC_DIR}/tools/mqss-cudaq/include")
 set(MQSS_COMMON "${MQSS_SRC_DIR}/tools/common")
 

@@ -81,6 +81,6 @@ std::unique_ptr<mlir::Pass> QuakeQMapPass();
  * @brief Macro for pass registration
  */
 #define GEN_PASS_REGISTRATION
-#include "MQSSCUDAQPasses/Transforms.h.inc"
+#include "MQSSQuakePasses/Transforms.h.inc"
 
 

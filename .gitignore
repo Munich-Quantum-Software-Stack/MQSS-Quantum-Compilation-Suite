@@ -4,7 +4,7 @@
 *.swn
 *.swm
 build
-
+_deps
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
@@ -17,8 +17,6 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
-build
-
 # Compiled Object files
 *.slo
 *.lo

@@ -54,7 +54,7 @@ esac
 
 CURRENT_DIR=$(pwd)
 BUILD_DIR=${CURRENT_DIR}"/build"
-DEPS_DIR=$BUILD_DIR"/_deps"
+DEPS_DIR=$CURRENT_DIR"/_deps/mqss-cudaq/"
 
 # Create directories if they don't exist
 mkdir -p "${BUILD_DIR}"
@@ -237,7 +237,7 @@ cmake -G Ninja \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 blank
-info "Building MQSS Repository Passes with ${NUM_JOBS} jobs..."
+info "Building MQSS CUDAQ Passes with ${NUM_JOBS} jobs..."
 ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/mqss-cudaq"
 # echo "Successfully built MQSS-CUDAQ!"
 # echo " "
