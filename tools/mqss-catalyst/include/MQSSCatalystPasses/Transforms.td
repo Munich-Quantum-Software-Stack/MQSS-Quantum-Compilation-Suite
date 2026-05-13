@@ -100,3 +100,13 @@ def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::Mod
  
  let constructor = "mqss_catalyst::opt::CommonNormalizeArgAnglePass()";
 }
+
+def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
+  let summary = "A Dialect agnostic mapping pass";
+ 
+  let description = [{
+    A Dialect agnostic mapping pass
+  }];
+ 
+ let constructor = "mqss_catalyst::opt::CommonMappingPass()";
+}

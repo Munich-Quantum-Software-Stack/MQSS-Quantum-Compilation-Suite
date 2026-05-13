@@ -62,6 +62,7 @@ std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();
 
 std::unique_ptr<mlir::Pass> QuakeQMapPass();
+std::unique_ptr<mlir::Pass> CommonMappingPass();
 
 } // namespace mqss_cudaq::opt
 

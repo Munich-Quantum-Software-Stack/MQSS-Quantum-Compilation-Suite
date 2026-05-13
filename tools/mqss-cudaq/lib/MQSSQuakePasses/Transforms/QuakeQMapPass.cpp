@@ -182,8 +182,10 @@ int getNumberOfQubits(func::FuncOp circuit) {
   int numQubits = 0;
   circuit.walk([&](quake::AllocaOp allocOp) {
     if (auto qrefType = allocOp.getType().dyn_cast<quake::RefType>()) {
+      llvm::outs() << "collecting: " << qrefType << "\n";
       numQubits += 1;
     } else if (auto qvecType = allocOp.getType().dyn_cast<quake::VeqType>()) {
+       llvm::outs() << "collecting vectype: " << qvecType.getSize() << "\n";
       numQubits += qvecType.getSize();
     }
   });

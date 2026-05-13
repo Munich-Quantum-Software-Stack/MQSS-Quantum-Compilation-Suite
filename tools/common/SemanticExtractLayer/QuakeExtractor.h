@@ -107,6 +107,18 @@ private:
   ModuleOp module;
   llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo;
 
+  std::tuple<QubitID, Value> extractQubits(Operation *Operand) {
+    QubitID ID;
+    if (auto ext_ref = dyn_cast<quake::ExtractRefOp>(Operand)) {
+      Value base = ext_ref.getVeq();
+      auto index = ext_ref.getConstantIndex();
+      ID.base = base;
+      ID.index = index;
+      return {ID, ext_ref};
+    }
+    return {ID, nullptr};
+  }
+
   const QuantumOpView createQuantumView(Operation *Op) {
 
     QuantumOpView view;
@@ -119,28 +131,15 @@ private:
       view.isAdjoint = gate.isAdj();
 
       for (auto ctrl : gate.getControls()) {
-        if (auto ext_ref =
-                dyn_cast<quake::ExtractRefOp>(ctrl.getDefiningOp())) {
-          QubitID ID;
-          Value base = ext_ref.getVeq();
-          auto index = ext_ref.getConstantIndex();
-          ID.base = base;
-          ID.index = index;
-          view.getQubits(QubitRole::Control).ids.push_back(ID);
-          view.getQubits(QubitRole::Control).in.push_back(ext_ref);
-        }
+        auto [ID, ext_ref] = extractQubits(ctrl.getDefiningOp());
+        view.getQubits(QubitRole::Control).ids.push_back(ID);
+        view.getQubits(QubitRole::Control).in.push_back(ext_ref);
       }
       // Gather the Target Qubits
       for (auto t : gate.getTargets()) {
-        if (auto ext_ref = dyn_cast<quake::ExtractRefOp>(t.getDefiningOp())) {
-          QubitID ID;
-          Value base = ext_ref.getVeq();
-          auto index = ext_ref.getConstantIndex();
-          ID.base = base;
-          ID.index = index;
-          view.getQubits(QubitRole::Target).ids.push_back(ID);
-          view.getQubits(QubitRole::Target).in.push_back(ext_ref);
-        }
+        auto [ID, ext_ref] = extractQubits(t.getDefiningOp());
+        view.getQubits(QubitRole::Target).ids.push_back(ID);
+        view.getQubits(QubitRole::Target).in.push_back(ext_ref);
       }
       // Gather Parameters if any (E.g. Rotation Angle)
       for (auto p : gate.getParameters()) {
@@ -156,10 +155,20 @@ private:
       ID.base = extract_refop.getVeq();
       ID.index = extract_refop.getConstantIndex();
       view.getQubits(QubitRole::Target).ids.push_back(ID);
+
+    } else if (auto measureop = dyn_cast<quake::MeasurementInterface>(Op)) {
+      // Do something
+      QubitID ID;
+      for (auto t : measureop.getTargets()) {
+        view.isMeasureOp = true;
+        auto [ID, ext_ref] = extractQubits(t.getDefiningOp());
+        view.getQubits(QubitRole::Target).ids.push_back(ID);
+        view.getQubits(QubitRole::Target).in.push_back(ext_ref);
+      }
     }
-    return view;
-  }
-  
+      return view;
+    }
+
   mlir::func::FuncOp getOpParentFunc(Operation *Op){
     auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
     assert(funcOp && "Adding New O: Parent Function not found!");

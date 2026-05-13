@@ -26,11 +26,14 @@ add_mlir_library(MLIRPasses
 
 if(BUILD_CATALYST)
   target_compile_definitions(MLIRPasses PRIVATE BUILD_CATALYST_ENABLED)
+  target_compile_options(MLIRPasses PRIVATE -fexceptions)
 endif()
 
 target_include_directories(MLIRPasses
   PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/../common
+    ${nlohmann_json_SOURCE_DIR}/include
+    ${MQT_QMAP_INCLUDE_DIR}
 )
 

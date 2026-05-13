@@ -118,3 +118,14 @@ def QuakeQMapPass : Pass<"QuakeQMapPass", "mlir::ModuleOp"> {
  
  let constructor = "mqss_cudaq::opt::QuakeQMapPass()";
 }
+
+
+def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
+  let summary = "A Dialect agnostic mapping pass";
+ 
+  let description = [{
+    A Dialect agnostic mapping pass
+  }];
+ 
+ let constructor = "mqss_cudaq::opt::CommonMappingPass()";
+}

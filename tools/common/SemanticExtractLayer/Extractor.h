@@ -71,6 +71,7 @@ struct QuantumOpView {
 
   bool isAdjoint = false;
   bool hasSideEffects = false;
+  bool isMeasureOp = false;
 
   [[nodiscard]] const QubitOperands &getQubits(QubitRole role) const {
     static const QubitOperands empty;
