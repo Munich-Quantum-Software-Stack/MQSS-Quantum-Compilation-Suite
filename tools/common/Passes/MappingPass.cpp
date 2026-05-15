@@ -10,27 +10,10 @@ namespace {
 void performMapping(MyModuleAnalysis &analysis) {
 
   for (auto &[kernel, info] : analysis.getKernelDialectInfo()) {
-    SmallSetVector<int, 4> InputQubits;
-    SmallSetVector<int, 4> MeasureQubits;
-    for (auto &[Op, QView] : info) {
 
-      if (QView.isMeasureOp) {
-        for (auto Qubit : QView.getQubits(QubitRole::Target).ids) {
-          MeasureQubits.insert(Qubit.index);
-        }
-        continue;
-      }
-
-      for (auto Qubit : QView.getQubits(QubitRole::Control).ids) {
-        InputQubits.insert(Qubit.index);
-      }
-      for (auto Qubit : QView.getQubits(QubitRole::Target).ids) {
-        InputQubits.insert(Qubit.index);
-      }
-    }
     llvm::outs() << "\nkernel: " << kernel.getSymName()
-                 << " total input qubits: " << InputQubits.size()
-                 << " Measure qubits: " << MeasureQubits.size() << "\n\n";
+                 << " total input qubits: " << info.AllocatedQubits
+                 << " Measure qubits: " << info.NumMeasureQubits << "\n\n";
   }
 }
 

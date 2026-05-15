@@ -64,6 +64,9 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates,
     Op2->replaceUsesOfWith(Op2Operand, Op1Operand);
     Op1->replaceUsesOfWith(Op1Operand, Op2Result);
 
+    llvm::outs().indent(4) << "Op2: " << *Op2 << "\n";
+    llvm::outs().indent(4) << "Op1: " << *Op1 << "\n";
+
     // Update the Op1 and Op2 operands in QuantumOpView
     analysis.UpdateOperands(Op2, KeyGate2, Op2Operand, Op1Operand);
     analysis.UpdateOperands(Op1, KeyGate1, Op1Operand, Op2Result);
@@ -81,7 +84,8 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
 
   CommuteInfoTy CommutationInfo;
   CommuteInfoTy SSACommuteCandidates;
-  for (auto &[kernel, QView] : analysis.getKernelDialectInfo()) {
+  for (auto &[kernel, KernelInfo] : analysis.getKernelDialectInfo()) {
+    auto QView = KernelInfo.OpQViewMap;
     for (auto &[Op1, Op1QView] : QView) {
       auto FirstGateTy = Op1QView.GateTy;
 
@@ -182,7 +186,7 @@ static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
     auto KernelDialectInfo = analysis.getKernelDialectInfo();
     assert(KernelDialectInfo.count(funcOp) &&
            "Get Op Info: No QuantumOpInfo for funcOp");
-    auto Qview = KernelDialectInfo[funcOp];
+    auto Qview = KernelDialectInfo[funcOp].OpQViewMap;
 
     if (Qview.count(Op2)) {
       auto Op2TargetQubits = Qview[Op2].getQubits(QubitRole::Target).ids;
@@ -362,10 +366,10 @@ static void performReduction(MyModuleAnalysis &analysis,
   int i = 0;
   auto FirstGateToCancelTy = PassInfo.GatesToCancel[i];
 
-  for (auto &[FuncOp, OpQuantumView] : analysis.getKernelDialectInfo()) {
+  for (auto &[Kernel, KernelInfo] : analysis.getKernelDialectInfo()) {
     std::vector<pipelinety> pipeline;
     std::vector<std::vector<pipelinety>> ToErase;
-
+    auto OpQuantumView = KernelInfo.OpQViewMap;
     for (auto &[GateOp, FirstGateQView] : OpQuantumView) {
 
       auto FirstGateTy = FirstGateQView.GateTy;
@@ -577,7 +581,8 @@ static void performCNOTReversal(MyModuleAnalysis &analysis) {
 
   SmallSetVector<Operation *, 16> ToErase;
   std::unordered_map<Operation *, std::vector<Operation *>> DecomposeMap;
-  for (auto &[kernel, OpQuantumView] : analysis.getKernelDialectInfo())
+  for (auto &[kernel, kernelInfo] : analysis.getKernelDialectInfo()){
+    auto OpQuantumView = kernelInfo.OpQViewMap;
     for (auto &[GateOp, GateQView] : OpQuantumView) {
       if ((GateQView.GateTy != Gate::CNOT))
         continue;
@@ -612,6 +617,7 @@ static void performCNOTReversal(MyModuleAnalysis &analysis) {
 
       DecomposeMap[GateOp] = {NewGate1, NewGate2, NewGate3, NewGate4, NewGate5};
     }
+  }
 
   for (auto &[Op, DecomposePattern] : DecomposeMap) {
     auto Gate1 = DecomposePattern[0];
@@ -699,7 +705,8 @@ static void performDecomposition(MyModuleAnalysis &analysis,
   }
 
   std::unordered_map<Operation *, std::vector<Operation *>> DecomposeMap;
-  for (auto &[kernel, OpQuantumView] : analysis.getKernelDialectInfo())
+  for (auto &[kernel, kernelInfo] : analysis.getKernelDialectInfo()){
+    auto OpQuantumView = kernelInfo.OpQViewMap;
     for (auto &[GateOp, GateQView] : OpQuantumView) {
 
       if ((GateQView.GateTy != Gate::CNOT) && (GateQView.GateTy != Gate::CZ))
@@ -741,6 +748,7 @@ static void performDecomposition(MyModuleAnalysis &analysis,
           Gate3,
       };
     }
+  }
 
   for (auto [Op, DecomposePattern] : DecomposeMap) {
 

@@ -20,7 +20,7 @@ config.substitutions.append(
 )
 
 config.substitutions.append(
-    ('%cudaq-quake', '/workspaces/MQSS-Passes-Suite/build/_deps/cudaq/bin/cudaq-quake ')
+    ('%cudaq-quake', '/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin/cudaq-quake ')
 )
 
 config.substitutions.append(
@@ -28,5 +28,5 @@ config.substitutions.append(
 )
 
 config.substitutions.append(
-    ('FileCheck', '/workspaces/MQSS-Passes-Suite/build/_deps/LLVM-21.1.8-toolchain/bin/FileCheck')
+    ('FileCheck', '/workspaces/MQSS-Passes-Suite/_deps/mqss-catalyst/LLVM-21.1.8-toolchain/bin/FileCheck')
 )

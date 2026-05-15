@@ -43,14 +43,14 @@ class CommonGateCancellation
 
       for (auto &[kernel, Info] : KernelDialectInfo) {
         llvm::outs() << ++count << ". kernel: " << kernel.getSymName() << "\n";
-        performCancellation(Info, GatesToCancel, CompareKey);
+        performCancellation(Info.OpQViewMap, GatesToCancel, CompareKey);
         llvm::outs() << "\n";
       }
     } else if (mode == "CancelNullRotation") {
 
       for (auto &[kernel, Info] : KernelDialectInfo) {
         llvm::outs() << ++count << ". kernel: " << kernel.getSymName() << "\n";
-        performNullRotationCancellation(Info, RotationGatesToCancel);
+        performNullRotationCancellation(Info.OpQViewMap, RotationGatesToCancel);
         llvm::outs() << "\n";
       }
     } else {

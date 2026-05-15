@@ -75,25 +75,37 @@ public:
   void gatherOpInfo() override {
     auto QuantumKernels = fetchQuantumKernels();
 
+    
     for (auto kernel : QuantumKernels) {
-
-      QuantumOpInfo QInfo;
+      QuantumKernelInfo kernelInfo;
+      llvm::outs() << "Analyzing : " << kernel.getSymName() << "\n";
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quantum") {
 
+          if (auto measop = dyn_cast<catalyst::quantum::MeasureOp>(Op)) {
+              kernelInfo.NumMeasureQubits += getMeasuredQubitCount(measop);
+              return;
+          }
+          if (auto allocaOp = dyn_cast<catalyst::quantum::AllocOp>(Op)) {
+              kernelInfo.AllocatedQubits = allocaOp.getNqubitsAttr().value();
+              return;
+          }
+          
           auto view = createQuantumView(Op);
-          QInfo[Op] = view;
+          kernelInfo.OpQViewMap[Op] = view;
         }
       });
-      KernelDialectInfo[kernel] = QInfo;
+      KernelDialectInfo[kernel] = kernelInfo;
     }
   }
 
-  void addOperation(Operation *NewOp) override{
-    auto funcOp = getOpParentFunc(NewOp);
+  void addOperation(Operation *NewOp) override {
+    auto funcOp = NewOp->getParentOfType<mlir::func::FuncOp>();
+    assert(funcOp && "Adding New O: Parent Function not found!");
     assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
-    auto &QInfo = KernelDialectInfo[funcOp];
-    assert(!QInfo.count(NewOp) && "Adding New Op: Op already present in QunatumInfoMap");
+    auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
+    assert(!QInfo.count(NewOp) &&
+           "Adding New Op: Op already present in QunatumInfoMap");
     auto view = createQuantumView(NewOp);
     QInfo[NewOp] = view;
   }
@@ -102,7 +114,7 @@ public:
                       Value NewValue) {
     auto funcOp = getOpParentFunc(Op);
     assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
-    QuantumOpInfo &QInfo = KernelDialectInfo[funcOp];
+    auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
     assert(QInfo.count(Op) && "Updating Op: Op not present in QunatumInfoMap");
     QuantumOpView &OpQView = QInfo[Op];
     auto &Operands = OpQView.getQubits(Role).in;
@@ -114,14 +126,14 @@ public:
     return true;
   }
 
-  llvm::DenseMap<func::FuncOp, QuantumOpInfo> getKernelDialectInfo() override {
+  llvm::DenseMap<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
     return KernelDialectInfo;
   }
 
   const QuantumOpView getOpInfo(Operation *Op) override{
     auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
     assert(KernelDialectInfo.count(funcOp) && "Get Op Info: No QuantumOpInfo for funcOp");
-    auto QInfo = KernelDialectInfo[funcOp];
+    auto QInfo = KernelDialectInfo[funcOp].OpQViewMap;
     assert(QInfo.count(Op) && "Get Op Info: Op not present QuantumInfoMap");
     return QInfo[Op];
   }
@@ -130,7 +142,7 @@ public:
 
 private:
   ModuleOp module;
-  llvm::DenseMap<func::FuncOp, QuantumOpInfo> KernelDialectInfo;
+  llvm::DenseMap<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
 
   QuantumOpView createQuantumView(Operation *Op) {
     QuantumOpView view;
@@ -140,7 +152,6 @@ private:
     // Only consider operations on gates with side-effects
     if (auto g = isCatalystQuantumGateOp(Op)) {
       // TODO isAdj initialization?
-
       auto gateName = g.getGateName();
       view.isAdjoint = g.getAdjointFlag(); // Is this correct?
 
@@ -195,9 +206,20 @@ private:
     return view;
   }
 
-  mlir::func::FuncOp getOpParentFunc(Operation *Op){
+  mlir::func::FuncOp getOpParentFunc(Operation *Op) {
     auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
     assert(funcOp && "Adding New O: Parent Function not found!");
     return funcOp;
+  }
+
+  static int64_t getMeasuredQubitCount(catalyst::quantum::MeasureOp op) {
+    int64_t count = 0;
+
+    for (mlir::Value operand : op->getOperands()) {
+      if (mlir::isa<catalyst::quantum::QubitType>(operand.getType()))
+        ++count;
+    }
+
+    return count;
   }
 };

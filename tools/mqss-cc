@@ -66,7 +66,7 @@ OTHER_ARGS=()
 # # The following paths should be set on the command-line
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-export CUDA_QUAKE="/workspaces/MQSS-Passes-Suite/build/_deps/cudaq/bin/cudaq-quake"
+export CUDA_QUAKE="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin/cudaq-quake"
 
 for cmd in mqss-cudaq-opt mqss-catalyst-opt mqss-cc; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
@@ -178,8 +178,7 @@ if [[ "${EXT}" == "cpp" ]]; then
       "${CUDA_QUAKE}" "${INPUT_FILE}" -o "${OUT_DIR}/${GENERATED_MLIR}"
       mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
     else
-      "${CUDA_QUAKE}" "${INPUT_FILE}" \
-      | mqss-cudaq-opt "${PASS_ARGS[@]}"
+      "${CUDA_QUAKE}" "${INPUT_FILE}" | mqss-cudaq-opt "${PASS_ARGS[@]}"
     fi
     # TODO: Further convert to QIR?
 
@@ -203,7 +202,7 @@ elif [[ "${EXT}" == "py" ]]; then
     COMMAND=""
     if [[ "${OUT_DIR}" != "" ]]; then
       COMMAND="$(
-      python3 "${RESOLVER}" \
+      python3.11 "${RESOLVER}" \
         --input "${INPUT_FILE}" \
         --function "${FUNCTION_NAME}" \
         --stage "${STAGE}" \
@@ -219,10 +218,10 @@ elif [[ "${EXT}" == "py" ]]; then
       mqss-catalyst-opt "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
 
     else
-      python3 "${RESOLVER}" \
+      python3.11 "${RESOLVER}" \
         --input "${INPUT_FILE}" \
         --function "${FUNCTION_NAME}" \
-        --stage "${STAGE}" | mqss-catalyst-opt "${PASS_ARGS[@]}"
+        --stage "${STAGE}" |  mqss-catalyst-opt "${PASS_ARGS[@]}"
     fi
 
     

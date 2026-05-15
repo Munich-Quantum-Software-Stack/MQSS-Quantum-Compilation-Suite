@@ -109,8 +109,6 @@ fi
 LLVM_DIR="${LLVM_BIN_DIR}/lib/cmake/llvm"
 MLIR_DIR="${LLVM_BIN_DIR}/lib/cmake/mlir"
 
-info "Checking pennylane_catalyst-0.14.1 wheels"
-CATALYST_PACAKGE="pennylane_catalyst-0.14.1-cp311-cp311-manylinux_2_28_$(uname -m).whl"
 # Fetch OS specific catalyst installer. This is needed to get the catalyst python jit framework
 VENV_DIR="${DEPS_DIR}/venv"
 CATALYST_SITE_PACKAGE="${VENV_DIR}/lib/python3.11/site-packages/catalyst"
@@ -118,9 +116,8 @@ CATALYST_SITE_PACKAGE="${VENV_DIR}/lib/python3.11/site-packages/catalyst"
 if [[ -e "${CATALYST_SITE_PACKAGE}" ]]; then
     info "Found Catalyst python package at: ${CATALYST_SITE_PACKAGE}"
 else
-    CATALYST_BINARY_REPO="https://github.com/PennyLaneAI/catalyst/releases/download/v0.14.1/${CATALYST_PACAKGE}"
-    python3.11 -m pip install ${DEPS_DIR}/${CATALYST_PACAKGE} 
-    wget -P $DEPS_DIR $CATALYST_BINARY_REPO
+    python3.11 -m pip install pennylane==0.44.1 pennylane-catalyst==0.14.1 pennylane-lightning==0.45.0
+
 fi
 
 if [[ -e "${LLVM_DIR}" && -e "${MLIR_DIR}" && -e "${CATALYST_SITE_PACKAGE}" ]]; then

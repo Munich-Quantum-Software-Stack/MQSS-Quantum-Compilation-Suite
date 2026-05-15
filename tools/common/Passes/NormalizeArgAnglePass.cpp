@@ -18,7 +18,7 @@ public:
     llvm::outs() << "\n[Applying Pass: NormalizeAngle]\n";
 
     for (auto [kernel, Info] : analysis.getKernelDialectInfo())
-      performArgAngelNormalization(Info);
+      performArgAngelNormalization(Info.OpQViewMap);
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"

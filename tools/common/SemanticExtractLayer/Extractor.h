@@ -34,7 +34,7 @@ enum Gate {
 
 struct QubitID {
   Value base;
-  std::size_t index;
+  int index;
 };
 
 using tupleVectorsQubitIDs =
@@ -71,7 +71,6 @@ struct QuantumOpView {
 
   bool isAdjoint = false;
   bool hasSideEffects = false;
-  bool isMeasureOp = false;
 
   [[nodiscard]] const QubitOperands &getQubits(QubitRole role) const {
     static const QubitOperands empty;
@@ -101,10 +100,14 @@ struct QuantumOpView {
   }
 };
 
+struct QuantumKernelInfo {
+  int64_t AllocatedQubits = 0;
+  int64_t NumMeasureQubits = 0;
+  std::map<Operation *, QuantumOpView> OpQViewMap;
+};
 
-using QuantumOpInfo = std::map<Operation *, QuantumOpView>;
-
-inline Gate parseGateTy(const StringRef &GateTy) {
+inline Gate
+parseGateTy(const StringRef &GateTy) {
   if (GateTy == "CNOT")
     return CNOT;
   if (GateTy == "PauliX")
@@ -169,7 +172,7 @@ public:
 
   virtual mlir::LogicalResult verifyModule() = 0;
 
-  virtual llvm::DenseMap<func::FuncOp, QuantumOpInfo>
+  virtual llvm::DenseMap<func::FuncOp, QuantumKernelInfo>
   getKernelDialectInfo() = 0;
 
   virtual void addOperation(Operation *NewOp) = 0;

@@ -66,7 +66,7 @@ public:
     llvm::outs() << "\n[Print-quake-gates-pass:]\n";
     auto DialectInfo = analysis.getKernelDialectInfo();
     for (auto &[Kernel, Info] : DialectInfo) {
-      for (auto &[gateop, View] : Info) {
+      for (auto &[gateop, View] : Info.OpQViewMap) {
         if (View.hasSideEffects && View.GateTy != Gate::UNKNOWN)
           llvm::outs() << "GateOp: " << *gateop << "\n";
       }

@@ -108,6 +108,7 @@ include(FetchContent)
 #########################LLVM-LIT TESTING SETTINGS###############################
 
 # TODO: Change this path. Should point to llvm-lit in an LLVM toolchain within build/_Deps
+
 find_program(LLVM_EXTERNAL_LIT
   NAMES llvm-lit lit
   REQUIRED
