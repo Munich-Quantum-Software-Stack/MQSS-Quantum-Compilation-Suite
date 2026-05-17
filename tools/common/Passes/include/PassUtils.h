@@ -240,7 +240,7 @@ static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
 }
 
 static void performNullRotationCancellation(
-    std::map<Operation *, QuantumOpView> OpQuantumView,
+    MapVector<Operation *, QuantumOpView> OpQuantumView,
     std::vector<Gate> GatesToCancel) {
 
   SmallSetVector<Operation *, 16> ToErase;
@@ -277,7 +277,7 @@ static void performNullRotationCancellation(
 }
 
 static void
-performCancellation(std::map<Operation *, QuantumOpView> OpQuantumView,
+performCancellation(MapVector<Operation *, QuantumOpView> OpQuantumView,
                     std::vector<Gate> GatesToCancel, Comparety CompareKey) {
 
   SmallSetVector<Operation *, 16> ToErase;
@@ -514,7 +514,7 @@ static void performReduction(MyModuleAnalysis &analysis,
 }
 
 static void performArgAngelNormalization(
-    std::map<Operation *, QuantumOpView> OpQuantumView) {
+   MapVector<Operation *, QuantumOpView> OpQuantumView) {
 
   SmallSetVector<Operation *, 16> ToErase;
   for (auto &[GateOp, GateQView] : OpQuantumView) {

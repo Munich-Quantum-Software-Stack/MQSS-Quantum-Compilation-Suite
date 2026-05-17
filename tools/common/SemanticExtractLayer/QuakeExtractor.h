@@ -65,7 +65,7 @@ public:
           kernelInfo.OpQViewMap[Op] = view;
         }
       });
-      KernelDialectInfo[kernel] = kernelInfo;
+      KernelDialectInfo[kernel] = std::move(kernelInfo);
     }
   }
 
@@ -98,8 +98,7 @@ public:
     return true;
   }
 
-  llvm::DenseMap<func::FuncOp, QuantumKernelInfo>
-  getKernelDialectInfo() override {
+  MapVector<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
     return KernelDialectInfo;
   }
 
@@ -114,7 +113,7 @@ public:
 
 private:
   ModuleOp module;
-  llvm::DenseMap<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
+  MapVector<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
 
   std::tuple<QubitID, Value> extractQubits(Operation *Operand) {
     QubitID ID;

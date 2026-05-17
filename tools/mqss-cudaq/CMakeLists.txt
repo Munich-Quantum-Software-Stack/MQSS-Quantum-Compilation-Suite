@@ -89,7 +89,6 @@ include_directories(
         ${nlohmann_json_SOURCE_DIR}/include
         ${MQT_QMAP_INCLUDE_DIR}
         ${MQT_CORE_INCLUDE_DIR}
-        ${MQT_CORE_INCLUDE_DIR}
         # ${qdmi_INCLUDE_DIRS}
         # ${qinfo_INCLUDE_DIRS}
         )

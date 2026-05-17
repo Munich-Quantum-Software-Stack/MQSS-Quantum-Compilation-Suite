@@ -154,10 +154,6 @@ include_directories(BEFORE ${MQSS_CATALYST_MAIN_INCLUDE_DIR}
   ${MQSS_BUILD_DIR}/tools/mqss-catalyst/include
 )
 
-add_subdirectory(include) # Must come first to set up targets
-add_subdirectory(lib)
-
-add_subdirectory(cmake/modules)
 
 include(FetchContent)
 
@@ -182,17 +178,21 @@ add_custom_target(check-mqss-code
 
 ################################-MQSS Settings-###############################
 
+add_subdirectory(include) # Must come first to set up targets
+add_subdirectory(lib)
+
 add_executable(mqss-catalyst-opt catalyst.cpp)
 
 # 3. Set include directories so the compiler finds your headers
 target_include_directories(mqss-catalyst-opt
   PRIVATE 
-    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     # ${CMAKE_SOURCE_DIR}/include/Passes
     # 2. Build Includes (CRITICAL): Allows finding the generated .inc files
     ${CMAKE_CURRENT_BINARY_DIR}/include
-     ${MLIR_INCLUDE_DIRS}
+    #${MLIR_INCLUDE_DIRS}
 )
+
 
 # 2. Link the required libraries
 # Note: We must include the Dialects to resolve those "undefined symbols"

@@ -22,6 +22,10 @@ add_mlir_library(MLIRPasses
     MLIRIR
     MLIRPass
     MLIRTransforms
+    MQT::CoreIR
+    MQT::CoreNA
+    MQT::QMapSC
+    MQT::QMapSCHeuristic
 )
 
 if(BUILD_CATALYST)
@@ -32,7 +36,8 @@ endif()
 target_include_directories(MLIRPasses
   PUBLIC
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/../common
+    ${CMAKE_BINARY_DIR}/include
+    ${MQSS_COMMON}
     ${nlohmann_json_SOURCE_DIR}/include
     ${MQT_QMAP_INCLUDE_DIR}
 )

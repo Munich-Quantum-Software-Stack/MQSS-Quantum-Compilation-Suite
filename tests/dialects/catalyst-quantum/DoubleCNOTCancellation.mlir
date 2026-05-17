@@ -44,7 +44,8 @@ module @circuit_DoubleCNOTCancellation {
   }
 }
 
-// CHECK: out_qubits = quantum.custom "PauliX"() %1 : !quantum.bit
+// CHECK: %out_qubits = quantum.custom "PauliX"() %1 : !quantum.bit
 // CHECK: %2 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_0 = quantum.custom "PauliX"() %out_qubits : !quantum.bit
-// CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits_0, %2 : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %2, %out_qubits : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_1 = quantum.custom "PauliX"() %out_qubits_0#1 : !quantum.bit
+// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %out_qubits_1, %out_qubits_0#0 : !quantum.bit, !quantum.bit

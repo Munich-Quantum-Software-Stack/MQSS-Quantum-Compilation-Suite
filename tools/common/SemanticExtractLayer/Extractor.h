@@ -34,7 +34,7 @@ enum Gate {
 
 struct QubitID {
   Value base;
-  int index;
+  int64_t index;
 };
 
 using tupleVectorsQubitIDs =
@@ -66,7 +66,7 @@ struct QubitOperands {
 struct QuantumOpView {
   Gate GateTy = Gate::UNKNOWN;
 
-  std::unordered_map<QubitRole, QubitOperands> qubits;
+  std::map<QubitRole, QubitOperands> qubits;
   SmallVector<mlir::Value, 2> params;
 
   bool isAdjoint = false;
@@ -101,9 +101,9 @@ struct QuantumOpView {
 };
 
 struct QuantumKernelInfo {
-  int64_t AllocatedQubits = 0;
-  int64_t NumMeasureQubits = 0;
-  std::map<Operation *, QuantumOpView> OpQViewMap;
+  size_t AllocatedQubits = 0;
+  size_t NumMeasureQubits = 0;
+  MapVector<Operation *, QuantumOpView> OpQViewMap;
 };
 
 inline Gate
@@ -172,8 +172,7 @@ public:
 
   virtual mlir::LogicalResult verifyModule() = 0;
 
-  virtual llvm::DenseMap<func::FuncOp, QuantumKernelInfo>
-  getKernelDialectInfo() = 0;
+  virtual MapVector<mlir::func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() = 0;
 
   virtual void addOperation(Operation *NewOp) = 0;
 

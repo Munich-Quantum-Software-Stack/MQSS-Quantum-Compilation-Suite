@@ -221,7 +221,7 @@ static bool isContained(QubitID KeyQubit, SmallVector<QubitID, 2> QubitList) {
 }
 
 static bool touchesAny(Operation *Op2, SmallVector<QubitID, 2> Op1QubitIDs,
-                       std::map<Operation *, QuantumOpView> OpQuantumView) {
+                       MapVector<Operation *, QuantumOpView> OpQuantumView) {
 
   for (auto Op1Qubit : Op1QubitIDs) {
     auto Op1Qubitbase = Op1Qubit.base;
@@ -280,5 +280,56 @@ static Operation *createNewGate(Operation *OpToReplace,
                              TargetQubitOps, params, builder, isAdj);
 #endif
   return NewOp;
+}
+
+
+static std::optional<QubitID> getOriginQubit(mlir::Value v) {
+  // llvm::outs() << "Checking: " << v << "\n";
+  while (true) {
+    auto definingOp = v.getDefiningOp();
+    
+    if (!definingOp){
+      // llvm::outs().indent(4) << "def op is NULL\n";
+      return std::nullopt; // block argument or unknown source
+    }
+
+    // llvm::outs().indent(4) << "def op: " << *definingOp << "\n";
+    // Case 1: %q4 = quantum.extract %reg[4]
+    if (definingOp->getName().getStringRef() == "quantum.extract") {
+      mlir::Value reg = definingOp->getOperand(0);
+
+      // You need to adapt this depending on how Catalyst stores the index.
+      // Often it is an IntegerAttr.
+      
+      auto indexAttr = definingOp->getAttrOfType<mlir::IntegerAttr>("idx_attr");
+      if (!indexAttr){
+        // llvm::outs().indent(4) << "Index Attr is null\n";
+        return std::nullopt;
+      }
+      // llvm::outs().indent(4) << "reg: " << reg << ", Index attr: " << indexAttr.getInt() << "\n";
+
+      return QubitID{reg, indexAttr.getInt()};
+    }
+
+    // Case 2:
+    // %out:2 = quantum.custom "CNOT"() %a, %b
+    // %out#0 maps to operand 0
+    // %out#1 maps to operand 1
+    if (definingOp->getName().getStringRef() == "quantum.custom") {
+      auto result = llvm::dyn_cast<mlir::OpResult>(v);
+      if (!result)
+        return std::nullopt;
+
+      unsigned resultNo = result.getResultNumber();
+
+      if (resultNo >= definingOp->getNumOperands())
+        return std::nullopt;
+
+      v = definingOp->getOperand(resultNo);
+      continue;
+    }
+
+    return std::nullopt;
+  }
 }
 

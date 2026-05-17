@@ -78,10 +78,9 @@ public:
     
     for (auto kernel : QuantumKernels) {
       QuantumKernelInfo kernelInfo;
-      llvm::outs() << "Analyzing : " << kernel.getSymName() << "\n";
+      
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quantum") {
-
           if (auto measop = dyn_cast<catalyst::quantum::MeasureOp>(Op)) {
               kernelInfo.NumMeasureQubits += getMeasuredQubitCount(measop);
               return;
@@ -92,10 +91,10 @@ public:
           }
           
           auto view = createQuantumView(Op);
-          kernelInfo.OpQViewMap[Op] = view;
+          kernelInfo.OpQViewMap[Op] = std::move(view);
         }
       });
-      KernelDialectInfo[kernel] = kernelInfo;
+      KernelDialectInfo[kernel] = std::move(kernelInfo);
     }
   }
 
@@ -126,7 +125,7 @@ public:
     return true;
   }
 
-  llvm::DenseMap<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
+  MapVector<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
     return KernelDialectInfo;
   }
 
@@ -142,7 +141,7 @@ public:
 
 private:
   ModuleOp module;
-  llvm::DenseMap<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
+  MapVector<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
 
   QuantumOpView createQuantumView(Operation *Op) {
     QuantumOpView view;
