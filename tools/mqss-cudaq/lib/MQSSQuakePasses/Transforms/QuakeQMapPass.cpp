@@ -386,8 +386,8 @@ public:
       // operations
       loadXYZGatesToQC(op, qc);
       // TODO: Assumed at the moment to work only on a single qubit
-      //loadSTHGatesToQC(op, qc);
-      //loadMeasurementsToQC(op, qc, measurements);
+      loadSTHGatesToQC(op, qc);
+      loadMeasurementsToQC(op, qc, measurements);
     });
 #ifdef DEBUG
     // Printing the parsed mlir quantum kernel

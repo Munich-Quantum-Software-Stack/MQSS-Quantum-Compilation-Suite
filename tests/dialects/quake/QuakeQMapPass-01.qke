@@ -15,9 +15,9 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
     quake.x [%5] %6 : (!quake.ref, !quake.ref) -> ()
     %7 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
     %measOut = quake.mz %7 : (!quake.ref) -> !quake.measure
-    %8 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+    %8 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
     %measOut_0 = quake.mz %8 : (!quake.ref) -> !quake.measure
-    %9 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
+    %9 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
     %measOut_1 = quake.mz %9 : (!quake.ref) -> !quake.measure
     %10 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
     %measOut_2 = quake.mz %10 : (!quake.ref) -> !quake.measure

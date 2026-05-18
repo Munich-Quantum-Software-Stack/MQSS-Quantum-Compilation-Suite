@@ -108,5 +108,10 @@ def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
     A Dialect agnostic mapping pass
   }];
  
+  let options = [
+    Option<"input", "input", "std::string",
+      /*default=*//*default=*/"\"\"", "Path to json input.">,
+  ];
+
  let constructor = "mqss_catalyst::opt::CommonMappingPass()";
 }

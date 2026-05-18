@@ -14,26 +14,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     apt-get autoremove -y --purge && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ## [Prerequisites]
-RUN apt-get update && apt-get install -y --no-install-recommends python3 && \
-    apt-get autoremove -y --purge && apt-get clean && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y --no-install-recommends python3 && \
+#     apt-get autoremove -y --purge && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ## [Environment Variables]
-ENV CUDAQ_INSTALL_PREFIX=/usr/local/cudaq
-ENV CUQUANTUM_INSTALL_PREFIX=/usr/local/cuquantum
-ENV CUTENSOR_INSTALL_PREFIX=/usr/local/cutensor
-ENV LLVM_INSTALL_PREFIX=/usr/local/llvm
-ENV BLAS_INSTALL_PREFIX=/usr/local/blas
-ENV ZLIB_INSTALL_PREFIX=/usr/local/zlib
-ENV OPENSSL_INSTALL_PREFIX=/usr/local/openssl
-ENV CURL_INSTALL_PREFIX=/usr/local/curl
-ENV AWS_INSTALL_PREFIX=/usr/local/aws
+# ENV CUDAQ_INSTALL_PREFIX=/usr/local/cudaq
+# ENV CUQUANTUM_INSTALL_PREFIX=/usr/local/cuquantum
+# ENV CUTENSOR_INSTALL_PREFIX=/usr/local/cutensor
+# ENV LLVM_INSTALL_PREFIX=/usr/local/llvm
+# ENV BLAS_INSTALL_PREFIX=/usr/local/blas
+# ENV ZLIB_INSTALL_PREFIX=/usr/local/zlib
+# ENV OPENSSL_INSTALL_PREFIX=/usr/local/openssl
+# ENV CURL_INSTALL_PREFIX=/usr/local/curl
+# ENV AWS_INSTALL_PREFIX=/usr/local/aws
 
-## [Build Dependencies]
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        wget git unzip \
-        python3-dev python3-pip && \
-    python3 -m pip install --no-cache-dir numpy && \
-    apt-get autoremove -y --purge && apt-get clean && rm -rf /var/lib/apt/lists/*
+# ## [Build Dependencies]
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#         wget git unzip \
+#         python3-dev python3-pip && \
+#     python3 -m pip install --no-cache-dir numpy && \
+#     apt-get autoremove -y --purge && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && \
     apt-get install -y \
@@ -42,8 +42,6 @@ RUN apt-get update && \
     openssh-client \
     libgtest-dev \
     pkg-config \
-    bison \
-    flex \
     libeigen3-dev \
     libboost-program-options-dev \
     libzip-dev && \
@@ -51,6 +49,6 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 RUN git config --global gc.auto 0
-RUN git clone https://github.com/NVIDIA/cuda-quantum.git /workspaces/cuda-quantum
-RUN LLVM_PROJECTS="clang;lld;mlir;python-bindings;runtimes;compiler-rt" bash /workspaces/cuda-quantum/scripts/install_prerequisites.sh -t clang16
-RUN rm -rf /root/.llvm-project
+# RUN git clone https://github.com/NVIDIA/cuda-quantum.git /workspaces/cuda-quantum
+RUN make all -C /workspaces/MQSS-Passes-Suite
+#RUN rm -rf /root/.llvm-project

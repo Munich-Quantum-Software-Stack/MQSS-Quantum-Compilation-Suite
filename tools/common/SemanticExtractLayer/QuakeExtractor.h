@@ -52,16 +52,12 @@ public:
       QuantumKernelInfo kernelInfo;
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quake") {
-          if (auto quakemeasop = dyn_cast<quake::MeasurementInterface>(Op)) {
-            kernelInfo.NumMeasureQubits +=
-                getMeasurementResultCount(quakemeasop);
-            return;
-          }
+
           if (auto alloc = dyn_cast<quake::AllocaOp>(Op)) {
             kernelInfo.AllocatedQubits += getAllocatedQubits(alloc);
             return;
           }
-          auto view = createQuantumView(Op);
+          auto view = createQuantumView(Op, kernelInfo.NumMeasureQubits);
           kernelInfo.OpQViewMap[Op] = view;
         }
       });
@@ -78,7 +74,8 @@ public:
     auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
     assert(!QInfo.count(NewOp) &&
            "Adding New Op: Op already present in QunatumInfoMap");
-    auto view = createQuantumView(NewOp);
+    auto view =
+        createQuantumView(NewOp, KernelDialectInfo[funcOp].NumMeasureQubits);
     QInfo[NewOp] = view;
   }
 
@@ -114,6 +111,7 @@ public:
 private:
   ModuleOp module;
   MapVector<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
+  int nextClassicalBit=0;
 
   std::tuple<QubitID, Value> extractQubits(Operation *Operand) {
     QubitID ID;
@@ -127,7 +125,8 @@ private:
     return {ID, nullptr};
   }
 
-  const QuantumOpView createQuantumView(Operation *Op) {
+  const QuantumOpView createQuantumView(Operation *Op,
+                                        size_t &NumMeasureQubits) {
 
     QuantumOpView view;
     if (!mlir::isMemoryEffectFree(Op)) {
@@ -163,6 +162,22 @@ private:
       ID.base = extract_refop.getVeq();
       ID.index = extract_refop.getConstantIndex();
       view.getQubits(QubitRole::Target).ids.push_back(ID);
+    } 
+    else if (auto quakemeasop = dyn_cast<quake::MeasurementInterface>(Op)) {
+      NumMeasureQubits += getMeasurementResultCount(quakemeasop, view.measurements);
+      view.isMeasureOp = true;
+
+      for (unsigned i = 0; i < quakemeasop->getNumOperands(); i++) {
+        QubitID ID;
+        auto resop = quakemeasop->getResults()[i];
+
+        auto gop = quakemeasop->getOperand(i);
+        ID.base = gop;
+        ID.index = -1;
+        view.getQubits(QubitRole::Target).ids.push_back(ID);
+        view.getQubits(QubitRole::Target).in.push_back(gop);
+        view.getQubits(QubitRole::Target).out.push_back(resop);
+      }
     }
     return view;
   }
@@ -173,19 +188,28 @@ private:
     return funcOp;
   }
 
-  int64_t getMeasurementResultCount(quake::MeasurementInterface meas) {
+  int64_t getMeasurementResultCount(quake::MeasurementInterface meas,
+                                    SmallVector<MeasurementInfo> &measurements) {
     // Usually the measured qubit/register is operand 0.
     if (meas->getNumOperands() == 0)
       return 0;
 
-    mlir::Type measuredTy = meas->getOperand(0).getType();
+    auto operand = meas->getOperand(0);
 
-    if (mlir::isa<quake::RefType>(measuredTy))
+    if (auto RefOp = dyn_cast<quake::ExtractRefOp>(operand.getDefiningOp())) {
+      auto q = static_cast<int64_t>(RefOp.getConstantIndex());
+      measurements.push_back({q, nextClassicalBit++});
       return 1;
+    }
 
-    if (auto veqTy = mlir::dyn_cast<quake::VeqType>(measuredTy)) {
-      if (veqTy.hasSpecifiedSize())
+    mlir::Type measuredTy = operand.getType();
+    if (auto veqTy = dyn_cast<quake::VeqType>(measuredTy)) {
+      if (veqTy.hasSpecifiedSize()){
+        for(auto q=0; q < veqTy.getSize(); ++q){
+          measurements.push_back({q, nextClassicalBit++});
+        }
         return static_cast<int64_t>(veqTy.getSize());
+      }
 
       return -1; // dynamic-size register
     }
@@ -200,6 +224,6 @@ private:
         int n = veqTy.getSize();
         return n;
       }
-      return 0;
+    return 0;
   }
 };

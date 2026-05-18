@@ -1,6 +1,6 @@
 
-#include "Utils/quantumutils.h"
 #include "Extractor.h"
+#include "Utils/quantumutils.h"
 
 // static const StringSet<> rotationsSet = {"RX", "RY", "RZ"};
 // static const StringSet<> hermitianSet = {"Hadamard", "PauliX", "PauliY",
@@ -43,6 +43,7 @@ static const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
   return {};
 }
 
+
 class CatalystQuantumAnalysis : public MyModuleAnalysis {
 
 public:
@@ -75,22 +76,21 @@ public:
   void gatherOpInfo() override {
     auto QuantumKernels = fetchQuantumKernels();
 
-    
     for (auto kernel : QuantumKernels) {
       QuantumKernelInfo kernelInfo;
-      
+
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quantum") {
-          if (auto measop = dyn_cast<catalyst::quantum::MeasureOp>(Op)) {
-              kernelInfo.NumMeasureQubits += getMeasuredQubitCount(measop);
-              return;
-          }
+          // if (auto measop = dyn_cast<catalyst::quantum::MeasureOp>(Op)) {
+          //     kernelInfo.NumMeasureQubits += getMeasuredQubitCount(measop);
+          //     return;
+          // }
           if (auto allocaOp = dyn_cast<catalyst::quantum::AllocOp>(Op)) {
-              kernelInfo.AllocatedQubits = allocaOp.getNqubitsAttr().value();
-              return;
+            kernelInfo.AllocatedQubits = allocaOp.getNqubitsAttr().value();
+            return;
           }
-          
-          auto view = createQuantumView(Op);
+
+          auto view = createQuantumView(Op, kernelInfo.NumMeasureQubits);
           kernelInfo.OpQViewMap[Op] = std::move(view);
         }
       });
@@ -105,7 +105,8 @@ public:
     auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
     assert(!QInfo.count(NewOp) &&
            "Adding New Op: Op already present in QunatumInfoMap");
-    auto view = createQuantumView(NewOp);
+    auto view =
+        createQuantumView(NewOp, KernelDialectInfo[funcOp].NumMeasureQubits);
     QInfo[NewOp] = view;
   }
 
@@ -129,9 +130,10 @@ public:
     return KernelDialectInfo;
   }
 
-  const QuantumOpView getOpInfo(Operation *Op) override{
+  const QuantumOpView getOpInfo(Operation *Op) override {
     auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
-    assert(KernelDialectInfo.count(funcOp) && "Get Op Info: No QuantumOpInfo for funcOp");
+    assert(KernelDialectInfo.count(funcOp) &&
+           "Get Op Info: No QuantumOpInfo for funcOp");
     auto QInfo = KernelDialectInfo[funcOp].OpQViewMap;
     assert(QInfo.count(Op) && "Get Op Info: Op not present QuantumInfoMap");
     return QInfo[Op];
@@ -142,8 +144,9 @@ public:
 private:
   ModuleOp module;
   MapVector<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
+  int nextClassicalBit = 0;
 
-  QuantumOpView createQuantumView(Operation *Op) {
+  QuantumOpView createQuantumView(Operation *Op, size_t &NumMeasureQubits) {
     QuantumOpView view;
     if (hasQuantumEffect(Op)) {
       view.hasSideEffects = true;
@@ -195,6 +198,23 @@ private:
         }
       }
     }
+    if (auto measop = dyn_cast<catalyst::quantum::MeasureOp>(Op)) {
+      view.isMeasureOp = true;
+      NumMeasureQubits += getMeasuredQubitCount(measop, view.measurements);
+
+      for (unsigned i = 0; i < measop->getNumOperands(); i++) {
+        QubitID ID;
+        auto resop = measop->getResults()[i];
+
+        auto gop = measop->getOperand(i);
+        ID.base = gop;
+        ID.index = -1;
+        view.getQubits(QubitRole::Target).ids.push_back(ID);
+        view.getQubits(QubitRole::Target).in.push_back(gop);
+        view.getQubits(QubitRole::Target).out.push_back(resop);
+      }
+    }
+
     // llvm::outs() << "Op: " << *Op << "\n";
     // for(auto c : OpView.ControlQubits){
     //   llvm::outs().indent(4) << " Ctrl: " << c.base << "\n";
@@ -211,12 +231,16 @@ private:
     return funcOp;
   }
 
-  static int64_t getMeasuredQubitCount(catalyst::quantum::MeasureOp op) {
+  int64_t getMeasuredQubitCount(catalyst::quantum::MeasureOp op,
+                                SmallVector<MeasurementInfo> &measurements) {
     int64_t count = 0;
 
-    for (mlir::Value operand : op->getOperands()) {
-      if (mlir::isa<catalyst::quantum::QubitType>(operand.getType()))
+    for (auto operand : op->getOperands()) {
+      if (mlir::isa<catalyst::quantum::QubitType>(operand.getType())) {
+        auto originOpQubit = getOriginQubit(operand);
+        measurements.push_back({originOpQubit->index, nextClassicalBit++});
         ++count;
+      }
     }
 
     return count;
