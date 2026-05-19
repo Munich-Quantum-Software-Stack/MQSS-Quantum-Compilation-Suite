@@ -18,6 +18,7 @@ add_mlir_library(MLIRPasses
   LINK_LIBS PUBLIC
     MLIRQuantum
     MLIRTensorDialect
+    MLIRArithDialect
     MLIRFuncDialect
     MLIRIR
     MLIRPass

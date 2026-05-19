@@ -126,6 +126,18 @@ public:
     return true;
   }
 
+   void clearKernelBody(func::FuncOp &kernel) override{
+        // cleaning the mlir::funcOp corresponding to the quake circuit
+    assert(KernelDialectInfo.count(kernel) && "No QuantumOpInfo for funcOp");
+    for (auto &block : kernel.getBody()) {
+      block.clear(); // Clears all operations in the current block
+    }
+    auto &QInfo = KernelDialectInfo[kernel].OpQViewMap;
+    for(auto &[Op, qview] : QInfo){
+      QInfo.erase(Op);
+    }
+  }
+
   MapVector<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
     return KernelDialectInfo;
   }

@@ -45,7 +45,6 @@ struct PassInfoty {
   Comparety CompareKey;
 };
 
-
 struct ReductionPassInfoty {
   std::vector<Gate> GatesToCancel;
   Gate NewGateTy;
@@ -90,7 +89,6 @@ public:
 private:
   std::vector<CommuteTy> CommuteCandidates;
 };
-
 
 static std::vector<Value> getQubitValues(std::vector<QubitID> QubitVector) {
   std::vector<Value> QubitValues;
@@ -250,7 +248,8 @@ static bool touchesAny(Operation *Op2, SmallVector<QubitID, 2> Op1QubitIDs,
   return false;
 }
 
-static bool touchesAny(Operation *Op2, SmallVector<mlir::Value, 2> Op1OutQubits) {
+static bool touchesAny(Operation *Op2,
+                       SmallVector<mlir::Value, 2> Op1OutQubits) {
 
   for (auto OutQubit : Op1OutQubits) {
 
@@ -263,7 +262,7 @@ static bool touchesAny(Operation *Op2, SmallVector<mlir::Value, 2> Op1OutQubits)
   return false;
 }
 
-static Operation *createNewGate(Operation *OpToReplace,
+static Operation *createNewGate(Location loc,
                                 llvm::StringRef NewGateTy,
                                 SmallVector<mlir::Value, 2> ControlQubitOps,
                                 SmallVector<mlir::Value, 2> TargetQubitOps,
@@ -272,12 +271,52 @@ static Operation *createNewGate(Operation *OpToReplace,
 
   Operation *NewOp;
 #ifdef BUILD_CUDAQ_ENABLED
-  NewOp = createQuakeGate(OpToReplace->getLoc(), NewGateTy, ControlQubitOps,
+  NewOp = createQuakeGate(loc, NewGateTy, ControlQubitOps,
                           TargetQubitOps, params, builder, isAdj);
 #endif
 #ifdef BUILD_CATALYST_ENABLED
-  NewOp = createCatalystGate(OpToReplace, NewGateTy, ControlQubitOps,
+  NewOp = createCatalystGate(loc, NewGateTy, ControlQubitOps,
                              TargetQubitOps, params, builder, isAdj);
 #endif
   return NewOp;
+}
+
+static Value createAllocOp(Location loc, mlir::IRRewriter &builder,
+                           size_t numQubits) {
+
+  Value NewOp;
+#ifdef BUILD_CUDAQ_ENABLED
+  NewOp = createQuakeAlloca(loc, builder, numQubits);
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+  NewOp = createCatalystAlloca(loc, builder, numQubits);
+#endif
+  return NewOp;
+}
+
+static Value createExtractOp(Location loc, mlir::IRRewriter &builder,
+                             Value qubits, unsigned int targetQubit) {
+
+  Value NewOp;
+#ifdef BUILD_CUDAQ_ENABLED
+  NewOp = createQuakeExtractRefOp(loc, builder, qubits, targetQubit);
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+  NewOp = createCatalystExtractRefOp(loc, builder, qubits, targetQubit);
+#endif
+  return NewOp;
+}
+
+static Value createArithFloatOp(Location loc,
+                                                 mlir::IRRewriter &builder,
+                                                 llvm::APFloat constantValue) {
+
+  mlir::arith::ConstantFloatOp NewOp;
+#ifdef BUILD_CUDAQ_ENABLED
+  NewOp = createQuakeConstOp(loc, builder, constantValue);
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+  NewOp = createCatalystConstOp(loc, builder, constantValue);
+#endif
+  return NewOp.getResult();
 }

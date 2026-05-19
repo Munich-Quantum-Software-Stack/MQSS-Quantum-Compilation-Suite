@@ -224,7 +224,7 @@ static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
       auto TargetInQubitOps =
           Qview[OpToSwitchOut].getQubits(QubitRole::Target).in;
 
-      auto *NewOp = createNewGate(OpToSwitchOut, ReplacementGateTy, {},
+      auto *NewOp = createNewGate(OpToSwitchOut->getLoc(), ReplacementGateTy, {},
                                   TargetInQubitOps, {}, builder);
 
       analysis.addOperation(NewOp);
@@ -484,7 +484,7 @@ static void performReduction(MyModuleAnalysis &analysis,
       auto RefOptargetQubits =
           OpQuantumView[FirstOp].getQubits(QubitRole::Target).in;
 
-      auto *NewOp = createNewGate(FirstOp, parseGateTy(PassInfo.NewGateTy),
+      auto *NewOp = createNewGate(FirstOp->getLoc(), parseGateTy(PassInfo.NewGateTy),
                                   RefOpCtrlQubits, RefOptargetQubits,
                                   RefOpParams, builder);
 
@@ -549,7 +549,7 @@ static void performArgAngelNormalization(
     auto GateCtrlQubits = GateQView.getQubits(QubitRole::Control).in;
     auto GateTargetQubits = GateQView.getQubits(QubitRole::Target).in;
 
-    auto *NewOp = createNewGate(GateOp, parseGateTy(GateQView.GateTy),
+    auto *NewOp = createNewGate(GateOp->getLoc(), parseGateTy(GateQView.GateTy),
                                 GateCtrlQubits, GateTargetQubits,
                                 GateQView.params, builder, GateQView.isAdjoint);
 
@@ -593,20 +593,21 @@ static void performCNOTReversal(MyModuleAnalysis &analysis) {
       std::vector<Operation *> NewPattern;
       auto ControlInQubitOps = GateQView.getQubits(QubitRole::Control).in;
       auto TargetInQubitOps = GateQView.getQubits(QubitRole::Target).in;
-      auto NewGate1 = createNewGate(GateOp, "H", {}, TargetInQubitOps,
+      auto loc = GateOp->getLoc();
+      auto NewGate1 = createNewGate(loc, "H", {}, TargetInQubitOps,
                                     GateQView.params, builder);
 
-      auto NewGate2 = createNewGate(GateOp, "H", {}, ControlInQubitOps,
+      auto NewGate2 = createNewGate(loc, "H", {}, ControlInQubitOps,
                                     GateQView.params, builder);
 
       auto NewGate3 =
-          createNewGate(GateOp, "CNOT", TargetInQubitOps, ControlInQubitOps,
+          createNewGate(loc, "CNOT", TargetInQubitOps, ControlInQubitOps,
                         GateQView.params, builder);
 
-      auto NewGate4 = createNewGate(GateOp, "H", {}, TargetInQubitOps,
+      auto NewGate4 = createNewGate(loc, "H", {}, TargetInQubitOps,
                                     GateQView.params, builder);
 
-      auto NewGate5 = createNewGate(GateOp, "H", {}, ControlInQubitOps,
+      auto NewGate5 = createNewGate(loc, "H", {}, ControlInQubitOps,
                                     GateQView.params, builder);
 
       analysis.addOperation(NewGate1);
@@ -722,19 +723,20 @@ static void performDecomposition(MyModuleAnalysis &analysis,
       Operation *Gate1;
       Operation *Gate2;
       Operation *Gate3;
+      auto loc = GateOp->getLoc();
       if (GateQView.GateTy == Gate::CNOT) {
-        Gate1 = createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
+        Gate1 = createNewGate(loc, "H", ControlInQubitOps, TargetInQubitOps,
                               GateQView.params, builder);
-        Gate2 = createNewGate(GateOp, "CZ", ControlInQubitOps, TargetInQubitOps,
+        Gate2 = createNewGate(loc, "CZ", ControlInQubitOps, TargetInQubitOps,
                               GateQView.params, builder);
-        Gate3 = createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
+        Gate3 = createNewGate(loc, "H", ControlInQubitOps, TargetInQubitOps,
                               GateQView.params, builder);
       } else {
-        Gate1 = createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
+        Gate1 = createNewGate(loc, "H", ControlInQubitOps, TargetInQubitOps,
                               GateQView.params, builder);
-        Gate2 = createNewGate(GateOp, "CNOT", ControlInQubitOps,
+        Gate2 = createNewGate(loc, "CNOT", ControlInQubitOps,
                               TargetInQubitOps, GateQView.params, builder);
-        Gate3 = createNewGate(GateOp, "H", ControlInQubitOps, TargetInQubitOps,
+        Gate3 = createNewGate(loc, "H", ControlInQubitOps, TargetInQubitOps,
                               GateQView.params, builder);
       }
       // Add the newly created operation into the KernelDialectInfo Map

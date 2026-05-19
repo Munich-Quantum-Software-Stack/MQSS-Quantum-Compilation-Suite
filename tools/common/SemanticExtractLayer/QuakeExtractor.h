@@ -79,6 +79,30 @@ public:
     QInfo[NewOp] = view;
   }
 
+
+  void clearKernelBody(func::FuncOp &kernel) override{
+        // cleaning the mlir::funcOp corresponding to the quake circuit
+    assert(KernelDialectInfo.count(kernel) && "No QuantumOpInfo for funcOp");
+    for (auto &block : kernel.getBody()) {
+      block.clear(); // Clears all operations in the current block
+    }
+    auto &QInfo = KernelDialectInfo[kernel].OpQViewMap;
+    for(auto &[Op, qview] : QInfo){
+      QInfo.erase(Op);
+    }
+  }
+  // void UpdateFunc(func::FuncOp *NewOp) {
+  //   auto funcOp = NewOp->getParentOfType<mlir::func::FuncOp>();
+  //   assert(funcOp && "Adding New Op: Parent Function not found!");
+  //   assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
+  //   auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
+  //   assert(!QInfo.count(NewOp) &&
+  //          "Adding New Op: Op already present in QunatumInfoMap");
+  //   auto view =
+  //       createQuantumView(NewOp, KernelDialectInfo[funcOp].NumMeasureQubits);
+  //   QInfo[NewOp] = view;
+  // }
+
   bool UpdateOperands(Operation *Op, QubitRole Role, Value OrigValue,
                       Value NewValue) {
     auto funcOp = getOpParentFunc(Op);

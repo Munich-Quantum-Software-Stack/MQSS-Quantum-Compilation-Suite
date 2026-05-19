@@ -160,7 +160,78 @@ void loadMeasureOp(mlir::Operation *measureOp, QuantumOpView qview,
   }
 }
 
-void performMapping(MyModuleAnalysis &analysis, Architecture architecture, Configuration settings) {
+void createMappedCircuit(func::FuncOp &kernel, size_t AllocatedQubits,
+                         QuantumComputation &qcMapped) {
+
+  mlir::IRRewriter builder(kernel->getContext());
+  mlir::Location loc = kernel.getLoc();
+
+  mlir::Block &entry = kernel.getBody().front();
+
+  // entry.clear();                         // erase old ops
+  builder.setInsertionPointToEnd(&entry); // CRITICAL
+
+  // Location loc = kernel.getLoc();
+  Value newAllocOp = createAllocOp(loc, builder, AllocatedQubits);
+  llvm::outs().indent(4) << "Alloc Op: " << newAllocOp << "\n";
+
+  for (const auto &op : qcMapped) {
+    if (op->getType() == qc::Barrier)
+      continue;
+    auto &targets = op->getTargets();
+    auto &controls = op->getControls();
+    auto parameter = op->getParameter();
+
+    // defining the list of controls, targets and parameters
+    SmallVector<Value, 2> params = {};
+    SmallVector<Value, 2> controlValues = {};
+    SmallVector<Value, 2> targetValues = {};
+
+    for (auto target : targets) {
+      auto targetRefOp = createExtractOp(loc, builder, newAllocOp, target);
+      targetValues.push_back(targetRefOp);
+    }
+    for (auto ctrl : controls) {
+      auto controlRef = createExtractOp(loc, builder, newAllocOp, ctrl.qubit);
+      controlValues.push_back(controlRef);
+    }
+    for (auto p : parameter) {
+      // TODO: Apparently all the parameters are floats in QC, may be the case
+      //       this is not always true
+      llvm::APFloat constantValue(p);
+      auto constantOp = createArithFloatOp(loc, builder, constantValue);
+      llvm::outs().indent(4) << "-->Const Op: " << constantOp << "\n";
+      params.push_back(constantOp);
+    }
+
+    llvm::outs().indent(4) << "-->Gate ty to create: " << op->getType() << "\n";
+
+    mlir::Operation *newop;
+
+    if (op->getType() == qc::X) {
+      newop = createNewGate(loc, parseGateTy(Gate::CNOT), controlValues,
+                            targetValues, params, builder);
+      llvm::outs().indent(4) << "-->CNOT: " << *newop << "\n";
+    } else if (op->getType() == qc::H) {
+      newop = createNewGate(loc, parseGateTy(Gate::H), controlValues,
+                            targetValues, params, builder);
+      llvm::outs().indent(4) << "-->H: " << *newop << "\n";
+    } else if (op->getType() == qc::SWAP) {
+      newop = createNewGate(loc, parseGateTy(Gate::SWAP), controlValues,
+                            targetValues, params, builder);
+      llvm::outs().indent(4) << "-->SWAP: " << *newop << "\n";
+    }
+  }
+
+  builder.create<func::ReturnOp>(loc);
+#ifdef DEBUG
+  std::cout << "Dumping QC after mapping:\n";
+  qcMapped.print(std::cout);
+#endif
+}
+
+void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
+                    Configuration settings) {
 
   for (auto &[kernel, info] : analysis.getKernelDialectInfo()) {
 
@@ -178,19 +249,21 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture, Confi
       }
     }
 
-
     llvm::errs() << "--> Before mapping, Dumping QC:\n";
     qc.print(std::cout);
 
     // Map the circuit
     const auto mapper = std::make_unique<HeuristicMapper>(qc, architecture);
     mapper->map(settings);
-    // TODO: There should be other way to get the mapped circuit.
-    //       I do not like to down the mapped circuit to QASM and
-    //        then back to qc
+
     auto qcMapped = qc::QuantumComputation();
     qcMapped = mapper->moveMappedCircuit();
 
+    // cleaning the mlir::funcOp corresponding to the quake circuit
+
+    analysis.clearKernelBody(kernel);
+
+    createMappedCircuit(kernel, info.AllocatedQubits, qcMapped);
   }
 }
 
@@ -217,7 +290,6 @@ class Mapping : public mqss_backend::CommonMappingPassBase<Mapping> {
     auto settings = config.settings;
 
     auto &analysis = getAnalysis<DialectAnalysis>();
-    auto KernelDialectInfo = analysis.getKernelDialectInfo();
 
     performMapping(analysis, architecture, settings);
     if (failed(analysis.verifyModule())) {

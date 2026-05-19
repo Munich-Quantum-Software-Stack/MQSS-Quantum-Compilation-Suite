@@ -1,13 +1,16 @@
 
 
 #include "IR/QuantumOps.h"
+#include "mlir/AsmParser/AsmParser.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 
 using namespace mlir;
+using namespace catalyst;
 
-inline catalyst::quantum::CustomOp
+inline quantum::CustomOp
 isCatalystQuantumGateOp(mlir::Operation *op) {
 
-  if (auto g = llvm::dyn_cast<catalyst::quantum::CustomOp>(op)) {
+  if (auto g = llvm::dyn_cast<quantum::CustomOp>(op)) {
     return g;
   }
   return nullptr;
@@ -15,28 +18,29 @@ isCatalystQuantumGateOp(mlir::Operation *op) {
 
 inline bool hasQuantumEffect(Operation *op) {
   for (auto type : op->getOperandTypes()) {
-    if (isa<catalyst::quantum::QubitType>(type))
+    if (isa<quantum::QubitType>(type))
       return true;
   }
   for (auto type : op->getResultTypes()) {
-    if (isa<catalyst::quantum::QubitType>(type))
+    if (isa<quantum::QubitType>(type))
       return true;
   }
   return false;
 }
 
-inline catalyst::quantum::CustomOp
-createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
+inline quantum::CustomOp
+createCatalystGate(Location loc, llvm::StringRef NewGateTy,
                    const SmallVector<mlir::Value, 2> ControlQubitsOps,
                    const SmallVector<mlir::Value, 2> TargetQubitOps,
                    const mlir::ValueRange params, mlir::IRRewriter &builder,
                    bool isAdj = false) {
 
-  catalyst::quantum::CustomOp NewOp = nullptr;
- 
+  quantum::CustomOp NewOp = nullptr;
+
   if (NewGateTy == "PauliZ" || NewGateTy == "PauliX" || NewGateTy == "PauliY" ||
       NewGateTy == "H" || NewGateTy == "RX" || NewGateTy == "RY" ||
-      NewGateTy == "RZ" || NewGateTy == "S" || NewGateTy == "SAdj") {
+      NewGateTy == "RZ" || NewGateTy == "S" || NewGateTy == "SAdj" ||
+      NewGateTy == "SWAP") {
 
     std::vector<mlir::Type> TargetQubitTys;
     
@@ -48,8 +52,8 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
       isAdj=true;
     }
 
-    NewOp = builder.create<catalyst::quantum::CustomOp>(
-        OpToReplace->getLoc(),
+    NewOp = builder.create<quantum::CustomOp>(
+        loc,
         /*out_qubits=*/mlir::TypeRange(TargetQubitTys),
         /*out_ctrl_qubits=*/mlir::TypeRange(),
         /*params=*/params,
@@ -66,8 +70,8 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
     Value control = ControlQubitsOps[0];
     Value target = TargetQubitOps[0];
 
-    NewOp = builder.create<catalyst::quantum::CustomOp>(
-        OpToReplace->getLoc(),
+    NewOp = builder.create<quantum::CustomOp>(
+        loc,
         /*out_qubits=*/mlir::TypeRange{control.getType(), target.getType()},
         /*out_ctrl_qubits=*/mlir::TypeRange{},
         /*params=*/mlir::ValueRange{},
@@ -86,8 +90,8 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
     Value control = ControlQubitsOps[0];
     Value target = TargetQubitOps[0];
 
-    NewOp = builder.create<catalyst::quantum::CustomOp>(
-        OpToReplace->getLoc(),
+    NewOp = builder.create<quantum::CustomOp>(
+        loc,
         /*out_qubits=*/mlir::TypeRange{control.getType(), target.getType()},
         /*out_ctrl_qubits=*/mlir::TypeRange{},
         /*params=*/mlir::ValueRange{},
@@ -99,4 +103,42 @@ createCatalystGate(Operation *OpToReplace, llvm::StringRef NewGateTy,
         /*in_ctrl_values=*/mlir::ValueRange{});
   }
   return NewOp;
+}
+
+inline mlir::arith::ConstantFloatOp createCatalystConstOp(Location loc,
+                                                 mlir::IRRewriter &builder,
+                                                 llvm::APFloat constantValue) {
+
+  // Define the type as f64.
+  auto floatType = builder.getF64Type();
+  return builder.create<mlir::arith::ConstantFloatOp>(loc, floatType, constantValue);
+}
+
+inline quantum::AllocOp
+createCatalystAlloca(Location loc, mlir::IRRewriter &builder, size_t numQubits) {
+
+  auto regTy = quantum::ResultType::get(builder.getContext());
+  mlir::Type qregTy = mlir::parseType("!quantum.reg", builder.getContext());
+  assert(qregTy && "failed to parse !quantum.reg");
+
+  return builder.create<quantum::AllocOp>(
+      loc, qregTy,
+      /*nqubits=*/mlir::Value{},
+      /*nqubits_attr=*/builder.getI64IntegerAttr(numQubits));
+}
+
+inline quantum::ExtractOp createCatalystExtractRefOp(Location loc,
+                                                     mlir::IRRewriter &builder,
+                                                     Value allocQubits,
+                                                     unsigned int targetQubit) {
+
+  mlir::Type qbitTy = mlir::parseType("!quantum.bit", builder.getContext());
+
+  assert(qbitTy && "failed to parse !quantum.bit");
+
+  auto indexAttr = builder.getI64IntegerAttr(targetQubit);
+
+  return builder.create<quantum::ExtractOp>(loc, qbitTy, allocQubits,
+                                            /*index=*/mlir::Value{},
+                                            /*index_attr=*/indexAttr);
 }

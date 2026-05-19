@@ -1,11 +1,11 @@
 
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Pass/PassRegistry.h"
-#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -29,6 +29,7 @@ enum Gate {
   RZ,
   S,
   SAdj,
+  SWAP,
   UNKNOWN
 };
 
@@ -43,10 +44,7 @@ using tupleVectorsQubitIDs =
 using tupleVectorsValues =
     std::tuple<SmallVector<mlir::Value, 2>, SmallVector<mlir::Value, 2>>;
 
-enum class QubitRole {
-  Control,
-  Target
-};
+enum class QubitRole { Control, Target };
 
 struct QubitOperands {
   SmallVector<QubitID, 2> ids;
@@ -57,9 +55,7 @@ struct QubitOperands {
     return ids.empty() && in.empty() && out.empty();
   }
 
-  [[nodiscard]] bool hasValueSemantics() const {
-    return !out.empty();
-  }
+  [[nodiscard]] bool hasValueSemantics() const { return !out.empty(); }
 };
 
 struct MeasurementInfo {
@@ -84,26 +80,18 @@ struct QuantumOpView {
     return it == qubits.end() ? empty : it->second;
   }
 
-  QubitOperands &getQubits(QubitRole role) {
-    return qubits[role];
-  }
+  QubitOperands &getQubits(QubitRole role) { return qubits[role]; }
 
-  bool isControlled() {
-    return !getQubits(QubitRole::Control).empty();
-  }
+  bool isControlled() { return !getQubits(QubitRole::Control).empty(); }
 
   [[nodiscard]] bool hasValueSemantics() const {
     return getQubits(QubitRole::Control).hasValueSemantics() ||
            getQubits(QubitRole::Target).hasValueSemantics();
   }
 
-  [[nodiscard]] bool isParameterized() const {
-    return !params.empty();
-  }
+  [[nodiscard]] bool isParameterized() const { return !params.empty(); }
 
-  [[nodiscard]] bool mayNotCommute() const {
-    return hasSideEffects;
-  }
+  [[nodiscard]] bool mayNotCommute() const { return hasSideEffects; }
 };
 
 struct QuantumKernelInfo {
@@ -112,8 +100,7 @@ struct QuantumKernelInfo {
   MapVector<Operation *, QuantumOpView> OpQViewMap;
 };
 
-inline Gate
-parseGateTy(const StringRef &GateTy) {
+inline Gate parseGateTy(const StringRef &GateTy) {
   if (GateTy == "CNOT")
     return CNOT;
   if (GateTy == "PauliX")
@@ -137,6 +124,8 @@ parseGateTy(const StringRef &GateTy) {
     return S;
   if (GateTy == "SAdj")
     return SAdj;
+  if (GateTy == "SWAP")
+    return SWAP;
   return UNKNOWN;
 }
 
@@ -163,6 +152,8 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "S";
   if (GateTy == Gate::SAdj)
     return "SAdj";
+  if (GateTy == Gate::SWAP)
+    return "SWAP";
   return "UNKNOWN";
 }
 
@@ -229,7 +220,8 @@ public:
 
   virtual mlir::LogicalResult verifyModule() = 0;
 
-  virtual MapVector<mlir::func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() = 0;
+  virtual MapVector<mlir::func::FuncOp, QuantumKernelInfo>
+  getKernelDialectInfo() = 0;
 
   virtual void addOperation(Operation *NewOp) = 0;
 
@@ -237,4 +229,6 @@ public:
                               Value NewValue) = 0;
 
   virtual const QuantumOpView getOpInfo(Operation *Op) = 0;
+
+  virtual void clearKernelBody(func::FuncOp &kernel) = 0;
 };

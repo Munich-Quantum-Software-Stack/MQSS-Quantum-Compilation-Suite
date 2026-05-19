@@ -1,10 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2022 - 2026 NVIDIA Corporation & Affiliates.                  *
- * All rights reserved.                                                        *
- *                                                                             *
- * This source code and the accompanying materials are made available under    *
- * the terms of the Apache License 2.0 which accompanies this distribution.    *
- ******************************************************************************/
 
 #include "IR/Dialect/Quake/QuakeDialect.h"
 #include "IR/Dialect/Quake/QuakeOps.h"
@@ -45,8 +38,8 @@ isQuakeQuantumGate(Operation *op) {
   if (auto x = dyn_cast<quake::HOp>(op))
     return {true, "H"};
 
-  else if(auto x = dyn_cast<quake::SOp>(op)){
-    if(x.isAdj())
+  else if (auto x = dyn_cast<quake::SOp>(op)) {
+    if (x.isAdj())
       return {true, "SAdj"};
     return {true, "S"};
   }
@@ -75,11 +68,11 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
     return builder.create<quake::RzOp>(loc, isAdj, params, ControlQubits,
                                        TargetQubitOps);
   }
-  if(NewGateTy == "S"){
+  if (NewGateTy == "S") {
     return builder.create<quake::SOp>(loc, isAdj, params, ControlQubits,
                                       TargetQubitOps);
   }
-   if(NewGateTy == "SAdj"){
+  if (NewGateTy == "SAdj") {
     return builder.create<quake::SOp>(loc, true, params, ControlQubits,
                                       TargetQubitOps);
   }
@@ -109,5 +102,40 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
   if (NewGateTy == "CZ") {
     return builder.create<quake::ZOp>(loc, ControlQubits, TargetQubitOps);
   }
+  if(NewGateTy == "SWAP"){
+    return builder.create<quake::SwapOp>(loc, params, ControlQubits, TargetQubitOps);
+  }
   return nullptr;
+}
+
+inline arith::ConstantFloatOp createQuakeConstOp(Location loc,
+                                                 mlir::IRRewriter &builder,
+                                                 llvm::APFloat constantValue) {
+
+  // Define the type as f64.
+  auto floatType = builder.getF64Type();
+  return builder.create<arith::ConstantFloatOp>(loc, constantValue, floatType);
+}
+
+inline quake::AllocaOp
+createQuakeAlloca(Location loc, mlir::IRRewriter &builder, size_t numQubits) {
+
+  return builder.create<quake::AllocaOp>(
+      loc, quake::VeqType::get(builder.getContext(), numQubits));
+}
+
+inline quake::ExtractRefOp createQuakeExtractRefOp(Location loc,
+                                                   mlir::IRRewriter &builder,
+                                                   Value qubits,
+                                                   unsigned int targetQubit) {
+
+  return builder.create<quake::ExtractRefOp>(loc, qubits, targetQubit);
+}
+
+inline Value
+createQuakeMeasureOp(Location loc, mlir::IRRewriter &builder,
+                     const SmallVector<mlir::Value, 2> TargetQubits) {
+
+  Type measTy = quake::MeasureType::get(builder.getContext());
+  return builder.create<quake::MzOp>(loc, measTy, TargetQubits).getMeasOut();
 }
