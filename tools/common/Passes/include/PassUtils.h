@@ -466,7 +466,7 @@ static void performReduction(MyModuleAnalysis &analysis,
       }
     }
 
-    std::vector<Value> QubitsbaseVector;
+    std::vector<mlir::Value> QubitsbaseVector;
 
     for (auto pattern : ToErase) {
 
@@ -725,18 +725,18 @@ static void performDecomposition(MyModuleAnalysis &analysis,
       Operation *Gate3;
       auto loc = GateOp->getLoc();
       if (GateQView.GateTy == Gate::CNOT) {
-        Gate1 = createNewGate(loc, "H", ControlInQubitOps, TargetInQubitOps,
+        Gate1 = createNewGate(loc, "H", {}, TargetInQubitOps,
                               GateQView.params, builder);
         Gate2 = createNewGate(loc, "CZ", ControlInQubitOps, TargetInQubitOps,
                               GateQView.params, builder);
-        Gate3 = createNewGate(loc, "H", ControlInQubitOps, TargetInQubitOps,
+        Gate3 = createNewGate(loc, "H", {}, TargetInQubitOps,
                               GateQView.params, builder);
       } else {
-        Gate1 = createNewGate(loc, "H", ControlInQubitOps, TargetInQubitOps,
+        Gate1 = createNewGate(loc, "H", {}, TargetInQubitOps,
                               GateQView.params, builder);
         Gate2 = createNewGate(loc, "CNOT", ControlInQubitOps,
                               TargetInQubitOps, GateQView.params, builder);
-        Gate3 = createNewGate(loc, "H", ControlInQubitOps, TargetInQubitOps,
+        Gate3 = createNewGate(loc, "H", {}, TargetInQubitOps,
                               GateQView.params, builder);
       }
       // Add the newly created operation into the KernelDialectInfo Map

@@ -113,67 +113,166 @@ private:
   }
 };
 
-void loadControlledGates(mlir::Operation *gateOp, QuantumOpView qview,
-                         QuantumComputation &qc) {
+std::optional<double> getConstantDouble(mlir::Value v) {
+  auto defOp = v.getDefiningOp<mlir::arith::ConstantOp>();
+  if (!defOp)
+    return std::nullopt;
 
-  auto controlQubitVector = qview.getQubits(QubitRole::Control).ids;
-  auto targetQubitVector = qview.getQubits(QubitRole::Target).ids;
-  assert((controlQubitVector.size() == 1 && targetQubitVector.size() == 1) &&
-         "Only upto 2-Qubit gates supported!");
-  auto controlQubit = controlQubitVector[0].index;
-  auto targetQubit = targetQubitVector[0].index;
+  auto attr = llvm::dyn_cast<mlir::FloatAttr>(defOp.getValue());
+  if (!attr)
+    return std::nullopt;
 
-  llvm::outs() << "Gate Op: " << *gateOp << "\n";
-  if ((controlQubit == -1) && (targetQubit == -1)) {
-    // Gate operation in Catalyst (value semantics)
-    // Qubit in Catalyst
-    SmallVector<std::optional<QubitID>, 2> OriginQubits;
-    for (auto operand : gateOp->getOperands()) {
-      auto originOp = getOriginQubit(operand);
-      OriginQubits.push_back(originOp);
-    }
-
-    if (qview.GateTy == Gate::CNOT) {
-      qc.cx(OriginQubits[0]->index, OriginQubits[1]->index);
-    }
-  } else {
-    if (qview.GateTy == Gate::CNOT) {
-      qc.cx(controlQubit, targetQubit);
-    }
-  }
-  // Gate operation in Quake (reference semantics)
+  return attr.getValueAsDouble();
 }
 
-void loadMeasureOp(mlir::Operation *measureOp, QuantumOpView qview,
-                   QuantumComputation &qc) {
+void resolveSSAformForMeasureOps(mlir::Operation *OldMeasOp,
+                                 SmallVector<mlir::Value, 2> newResults) {
+  // llvm::outs() << "Old meas op: " << *OldMeasOp
+  //              << " results: " << OldMeasOp->getResults().size() << ","
+  //              << newResults.size() << "\n";
+  auto OldResults = OldMeasOp->getResults();
+  for (int j = 0; j < OldResults.size(); ++j) {
+    auto oldRes = OldResults[j];
+    auto newRes = newResults[j];
+    oldRes.replaceAllUsesWith(newRes);
+  }
+  assert(OldMeasOp->use_empty() &&
+         "Old measurement Op should not have any users before erasing!");
+  OldMeasOp->erase();
+}
+
+// Performs a controlled Dead-Code elimination optimization.
+// It is less aggressive than MLIR's canonicalize and cse optimizations.
+// canonicalize and cse can remove newly introduced gates.
+void controlledDCE(SmallPtrSet<mlir::Operation *, 16> OpsToErase,
+                   mlir::Value OldAllocaOp, mlir::Value newAllocOp) {
+  llvm::SmallPtrSet<mlir::Operation *, 16> operandsToCleanup;
+
+  for (mlir::Operation *op : OpsToErase) {
+
+    for (mlir::Value operand : op->getOperands()) {
+      if (!OpsToErase.contains(operand.getDefiningOp()))
+        operandsToCleanup.insert(operand.getDefiningOp());
+    }
+  }
+
+  eraseOpsSafely(OpsToErase);
+  eraseOpsSafely(operandsToCleanup);
+
+  OldAllocaOp.replaceAllUsesWith(newAllocOp);
+  assert(OldAllocaOp.use_empty() &&
+         "Old alloca cannot have uses before being erased!");
+  OldAllocaOp.getDefiningOp()->erase();
+}
+
+// Load the measurement operation within QuantumComputation
+void loadMeasureIntQC(QuantumOpView qview, QuantumComputation &qc) {
 
   auto targetQubitVector = qview.getQubits(QubitRole::Target).ids;
   assert((targetQubitVector.size() == 1) &&
          "Only Single Qubit Measurement Ops supported");
 
   auto targetQubit = targetQubitVector[0].index;
-  llvm::outs() << "measure Op: " << *measureOp << "\n";
   for (auto entry : qview.measurements) {
-    llvm::outs().indent(4) << "meas: " << entry.QubitIndex << " -> "
-                           << entry.ClassicalBitIndex << "\n";
     qc.measure(entry.QubitIndex, entry.ClassicalBitIndex);
   }
 }
 
-void createMappedCircuit(func::FuncOp &kernel, size_t AllocatedQubits,
-                         QuantumComputation &qcMapped) {
+void loadGates(mlir::Operation *gateOp, QuantumComputation &qc,
+               int64_t controlQubit, int64_t targetQubit, Gate GateTy,
+               SmallVector<mlir::Value, 2> params) {
 
-  mlir::IRRewriter builder(kernel->getContext());
-  mlir::Location loc = kernel.getLoc();
+  llvm::outs() << "Gate Op: " << *gateOp << " , Ty: " << GateTy << "\n";
 
-  mlir::Block &entry = kernel.getBody().front();
+  std::optional<double> angle;
+  switch (GateTy) {
+  case Gate::CNOT:
+    qc.cx(controlQubit, targetQubit);
+    break;
+  case Gate::CY:
+    qc.cy(controlQubit, targetQubit);
+    break;
+  case Gate::CZ:
+    qc.cz(controlQubit, targetQubit);
+    break;
+  case Gate::PauliX:
+    qc.x(targetQubit);
+    break;
+  case Gate::PauliY:
+    qc.y(targetQubit);
+    break;
+  case Gate::PauliZ:
+    qc.z(targetQubit);
+    break;
+  case Gate::S:
+    qc.s(targetQubit);
+    break;
+  case Gate::T:
+    qc.t(targetQubit);
+    break;
+  case Gate::RX:
+    assert(params.size() == 1 && "RX gate should have only 1 parameter!");
+    angle = getConstantDouble(params[0]);
+    qc.rx(angle.value(), targetQubit);
+    break;
+  case Gate::RY:
+    assert(params.size() == 1 && "RY gate should have only 1 parameter!");
+    angle = getConstantDouble(params[0]);
+    qc.ry(angle.value(), targetQubit);
+    break;
+  case Gate::RZ:
+    assert(params.size() == 1 && "RZ gate should have only 1 parameter!");
+    angle = getConstantDouble(params[0]);
+    qc.rz(angle.value(), targetQubit);
+    break;
+  }
+}
 
-  // entry.clear();                         // erase old ops
-  builder.setInsertionPointToEnd(&entry); // CRITICAL
+void loadGatesIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
+                     QuantumComputation &qc, bool isControlled = false) {
 
-  // Location loc = kernel.getLoc();
-  Value newAllocOp = createAllocOp(loc, builder, AllocatedQubits);
-  llvm::outs().indent(4) << "Alloc Op: " << newAllocOp << "\n";
+  int64_t controlQubit = -2;
+  int64_t targetQubit = -2;
+  auto targetQubitVector = qview.getQubits(QubitRole::Target).ids;
+  auto gateOperands = gateOp->getOperands();
+  if (isControlled) {
+    auto controlQubitVector = qview.getQubits(QubitRole::Control).ids;
+    assert((controlQubitVector.size() == 1) &&
+           (targetQubitVector.size() == 1) &&
+           "Only upto 2-Qubit gates supported!");
+
+    controlQubit = controlQubitVector[0].index;
+    if (controlQubit == -1) {
+      // Gate operation in Catalyst (value semantics)
+      // Qubit in Catalyst
+      auto operand = gateOperands[0];
+      controlQubit = getOriginQubit(operand)->index;
+    }
+  }
+  assert((targetQubitVector.size() == 1) &&
+         "Only upto 1-Qubit Non-controlled gates supported!");
+
+  targetQubit = targetQubitVector[0].index;
+
+  if (targetQubit == -1) {
+    // Gate operation in Catalyst (value semantics)
+    // Qubit in Catalyst
+    auto operand = gateOperands[1];
+    targetQubit = getOriginQubit(operand)->index;
+  }
+  loadGates(gateOp, qc, controlQubit, targetQubit, qview.GateTy, qview.params);
+}
+
+struct MeasureMentOpInfoTy {
+  const qc::Operation *MeasOp;
+  SmallVector<mlir::Value, 2> Results;
+};
+
+void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
+                         mlir::Value newAllocOp, QuantumComputation &qcMapped,
+                         MapVector<mlir::Operation *, int> MeasureOps) {
+
+  std::vector<MeasureMentOpInfoTy> NewMeasureOps;
 
   for (const auto &op : qcMapped) {
     if (op->getType() == qc::Barrier)
@@ -183,9 +282,9 @@ void createMappedCircuit(func::FuncOp &kernel, size_t AllocatedQubits,
     auto parameter = op->getParameter();
 
     // defining the list of controls, targets and parameters
-    SmallVector<Value, 2> params = {};
-    SmallVector<Value, 2> controlValues = {};
-    SmallVector<Value, 2> targetValues = {};
+    SmallVector<mlir::Value, 2> params = {};
+    SmallVector<mlir::Value, 2> controlValues = {};
+    SmallVector<mlir::Value, 2> targetValues = {};
 
     for (auto target : targets) {
       auto targetRefOp = createExtractOp(loc, builder, newAllocOp, target);
@@ -200,30 +299,70 @@ void createMappedCircuit(func::FuncOp &kernel, size_t AllocatedQubits,
       //       this is not always true
       llvm::APFloat constantValue(p);
       auto constantOp = createArithFloatOp(loc, builder, constantValue);
-      llvm::outs().indent(4) << "-->Const Op: " << constantOp << "\n";
       params.push_back(constantOp);
     }
 
-    llvm::outs().indent(4) << "-->Gate ty to create: " << op->getType() << "\n";
-
     mlir::Operation *newop;
+    Gate Gatety = Gate::UNKNOWN;
+    switch (op->getType()) {
+    case qc::X:
+      if (controlValues.empty())
+        Gatety = Gate::PauliX;
+      else
+        Gatety = Gate::CNOT;
+      break;
+    case qc::Y:
+      if (controlValues.empty())
+        Gatety = Gate::PauliY;
+      else
+        Gatety = Gate::CY;
+      break;
+    case qc::Z:
+      if (controlValues.empty())
+        Gatety = Gate::PauliZ;
+      else
+        Gatety = Gate::CZ;
+      break;
+    case qc::H:
+      Gatety = Gate::H;
+      break;
+    case qc::S:
+      Gatety = Gate::S;
+      break;
+    case qc::T:
+      Gatety = Gate::T;
+      break;
+    case qc::SWAP:
+      Gatety = Gate::SWAP;
+      break;
+    case qc::RX:
+      Gatety = Gate::RX;
+      break;
+    case qc::RY:
+      Gatety = Gate::RY;
+      break;
+    case qc::RZ:
+      Gatety = Gate::RZ;
+      break;
+    }
 
-    if (op->getType() == qc::X) {
-      newop = createNewGate(loc, parseGateTy(Gate::CNOT), controlValues,
+    if (Gatety != Gate::UNKNOWN) {
+
+      newop = createNewGate(loc, parseGateTy(Gatety), controlValues,
                             targetValues, params, builder);
-      llvm::outs().indent(4) << "-->CNOT: " << *newop << "\n";
-    } else if (op->getType() == qc::H) {
-      newop = createNewGate(loc, parseGateTy(Gate::H), controlValues,
-                            targetValues, params, builder);
-      llvm::outs().indent(4) << "-->H: " << *newop << "\n";
-    } else if (op->getType() == qc::SWAP) {
-      newop = createNewGate(loc, parseGateTy(Gate::SWAP), controlValues,
-                            targetValues, params, builder);
-      llvm::outs().indent(4) << "-->SWAP: " << *newop << "\n";
+    } else if (op->getType() == qc::Measure) {
+      auto newResults = createMeasureOp(loc, builder, targetValues);
+      NewMeasureOps.push_back({op.get(), newResults});
     }
   }
 
-  builder.create<func::ReturnOp>(loc);
+  for (auto &[oldMeasOp, numMeasurements] : MeasureOps) {
+    if (numMeasurements == 1) {
+      auto newResults = NewMeasureOps[0].Results;
+      resolveSSAformForMeasureOps(oldMeasOp, newResults);
+    }
+  }
+  // builder.create<func::ReturnOp>(loc);
 #ifdef DEBUG
   std::cout << "Dumping QC after mapping:\n";
   qcMapped.print(std::cout);
@@ -240,12 +379,19 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
                  << " Measure qubits: " << info.NumMeasureQubits << "\n\n";
 
     qc::QuantumComputation qc{info.AllocatedQubits, info.NumMeasureQubits};
+    MapVector<mlir::Operation *, int> MeasureOps;
+    SmallPtrSet<mlir::Operation *, 16> OpsToErase;
+    SmallVector<SmallVector<mlir::Value, 2>> AllResults;
+
     for (auto &[Op, qview] : info.OpQViewMap) {
-      if (qview.GateTy != Gate::UNKNOWN && qview.isControlled()) {
-        loadControlledGates(Op, qview, qc);
+      if (qview.GateTy != Gate::UNKNOWN) {
+        loadGatesIntoQC(Op, qview, qc, qview.isControlled());
+        OpsToErase.insert(Op);
       }
+
       if (qview.isMeasureOp) {
-        loadMeasureOp(Op, qview, qc);
+        loadMeasureIntQC(qview, qc);
+        MeasureOps[Op] = qview.measurements.size();
       }
     }
 
@@ -258,12 +404,25 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
 
     auto qcMapped = qc::QuantumComputation();
     qcMapped = mapper->moveMappedCircuit();
+    qcMapped.print(std::cout);
+
+    mlir::IRRewriter builder(kernel->getContext());
+    mlir::Location loc = kernel.getLoc();
+
+    mlir::Block &entry = kernel.getBody().front();
+
+    // entry.clear();                         // erase old ops
+    builder.setInsertionPointToStart(&entry); // CRITICAL
+
+    // Location loc = kernel.getLoc();
+    auto newAllocOp = createAllocOp(loc, builder, info.AllocatedQubits);
 
     // cleaning the mlir::funcOp corresponding to the quake circuit
+    // analysis.clearKernelBody(kernel, ToErase);
 
-    analysis.clearKernelBody(kernel);
+    createMappedCircuit(builder, loc, newAllocOp, qcMapped, MeasureOps);
 
-    createMappedCircuit(kernel, info.AllocatedQubits, qcMapped);
+    controlledDCE(OpsToErase, info.AllocOp, newAllocOp);
   }
 }
 

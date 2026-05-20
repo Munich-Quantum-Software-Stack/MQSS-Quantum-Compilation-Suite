@@ -12,9 +12,11 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <set>
+
 using namespace llvm;
 using namespace mlir;
-
+using namespace std;
 enum Gate {
   CNOT,
   PauliX,
@@ -29,6 +31,7 @@ enum Gate {
   RZ,
   S,
   SAdj,
+  T,
   SWAP,
   UNKNOWN
 };
@@ -96,6 +99,7 @@ struct QuantumOpView {
 
 struct QuantumKernelInfo {
   size_t AllocatedQubits = 0;
+  Value AllocOp;
   size_t NumMeasureQubits = 0;
   MapVector<Operation *, QuantumOpView> OpQViewMap;
 };
@@ -124,6 +128,8 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return S;
   if (GateTy == "SAdj")
     return SAdj;
+  if (GateTy == "T")
+    return T;
   if (GateTy == "SWAP")
     return SWAP;
   return UNKNOWN;
@@ -150,6 +156,8 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "PauliY";
   if (GateTy == Gate::S)
     return "S";
+  if (GateTy == Gate::T)
+    return "T";
   if (GateTy == Gate::SAdj)
     return "SAdj";
   if (GateTy == Gate::SWAP)
@@ -230,5 +238,6 @@ public:
 
   virtual const QuantumOpView getOpInfo(Operation *Op) = 0;
 
-  virtual void clearKernelBody(func::FuncOp &kernel) = 0;
+  virtual void clearKernelBody(func::FuncOp &kernel,
+                               std::set<Operation *> notToErase) = 0;
 };

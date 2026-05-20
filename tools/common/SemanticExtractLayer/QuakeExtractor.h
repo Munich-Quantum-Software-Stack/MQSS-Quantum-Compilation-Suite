@@ -53,8 +53,11 @@ public:
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quake") {
 
-          if (auto alloc = dyn_cast<quake::AllocaOp>(Op)) {
-            kernelInfo.AllocatedQubits += getAllocatedQubits(alloc);
+          if (auto allocaOp = dyn_cast<quake::AllocaOp>(Op)) {
+            kernelInfo.AllocatedQubits += getAllocatedQubits(allocaOp);
+            assert(!kernelInfo.AllocOp &&
+                   "Can only have 1 alloc instruction in a quantum kernel!");
+            kernelInfo.AllocOp = allocaOp;
             return;
           }
           auto view = createQuantumView(Op, kernelInfo.NumMeasureQubits);
@@ -79,32 +82,20 @@ public:
     QInfo[NewOp] = view;
   }
 
-
-  void clearKernelBody(func::FuncOp &kernel) override{
-        // cleaning the mlir::funcOp corresponding to the quake circuit
+  void clearKernelBody(func::FuncOp &kernel, std::set<Operation *> notToErase) override {
+    // cleaning the mlir::funcOp corresponding to the quake circuit
     assert(KernelDialectInfo.count(kernel) && "No QuantumOpInfo for funcOp");
-    for (auto &block : kernel.getBody()) {
-      block.clear(); // Clears all operations in the current block
-    }
     auto &QInfo = KernelDialectInfo[kernel].OpQViewMap;
-    for(auto &[Op, qview] : QInfo){
+    for (auto &[Op, qview] : QInfo) {
+      if (notToErase.count(Op))
+        continue;
       QInfo.erase(Op);
+      Op->erase();
     }
   }
-  // void UpdateFunc(func::FuncOp *NewOp) {
-  //   auto funcOp = NewOp->getParentOfType<mlir::func::FuncOp>();
-  //   assert(funcOp && "Adding New Op: Parent Function not found!");
-  //   assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
-  //   auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
-  //   assert(!QInfo.count(NewOp) &&
-  //          "Adding New Op: Op already present in QunatumInfoMap");
-  //   auto view =
-  //       createQuantumView(NewOp, KernelDialectInfo[funcOp].NumMeasureQubits);
-  //   QInfo[NewOp] = view;
-  // }
 
-  bool UpdateOperands(Operation *Op, QubitRole Role, Value OrigValue,
-                      Value NewValue) {
+  bool UpdateOperands(Operation *Op, QubitRole Role, mlir::Value OrigValue,
+                      mlir::Value NewValue) {
     auto funcOp = getOpParentFunc(Op);
     assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
     auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
@@ -135,12 +126,12 @@ public:
 private:
   ModuleOp module;
   MapVector<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
-  int nextClassicalBit=0;
+  int nextClassicalBit = 0;
 
-  std::tuple<QubitID, Value> extractQubits(Operation *Operand) {
+  std::tuple<QubitID, mlir::Value> extractQubits(Operation *Operand) {
     QubitID ID;
     if (auto ext_ref = dyn_cast<quake::ExtractRefOp>(Operand)) {
-      Value base = ext_ref.getVeq();
+      auto base = ext_ref.getVeq();
       auto index = ext_ref.getConstantIndex();
       ID.base = base;
       ID.index = index;
@@ -186,9 +177,9 @@ private:
       ID.base = extract_refop.getVeq();
       ID.index = extract_refop.getConstantIndex();
       view.getQubits(QubitRole::Target).ids.push_back(ID);
-    } 
-    else if (auto quakemeasop = dyn_cast<quake::MeasurementInterface>(Op)) {
-      NumMeasureQubits += getMeasurementResultCount(quakemeasop, view.measurements);
+    } else if (auto quakemeasop = dyn_cast<quake::MeasurementInterface>(Op)) {
+      NumMeasureQubits +=
+          getMeasurementResultCount(quakemeasop, view.measurements);
       view.isMeasureOp = true;
 
       for (unsigned i = 0; i < quakemeasop->getNumOperands(); i++) {
@@ -196,6 +187,7 @@ private:
         auto resop = quakemeasop->getResults()[i];
 
         auto gop = quakemeasop->getOperand(i);
+
         ID.base = gop;
         ID.index = -1;
         view.getQubits(QubitRole::Target).ids.push_back(ID);
@@ -212,8 +204,9 @@ private:
     return funcOp;
   }
 
-  int64_t getMeasurementResultCount(quake::MeasurementInterface meas,
-                                    SmallVector<MeasurementInfo> &measurements) {
+  int64_t
+  getMeasurementResultCount(quake::MeasurementInterface meas,
+                            SmallVector<MeasurementInfo> &measurements) {
     // Usually the measured qubit/register is operand 0.
     if (meas->getNumOperands() == 0)
       return 0;
@@ -228,8 +221,8 @@ private:
 
     mlir::Type measuredTy = operand.getType();
     if (auto veqTy = dyn_cast<quake::VeqType>(measuredTy)) {
-      if (veqTy.hasSpecifiedSize()){
-        for(auto q=0; q < veqTy.getSize(); ++q){
+      if (veqTy.hasSpecifiedSize()) {
+        for (auto q = 0; q < veqTy.getSize(); ++q) {
           measurements.push_back({q, nextClassicalBit++});
         }
         return static_cast<int64_t>(veqTy.getSize());

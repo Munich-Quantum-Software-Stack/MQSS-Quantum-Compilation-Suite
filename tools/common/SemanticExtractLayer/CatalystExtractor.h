@@ -87,6 +87,9 @@ public:
           // }
           if (auto allocaOp = dyn_cast<catalyst::quantum::AllocOp>(Op)) {
             kernelInfo.AllocatedQubits = allocaOp.getNqubitsAttr().value();
+             assert(!kernelInfo.AllocOp &&
+                   "Can only have 1 alloc instruction in a quantum kernel!");
+            kernelInfo.AllocOp = allocaOp;
             return;
           }
 
@@ -126,17 +129,19 @@ public:
     return true;
   }
 
-   void clearKernelBody(func::FuncOp &kernel) override{
-        // cleaning the mlir::funcOp corresponding to the quake circuit
+  void clearKernelBody(func::FuncOp &kernel,
+                       std::set<Operation *> notToErase) override {
+    // cleaning the mlir::funcOp corresponding to the quake circuit
     assert(KernelDialectInfo.count(kernel) && "No QuantumOpInfo for funcOp");
-    for (auto &block : kernel.getBody()) {
-      block.clear(); // Clears all operations in the current block
-    }
     auto &QInfo = KernelDialectInfo[kernel].OpQViewMap;
-    for(auto &[Op, qview] : QInfo){
+    for (auto &[Op, qview] : QInfo) {
+      if (notToErase.count(Op))
+        continue;
       QInfo.erase(Op);
+      Op->erase();
     }
   }
+
 
   MapVector<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
     return KernelDialectInfo;

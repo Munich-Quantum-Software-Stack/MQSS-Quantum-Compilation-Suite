@@ -30,6 +30,8 @@ namespace mqss_catalyst::opt {
 } // namespace mqss_catalyst::opt
 #endif
 
+#include <numbers>
+
 using namespace mlir;
 using namespace llvm;
 
@@ -90,8 +92,8 @@ private:
   std::vector<CommuteTy> CommuteCandidates;
 };
 
-static std::vector<Value> getQubitValues(std::vector<QubitID> QubitVector) {
-  std::vector<Value> QubitValues;
+static std::vector<mlir::Value> getQubitValues(std::vector<QubitID> QubitVector) {
+  std::vector<mlir::Value> QubitValues;
   for (auto v : QubitVector)
     QubitValues.push_back(v.base);
   return QubitValues;
@@ -99,7 +101,7 @@ static std::vector<Value> getQubitValues(std::vector<QubitID> QubitVector) {
 }
 
 static bool checkDoublePiMultiplies(double angle) {
-  const double pi = numbers::pi;
+  const double pi = std::numbers::pi;
   const double doublePi = 2 * pi;
   if (std::fmod(angle, doublePi) == 0)
     return true;
@@ -112,10 +114,10 @@ static void cancel(Operation *Op) {
   rewriter.eraseOp(Op);
 }
 
-static Value normalizeValue(double param, mlir::IRRewriter &builder,
+static mlir::Value normalizeValue(double param, mlir::IRRewriter &builder,
                             Location loc) {
 
-  double pi = numbers::pi;
+  double pi = std::numbers::pi;
   param =
       param - (std::floor(param / (2 * pi)) * 2 * pi); // normalize the angle
   auto valueAttr = builder.getFloatAttr(builder.getF64Type(), param);
@@ -262,8 +264,7 @@ static bool touchesAny(Operation *Op2,
   return false;
 }
 
-static Operation *createNewGate(Location loc,
-                                llvm::StringRef NewGateTy,
+static Operation *createNewGate(Location loc, llvm::StringRef NewGateTy,
                                 SmallVector<mlir::Value, 2> ControlQubitOps,
                                 SmallVector<mlir::Value, 2> TargetQubitOps,
                                 const mlir::ValueRange params,
@@ -271,20 +272,20 @@ static Operation *createNewGate(Location loc,
 
   Operation *NewOp;
 #ifdef BUILD_CUDAQ_ENABLED
-  NewOp = createQuakeGate(loc, NewGateTy, ControlQubitOps,
-                          TargetQubitOps, params, builder, isAdj);
+  NewOp = createQuakeGate(loc, NewGateTy, ControlQubitOps, TargetQubitOps,
+                          params, builder, isAdj);
 #endif
 #ifdef BUILD_CATALYST_ENABLED
-  NewOp = createCatalystGate(loc, NewGateTy, ControlQubitOps,
-                             TargetQubitOps, params, builder, isAdj);
+  NewOp = createCatalystGate(loc, NewGateTy, ControlQubitOps, TargetQubitOps,
+                             params, builder, isAdj);
 #endif
   return NewOp;
 }
 
-static Value createAllocOp(Location loc, mlir::IRRewriter &builder,
+static mlir::Value createAllocOp(Location loc, mlir::IRRewriter &builder,
                            size_t numQubits) {
 
-  Value NewOp;
+  mlir::Value NewOp;
 #ifdef BUILD_CUDAQ_ENABLED
   NewOp = createQuakeAlloca(loc, builder, numQubits);
 #endif
@@ -294,10 +295,10 @@ static Value createAllocOp(Location loc, mlir::IRRewriter &builder,
   return NewOp;
 }
 
-static Value createExtractOp(Location loc, mlir::IRRewriter &builder,
-                             Value qubits, unsigned int targetQubit) {
+static mlir::Value createExtractOp(Location loc, mlir::IRRewriter &builder,
+                             mlir::Value qubits, unsigned int targetQubit) {
 
-  Value NewOp;
+  mlir::Value NewOp;
 #ifdef BUILD_CUDAQ_ENABLED
   NewOp = createQuakeExtractRefOp(loc, builder, qubits, targetQubit);
 #endif
@@ -307,9 +308,8 @@ static Value createExtractOp(Location loc, mlir::IRRewriter &builder,
   return NewOp;
 }
 
-static Value createArithFloatOp(Location loc,
-                                                 mlir::IRRewriter &builder,
-                                                 llvm::APFloat constantValue) {
+static mlir::Value createArithFloatOp(Location loc, mlir::IRRewriter &builder,
+                                llvm::APFloat constantValue) {
 
   mlir::arith::ConstantFloatOp NewOp;
 #ifdef BUILD_CUDAQ_ENABLED
@@ -319,4 +319,66 @@ static Value createArithFloatOp(Location loc,
   NewOp = createCatalystConstOp(loc, builder, constantValue);
 #endif
   return NewOp.getResult();
+}
+
+static SmallVector<mlir::Value, 2>
+createMeasureOp(Location loc, mlir::IRRewriter &builder,
+                const SmallVector<mlir::Value, 2> TargetQubits) {
+
+  SmallVector<mlir::Value, 2> NewOp;
+#ifdef BUILD_CUDAQ_ENABLED
+  NewOp = createQuakeMeasureOp(loc, builder, TargetQubits);
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+  NewOp = createCatalystMeasureOp(loc, builder, TargetQubits);
+#endif
+  return NewOp;
+}
+
+
+static void eraseOpsSafely(llvm::SmallPtrSetImpl<mlir::Operation *> &eraseSet) {
+  llvm::SmallVector<mlir::Operation *> ordered;
+
+  llvm::SmallVector<mlir::Value> operandsToCleanup;
+
+  for (mlir::Operation *op : eraseSet) {
+    ordered.push_back(op);
+  }
+
+  // Post-order walk usually gives users before producers if rooted properly,
+  // but safest simple approach: repeatedly erase ops with no remaining users
+  // outside the erase set.
+  bool changed = true;
+
+  while (!ordered.empty() && changed) {
+    changed = false;
+
+    for (auto it = ordered.begin(); it != ordered.end();) {
+      mlir::Operation *op = *it;
+
+      bool hasInternalUsersLeft = false;
+      for (mlir::Value result : op->getResults()) {
+        for (mlir::Operation *user : result.getUsers()) {
+          if (eraseSet.contains(user)) {
+            hasInternalUsersLeft = true;
+            break;
+          }
+        }
+        if (hasInternalUsersLeft)
+          break;
+      }
+
+      if (!hasInternalUsersLeft) {
+        op->erase();
+        it = ordered.erase(it);
+        changed = true;
+      } else {
+        ++it;
+      }
+    }
+  }
+
+  //cleanupDeadDefs(operandsToCleanup);
+
+  assert(ordered.empty() && "cycle or invalid erase dependency");
 }

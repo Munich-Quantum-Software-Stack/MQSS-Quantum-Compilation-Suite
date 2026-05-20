@@ -227,9 +227,9 @@ void loadRotationGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     int qubit = -1;
     double angle = -1.0;
     assert(op->getOperands().size() == 2 && "ill-formed rotation gate!");
-    Value operand1 = op->getOperands()[0];
+    auto operand1 = op->getOperands()[0];
     angle = extractDoubleArgumentValue(operand1.getDefiningOp());
-    Value operand2 = op->getOperands()[1];
+    auto operand2 = op->getOperands()[1];
     qubit = extractIndexFromQuakeExtractRefOp(
         operand2.getDefiningOp());
 #ifdef DEBUG
@@ -256,10 +256,10 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     // controlled operations
     if (op->getOperands().size() == 2) {
       int qubit_ctrl, qubit_target;
-      Value operand1 = op->getOperands()[0];
+      auto operand1 = op->getOperands()[0];
       qubit_ctrl = extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
-      Value operand2 = op->getOperands()[1];
+      auto operand2 = op->getOperands()[1];
       qubit_target = extractIndexFromQuakeExtractRefOp(
           operand2.getDefiningOp());
 #ifdef DEBUG
@@ -280,7 +280,7 @@ void loadXYZGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     }
     // single qubit operations
     if (op->getOperands().size() == 1) {
-      Value operand1 = op->getOperands()[0];
+      auto operand1 = op->getOperands()[0];
       int qubit =extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
 #ifdef DEBUG
@@ -305,7 +305,7 @@ void loadSTHGatesToQC(Operation *op, qc::QuantumComputation &qc) {
     int qubit_ctrl, qubit_target;
     // single qubit operations
     if (op->getOperands().size() == 1) {
-      Value operand1 = op->getOperands()[0];
+      auto operand1 = op->getOperands()[0];
       int qubit =extractIndexFromQuakeExtractRefOp(
           operand1.getDefiningOp());
 #ifdef DEBUG
@@ -335,7 +335,7 @@ void loadMeasurementsToQC(Operation *op, qc::QuantumComputation &qc,
     llvm::errs() << "\n";
 #endif
     assert(op->getOperands().size() == 1 && "ill-formed measurement gate!");
-    Value operand = op->getOperands()[0];
+    auto operand = op->getOperands()[0];
     if (operand.getType().isa<quake::RefType>()) {
       int qubitIndex =extractIndexFromQuakeExtractRefOp(
           operand.getDefiningOp());
@@ -409,7 +409,7 @@ public:
     OpBuilder builder(&circuit.getBody());
     Location loc = circuit.getLoc();
     // allocate the qubits
-    Value qubits = builder.create<quake::AllocaOp>(
+    auto qubits = builder.create<quake::AllocaOp>(
         circuit.getLoc(), quake::VeqType::get(builder.getContext(), numQubits));
     // then traverse the mapped QuantumComputation and annotate it in the
     // mlir func
@@ -420,9 +420,9 @@ public:
       auto &controls = op->getControls();
       auto parameter = op->getParameter();
       // defining the list of controls, targets and parameters
-      SmallVector<Value> parameterValues = {};
-      SmallVector<Value> controlValues = {};
-      SmallVector<Value> targetValues = {};
+      SmallVector<mlir::Value> parameterValues = {};
+      SmallVector<mlir::Value> controlValues = {};
+      SmallVector<mlir::Value> targetValues = {};
       // get the targets
       for (int i = 0; i < targets.size(); i++) {
         auto targetRef =
@@ -488,7 +488,7 @@ public:
                                    targetValues);
         break;
       case qc::Measure:
-        Type measTy = quake::MeasureType::get(builder.getContext());
+        auto measTy = quake::MeasureType::get(builder.getContext());
         builder.create<quake::MzOp>(loc, measTy, targetValues).getMeasOut();
         break;
       }

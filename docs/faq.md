@@ -1,42 +1,21 @@
-# FAQ
+## FAQ
 
-<!-- IMPORTANT: Keep the line above as the first line. -->
-
-<!----------------------------------------------------------------------------
-Copyright 2024 Munich Quantum Software Stack Project
-
-Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
-"License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
-
-SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
--------------------------------------------------------------------------- -->
-
-<!-- This file is a static page and included in the CMakeLists.txt file. -->
-
-<!-- Include the content of README.md between the pair of markers DOXYGEN FAQ. -->
-
-<!-- \snippet{doc} README.md DOXYGEN FAQ -->
+<!-- [DOXYGEN FAQ] -->
 
 ### What is MQSS?
 
-**MQSS** stands for _Munich Quantum Software Stack_, which is a project of the _Munich Quantum
+__MQSS__ stands for _Munich Quantum Software Stack_, which is a project of the _Munich Quantum
 Valley (MQV)_ initiative and is jointly developed by the _Leibniz Supercomputing Centre (LRZ)_ and
 the Chairs for _Design Automation (CDA)_ and for _Computer Architecture and Parallel Systems (CAPS)_
 at TUM. It provides a comprehensive compilation and runtime infrastructure for on-premise and remote
 quantum devices, supports modern compilation and optimization techniques, and enables current and
-future high-level abstractions for quantum programming. This stack is designed to deploy in various
-scenarios via flexible configuration options, including stand-alone scenarios for individual
+future high-level abstractions for quantum programming.
+
+This stack is designed to deploy in various scenarios via flexible configuration options, including stand-alone scenarios for individual
 systems, cloud access to multiple devices, and tight integration into HPC environments supporting
-quantum acceleration. A concrete instance of the MQSS is deployed at the LRZ for the MQV, serving as
+quantum acceleration.
+
+A concrete instance of the MQSS is deployed at the LRZ for the MQV, serving as
 a single access point to all of its quantum devices via multiple compatible access paths, including
 a web portal, command line access via web credentials as well as the option for hybrid access with
 tight integration with LRZ's HPC systems. It facilitates the connection between end-users and
@@ -52,15 +31,15 @@ machine learning, AI, and heterogeneous hardware.
 
 MLIR supports multiple levels of abstraction within a single framework, allowing developers to work
 with high-level domain-specific operations down to hardware-specific operations. Users can define
-their **dialects** (custom operations and types) for specific problem domains while leveraging the
+their __dialects__ (custom operations and types) for specific problem domains while leveraging the
 shared infrastructure for optimization and code generation already provided by MLIR.
 
 <div align="center">
-    <img src="mlir.png" width="70%">
+    <img src="_static/mlir.png" width="70%">
 </div>
 
 Additionally, MLIR promotes interoperability among different models of computation and supports
-**optimization passes** across various abstraction levels, including high-level and low-level
+__optimization passes__ across various abstraction levels, including high-level and low-level
 operations.
 
 For more information on [MLIR](https://github.com/llvm/llvm-project.git).
@@ -68,10 +47,10 @@ For more information on [MLIR](https://github.com/llvm/llvm-project.git).
 ### What is an MLIR Dialect?
 
 An MLIR dialect is a modular and extensible namespace within the MLIR framework that defines a set
-of **operations**, **types** and **attributes** specific to a domain, language, or model of
+of __operations__, __types__ and __attributes__ specific to a domain, language, or model of
 computation. Dialects enable MLIR to be a highly flexible intermediate representation (IR).
 
-For instance, **Quake** is an MLIR dialect designed for quantum computing. It serves as part of
+For instance, __Quake__ is an MLIR dialect designed for quantum computing. It serves as part of
 NVIDIA's CUDAQ framework, facilitating the development, optimization, and deployment of
 quantum-classical hybrid programs. Quake represents quantum programs within MLIR, providing a
 high-level abstraction for quantum operations and allowing developers to leverage the MLIR
@@ -83,7 +62,7 @@ representation that allows transformations at different levels of abstraction, w
 the MLIR framework.
 
 <div align="center">
-    <img src="mlir-quake.png" width="70%">
+    <img src="_static/mlir-quake.png" width="70%">
 </div>
 
 For more information on [QUAKE MLIR Dialect](https://github.com/NVIDIA/cuda-quantum.git).
@@ -91,12 +70,12 @@ For more information on [QUAKE MLIR Dialect](https://github.com/NVIDIA/cuda-quan
 ### What is an MLIR pass?
 
 An MLIR pass is a transformation or analysis applied to an MLIR intermediate representation (IR) to
-**modify**, **optimize**, or **gather information**. Passes are a central concept in compiler
+__modify__, __optimize__, or __gather information__. Passes are a central concept in compiler
 frameworks, including MLIR, enabling modular, reusable,and extensible code transformations at
 various abstraction levels.
 
 <div align="center">
-    <img src="mlir-pass.png" width="45%">
+    <img src="_static/mlir-pass.png" width="45%">
 </div>
 
 For instance, in the figure above, an MLIR optimization pass is applied to the input example
@@ -104,12 +83,12 @@ circuit, which contains two consecutive Hadamard gates on qubit 0. Accordingly, 
 output-optimized circuit shown on the right, those two consecutive Hadamards are removed because
 they are equivalent to an identity operation.
 
-MLIR has two categories of passes: **transformation** passes and **analysis** passes. The pass
+MLIR has two categories of passes: __transformation__ passes and __analysis__ passes. The pass
 presented above is a transformation pass. Moreover, passes can be applied in sequences defined as
-**pass pipelines**.
+__pass pipelines__.
 
 <div align="center">
-    <img src="mlir-passes.png" width="100%">
+    <img src="_static/mlir-passes.png" width="100%">
 </div>
 
 In the figure shown above, three pass pipelines are defined. In purple, a synthesis to QUAKE
@@ -138,7 +117,7 @@ representations that do not expose the data dependencies, as shown on the left a
 compiler might apply incorrect transformations during optimization.
 
 <div align="center">
-    <img src="mlir-why2.png" width="100%">
+    <img src="_static/mlir-why2.png" width="100%">
 </div>
 
 The representation presented on the left assumes a value referencing each qubit. Values %1 and %2
@@ -167,7 +146,7 @@ The collection of MLIR passes stored in this repository is part of the Munich Qu
 ([QRM](https://github.com/Munich-Quantum-Software-Stack/QRM)).
 
 <div align="center">
-    <img src="mlir-fit.png" width="60%">
+    <img src="_static/mlir-fit.png" width="60%">
 </div>
 
 For example, a hybrid quantum application can be defined in a high-level programming language such
@@ -177,17 +156,19 @@ quantum kernels will be submitted to the QRM.
 By specifying the target as MQSS at compilation time, the generated binary will orchestrate the
 classical and quantum resources. Every time a quantum kernel has to be executed, the compiled binary
 submits the MLIR code of the correspondent quantum kernel to the MQSS stack. Thus, on the MQSS side,
-the MLIR module is processed by the QRM, which perform **agnostic passes** (optimization passes) and
-**target-specific passes** (transpilation passes and lowering passes). The lowered code is sent to
+the MLIR module is processed by the QRM, which perform __agnostic passes__ (optimization passes) and
+__target-specific passes__ (transpilation passes and lowering passes). The lowered code is sent to
 the Quantum device, and the results are collected and sent back to the hybrid application.
 
 ### Where is the code?
 
 The code is publicly available and hosted on GitHub:
-https://github.com/Munich-Quantum-Software-Stack/passes.
+<https://github.com/Munich-Quantum-Software-Stack/passes>.
 
 ### Under which license is this collection of passes released?
 
 This collection of MLIR passes is released under the Apache License v2.0 with LLVM Exceptions. See
 [LICENSE](https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE) for more
 information. Any contribution to the project is assumed to be under the same license.
+
+<!-- [DOXYGEN FAQ] -->

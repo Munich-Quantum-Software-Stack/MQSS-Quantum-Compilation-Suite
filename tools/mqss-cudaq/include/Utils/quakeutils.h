@@ -1,15 +1,15 @@
 
 #include "IR/Dialect/Quake/QuakeDialect.h"
 #include "IR/Dialect/Quake/QuakeOps.h"
+// #include "IR/Dialect/CC/CCOps.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
-using namespace llvm;
 using namespace mlir;
-
+using namespace llvm;
 inline std::tuple<bool, StringLiteral>
 
 isQuakeQuantumGate(Operation *op) {
@@ -19,14 +19,17 @@ isQuakeQuantumGate(Operation *op) {
       return {true, "PauliX"};
     return {true, "CNOT"};
   }
+
+  if (auto x = dyn_cast<quake::YOp>(op)) {
+    if (x.getControls().size() == 0)
+      return {true, "PauliY"};
+    return {true, "CY"};
+  }
   if (auto x = dyn_cast<quake::ZOp>(op)) {
     if (x.getControls().size() == 0)
       return {true, "PauliZ"};
     return {true, "CZ"};
   }
-
-  if (auto x = dyn_cast<quake::YOp>(op))
-    return {true, "PauliY"};
 
   if (auto x = dyn_cast<quake::RxOp>(op))
     return {true, "RX"};
@@ -38,11 +41,13 @@ isQuakeQuantumGate(Operation *op) {
   if (auto x = dyn_cast<quake::HOp>(op))
     return {true, "H"};
 
-  else if (auto x = dyn_cast<quake::SOp>(op)) {
+  if (auto x = dyn_cast<quake::SOp>(op)) {
     if (x.isAdj())
       return {true, "SAdj"};
     return {true, "S"};
   }
+  if (auto t = dyn_cast<quake::TOp>(op))
+    return {true, "T"};
   return {false, ""};
 }
 
@@ -70,6 +75,10 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
   }
   if (NewGateTy == "S") {
     return builder.create<quake::SOp>(loc, isAdj, params, ControlQubits,
+                                      TargetQubitOps);
+  }
+  if (NewGateTy == "T") {
+    return builder.create<quake::TOp>(loc, isAdj, params, ControlQubits,
                                       TargetQubitOps);
   }
   if (NewGateTy == "SAdj") {
@@ -102,8 +111,9 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
   if (NewGateTy == "CZ") {
     return builder.create<quake::ZOp>(loc, ControlQubits, TargetQubitOps);
   }
-  if(NewGateTy == "SWAP"){
-    return builder.create<quake::SwapOp>(loc, params, ControlQubits, TargetQubitOps);
+  if (NewGateTy == "SWAP") {
+    return builder.create<quake::SwapOp>(loc, params, ControlQubits,
+                                         TargetQubitOps);
   }
   return nullptr;
 }
@@ -126,16 +136,23 @@ createQuakeAlloca(Location loc, mlir::IRRewriter &builder, size_t numQubits) {
 
 inline quake::ExtractRefOp createQuakeExtractRefOp(Location loc,
                                                    mlir::IRRewriter &builder,
-                                                   Value qubits,
+                                                   mlir::Value qubits,
                                                    unsigned int targetQubit) {
 
   return builder.create<quake::ExtractRefOp>(loc, qubits, targetQubit);
 }
 
-inline Value
+inline SmallVector<mlir::Value, 2>
 createQuakeMeasureOp(Location loc, mlir::IRRewriter &builder,
                      const SmallVector<mlir::Value, 2> TargetQubits) {
 
-  Type measTy = quake::MeasureType::get(builder.getContext());
-  return builder.create<quake::MzOp>(loc, measTy, TargetQubits).getMeasOut();
+  SmallVector<mlir::Value, 2> results;
+  mlir::Type measTy = quake::MeasureType::get(builder.getContext());
+  auto newOp = builder.create<quake::MzOp>(loc, measTy, TargetQubits);
+
+  for (auto res : newOp->getResults()) {
+    results.push_back(res);
+  }
+
+  return results;
 }
