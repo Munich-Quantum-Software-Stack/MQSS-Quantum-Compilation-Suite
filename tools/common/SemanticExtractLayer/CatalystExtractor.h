@@ -23,6 +23,7 @@ static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         {"Hadamard", {QubitRole::Target}},
         {"H", {QubitRole::Target}},
         {"S", {QubitRole::Target}},
+        {"T", {QubitRole::Target}},
         {"SAdj", {QubitRole::Target}},
 
         // Rotations

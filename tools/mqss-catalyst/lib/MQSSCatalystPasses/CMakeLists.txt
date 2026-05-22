@@ -17,9 +17,12 @@ add_mlir_library(MLIRPasses
 
   LINK_LIBS PUBLIC
     MLIRQuantum
-    MLIRTensorDialect
-    MLIRArithDialect
-    MLIRFuncDialect
+    MLIRFuncDialect         # <--- Fixes the func.func error
+    MLIRArithDialect        # <--- For constants and math
+    MLIRControlFlowDialect  # <--- For branching/returns
+    MLIRLinalgDialect
+    MLIRSCFDialect
+    MLIRLLVMDialect
     MLIRIR
     MLIRPass
     MLIRTransforms

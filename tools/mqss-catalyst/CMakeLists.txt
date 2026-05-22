@@ -205,6 +205,7 @@ target_link_libraries(mqss-catalyst-opt
     MLIRArithDialect        # <--- For constants and math
     MLIRControlFlowDialect  # <--- For branching/returns
     MLIRLinalgDialect
+    MLIRSCFDialect
     MLIRLLVMDialect
     MLIRTransforms
     MQT::CoreIR

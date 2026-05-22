@@ -1,5 +1,6 @@
 
 
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/OpDefinition.h"
@@ -166,12 +167,12 @@ inline StringRef parseGateTy(const Gate &GateTy) {
 }
 
 static std::optional<QubitID> getOriginQubit(mlir::Value v) {
-  // llvm::outs() << "Checking: " << v << "\n";
+  // llvm::outs()<< "Def-Use analyze: " << v << "\n";
   while (true) {
     auto definingOp = v.getDefiningOp();
 
     if (!definingOp) {
-      // llvm::outs().indent(4) << "def op is NULL\n";
+
       return std::nullopt; // block argument or unknown source
     }
 
@@ -204,11 +205,17 @@ static std::optional<QubitID> getOriginQubit(mlir::Value v) {
         return std::nullopt;
 
       unsigned resultNo = result.getResultNumber();
+      SmallVector<Value> qubitOperands;
+      for (Value operand : definingOp->getOperands()) {
+        if (isa<mlir::arith::ConstantOp>(operand.getDefiningOp()))
+          continue;
+        qubitOperands.push_back(operand);
+      }
 
-      if (resultNo >= definingOp->getNumOperands())
+      if (resultNo >= qubitOperands.size())
         return std::nullopt;
 
-      v = definingOp->getOperand(resultNo);
+      v = qubitOperands[resultNo];
       continue;
     }
 

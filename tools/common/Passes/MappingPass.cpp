@@ -182,9 +182,10 @@ void loadGates(mlir::Operation *gateOp, QuantumComputation &qc,
                int64_t controlQubit, int64_t targetQubit, Gate GateTy,
                SmallVector<mlir::Value, 2> params) {
 
-  llvm::outs() << "Gate Op: " << *gateOp << " , Ty: " << GateTy << "\n";
+  // llvm::outs() << "Gate Op: " << *gateOp << " , Ty: " << GateTy << "\n";
 
   std::optional<double> angle;
+  // TODO: Load more gates into qc. Add to the following list.
   switch (GateTy) {
   case Gate::CNOT:
     qc.cx(controlQubit, targetQubit);
@@ -231,36 +232,36 @@ void loadGates(mlir::Operation *gateOp, QuantumComputation &qc,
 void loadGatesIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
                      QuantumComputation &qc, bool isControlled = false) {
 
-  int64_t controlQubit = -2;
-  int64_t targetQubit = -2;
+  int64_t controlQubitIdx = -2;
+  int64_t targetQubitIdx = -2;
   auto targetQubitVector = qview.getQubits(QubitRole::Target).ids;
-  auto gateOperands = gateOp->getOperands();
+  
   if (isControlled) {
     auto controlQubitVector = qview.getQubits(QubitRole::Control).ids;
     assert((controlQubitVector.size() == 1) &&
            (targetQubitVector.size() == 1) &&
            "Only upto 2-Qubit gates supported!");
 
-    controlQubit = controlQubitVector[0].index;
-    if (controlQubit == -1) {
+    controlQubitIdx = controlQubitVector[0].index;
+    if (controlQubitIdx == -1) {
       // Gate operation in Catalyst (value semantics)
       // Qubit in Catalyst
-      auto operand = gateOperands[0];
-      controlQubit = getOriginQubit(operand)->index;
+      auto operand = controlQubitVector[0].base;
+      controlQubitIdx = getOriginQubit(operand)->index;
     }
   }
   assert((targetQubitVector.size() == 1) &&
          "Only upto 1-Qubit Non-controlled gates supported!");
 
-  targetQubit = targetQubitVector[0].index;
+  targetQubitIdx = targetQubitVector[0].index;
 
-  if (targetQubit == -1) {
+  if (targetQubitIdx == -1) {
     // Gate operation in Catalyst (value semantics)
     // Qubit in Catalyst
-    auto operand = gateOperands[1];
-    targetQubit = getOriginQubit(operand)->index;
+    auto operand = targetQubitVector[0].base;
+    targetQubitIdx = getOriginQubit(operand)->index;
   }
-  loadGates(gateOp, qc, controlQubit, targetQubit, qview.GateTy, qview.params);
+  loadGates(gateOp, qc, controlQubitIdx, targetQubitIdx, qview.GateTy, qview.params);
 }
 
 struct MeasureMentOpInfoTy {
@@ -374,10 +375,13 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
 
   for (auto &[kernel, info] : analysis.getKernelDialectInfo()) {
 
-    llvm::outs() << "\nkernel: " << kernel.getSymName()
+    llvm::outs() << "\nkernel: " << kernel.getSymName() << "\n"
                  << " total input qubits: " << info.AllocatedQubits
                  << " Measure qubits: " << info.NumMeasureQubits << "\n\n";
 
+    if(info.AllocatedQubits == 0)
+      continue;
+    
     qc::QuantumComputation qc{info.AllocatedQubits, info.NumMeasureQubits};
     MapVector<mlir::Operation *, int> MeasureOps;
     SmallPtrSet<mlir::Operation *, 16> OpsToErase;
@@ -404,7 +408,6 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
 
     auto qcMapped = qc::QuantumComputation();
     qcMapped = mapper->moveMappedCircuit();
-    qcMapped.print(std::cout);
 
     mlir::IRRewriter builder(kernel->getContext());
     mlir::Location loc = kernel.getLoc();
@@ -441,8 +444,7 @@ class Mapping : public mqss_backend::CommonMappingPassBase<Mapping> {
     if (!input.empty())
       config = PipelineConfig::fromFile(input);
     else {
-      llvm::outs() << "--> No input file provided, using pass defaults!"
-                   << "\n\n";
+      llvm::outs() << "--> No input file provided, using pass defaults!" << "\n";
       config = PipelineConfig::defaults();
     }
     auto architecture = config.arch;

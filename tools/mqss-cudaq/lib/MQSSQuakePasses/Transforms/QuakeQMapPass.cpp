@@ -381,7 +381,7 @@ public:
     // Traversing input QUAKE MLIR
     circuit.walk([&](mlir::Operation *op) {
       // TODO: Assumed at the moment to work only on a single qubit
-      //loadRotationGatesToQC(op, qc);
+      loadRotationGatesToQC(op, qc);
       // TODO: Cover only the case of single qubit and 2 qubit controlled
       // operations
       loadXYZGatesToQC(op, qc);

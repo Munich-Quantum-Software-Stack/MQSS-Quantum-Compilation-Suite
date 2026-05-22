@@ -177,3 +177,4 @@ set_target_properties(mqss-cudaq-opt PROPERTIES
 
 # (Optional) Verify links
 mlir_check_all_link_libraries(mqss-cudaq-opt)
+

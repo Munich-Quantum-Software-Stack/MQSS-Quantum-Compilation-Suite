@@ -47,6 +47,8 @@ Catalyst)[https://github.com/PennyLaneAI/catalyst]) MLIR dialects.
 
 5. __Native-IR interoperability__: Connect frameworks without replacing their IRs.
 
+6. __Qubit Circuit Mapping__: A representation-agnostic logical to physical qubit mapping pass
+
 Note: Please refer to the FAQs section for more details on MLIR, MQSS and related questions
 <!-- [DOXYGEN MAIN] -->
 
@@ -89,7 +91,8 @@ Note: These are automatically downloaded and installed by the build scripts
   number={},
   pages={28-33},
   keywords={Performance evaluation;Quantum computing;Runtime;High performance computing;Full stack;Graphics processing units;Optimization;Quantum Compilation;Intermediate Representation (IR);MLIR;HPCQC Integration},
-  doi={10.1109/QCE65121.2025.10288}}
+  doi={10.1109/QCE65121.2025.10288}
+  }
 ```
 
 ## Acknowledgements

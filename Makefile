@@ -20,6 +20,9 @@ mqss-catalyst:
 	./scripts/build_catalyst.sh --install-dir ${INSTALL_PATH}
 	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
+docs:
+	@./scripts/build_docs.sh
+
 python:
 	./scripts/python_setup.sh
 all: mqss-cudaq mqss-catalyst

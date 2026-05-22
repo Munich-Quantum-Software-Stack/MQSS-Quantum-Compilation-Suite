@@ -1,11 +1,12 @@
 
 
+#include "PassIncludes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
-#include "PassIncludes.h"
+
 #include <cmath>
 
 static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
@@ -85,6 +86,8 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
   CommuteInfoTy CommutationInfo;
   CommuteInfoTy SSACommuteCandidates;
   for (auto &[kernel, KernelInfo] : analysis.getKernelDialectInfo()) {
+    if (KernelInfo.AllocatedQubits == 0)
+      continue;
     auto QView = KernelInfo.OpQViewMap;
     for (auto &[Op1, Op1QView] : QView) {
       auto FirstGateTy = Op1QView.GateTy;
@@ -130,9 +133,9 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
                          {Op2CtrlQubits.ids, Op2TargetQubits.ids},
                          CompareKey)) {
             CommutationInfo.gather(Op1, Op2);
-          } else if (SameQubitValues(
-                         {Op1CtrlQubits.out, Op1TargetQubits.out},
-                         {Op2CtrlQubits.in, Op2TargetQubits.in}, CompareKey)) {
+          } else if (SameQubitValues({Op1CtrlQubits.out, Op1TargetQubits.out},
+                                     {Op2CtrlQubits.in, Op2TargetQubits.in},
+                                     CompareKey)) {
             // Example:
             // Original:
             //  %out_qubits_2:2 = quantum.custom "CNOT"() %2, %3 : !quantum.bit,
@@ -224,8 +227,8 @@ static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
       auto TargetInQubitOps =
           Qview[OpToSwitchOut].getQubits(QubitRole::Target).in;
 
-      auto *NewOp = createNewGate(OpToSwitchOut->getLoc(), ReplacementGateTy, {},
-                                  TargetInQubitOps, {}, builder);
+      auto *NewOp = createNewGate(OpToSwitchOut->getLoc(), ReplacementGateTy,
+                                  {}, TargetInQubitOps, {}, builder);
 
       analysis.addOperation(NewOp);
 
@@ -367,6 +370,10 @@ static void performReduction(MyModuleAnalysis &analysis,
   auto FirstGateToCancelTy = PassInfo.GatesToCancel[i];
 
   for (auto &[Kernel, KernelInfo] : analysis.getKernelDialectInfo()) {
+
+    if (KernelInfo.AllocatedQubits == 0)
+      continue;
+
     std::vector<pipelinety> pipeline;
     std::vector<std::vector<pipelinety>> ToErase;
     auto OpQuantumView = KernelInfo.OpQViewMap;
@@ -445,16 +452,17 @@ static void performReduction(MyModuleAnalysis &analysis,
                          PassInfo.CompareKey)) {
             ChecksSatisfied = true;
             break;
-          } if (SameQubitValues(
-                         {FirstGateCtrlQubits.out, FirstGateTargetQubits.out},
-                         {SecondGateCtrlQubits.in, SecondGateTargetQubits.in},
-                         PassInfo.CompareKey)) {
+          }
+          if (SameQubitValues(
+                  {FirstGateCtrlQubits.out, FirstGateTargetQubits.out},
+                  {SecondGateCtrlQubits.in, SecondGateTargetQubits.in},
+                  PassInfo.CompareKey)) {
             ChecksSatisfied = true;
             break;
           }
           llvm::outs().indent(4) << *pipeline[i].GateOp << "\n";
           llvm::outs().indent(4) << *pipeline[i + 1].GateOp << "\n";
-          
+
           // TODO: For catalyst - Check equivalence b/w result Qubits of FirstOp
           // and OpQubits of Next Op
           //      See performCancellation for reference
@@ -484,23 +492,22 @@ static void performReduction(MyModuleAnalysis &analysis,
       auto RefOptargetQubits =
           OpQuantumView[FirstOp].getQubits(QubitRole::Target).in;
 
-      auto *NewOp = createNewGate(FirstOp->getLoc(), parseGateTy(PassInfo.NewGateTy),
-                                  RefOpCtrlQubits, RefOptargetQubits,
-                                  RefOpParams, builder);
+      auto *NewOp = createNewGate(
+          FirstOp->getLoc(), parseGateTy(PassInfo.NewGateTy), RefOpCtrlQubits,
+          RefOptargetQubits, RefOpParams, builder);
 
       assert(NewOp && "Replacement Gate not created!");
       analysis.addOperation(NewOp);
-      auto FinalOp = pattern[pattern.size()-1].GateOp;
+      auto FinalOp = pattern[pattern.size() - 1].GateOp;
       if (!FinalOp->getUsers().empty()) {
         // TODO: Should be revisited!
         auto NewOpResults = analysis.getOpInfo(NewOp)
                                 .getQubits(PassInfo.CompareKey.KeyGate2)
                                 .out[0];
         FinalOp->replaceAllUsesWith(NewOp);
-      }
-      else {
-        for(auto entry : pattern){
-            cancel(entry.GateOp);
+      } else {
+        for (auto entry : pattern) {
+          cancel(entry.GateOp);
         }
       }
 
@@ -514,7 +521,7 @@ static void performReduction(MyModuleAnalysis &analysis,
 }
 
 static void performArgAngelNormalization(
-   MapVector<Operation *, QuantumOpView> OpQuantumView) {
+    MapVector<Operation *, QuantumOpView> OpQuantumView) {
 
   SmallSetVector<Operation *, 16> ToErase;
   for (auto &[GateOp, GateQView] : OpQuantumView) {
@@ -581,7 +588,10 @@ static void performCNOTReversal(MyModuleAnalysis &analysis) {
 
   SmallSetVector<Operation *, 16> ToErase;
   std::unordered_map<Operation *, std::vector<Operation *>> DecomposeMap;
-  for (auto &[kernel, kernelInfo] : analysis.getKernelDialectInfo()){
+  for (auto &[kernel, kernelInfo] : analysis.getKernelDialectInfo()) {
+    if (kernelInfo.AllocatedQubits == 0)
+      continue;
+
     auto OpQuantumView = kernelInfo.OpQViewMap;
     for (auto &[GateOp, GateQView] : OpQuantumView) {
       if ((GateQView.GateTy != Gate::CNOT))
@@ -706,8 +716,10 @@ static void performDecomposition(MyModuleAnalysis &analysis,
   }
 
   std::unordered_map<Operation *, std::vector<Operation *>> DecomposeMap;
-  for (auto &[kernel, kernelInfo] : analysis.getKernelDialectInfo()){
+  for (auto &[kernel, kernelInfo] : analysis.getKernelDialectInfo()) {
     auto OpQuantumView = kernelInfo.OpQViewMap;
+    if (kernelInfo.AllocatedQubits == 0)
+      continue;
     for (auto &[GateOp, GateQView] : OpQuantumView) {
 
       if ((GateQView.GateTy != Gate::CNOT) && (GateQView.GateTy != Gate::CZ))
@@ -725,19 +737,19 @@ static void performDecomposition(MyModuleAnalysis &analysis,
       Operation *Gate3;
       auto loc = GateOp->getLoc();
       if (GateQView.GateTy == Gate::CNOT) {
-        Gate1 = createNewGate(loc, "H", {}, TargetInQubitOps,
-                              GateQView.params, builder);
+        Gate1 = createNewGate(loc, "H", {}, TargetInQubitOps, GateQView.params,
+                              builder);
         Gate2 = createNewGate(loc, "CZ", ControlInQubitOps, TargetInQubitOps,
                               GateQView.params, builder);
-        Gate3 = createNewGate(loc, "H", {}, TargetInQubitOps,
-                              GateQView.params, builder);
+        Gate3 = createNewGate(loc, "H", {}, TargetInQubitOps, GateQView.params,
+                              builder);
       } else {
-        Gate1 = createNewGate(loc, "H", {}, TargetInQubitOps,
+        Gate1 = createNewGate(loc, "H", {}, TargetInQubitOps, GateQView.params,
+                              builder);
+        Gate2 = createNewGate(loc, "CNOT", ControlInQubitOps, TargetInQubitOps,
                               GateQView.params, builder);
-        Gate2 = createNewGate(loc, "CNOT", ControlInQubitOps,
-                              TargetInQubitOps, GateQView.params, builder);
-        Gate3 = createNewGate(loc, "H", {}, TargetInQubitOps,
-                              GateQView.params, builder);
+        Gate3 = createNewGate(loc, "H", {}, TargetInQubitOps, GateQView.params,
+                              builder);
       }
       // Add the newly created operation into the KernelDialectInfo Map
       analysis.addOperation(Gate1);
