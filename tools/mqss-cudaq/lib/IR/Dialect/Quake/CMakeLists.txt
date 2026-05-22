@@ -12,13 +12,16 @@ add_mlir_library(QuakeDialect
   QuakeOps.cpp
   QuakeTypes.cpp
 
+  ADDITIONAL_HEADER_DIRS
+    ${PROJECT_SOURCE_DIR}/tools/mqss-cudaq/include
+
   DEPENDS
   #MLIRQuakeDialectIncGen
   MLIRQuakeInterfacesIncGen
   MLIRQuakeOpsIncGen
-  MLIRQuakeDialectIncGen
   MLIRQuakeTypesIncGen
-
+  MLIRQuakeDialectIncGen
+  
   LINK_LIBS
   CCDialect
   MLIRFuncDialect

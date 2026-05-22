@@ -23,7 +23,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   </picture>
 </div>
 
-# Collection of MLIR Passes of the Munich Quantum Software Stack (MQSS)
+# Munich Quantum Software Stack-Compiler Infrastructure (MQSS-CI)
 
 <!-- [DOXYGEN MAIN] -->
 
@@ -32,8 +32,7 @@ on Quantum programs to optimize, transform lower quantum circuits. The passes in
 operate using the state-of-the-art Multi-Level Intermediate Representation (MLIR) compiler
 framework.
 
-The passes operated on either the quake (by Nvidia [cudaq-quantum](https://github.com/NVIDIA/cuda-quantum)) or catalyst-quantum (by (pennlylane
-Catalyst)[https://github.com/PennyLaneAI/catalyst]) MLIR dialects.
+The passes operated on either the quake by Nvidia [cudaq-quantum](https://github.com/NVIDIA/cuda-quantum) or catalyst-quantum by [pennlylane-Catalyst](https://github.com/PennyLaneAI/catalyst) MLIR dialects.
 
 ## Key features of this suite
 
@@ -60,7 +59,7 @@ Note: Please refer to the FAQs section for more details on MLIR, MQSS and relate
 
 ## Getting Started
 
-- Available via :
+- Available via : GitHub
 
 ## System Requirements
 
@@ -78,6 +77,41 @@ Note: These are automatically downloaded and installed by the build scripts
 - pennylane-catalyst : 0.14.1
 - python : 3.11
 - C++ : 17...20
+
+## Build/Installation Instructions
+
+Note: Please use a docker container unless you are using a Linux machine
+
+### Prerequisites
+
+Install:
+
+- Docker
+- VSCode
+- VSCode Dev Containers extension
+
+```bash
+git clone https://github.com/akshay9594/MQSS-Passes-Suite.git /workspaces/MQSS-Passes-Suite
+cd /workspaces/MQSS-Passes-Suite
+git checkout 15599880807575bb49ec63e0941c10fbbf17b818n
+```
+
+Then:
+
+```bash
+docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
+docker run --rm -it \
+  -v "$PWD":/workspaces/MQSS-Passes-Suite \
+  -w /workspaces/MQSS-Passes-Suite \
+  mqss-pass-dev \
+  bash
+```
+
+Finally:
+
+```bash
+make all
+```
 
 ## Citation
 

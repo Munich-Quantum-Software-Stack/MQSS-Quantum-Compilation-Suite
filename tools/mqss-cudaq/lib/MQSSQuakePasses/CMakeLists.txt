@@ -20,10 +20,16 @@ add_mlir_library(MLIRPasses
     MQSSTransformsPassIncGen
 
   LINK_LIBS PUBLIC
+    CCDialect
+    QuakeDialect
     MLIRTensorDialect
     MLIRIR
     MLIRPass
     MLIRTransforms
+    MQT::CoreIR
+    MQT::CoreNA
+    MQT::QMapSC
+    MQT::QMapSCHeuristic
 )
 
 if(BUILD_CUDAQ)

@@ -14,17 +14,20 @@ RESOLVER_SCRIPT=tools/resolve_python_input.py
 
 mqss-cudaq:
 	./scripts/build_cudaq.sh --install-dir ${INSTALL_PATH}
-	$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
 
 mqss-catalyst:
 	./scripts/build_catalyst.sh --install-dir ${INSTALL_PATH}
-	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
 docs:
 	@./scripts/build_docs.sh
 
+compile_commands:
+	$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
+	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
+
 python:
 	./scripts/python_setup.sh
+	
 all: mqss-cudaq mqss-catalyst
 	@mkdir -p $(INSTALL_PATH)
 	@ln -sf $(abspath $(RESOLVER_SCRIPT)) $(INSTALL_PATH)/resolve_python_input.py

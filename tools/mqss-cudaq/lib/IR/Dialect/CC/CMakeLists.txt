@@ -14,9 +14,9 @@ add_mlir_library(CCDialect
   DEPENDS
     #CCDialectIncGen
     MLIRCCInterfacesIncGen
+    MLIRCCTypesIncGen
     MLIRCCOpsIncGen
     MLIRCCDialectIncGen
-    MLIRCCTypesIncGen
 
   LINK_LIBS
     MLIRComplexDialect
