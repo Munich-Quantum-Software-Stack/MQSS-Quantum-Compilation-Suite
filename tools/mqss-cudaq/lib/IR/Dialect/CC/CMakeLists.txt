@@ -1,10 +1,3 @@
-# ============================================================================ #
-# Copyright (c) 2022 - 2026 NVIDIA Corporation & Affiliates.                   #
-# All rights reserved.                                                         #
-#                                                                              #
-# This source code and the accompanying materials are made available under     #
-# the terms of the Apache License 2.0 which accompanies this distribution.     #
-# ============================================================================ #
 
 add_mlir_library(CCDialect
   CCDialect.cpp
@@ -12,11 +5,12 @@ add_mlir_library(CCDialect
   CCTypes.cpp
 
   DEPENDS
-    #CCDialectIncGen
-    MLIRCCInterfacesIncGen
-    MLIRCCTypesIncGen
-    MLIRCCOpsIncGen
-    MLIRCCDialectIncGen
+  mqss-cudaq-headers
+  CCInterfacesIncGen
+  CCDialectIncGen
+  CCOpsIncGen
+  CCTypesIncGen
+
 
   LINK_LIBS
     MLIRComplexDialect

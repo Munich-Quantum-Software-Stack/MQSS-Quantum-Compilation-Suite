@@ -10,7 +10,6 @@
         "ms-python.python",
         "twxs.cmake",
         "ms-vscode.cmake-tools",
-        "ms-vscode.cpptools",
         "cschlosser.doxdocgen",
         "psioniq.psi-header",
         "streetsidesoftware.code-spell-checker",
@@ -20,9 +19,14 @@
         "qiu.llvm-ir-language-support",
         "llvm-vs-code-extensions.vscode-mlir",
         "ms-azuretools.vscode-docker",
-        "ritwickdey.liveserver"
+        "ritwickdey.liveserver",
+        "llvm-vs-code-extensions.vscode-clangd"
       ],
       "settings": {
+        "clangd.path": "/usr/local/bin/clangd",
+        "clangd.arguments": [
+          "--compile-commands-dir=/workspaces/MQSS-Passes-Suite/build"
+        ],
         "files.associations": {
           "CMakeLists.txt": "cmake",
           "*.cmake.in": "cmake",

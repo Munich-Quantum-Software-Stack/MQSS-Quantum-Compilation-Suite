@@ -125,6 +125,9 @@ add_custom_target(check-mqss-code
 
 ################################-MQSS Settings-###############################
 
+add_custom_target(mqss-cudaq-headers)
+set_target_properties(mqss-cudaq-headers PROPERTIES FOLDER "Misc")
+
 add_subdirectory(lib)
 add_subdirectory(include)
 
@@ -149,10 +152,10 @@ target_include_directories(mqss-cudaq-opt
 # endif()
 
 target_link_libraries(mqss-cudaq-opt 
-  PRIVATE 
-    MLIRPasses
+  PUBLIC 
     CCDialect
     QuakeDialect
+    MLIRPasses
     # The missing MLIR dialects
     MLIRFuncDialect         # <--- Fixes the func.func error
     MLIRArithDialect        # <--- For constants and math

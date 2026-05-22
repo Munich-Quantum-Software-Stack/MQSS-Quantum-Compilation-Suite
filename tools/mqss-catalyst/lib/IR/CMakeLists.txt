@@ -10,7 +10,8 @@ add_mlir_library(MLIRQuantum
     QuantumOps.cpp
     
     ADDITIONAL_HEADER_DIRS
-    ${PROJECT_SOURCE_DIR}/tools/mqss-catalyst/include
+    ${MQSS_SRC_DIR}/tools/mqss-catalyst/include
+    ${MQSS_BUILD_DIR}/tools/mqss-catalyst/include
 
     DEPENDS
     MLIRQuantumInterfacesIncGen
