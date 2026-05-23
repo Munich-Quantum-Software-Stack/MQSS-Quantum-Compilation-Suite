@@ -27,6 +27,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm cmake-3.29.0-linux-${CMAKE_ARCH}.tar.gz
 
 RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      curl \
+      ca-certificates \
+      libssl-dev \
+      zlib1g-dev \
+      libbz2-dev \
+      libreadline-dev \
+      libsqlite3-dev \
+      libncursesw5-dev \
+      xz-utils \
+      tk-dev \
+      libxml2-dev \
+      libxmlsec1-dev \
+      libffi-dev \
+      liblzma-dev
+
+RUN apt-get update && \
     apt-get install -y \
     build-essential \
     libz3-dev \
@@ -36,8 +53,11 @@ RUN apt-get update && \
     libtinfo-dev \
     lld \
     jq \
+    python3 \
+    python3-pip \
     ninja-build \
     openssh-client \
+    openssl \
     pkg-config \
     libeigen3-dev \
     libboost-program-options-dev \
@@ -47,4 +67,5 @@ RUN apt-get update && \
     # Clean up cache to reduce image size
     rm -rf /var/lib/apt/lists/*
 
+RUN python3 -m pip install lit
 RUN git config --global gc.auto 0

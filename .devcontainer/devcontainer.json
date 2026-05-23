@@ -3,7 +3,7 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-
+  "workspaceFolder": "/workspaces/MQSS-Passes-Suite",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -79,6 +79,5 @@
       }
     }
   },
-"workspaceFolder": "/workspaces/MQSS-Passes-Suite",
-"postCreateCommand": "make -C /workspaces/MQSS-Passes-Suite all"
+"postCreateCommand": "make -C /workspaces/MQSS-Passes-Suite python"
 }

@@ -1,4 +1,4 @@
-
+#!/usr/bin/env bash
 
 # Note: To be invoked via root/Makefile
 CURRENT_DIR=$(pwd)

@@ -2,8 +2,11 @@
 CATALYST_CCDB = build/tools/mqss-catalyst/compile_commands.json
 CUDAQ_CCDB    = build/tools/mqss-cudaq/compile_commands.json
 MERGED_CCDB   = build/compile_commands.json
+NUM_JOBS = 4
 
 MQSS_INSTALL_DIR = /workspaces/mqss-install
+
+VENV_DIR=$(CURDIR)/_deps/.venv
 
 INSTALL_PATH := $(HOME)/.local/bin
 
@@ -26,7 +29,25 @@ compile_commands:
 	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
 python:
-	./scripts/python_setup.sh
+	./scripts/python-setup.sh
+
+build:
+	@ninja -j $(NUM_JOBS) -C $(CURDIR)/build/tools/mqss-catalyst
+	@ninja -j $(NUM_JOBS) -C $(CURDIR)/build/tools/mqss-cudaq
+
+test-dialects:
+	@ninja -C $(CURDIR)/build/tools/mqss-catalyst check-mqss
+	@ninja -C $(CURDIR)/build/tools/mqss-cudaq check-mqss
+
+test-all:
+	@ninja -C $(CURDIR)/build/tools/mqss-catalyst check-mqss
+	@ninja -C $(CURDIR)/build/tools/mqss-cudaq check-mqss
+	@ninja -C $(CURDIR)/build/tools/mqss-cudaq check-mqss-code
+	@ninja -C $(CURDIR)/build/tools/mqss-catalyst check-mqss-code
+
+setup-env:
+	echo 'source $(VENV_DIR)/bin/activate'
+	echo 'export PATH="~/.local/bin:$$PATH"'
 	
 all: mqss-cudaq mqss-catalyst
 	@mkdir -p $(INSTALL_PATH)
@@ -35,7 +56,8 @@ all: mqss-cudaq mqss-catalyst
 	@chmod +x $(INSTALL_PATH)/mqss-cc 
 	@echo " "
 	@echo "Installed scripts to $(INSTALL_PATH)"
-	@echo 'Make sure $$HOME/.local/bin is in your PATH'
+	@echo 'Make sure $(INSTALL_PATH) is in your PATH'
+	@echo 'PLEASE RUN THE COMMAND: eval "$$(make setup-env)"'
 
 ccdb-clean:
 	rm -f $(MERGED_CCDB)

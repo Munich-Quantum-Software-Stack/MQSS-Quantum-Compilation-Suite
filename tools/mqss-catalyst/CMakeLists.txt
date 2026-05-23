@@ -166,12 +166,12 @@ find_program(LLVM_EXTERNAL_LIT
   REQUIRED
 )
 add_custom_target(check-mqss
-  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../tests/dialects/catalyst-quantum
+  COMMAND ${LLVM_EXTERNAL_LIT} ${MQSS_SRC_DIR}/tests/dialects/catalyst-quantum
   USES_TERMINAL
 )
 
 add_custom_target(check-mqss-code
-  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_SOURCE_DIR}/../../tests/code/catalyst/tests
+  COMMAND ${LLVM_EXTERNAL_LIT} ${MQSS_SRC_DIR}/tests/code/catalyst/tests
   USES_TERMINAL
 )
 

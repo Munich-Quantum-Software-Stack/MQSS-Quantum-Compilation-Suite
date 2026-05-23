@@ -110,7 +110,7 @@ LLVM_DIR="${LLVM_BIN_DIR}/lib/cmake/llvm"
 MLIR_DIR="${LLVM_BIN_DIR}/lib/cmake/mlir"
 
 # Fetch OS specific catalyst installer. This is needed to get the catalyst python jit framework
-VENV_DIR="${DEPS_DIR}/venv"
+VENV_DIR="${CURRENT_DIR}/_deps/.venv"
 CATALYST_SITE_PACKAGE="${VENV_DIR}/lib/python3.11/site-packages/catalyst"
 
 if [[ -e "${CATALYST_SITE_PACKAGE}" ]]; then
@@ -210,17 +210,3 @@ cmake -G Ninja \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   -DLLVM_EXTERNAL_LIT=$(which lit) \
   -DCATALYST_ENABLE_WARNINGS="${STRICT_WARNINGS}"
-
-
-NUM_JOBS=4
-blank
-info "Building MQSS Catalyst Passes with ${NUM_JOBS} jobs..."
-
-ninja -j"${NUM_JOBS}" -C "${CURRENT_DIR}/build/tools/mqss-catalyst"
-# blank
-# if [[ -e "${INSTALL_DIR}/bin/mqss-catalyst-opt" ]]; then
-#     ok "Successfully installed MQSS-CATALYST"
-# else
-#     fail "MQSS-CATALYST not installed"
-#     exit 1
-# fi

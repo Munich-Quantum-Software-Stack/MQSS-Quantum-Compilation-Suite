@@ -91,14 +91,15 @@ Install:
 - VSCode Dev Containers extension
 
 ```bash
-git clone https://github.com/akshay9594/MQSS-Passes-Suite.git /workspaces/MQSS-Passes-Suite
+git clone https://github.com/akshay9594/MQSS-Passes-Suite.git \
+       /workspaces/MQSS-Passes-Suite
 cd /workspaces/MQSS-Passes-Suite
 git checkout 15599880807575bb49ec63e0941c10fbbf17b818n
 ```
 
 Then:
 
-```bash
+```sh
 docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
 docker run --rm -it \
   -v "$PWD":/workspaces/MQSS-Passes-Suite \
@@ -107,11 +108,62 @@ docker run --rm -it \
   bash
 ```
 
-Finally:
+Note: The project root is at ```/workspaces/MQSS-Passes-Suite```
+
+## Building and Installing the project
+
+The first thing to do is to setup a virtual env and append paths
+to the PATH env variable. The path is ```~/.local/bin``` which is
+where the executables are generated.
+
+```bash
+eval "$(make setup-env)"
+```
+
+Then, configure the project by running the command:
 
 ```bash
 make all
 ```
+
+This invokes two scripts ```scripts/build_cudaq.sh``` and ```scripts/build_catalyst.sh```.
+These scripts contain the required cmake commands to configure the project.
+
+Finally, build the project by running:
+
+```bash
+make build
+```
+
+This builds the project using ```ninja``` and if the build succeeds,
+generates the executables ```mqss-catalyst-opt```, ```mqss-cudaq-opt``` and ```mqss-cc```.
+These are added within the directory ```~/.local/bin```. If you make any changes to the source
+code i.e. to the files within ```MQSS-Passes-Suite/tools/*```, then just rerun the ```make build```
+command.
+
+If any changes are made to the build scripts i.e. ```build_catalyst.sh``` or ```build_cudaq.sh```
+then do ```make all``` first and then run the build command.
+
+## Testing the installation
+
+After the build is successful, use the following commands to test
+the installation.
+
+For mlir dialect-level testing (faster), RUN:
+
+```bash
+make test-dialects
+```
+
+For slower end-to-end testing (input: c++/python code, output: mlir-dialect), RUN:
+
+```bash
+make test-all
+```
+
+These commands will run all the available test cases in the ```tests/dialects``` and
+```tests/code``` directories. There are a total of 82 test cases currently, with
+more added on consistent basis.
 
 ## Citation
 

@@ -4,8 +4,8 @@ set -euo pipefail
 REQUIRED_VERSION="3.11.14"
 
 CURRENT_DIR="$(pwd)"
-DEPS_DIR="${CURRENT_DIR}/_deps/mqss-catalyst"
-VENV_DIR="${DEPS_DIR}/venv"
+DEPS_DIR="${CURRENT_DIR}/_deps"
+VENV_DIR="${DEPS_DIR}/.venv"
 
 mkdir -p "${DEPS_DIR}"
 
@@ -39,11 +39,6 @@ echo "pyenv path: $(command -v pyenv)"
 
 if ! pyenv versions --bare | grep -qx "${REQUIRED_VERSION}"; then
     echo "Python ${REQUIRED_VERSION} not found in pyenv."
-
-    echo "Installing build dependencies may be required, e.g. on Ubuntu/Debian:"
-    echo "  sudo apt install -y build-essential libssl-dev zlib1g-dev \\"
-    echo "      libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \\"
-    echo "      xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev"
 
     echo "Installing Python ${REQUIRED_VERSION}..."
     pyenv install "${REQUIRED_VERSION}"
