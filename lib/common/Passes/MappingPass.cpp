@@ -365,7 +365,7 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
   }
   // builder.create<func::ReturnOp>(loc);
 #ifdef DEBUG
-  std::cout << "Dumping QC after mapping:\n";
+  MQSS_DEBUG("Dumping QC after mapping:\n");
   qcMapped.print(std::cout);
 #endif
 }
@@ -375,9 +375,9 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
 
   for (auto &[kernel, info] : analysis.getKernelDialectInfo()) {
 
-    llvm::outs() << "\nkernel: " << kernel.getSymName() << "\n"
+    MQSS_DEBUG("\nkernel: " << kernel.getSymName() << "\n"
                  << " total input qubits: " << info.AllocatedQubits
-                 << " Measure qubits: " << info.NumMeasureQubits << "\n\n";
+                 << " Measure qubits: " << info.NumMeasureQubits << "\n\n");
 
     if(info.AllocatedQubits == 0)
       continue;
@@ -399,7 +399,7 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
       }
     }
 
-    llvm::errs() << "--> Before mapping, Dumping QC:\n";
+    MQSS_DEBUG("--> Before mapping, Dumping QC:\n");
     qc.print(std::cout);
 
     // Map the circuit
@@ -438,13 +438,13 @@ class Mapping : public mqss_backend::CommonMappingPassBase<Mapping> {
     //        Parsing would involve a more sophisticated Internal IR to
     //        represent operations of all supported dialects.
 
-    llvm::outs() << "\n[Applying Pass: MappingPass]\n";
+    MQSS_DEBUG("\n[Applying Pass: MappingPass]\n");
 
     PipelineConfig config;
     if (!input.empty())
       config = PipelineConfig::fromFile(input);
     else {
-      llvm::outs() << "--> No input file provided, using pass defaults!" << "\n";
+      MQSS_DEBUG("--> No input file provided, using pass defaults!" << "\n");
       config = PipelineConfig::defaults();
     }
     auto architecture = config.arch;

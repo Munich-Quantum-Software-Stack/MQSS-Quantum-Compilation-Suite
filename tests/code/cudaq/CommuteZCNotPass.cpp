@@ -26,7 +26,9 @@ template <std::size_t N> struct test {
     rx(5.1416, q[1]);
     x<cudaq::ctrl>(q[0], q[1]);
 
-    mz(q);
+    mz(q[0]);
+    mz(q[1]);
+    mz(q[2]);
   }
 };
 

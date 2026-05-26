@@ -18,6 +18,8 @@ template <std::size_t N> struct test {
     x<cudaq::ctrl>(q[0], q[1]);
     z(q[0]);
     mz(q);
+    mz(q[0]);
+    mz(q[1]);
   }
 };
 

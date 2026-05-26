@@ -50,7 +50,7 @@ public:
 
     auto &analysis = getAnalysis<DialectAnalysis>();
 
-    llvm::outs() << "\n[Applying Pass: CommonReduction]\n";
+    MQSS_DEBUG("\n[Applying Pass: CommonReduction]\n");
 
     SharedPassLogic PassLogic;
 

@@ -12,14 +12,19 @@ INSTALL_PATH := $(HOME)/.local/bin
 
 SRC_SCRIPT=scripts/mqss-cc
 RESOLVER_SCRIPT=scripts/resolve_python_input.py
+CUDAQ_QUAKE=_deps/mqss-cudaq/cudaq/bin/cudaq-quake
 
 .PHONY: mqss-cudaq mqss-catalyst all
 
+INSTALL_DIR = --install-dir ${INSTALL_PATH}
+
+DEBUG_FLAG =
+
 mqss-cudaq:
-	@./scripts/build_cudaq.sh --install-dir ${INSTALL_PATH}
+	@./scripts/build_cudaq.sh ${DEBUG_FLAG} ${INSTALL_DIR} 
 
 mqss-catalyst:
-	@./scripts/build_catalyst.sh --install-dir ${INSTALL_PATH}
+	@./scripts/build_catalyst.sh ${DEBUG_FLAG} ${INSTALL_DIR} 
 
 docs:
 	@./scripts/build_docs.sh
@@ -48,6 +53,7 @@ test-all:
 setup-env:
 	echo 'source $(VENV_DIR)/bin/activate'
 	echo 'export PATH="~/.local/bin:$$PATH"'
+	echo 'export PATH="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$$PATH"'
 	
 build: mqss-cudaq mqss-catalyst
 	@mkdir -p $(INSTALL_PATH)

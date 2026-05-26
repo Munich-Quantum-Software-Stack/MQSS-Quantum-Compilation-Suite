@@ -29,7 +29,7 @@ public:
 
     auto &analysis = getAnalysis<DialectAnalysis>();
 
-    llvm::outs() << "\n[Applying Pass: CommonDecomposition]\n";
+    MQSS_DEBUG("\n[Applying Pass: CommonDecomposition]\n");
 
     SharedPassLogic PassLogic;
 

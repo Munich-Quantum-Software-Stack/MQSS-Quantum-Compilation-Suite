@@ -6,20 +6,33 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/Support/raw_ostream.h"
+#include <llvm/Support/Debug.h>
 
 #include <cmath>
+
+
+#ifdef MQSS_ENABLE_DEBUG
+#define MQSS_DEBUG(X)                                                          \
+  do {                                                                         \
+    llvm::errs() << X;                                                         \
+  } while (false)
+#else
+#define MQSS_DEBUG(X)                                                          \
+  do {                                                                         \
+  } while (false)
+#endif
 
 static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
 
   for (auto CandidatesInfo : CommmutationCandidates) {
-    llvm::outs() << "Commuting...\n";
+    MQSS_DEBUG("Commuting...\n");
     auto *Cand1 = CandidatesInfo.Op1;
     auto *Cand2 = CandidatesInfo.Op2;
-    llvm::outs().indent(4) << "Cand 1: " << *Cand1 << "\n";
-    llvm::outs().indent(4) << "Cand 2: " << *Cand2 << "\n";
+    MQSS_DEBUG("Cand 1: " << *Cand1 << "\n");
+    MQSS_DEBUG("Cand 2: " << *Cand2 << "\n");
     Cand1->moveAfter(Cand2);
 
-    llvm::outs().indent(4) << "---------------------------------------------\n";
+    MQSS_DEBUG("---------------------------------------------\n");
   }
 }
 
@@ -31,15 +44,15 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates,
 
   for (auto OpInfo : CommmutationCandidates) {
 
-    llvm::outs().indent(4) << "SSA Commuting...\n";
+    MQSS_DEBUG("SSA Commuting...\n");
 
     auto *Op1 = OpInfo.Op1;
     auto *Op2 = OpInfo.Op2;
     auto Op1QView = OpInfo.Op1QView;
     auto Op2QView = OpInfo.Op2QView;
 
-    llvm::outs().indent(4) << "Op1: " << *Op1 << "\n";
-    llvm::outs().indent(4) << "Op2: " << *Op2 << "\n";
+    MQSS_DEBUG("Op1: " << *Op1 << "\n");
+    MQSS_DEBUG("Op2: " << *Op2 << "\n");
 
     // Get the Op1 and Op2 Qubits being compared
     // E.g. commuting CNOT (Op1) and Rx (Op2)
@@ -65,14 +78,14 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates,
     Op2->replaceUsesOfWith(Op2Operand, Op1Operand);
     Op1->replaceUsesOfWith(Op1Operand, Op2Result);
 
-    llvm::outs().indent(4) << "Op2: " << *Op2 << "\n";
-    llvm::outs().indent(4) << "Op1: " << *Op1 << "\n";
+    MQSS_DEBUG("Op2: " << *Op2 << "\n");
+    MQSS_DEBUG("Op1: " << *Op1 << "\n");
 
     // Update the Op1 and Op2 operands in QuantumOpView
     analysis.UpdateOperands(Op2, KeyGate2, Op2Operand, Op1Operand);
     analysis.UpdateOperands(Op1, KeyGate1, Op1Operand, Op2Result);
 
-    llvm::outs().indent(4) << "---------------------------------------------\n";
+    MQSS_DEBUG("---------------------------------------------\n");
   }
 }
 
@@ -113,13 +126,13 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
 
         auto Op2CtrlQubits = nextOpView.getQubits(QubitRole::Control);
         auto Op2TargetQubits = nextOpView.getQubits(QubitRole::Target);
-        // llvm::outs() << "next op: " << *NextOp << "\n";
+        //  "next op: " << *NextOp << "\n";
         if (nextOpView.hasSideEffects &&
             !is_contained(Gate2Ty, nextOpView.GateTy)) {
           if (touchesAny(Op2, Op1CtrlQubits.ids, QView) ||
               touchesAny(Op2, Op1TargetQubits.ids, QView)) {
 
-            // llvm::outs().indent(4) << "Found intervening ops!\n";
+            // "Found intervening ops!\n";
             break;
           }
           if (touchesAny(Op2, Op1TargetQubits.out)) {
@@ -150,7 +163,7 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
           // TODO: For catalyst - Cannot commute by checking the output qubits
           // and input qubits of Gate Ops. If the check returns true, and the
           // gates are commuted, it will break SSA form (Def-Use will be
-          // commuted to Use-Def). llvm::outs().indent(4) << "Not same
+          // commuted to Use-Def). "Not same
           // Qubits!\n";
           break;
         }
@@ -168,8 +181,7 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
     if (!CommuteCandidates.empty()) {
       Commute(CommuteCandidates, CompareKey, analysis);
     } else {
-      llvm::outs().indent(4)
-          << "-----No Commutation candidates for the kernel----\n";
+      MQSS_DEBUG("-----No Commutation candidates for the kernel----\n");
     }
   }
 
@@ -274,7 +286,7 @@ static void performNullRotationCancellation(
   }
 
   for (auto gop : ToErase) {
-    llvm::outs() << "--->Erasing: " << *gop << "\n";
+    MQSS_DEBUG( "--->Erasing: " << *gop << "\n");
     cancel(gop);
   }
 }
@@ -344,7 +356,7 @@ performCancellation(MapVector<Operation *, QuantumOpView> OpQuantumView,
   }
 
   for (auto *op : ToErase) {
-    llvm::outs() << "--> Erasing: " << *op << "\n";
+    MQSS_DEBUG("--> Erasing: " << *op << "\n");
 
     for (unsigned i = 0; i < op->getNumResults(); ++i) {
       op->getResult(i).replaceAllUsesWith(op->getOperand(i));
@@ -443,7 +455,7 @@ static void performReduction(MyModuleAnalysis &analysis,
 
           if (InterveningOps) {
             ChecksSatisfied = false;
-            llvm::outs() << "Has intervening ops!\n";
+            MQSS_DEBUG("Has intervening ops!\n");
             break;
           }
 
@@ -460,8 +472,8 @@ static void performReduction(MyModuleAnalysis &analysis,
             ChecksSatisfied = true;
             break;
           }
-          llvm::outs().indent(4) << *pipeline[i].GateOp << "\n";
-          llvm::outs().indent(4) << *pipeline[i + 1].GateOp << "\n";
+          MQSS_DEBUG(*pipeline[i].GateOp << "\n");
+          MQSS_DEBUG(*pipeline[i + 1].GateOp << "\n");
 
           // TODO: For catalyst - Check equivalence b/w result Qubits of FirstOp
           // and OpQubits of Next Op
@@ -480,7 +492,7 @@ static void performReduction(MyModuleAnalysis &analysis,
 
       // TODO: Is it correct to take this as the RefOp?
       auto FirstOp = pattern[0].GateOp;
-      llvm::outs() << "Ref gate: " << *FirstOp << "\n";
+      MQSS_DEBUG( "Ref gate: " << *FirstOp << "\n");
 
       mlir::IRRewriter builder(FirstOp->getContext());
       builder.setInsertionPointAfter(FirstOp);
@@ -511,9 +523,9 @@ static void performReduction(MyModuleAnalysis &analysis,
         }
       }
 
-      llvm::outs() << "--->Created: " << *NewOp << "\n";
+      MQSS_DEBUG( "--->Created: " << *NewOp << "\n");
       // for (auto &[Op, view] : pattern) {
-      //   llvm::outs() << "-->To Erase: " << *Op << "\n";
+      //    "-->To Erase: " << *Op << "\n";
       //   cancel(Op);
       // }
     }
@@ -560,11 +572,11 @@ static void performArgAngelNormalization(
                                 GateCtrlQubits, GateTargetQubits,
                                 GateQView.params, builder, GateQView.isAdjoint);
 
-    llvm::outs() << "--->Created: " << *NewOp << "\n";
+    MQSS_DEBUG( "--->Created: " << *NewOp << "\n");
   }
 
   for (auto *Op : ToErase) {
-    llvm::outs() << "-->To Erase: " << *Op << "\n";
+    MQSS_DEBUG( "-->To Erase: " << *Op << "\n");
     cancel(Op);
   }
 }
@@ -651,16 +663,16 @@ static void performCNOTReversal(MyModuleAnalysis &analysis) {
     auto Gate3CtrlOp = Gate3OpInfo.getQubits(QubitRole::Control).in[0];
     auto Gate3TgtOp = Gate3OpInfo.getQubits(QubitRole::Target).in[0];
 
-    llvm::outs() << "Gate3 Op Info fine\n";
+    MQSS_DEBUG("Gate3 Op Info fine\n");
     auto Gate3ResulCtrl = Gate3OpInfo.getQubits(QubitRole::Control).out[0];
     auto Gate3ResulTgt = Gate3OpInfo.getQubits(QubitRole::Target).out[0];
 
-    llvm::outs() << "Gate3 Result Info fine\n";
+    MQSS_DEBUG("Gate3 Result Info fine\n");
     auto Gate4OpInfo = analysis.getOpInfo(Gate4);
     auto Gate5OpInfo = analysis.getOpInfo(Gate5);
     auto Gate4OpTgt = Gate4OpInfo.getQubits(QubitRole::Target).in[0];
     auto Gate5OpTgt = Gate5OpInfo.getQubits(QubitRole::Target).in[0];
-    llvm::outs() << "Gate4 and 5 Target Info fine\n";
+    MQSS_DEBUG("Gate4 and 5 Target Info fine\n");
 
     Gate3->replaceUsesOfWith(Gate3CtrlOp, Gate1Tgt);
     Gate3->replaceUsesOfWith(Gate3TgtOp, Gate2Tgt);
@@ -680,7 +692,7 @@ static void performCNOTReversal(MyModuleAnalysis &analysis) {
   }
 
   for (auto *Op : ToErase) {
-    llvm::outs() << "-->To Erase: " << *Op << "\n";
+    MQSS_DEBUG("-->To Erase: " << *Op << "\n");
     cancel(Op);
   }
 }
@@ -796,7 +808,7 @@ static void performDecomposition(MyModuleAnalysis &analysis,
     OpTargetResult.replaceAllUsesWith(Gate3Result);
     OpControlResult.replaceAllUsesWith(Gate2ControlResult);
 
-    llvm::outs() << "-->To Erase: " << *Op << "\n";
+    MQSS_DEBUG( "-->To Erase: " << *Op << "\n");
     cancel(Op);
   }
 

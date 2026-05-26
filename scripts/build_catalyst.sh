@@ -65,6 +65,7 @@ mkdir -p "${BUILD_DIR}"
 mkdir -p "${DEPS_DIR}"
 INSTALL_DIR="${BUILD_DIR}/bin"
 
+DEBUG=OFF
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -74,6 +75,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --build-docs)
       BUILD_DOCS=ON
+      shift
+      ;;
+    --debug)
+      DEBUG=ON
       shift
       ;;
     *)
@@ -207,6 +212,7 @@ cmake -G Ninja \
   -DMQSS_BUILD_DIR="${CURRENT_DIR}/build" \
   -DINSTALL_DIR="${INSTALL_DIR}" \
   -DMQSS_SRC_DIR="${CURRENT_DIR}" \
+  -DMQSS_ENABLE_DEBUG="${DEBUG}" \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   -DLLVM_EXTERNAL_LIT=$(which lit) \
   -DCATALYST_ENABLE_WARNINGS="${STRICT_WARNINGS}"

@@ -5,6 +5,7 @@
 using namespace mlir;
 using namespace llvm;
 
+
 namespace {
 
 class CommonGateCancellation
@@ -29,7 +30,7 @@ class CommonGateCancellation
     //        Parsing would involve a more sophisticated Internal IR to
     //        represent operations of all supported dialects.
 
-    llvm::outs() << "\n[Applying Pass: CommonGateCancellationPass]\n";
+    MQSS_DEBUG("[Applying Pass: CommonGateCancellationPass]\n");
 
     auto &analysis = getAnalysis<DialectAnalysis>();
     auto KernelDialectInfo = analysis.getKernelDialectInfo();
@@ -42,16 +43,16 @@ class CommonGateCancellation
       Comparety CompareKey;
 
       for (auto &[kernel, Info] : KernelDialectInfo) {
-        llvm::outs() << ++count << ". kernel: " << kernel.getSymName() << "\n";
+        MQSS_DEBUG(++count << ". kernel: " << kernel.getSymName() << "\n");
         performCancellation(Info.OpQViewMap, GatesToCancel, CompareKey);
-        llvm::outs() << "\n";
+        MQSS_DEBUG( "\n");
       }
     } else if (mode == "CancelNullRotation") {
 
       for (auto &[kernel, Info] : KernelDialectInfo) {
-        llvm::outs() << ++count << ". kernel: " << kernel.getSymName() << "\n";
+        MQSS_DEBUG(++count << ". kernel: " << kernel.getSymName() << "\n");
         performNullRotationCancellation(Info.OpQViewMap, RotationGatesToCancel);
-        llvm::outs() << "\n";
+        MQSS_DEBUG( "\n");
       }
     } else {
       getOperation()->emitError() << "invalid mode: " << mode;

@@ -19,7 +19,8 @@ template <std::size_t N> struct test {
     h(q[0]);
     h(q[1]);
     x(q[1]);
-    mz(q);
+    mz(q[0]);
+    mz(q[1]);
   }
 };
 

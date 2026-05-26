@@ -22,7 +22,11 @@ template <std::size_t N> struct ghz {
     ry(3.1416, q[2]);
     rz(2.25, q[3]);
     t(q[4]);
-    mz(q);
+    mz(q[0]);
+    mz(q[1]);
+    mz(q[2]);
+    mz(q[3]);
+    mz(q[4]);
   }
 };
 

@@ -31,9 +31,14 @@ add_mlir_library(MLIRPasses
     MQT::QMapSCHeuristic
 )
 
+
 if(BUILD_CUDAQ)
   target_compile_definitions(MLIRPasses PRIVATE BUILD_CUDAQ_ENABLED)
   target_compile_options(MLIRPasses PRIVATE -fexceptions)
+  if(MQSS_ENABLE_DEBUG)
+    target_compile_definitions(MLIRPasses PRIVATE MQSS_ENABLE_DEBUG)
+  endif()
+
 endif()
 
 target_include_directories(MLIRPasses

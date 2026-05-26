@@ -16,7 +16,7 @@ template <std::size_t N> struct test {
     // Compile-time sized array like std::array
     cudaq::qarray<N> q;
     x<cudaq::ctrl>(q[0], q[1]);
-    mz(q);
+    mz(q[1]);
   }
 };
 

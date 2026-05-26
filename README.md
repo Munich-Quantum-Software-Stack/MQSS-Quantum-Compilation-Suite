@@ -38,7 +38,7 @@ The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](ht
 
 1. __Representation-agnostic optimizations__: Apply the same passes across multiple quantum IRs.
 
-2. __Cross-framework support__: Works with ecosystems like Quake and Catalyst.
+2. __Cross-framework support__: Works with ecosystems like cudaq-quantum and Catalyst.
 
 3. __Write once, reuse everywhere__: Share optimization logic across compiler representations.
 
@@ -146,6 +146,8 @@ command.
 
 - If any changes are made to the build scripts i.e. ```build_catalyst.sh``` or ```build_cudaq.sh``` or
 to the CMakeLists then do ```make build``` first and then ```make target```.
+
+## Enabling Pass Debug Information
 
 ## Testing the installation
 

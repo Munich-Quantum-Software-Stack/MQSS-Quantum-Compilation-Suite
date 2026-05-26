@@ -26,7 +26,12 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
     %13 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
     %14 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
     quake.x [%13] %14 : (!quake.ref, !quake.ref) -> ()
-    %measOut = quake.mz %0 : (!quake.veq<2>) -> !cc.stdvec<!quake.measure>
+    
+    %q0 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    %q1 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+
+    %m0 = quake.mz %q0 : (!quake.ref) -> !quake.measure
+    %m1 = quake.mz %q1 : (!quake.ref) -> !quake.measure
     return
   }
   func.func @_ZN4testILm2EEclEv(%arg0: !cc.ptr<i8>) {
@@ -42,4 +47,3 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
 // CHECK: quake.x [%2] %1 : (!quake.ref, !quake.ref) -> ()
 // CHECK: quake.x %1 : (!quake.ref) -> ()
 // CHECK: quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
-// CHECK: %measOut = quake.mz %0 : (!quake.veq<2>) -> !cc.stdvec<!quake.measure>

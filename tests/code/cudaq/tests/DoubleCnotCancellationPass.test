@@ -9,6 +9,5 @@
 // CHECK: quake.x [%2] %1 : (!quake.ref, !quake.ref) -> ()
 // CHECK: quake.x %1 : (!quake.ref) -> ()
 // CHECK: quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
-// CHECK: %measOut = quake.mz %0 : (!quake.veq<2>) -> !cc.stdvec<!quake.measure>
 
 

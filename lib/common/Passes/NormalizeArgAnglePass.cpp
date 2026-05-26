@@ -15,7 +15,7 @@ public:
 
     auto &analysis = getAnalysis<DialectAnalysis>();
 
-    llvm::outs() << "\n[Applying Pass: NormalizeAngle]\n";
+    MQSS_DEBUG("\n[Applying Pass: NormalizeAngle]\n");
 
     for (auto [kernel, Info] : analysis.getKernelDialectInfo())
       performArgAngelNormalization(Info.OpQViewMap);

@@ -70,7 +70,7 @@ class CommonCommute
 
     auto analysis = getAnalysis<DialectAnalysis>();
 
-    llvm::outs() << "\n[Applying Pass: CommonCommute]\n";
+    MQSS_DEBUG("\n[Applying Pass: CommonCommute]\n");
 
     SharedPassLogic PassLogic;
     if (mode == "CX-RX")

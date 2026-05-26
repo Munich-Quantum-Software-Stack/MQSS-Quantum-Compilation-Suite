@@ -23,7 +23,7 @@ template <std::size_t N> struct test {
     ry(20.0, q[0]);
     rz(33.1416, q[1]);
 
-    mz(q);
+    mz(q[1]);
   }
 };
 

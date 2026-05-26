@@ -47,7 +47,7 @@ public:
   void runOnOperation() override {
     auto &analysis = getAnalysis<DialectAnalysis>();
 
-    llvm::outs() << "\n[Applying Pass: CommonGateSwitch]\n";
+    MQSS_DEBUG("\n[Applying Pass: CommonGateSwitch]\n");
 
     SharedPassLogic PassLogic;
     if (mode == "XYZHtoHXYZ")

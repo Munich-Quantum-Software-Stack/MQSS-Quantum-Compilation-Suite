@@ -69,6 +69,7 @@ BUILD_DOCS=OFF  # Default: Do not build documentation
 #BUILD_TYPE="Debug"  # Default: Release mode
 INSTALL_DIR="${BUILD_DIR}/bin"
 
+DEBUG=OFF
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -78,6 +79,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --build-docs)
       BUILD_DOCS=ON
+      shift
+      ;;
+    --debug)
+      DEBUG=ON
       shift
       ;;
     *)
@@ -231,6 +236,7 @@ cmake -G Ninja \
   -DBUILD_MLIR_PASSES_DOCS="${BUILD_DOCS}" \
   -DCUDAQ_SOURCE_DIR="${CUDAQ_DIR}" \
   -DMQSS_SRC_DIR="${CURRENT_DIR}" \
+  -DMQSS_ENABLE_DEBUG="${DEBUG}" \
   -DINSTALL_DIR="${INSTALL_DIR}" \
 	-DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
   -DLLVM_EXTERNAL_LIT=$(which lit) \
