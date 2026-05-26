@@ -23,7 +23,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   </picture>
 </div>
 
-# Munich Quantum Software Stack-Compiler Infrastructure (MQSS-CI)
+# Munich Quantum Software Stack-Compiler Suite (MQSS-CI)
 
 <!-- [DOXYGEN MAIN] -->
 
@@ -93,7 +93,7 @@ Clone the project:
 git clone https://github.com/akshay9594/MQSS-Passes-Suite.git \
        /workspaces/MQSS-Passes-Suite
 cd /workspaces/MQSS-Passes-Suite
-git checkout 15599880807575bb49ec63e0941c10fbbf17b818n
+git checkout bfbc0832ecd23de753b23f749f19bcba683af2e2
 ```
 
 If using docker, RUN the commands:

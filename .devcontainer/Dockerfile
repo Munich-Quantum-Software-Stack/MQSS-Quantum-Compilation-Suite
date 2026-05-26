@@ -41,6 +41,8 @@ RUN apt-get update && \
       libxml2-dev \
       libxmlsec1-dev \
       libffi-dev \
+      libzstd-dev \
+      zstd \
       liblzma-dev
 
 RUN apt-get update && \

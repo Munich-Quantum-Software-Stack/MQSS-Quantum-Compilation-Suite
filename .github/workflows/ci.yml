@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, catalyst-integration]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repo (gives us the Dockerfile)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Build Docker image using relative path
+      - name: Build Docker image
+        run: |
+          docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
+
+      # Step 3: Build
+      - name: Build
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
+            -w /workspaces/MQSS-Passes-Suite \
+            mqss-pass-dev bash -c "make build"
+
+      # Step 4: Build Targets
+      - name: Build Targets
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
+            -w /workspaces/MQSS-Passes-Suite \
+            mqss-pass-dev bash -c "make target"
+
+      # Step 5: Run Tests
+      - name: Run Tests
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
+            -w /workspaces/MQSS-Passes-Suite \
+            mqss-pass-dev bash -c "make test-all"
