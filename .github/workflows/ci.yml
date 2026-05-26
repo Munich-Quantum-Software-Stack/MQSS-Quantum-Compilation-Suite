@@ -9,6 +9,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      CUDAQ_BIN: /workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin
 
     steps:
       # Step 1: Checkout repo (gives us the Dockerfile)
@@ -20,26 +22,25 @@ jobs:
         run: |
           docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
 
-      # Step 3: Build
       - name: Build
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
+            -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
             -w /workspaces/MQSS-Passes-Suite \
-            mqss-pass-dev bash -c "make build"
+            mqss-pass-dev \
+            bash -lc '
+              make python
+              source _deps/.venv/bin/activate
+              which python
+              python -c "import sys; print(sys.executable)"
+              make build
+              make target
+            '
 
-      # Step 4: Build Targets
-      - name: Build Targets
-        run: |
-          docker run --rm \
-            -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
-            -w /workspaces/MQSS-Passes-Suite \
-            mqss-pass-dev bash -c "make target"
-
-      # Step 5: Run Tests
       - name: Run Tests
         run: |
           docker run --rm \
+            -e PATH="/root/.local/bin:${{ env.CUDAQ_BIN }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
             -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
             -w /workspaces/MQSS-Passes-Suite \
-            mqss-pass-dev bash -c "make test-all"
+            mqss-pass-dev bash -lc "source /workspaces/MQSS-Passes-Suite/_deps/.venv/bin/activate && make test-all"

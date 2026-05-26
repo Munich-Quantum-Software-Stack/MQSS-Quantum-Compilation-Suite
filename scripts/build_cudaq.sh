@@ -110,7 +110,7 @@ if [[ -e "$LLVM_LIB_DIR" ]]; then
   ok "Found LLVM tool-chain at: ${LLVM_LIB_DIR}"
 else
   warn "LLVM_LIB_DIR not found..."
-  step "Downloading ${CLANG_LLVM_VERSION}.tar.xz"
+  info "Downloading ${CLANG_LLVM_VERSION}.tar.xz"
   wget -P $DEPS_DIR \
     https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.4/${CLANG_LLVM_VERSION}.tar.xz
   
@@ -136,7 +136,7 @@ if [[ -e "$CUDA_QUAKE" ]]; then
   ok "Found CUDAQ Binaries at: ${DEPS_DIR}/cudaq/bin"
 else
   warn "CUDAQ Binaries NOT FOUND!"
-  step "Downloading and Installing CUDAQ Assets..."
+  info "Downloading and Installing CUDAQ Assets..."
   wget -P $DEPS_DIR "https://github.com/NVIDIA/cuda-quantum/releases/download/0.14.0/install_cuda_quantum_cu13.$(uname -m)"
   bash $DEPS_DIR/install_cuda_quantum*.$(uname -m) --accept -- --installpath "${DEPS_DIR}/cudaq"
 fi

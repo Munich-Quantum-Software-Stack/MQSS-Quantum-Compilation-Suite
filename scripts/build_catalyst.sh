@@ -104,7 +104,7 @@ if [[ -e "$LLVM_BIN_DIR" ]]; then
     ok "Found LLVM-${LLVM_VERSION}-toolchain at: ${LLVM_BIN_DIR}"
 else
     warn "LLVM-${LLVM_VERSION}-toolchain not found..."
-    step "Downloading and installing it using https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh"
+    info "Downloading and installing it using https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh"
     curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | 
         bash -s -- -v ${LLVM_VERSION} -p ${LLVM_BIN_DIR}
 
@@ -121,6 +121,7 @@ CATALYST_SITE_PACKAGE="${VENV_DIR}/lib/python3.11/site-packages/catalyst"
 if [[ -e "${CATALYST_SITE_PACKAGE}" ]]; then
     info "Found Catalyst python package at: ${CATALYST_SITE_PACKAGE}"
 else
+    info "Installing pennylane-catalyst..."
     python3.11 -m pip install pennylane==0.44.1 pennylane-catalyst==0.14.1 pennylane-lightning==0.45.0
 
 fi
