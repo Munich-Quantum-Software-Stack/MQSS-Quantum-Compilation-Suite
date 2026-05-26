@@ -27,14 +27,14 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 <!-- [DOXYGEN MAIN] -->
 
-This repository holds a collection of compiler passes integrated into the MQSS that operate
-on Quantum programs to optimize, transform lower quantum circuits. The passes in this suite
-operate using the state-of-the-art Multi-Level Intermediate Representation (MLIR) compiler
-framework.
+This repository contains a collection of compiler passes integrated into the MQSS
+to optimize, transform, and lower quantum programs. The passes in this suite operate on
+quantum circuits represented using the state-of-the-art [Multi-Level Intermediate Representation
+(MLIR)](https://mlir.llvm.org) framework.
 
-The passes operated on either the quake by Nvidia [cudaq-quantum](https://github.com/NVIDIA/cuda-quantum) or catalyst-quantum by [pennlylane-Catalyst](https://github.com/PennyLaneAI/catalyst) MLIR dialects.
+The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](https://github.com/NVIDIA/cuda-quantum) or catalyst-quantum dialect by [pennlylane-Catalyst](https://github.com/PennyLaneAI/catalyst).
 
-## Key features of this suite
+## Key features
 
 1. __Representation-agnostic optimizations__: Apply the same passes across multiple quantum IRs.
 
@@ -46,9 +46,9 @@ The passes operated on either the quake by Nvidia [cudaq-quantum](https://github
 
 5. __Native-IR interoperability__: Connect frameworks without replacing their IRs.
 
-6. __Qubit Circuit Mapping__: A representation-agnostic logical to physical qubit mapping pass
+6. __Qubit Circuit Mapping__: A representation-agnostic logical to physical qubit mapping pass using [MQT-QMAP](https://github.com/munich-quantum-toolkit/qmap)
 
-Note: Please refer to the FAQs section for more details on MLIR, MQSS and related questions
+Note: Please refer to the FAQs section for more details on the passes, MLIR, MQSS and other related questions.
 <!-- [DOXYGEN MAIN] -->
 
 <div align="center">
@@ -59,36 +59,35 @@ Note: Please refer to the FAQs section for more details on MLIR, MQSS and relate
 
 ## Getting Started
 
-- Available via : GitHub
-
-## System Requirements
+### System Requirements
 
 - OS : Linux (tested on Ubuntu 22.04)
-- Architecture : aarch64
-- C++ compiler : gcc and g++ 11.4
+  - Use docker container if on a different OS
+- Architecture : aarch64, X86
 
-## Dependencies
+### Development Environment
+
+- Docker
+- VSCode
+- VSCode Dev Containers extension
+
+### Major Dependencies
 
 Note: These are automatically downloaded and installed by the build scripts
 
 - Clang+LLVM : 16.0.6 toolchain and 21.8 toolchain
 - CMake : 3.29...4.2
 - cudaq-quantum toolchain : 0.14.0
-- pennylane-catalyst : 0.14.1
+- pennylane-catalyst toolchain: 0.14.1
 - python : 3.11
 - C++ : 17...20
+- Compiler : gcc and g++ 11.4
 
-## Build/Installation Instructions
-
-Note: Please use a docker container unless you are using a Linux machine
+For a full list of dependencies check ```.devcontainer/Dockerfile```.
 
 ### Prerequisites
 
-Install:
-
-- Docker
-- VSCode
-- VSCode Dev Containers extension
+Clone the project:
 
 ```bash
 git clone https://github.com/akshay9594/MQSS-Passes-Suite.git \
@@ -97,7 +96,7 @@ cd /workspaces/MQSS-Passes-Suite
 git checkout 15599880807575bb49ec63e0941c10fbbf17b818n
 ```
 
-Then:
+If using docker, RUN the commands:
 
 ```sh
 docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
@@ -112,9 +111,10 @@ Note: The project root is at ```/workspaces/MQSS-Passes-Suite```
 
 ## Building and Installing the project
 
-The first thing to do is to setup a virtual env and append paths
-to the PATH env variable. The path is ```~/.local/bin``` which is
-where the executables are generated.
+The first thing to do is to setup a virtual env and append the installation
+path to the ```PATH``` env variable. The default install path is ```~/.local/bin```
+which is where the executables are generated. The MakeFile does this
+for you. RUN:
 
 ```bash
 eval "$(make setup-env)"
@@ -123,7 +123,7 @@ eval "$(make setup-env)"
 Then, configure the project by running the command:
 
 ```bash
-make all
+make build
 ```
 
 This invokes two scripts ```scripts/build_cudaq.sh``` and ```scripts/build_catalyst.sh```.
@@ -132,17 +132,20 @@ These scripts contain the required cmake commands to configure the project.
 Finally, build the project by running:
 
 ```bash
-make build
+make target
 ```
 
 This builds the project using ```ninja``` and if the build succeeds,
 generates the executables ```mqss-catalyst-opt```, ```mqss-cudaq-opt``` and ```mqss-cc```.
-These are added within the directory ```~/.local/bin```. If you make any changes to the source
-code i.e. to the files within ```MQSS-Passes-Suite/tools/*```, then just rerun the ```make build```
+You can change the install path by modifying the ```INSTALL_PATH```
+variable within the  MakeFile.
+
+- If you make any changes to the source
+code i.e. to the C++ files within ```MQSS-Passes-Suite/lib/*```, then just rerun the ```make target```
 command.
 
-If any changes are made to the build scripts i.e. ```build_catalyst.sh``` or ```build_cudaq.sh```
-then do ```make all``` first and then run the build command.
+- If any changes are made to the build scripts i.e. ```build_catalyst.sh``` or ```build_cudaq.sh``` or
+to the CMakeLists then do ```make build``` first and then ```make target```.
 
 ## Testing the installation
 
@@ -155,15 +158,15 @@ For mlir dialect-level testing (faster), RUN:
 make test-dialects
 ```
 
-For slower end-to-end testing (input: c++/python code, output: mlir-dialect), RUN:
+For slower end-to-end testing (input: c++/python code, output: optimized mlir-dialect), RUN:
 
 ```bash
 make test-all
 ```
 
-These commands will run all the available test cases in the ```tests/dialects``` and
+This command will run all the available test cases in the ```tests/dialects``` and
 ```tests/code``` directories. There are a total of 82 test cases currently, with
-more added on consistent basis.
+more added regularly.
 
 ## Citation
 

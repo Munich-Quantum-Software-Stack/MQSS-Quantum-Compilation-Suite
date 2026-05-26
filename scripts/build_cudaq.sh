@@ -221,8 +221,8 @@ ok "Found MLIR DIR: ${MLIR_DIR}"
 # cd  "${BUILD_DIR}"
 
 cmake -G Ninja \
-  -S "${CURRENT_DIR}/tools/mqss-cudaq" \
-  -B "${CURRENT_DIR}/build/tools/mqss-cudaq" \
+  -S "${CURRENT_DIR}/lib/mqss-cudaq" \
+  -B "${CURRENT_DIR}/build/lib/mqss-cudaq" \
   -DBUILD_CUDAQ=ON \
   -DCMAKE_C_COMPILER="${CC}" \
   -DCMAKE_CXX_COMPILER="${CXX}" \

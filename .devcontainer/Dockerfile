@@ -53,6 +53,8 @@ RUN apt-get update && \
     libtinfo-dev \
     lld \
     jq \
+    gcc-11 \
+    g++-11 \
     python3 \
     python3-pip \
     ninja-build \

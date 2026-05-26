@@ -188,8 +188,8 @@ fi
 # 	-DCMAKE_CXX_VISIBILITY_PRESET=$(SYMBOL_VISIBILITY)
 
 cmake -G Ninja \
-  -S "${CURRENT_DIR}/tools/mqss-catalyst" \
-  -B "${CURRENT_DIR}/build/tools/mqss-catalyst" \
+  -S "${CURRENT_DIR}/lib/mqss-catalyst" \
+  -B "${CURRENT_DIR}/build/lib/mqss-catalyst" \
   -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
   -DBUILD_CATALYST="${BUILD_CATALYST}" \
   -DLLVM_ENABLE_ASSERTIONS=ON \
