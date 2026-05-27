@@ -1,5 +1,6 @@
 name: CI
 
+
 on:
   push:
     branches: [develop, catalyst-integration]
@@ -13,26 +14,40 @@ jobs:
       CUDAQ_BIN: /workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin
 
     steps:
+
       # Step 1: Checkout repo (gives us the Dockerfile)
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          docker system prune -af
+
       # Step 2: Build Docker image using relative path
       - name: Build Docker image
         run: |
-          docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
+          docker build --build-arg CMAKE_ARCH=x86_64 \
+           --progress=plain -t mqss-pass-dev -f .devcontainer/Dockerfile .
 
       - name: Build
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
+            -v ${HOME}/.local/bin:/root/.local/bin \
             -w /workspaces/MQSS-Passes-Suite \
             mqss-pass-dev \
             bash -lc '
-              make python
+              make setup-env
               source _deps/.venv/bin/activate
+              export PATH="${HOME}/.local/bin:$PATH"
+              export PATH="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$PATH"
               which python
-              python -c "import sys; print(sys.executable)"
+              which cmake
+              which cudaq-opt
               make build
               make target
             '
@@ -40,7 +55,21 @@ jobs:
       - name: Run Tests
         run: |
           docker run --rm \
-            -e PATH="/root/.local/bin:${{ env.CUDAQ_BIN }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
             -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
+            -v ${HOME}/.local/bin:/root/.local/bin \
             -w /workspaces/MQSS-Passes-Suite \
-            mqss-pass-dev bash -lc "source /workspaces/MQSS-Passes-Suite/_deps/.venv/bin/activate && make test-all"
+            mqss-pass-dev \
+            bash -lc ' 
+            source /workspaces/MQSS-Passes-Suite/_deps/.venv/bin/activate 
+            export PATH="${HOME}/.local/bin:$PATH"
+            export PATH="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$PATH"
+            which mqss-cudaq-opt
+            which mqss-catalyst-opt
+            which mqss-cc
+            which cudaq-opt
+            which catalyst
+            which python
+            lit -v /workspaces/MQSS-Passes-Suite/tests/code/catalyst/tests/CommuteCNOTX.test
+            lit -v /workspaces/MQSS-Passes-Suite/tests/code/catalyst/tests/HZHToXPass.test
+            lit -v /workspaces/MQSS-Passes-Suite/tests/code/catalyst/tests/HZHToXPass.test
+            make test-all '

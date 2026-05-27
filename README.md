@@ -23,13 +23,13 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   </picture>
 </div>
 
-# Munich Quantum Software Stack-Compiler Suite (MQSS-CI)
+# Munich Quantum Software Stack-Quantum Compilation Suite
 
 <!-- [DOXYGEN MAIN] -->
 
 This repository contains a collection of compiler passes integrated into the MQSS
-to optimize, transform, and lower quantum programs. The passes in this suite operate on
-quantum circuits represented using the state-of-the-art [Multi-Level Intermediate Representation
+to optimize, transform, and lower quantum programs to instructions compliant with target Quantum devices.
+The passes in this suite operate on quantum circuits represented using the state-of-the-art [Multi-Level Intermediate Representation
 (MLIR)](https://mlir.llvm.org) framework.
 
 The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](https://github.com/NVIDIA/cuda-quantum) or catalyst-quantum dialect by [pennlylane-Catalyst](https://github.com/PennyLaneAI/catalyst).
@@ -111,33 +111,40 @@ Note: The project root is at ```/workspaces/MQSS-Passes-Suite```
 
 ## Building and Installing the project
 
-The first thing to do is to setup a virtual env and append the installation
-path to the ```PATH``` env variable. The default install path is ```~/.local/bin```
-which is where the executables are generated. The MakeFile does this
-for you. RUN:
+The first thing to do is to setup a virtual environment and install
+python3.11 into it. We also need to install cmake. RUN:
 
 ```bash
-eval "$(make setup-env)"
+make setup-env
 ```
 
-Then, configure the project by running the command:
+Next, we need to set paths to the directories where the executables are generated
+i.e. ```~/.local/bin``` as well as path to ```cudaq-opt```. RUN command:
+
+```bash
+eval "$(make set-target-paths)"
+```
+
+Then, configure the build by running the command:
 
 ```bash
 make build
 ```
 
 This invokes two scripts ```scripts/build_cudaq.sh``` and ```scripts/build_catalyst.sh```.
-These scripts contain the required cmake commands to configure the project.
+These scripts download and install all the required dependencies for building the targets
+(```mqss-cudaq-opt``` and ```mqss-catalyst-opt```). These scripts contain the required
+cmake commands to configure the project.
 
-Finally, build the project by running:
+Finally, build the targets by running:
 
 ```bash
 make target
 ```
 
-This builds the project using ```ninja``` and if the build succeeds,
-generates the executables ```mqss-catalyst-opt```, ```mqss-cudaq-opt``` and ```mqss-cc```.
-You can change the install path by modifying the ```INSTALL_PATH```
+This builds the targets using ```ninja``` and if the build succeeds,
+generates the executables ```mqss-catalyst-opt```, ```mqss-cudaq-opt```.
+You can change the installation directory by modifying the ```INSTALL_DIR```
 variable within the  MakeFile.
 
 - If you make any changes to the source

@@ -79,5 +79,5 @@
       }
     }
   },
-"postCreateCommand": "make -C /workspaces/MQSS-Passes-Suite python && echo 'eval \"$(make setup-env)\"' >> ~/.bashrc"
+"postCreateCommand": "make -C /workspaces/MQSS-Passes-Suite setup-env && echo 'eval \"$(make set-target-paths)\"' >> ~/.bashrc"
 }

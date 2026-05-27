@@ -111,7 +111,7 @@ if [[ -e "$LLVM_LIB_DIR" ]]; then
 else
   warn "LLVM_LIB_DIR not found..."
   info "Downloading ${CLANG_LLVM_VERSION}.tar.xz"
-  wget -P $DEPS_DIR \
+  wget --quiet -P $DEPS_DIR \
     https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.4/${CLANG_LLVM_VERSION}.tar.xz
   
   ok "Unpacking LLVM-toolchain..."
@@ -137,75 +137,11 @@ if [[ -e "$CUDA_QUAKE" ]]; then
 else
   warn "CUDAQ Binaries NOT FOUND!"
   info "Downloading and Installing CUDAQ Assets..."
-  wget -P $DEPS_DIR "https://github.com/NVIDIA/cuda-quantum/releases/download/0.14.0/install_cuda_quantum_cu13.$(uname -m)"
-  bash $DEPS_DIR/install_cuda_quantum*.$(uname -m) --accept -- --installpath "${DEPS_DIR}/cudaq"
-fi
-################################## CMAKE dependence ###################################
-
-MIN_VER="3.0.0"
-MAX_VER="3.5.0"
-INSTALL_VER="3.29.0"
-
-CMAKE_DIR="${DEPS_DIR}/cmake-${INSTALL_VER}-linux-${CMAKE_ARCH}"
-CMAKE_BIN="${DEPS_DIR}/cmake-3.29.0-linux-${CMAKE_ARCH}/bin/cmake"
-CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v3.29.0/cmake-3.29.0-linux-${CMAKE_ARCH}.tar.gz"
-
-version_ge() {
-  # true if $1 >= $2
-  [[ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1)" == "$2" ]]
-}
-
-version_lt() {
-  # true if $1 < $2
-  ! version_ge "$1" "$2"
-}
-
-cmake_ok=false
-current_ver=""
-
-if command -v cmake >/dev/null 2>&1; then
-  current_ver="$(cmake --version | awk 'NR==1 {print $3}')"
-  info "System CMake version: ${current_ver}"
-
-  if version_ge "$current_ver" "$MIN_VER" && version_lt "$current_ver" "$MAX_VER"; then
-    cmake_ok=true
-    warn "CMake version is within the allowed range [${MIN_VER}, ${MAX_VER}]."
-  else
-    warn " System CMake version is outside the allowed range [${MIN_VER}, ${MAX_VER}]."
-  fi
-else
-  warn "CMake not found."
+  wget --quiet -P $DEPS_DIR "https://github.com/NVIDIA/cuda-quantum/releases/download/0.14.0/install_cuda_quantum_cu13.$(uname -m)"
+  bash $DEPS_DIR/install_cuda_quantum*.$(uname -m) --accept -- --installpath "${DEPS_DIR}/cudaq" > /dev/null
 fi
 
-if [[ "$cmake_ok" != true ]]; then
-  info "Checking if cmake-$INSTALL_VER is already installed in $DEPS_DIR"
-  if [[ -e "$CMAKE_BIN" ]]; then
-    ok "Found CMake at: ${CMAKE_BIN}"
-    export PATH="${DEPS_DIR}/cmake-3.29.0-linux-${CMAKE_ARCH}/bin:$PATH"
-  else
-    blank
-    info "Installing CMake ${INSTALL_VER} ..."
-    info "Download URL: ${CMAKE_URL}"
-    info "Install path: ${CMAKE_DIR}"
-    blank
-
-    wget -P $DEPS_DIR $CMAKE_URL
-    tar -xzf "${DEPS_DIR}/cmake-3.29.0-linux-${CMAKE_ARCH}.tar.gz" -C "$DEPS_DIR"
-
-    if [[ ! -x "$CMAKE_BIN" ]]; then
-      warn "Installation failed: ${CMAKE_BIN} not found." >&2
-      exit 1
-    fi
-
-    ok "Installed CMake at: $CMAKE_BIN"
-    info "Version: $("$CMAKE_BIN" --version | awk 'NR==1 {print $3}')"
-    export PATH="${DEPS_DIR}/cmake-3.29.0-linux-${CMAKE_ARCH}/bin:$PATH"
-  fi
-  cmake_ok=true
-fi
-
-
-if [[ -e "${LLVM_DIR}" && -e "${MLIR_DIR}" && -e "${DEPS_DIR}/cudaq/bin" && "$cmake_ok" == true ]]; then
+if [[ -e "${LLVM_DIR}" && -e "${MLIR_DIR}" && -e "${DEPS_DIR}/cudaq/bin" ]]; then
     blank
     ok "All Required Dependencies Installed"
 else

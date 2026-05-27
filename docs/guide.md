@@ -24,165 +24,107 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 Ready to contribute to the Collection of MLIR Passes of the MQSS? This guide will help you get
 started.
 
-## Installing LLVM/MLIR
+## Installation
 
-Since the MQSS compiler is based on LLVM/MLIR infrastructure and CudaQ compiler, your system must
-contain an installation of the LLVM project as a main prerequisite.
+Follow the same installation instructions as in the README.
 
-We recommend using the scripts given by CudaQ (see
-<https://github.com/NVIDIA/cuda-quantum/tree/main/scripts>) . Those scripts help install LLVM/MLIR.
+## Development Environment
 
-We recommend `clang16` as toolchain for the compilation of the LLVM project. Use the script
-`install_toolchain.sh` as follows:
-
-```sh
- bash scripts/install_toolchain.sh -t clang16
-```
-
-Then, you can install LLVM/MLIR and the prerequisites required by CudaQ by running:
+- It is recommended to use a docker container to ensure consistent, stable environment.
+- The required ```DockerFile``` and ```devcontainer.json``` are provided in ```.devcontainer```
+  directory. Build and RUN the docker container using the following commands:
 
 ```sh
- LLVM_PROJECTS="clang;lld;mlir;python-bindings;compiler-rt"  bash scripts/install_prerequisites.sh
+docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
+docker run --rm -it \
+  -v "$PWD":/workspaces/MQSS-Passes-Suite \
+  -w /workspaces/MQSS-Passes-Suite \
+  mqss-pass-dev \
+  bash
 ```
 
-\note Do not forget to include `compiler-rt` in the `LLVM_PROJECTS`. This is required by some of the
-MQSS MLIR passes. If you do not include it, the project will not compile.
+## Building the tool
 
-## Initial Setup
+- The driver script is the ```MakeFile``` within the project root.
+- The MakeFile invokes build scripts within ```scripts/```.
+- ```build_cudaq.sh```: Downloads and installs dependencies and configures build
+                        for target ```mqss-cudaq-opt```
+- ```build_catalyst.sh```: Downloads and installs dependencies and configures build
+                        for target ```mqss-catalyst-opt```
+- ```setup-env.sh```: Sets up a virtual environment and installs python3.11 in it.
 
-1. Fork the Passes repository on GitHub (see
-   <https://github.com/Munich-Quantum-Software-Stack/passes>).
+The ```make`` commands to build the targets remain the same as in the README.
 
-2. Clone your fork locally
+## Project structure
 
-   ```sh
-   git clone https://forked-url/passes
-   ```
+The key directory which contains the source code is ```lib/```. Its structure is:
 
-3. Change into the project directory
-
-   ```sh
-   cd passes
-   ```
-
-4. Create a branch for local development
-
-   ```sh
-   git checkout -b name-of-your-bugfix-or-feature
-   ```
-
-   Now you can make your changes locally.
-
-## Alternative: Visual Studio Code DevContainer (Strongly recommended)
-
-**Dev Containers** (short for Development Containers) are an environment configuration that allows
-developers to create a consistent, isolated environment for development, testing, and deployment.
-They are typically used in conjunction with Visual Studio Code (**VS Code**) and **Docker** to
-ensure that the development environment is the same across all team members, regardless of their
-host machine or operating system.
-
-- Open the repository in VS-code
-- Use the Dev Container plugin to Open Folder in Container. This should pull and install LLVM/MLIR
-  and the required dependencies.
-
-The previous steps creates an isolated environment where you can tests this project. The project is
-located:
-
-```shell
-cd /workspaces/passes
+```
+lib/
+├── common/
+│   ├── include/
+│   └─ Passes/
+└── mqss-cudaq/
+│   ├── CMakeLists.txt
+│   ├── cudaq.cpp
+│   ├── include/
+│   ├── lib/
+│   └── cmake/
+└── mqss-catalyst/
+    ├── CMakeLists.txt
+    ├── cudaq.cpp
+    ├── include/
+    ├── lib/
+    └── cmake/
 ```
 
-## Working on Source Code
+- The Dialect Agnostic MLIR optimization passes can be found in ```common/Passes```
+  whereas, dialect specific passes can be found in ```mqss-cudaq/lib/MQSSQuakePasses```
+  and ```mqss-catalyst/lib/MQSScatalystPasses```
 
-Building the project requires a C++ compiler supporting _C11_ and a minimum CMake version of _3.19_.
-The example devices and the tests require a C++ compiler supporting _C++17_ and _C++20_ dialects.
+- All dialect related files can be found in ```include/IR``` and ```lib/IR```. Of these,
+  the important ones are the table-gen files (.td) found in ```include/IR``` which comprise
+  the dialect operation definitions.
 
-### Configure and Build
+## Dependencies
 
-This collection of MLIR passes uses CMake as its build system. However, we provide an script
-`build.sh` that first builds CudaQ library `cudaq-mlir-runtime`. Then, the script builds the MQSS
-passes project. You can configure and build the project as follows:
+- A list of major packages/toolchains required is mentioned in [dependencies](link)
+- For packages required for the development environment, please refer to the
+  ```DockerFile```.
 
-```shell
-bash build.sh --jobs 5 --debug --mlir-dir "dir-to-mlir" --clang-dir "dir-to-clang"
-              --llvm-dir "dir-to-llvm" --build-tests --build-docs --build-tools
-```
+## Testing
 
-In the following, we describe each of the arguments accepted by `build.sh`.
+- We use python-lit alongwith ninja and FileCheck to perform dialect-level (input: MLIR dialect; output: MLIR dialect)
+as well as end-to-end (input:c++/python code; output: MLIR dialect) testing. In the end, what is tested
+for correctness is the output optimized/transformed MLIR dialect.
+- Dialect-level testing
+  1. The input dialect is annotated with the RUN command, for e.g.:
 
-- `--jobs` (**optional**) The number of jobs utilized to configure and compile the project. If not
-  specified, a single job is used to compile the project.
-- `--debug` (**optional**) Used to show debug information. If you want to build the project without
-  debug information, do not include it.
-- `--mlir-dir` Path of your MLIR installation. E.g., `/opt/llvm/lib/cmake/mlir/`
-- `--clang-dir` Path of your Clang installation.
-- `--llvm-dir` Path of your LLVM installation.
-- `--build-tests` (**optional**) Include it if you want to build the tests of this project.
-- `--build-docs` (**optional**) Include it if you want to build this documentation.
-- `--build-tools` (**optional**) Include it if you want to build additional tools.
+    ```// RUN: %mqss-catalyst-opt %s --CommonCommutePass=mode=CX-X 2>&1 | FileCheck %s```
+    which runs the target/executable ```mqss-catalyst-opt``` alongwith the pass ```CommonCommutePass```.
+    FileCheck looks for strings to match specified using the ```CHECK:``` keyword, for e.g.
 
-### Running Tests
+    ```sh
+    // CHECK: %out_qubits = quantum.custom "PauliX"() %2 : !quantum.bit
+    // CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %1, %2 : !quantum.bit, !quantum.bit
+    ```
 
-We use the [GoogleTest](https://google.github.io/googletest/primer.html) framework for unit testing
-each MLIR pass in this collection. All tests are contained in the `test` directory. You can
-configure and build the project using CMake as follows:
+    If an exact match is found, the test succeeds, otherwise the test fails.
+  2. End-to-End testing
+     In this testing, the input is a c++/python code, which is then translated to the input
+     MLIR dialect. The testing then proceeds as in (1). The emphasis here is on testing the
+     front-end translation pipeline as well as the transformed dialects. A wrapper script
+     ```mqss-cc``` is used to invoke the necessary tools to translate the input code. If the
+     input code to MLIR dialect translation fails, then the test itself will fail. An example
+     test file performing such a test is shown below:
 
-```shell
-bash build.sh --build-tests
-```
+     ```sh
+      // RUN: %mqss-cc %S/../CommuteCNotRxPass.cpp --passes=CommonCommutePass=mode=CX-RX | FileCheck %s
 
-The executables used to run the tests can be found at `build/tests/`. To verify all the available
-tests, run:
+      // CHECK: quake.rx (%cst_1) %4 : (f64, !quake.ref) -> ()
+      // CHECK-NEXT: quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+     ```
 
-```shell
-ctest --test-dir build --output-on-failure
-```
+## Adding your pass
 
-### Format for Comments
-
-For the information to be displayed correctly in the documentation, it is essential that the
-comments follow the format required by Doxygen. Below you find some tags, that are commonly used
-within the documentation of a function:
-
-- `@brief` For a brief, one-line description of the function. Should always be provided.
-- `@details` For a longer, detailed description of the function.
-- `@param` To explain the usage of a parameter. Should be provided for each parameter.
-- `@return` To explain the return value. Should be provided if the function returns a value.
-
-\note In the current setting, the long description is always prepended with the brief description.
-So there is no need to repeat the brief description in the details.
-
-## Working on the Documentation
-
-The documentation is generated using [Doxygen](https://www.doxygen.nl/index.html), which is
-seamlessly integrated into the CMake build system.
-
-### Building the Documentation
-
-The documentation can be built configuring the CMake as follows:
-
-```shell
-bash build.sh --build-docs
-```
-
-The generated webpage can be inspected by opening the file in `docs/html/index.html` in the CMake
-build directory.
-
-### Static Content
-
-The generated webpage also contains four static sites, namely the main page, the support page, the
-FAQ page, and this development guide. The respective markdown files that serve as the source for
-those sites are contained in `docs/` where `index.md` contains the content of the main page.
-
-### Dynamic Content
-
-In order to include source files to be listed among the menu item `API Reference/Files`, these files
-must be marked as documented. This is accomplished by adding a comment like the following to the top
-of the file. Right now, this is done for all files in the include directory.
-
-### Further Links
-
-- For more details, see the official documentation of Doxygen that can be found here:
-  [https://www.doxygen.nl/manual/docblocks.html](https://www.doxygen.nl/manual/docblocks.html).
-- More tags and commands can be found in the list provided here:
-  [https://www.doxygen.nl/manual/commands.html#cmd_intro](https://www.doxygen.nl/manual/commands.html#cmd_intro)
+## Adding a Dialect

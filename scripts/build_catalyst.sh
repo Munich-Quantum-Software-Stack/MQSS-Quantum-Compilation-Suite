@@ -39,19 +39,6 @@ step() {
   printf '-> %s\n' "$1"
 }
 
-################## Architecture limitations ##################
-
-ARCH="$(uname -m)"
-
-case "$ARCH" in
-  x86_64) CMAKE_ARCH="x86_64" ;;
-  aarch64|arm64) CMAKE_ARCH="aarch64" ;;
-  *)
-    echo "Unsupported architecture: $ARCH" >&2
-    exit 1
-    ;;
-esac
-
 ########################## Create build and deps directories #############################
 
 CURRENT_DIR=$(pwd)
@@ -122,7 +109,7 @@ if [[ -e "${CATALYST_SITE_PACKAGE}" ]]; then
     info "Found Catalyst python package at: ${CATALYST_SITE_PACKAGE}"
 else
     info "Installing pennylane-catalyst..."
-    python3.11 -m pip install pennylane==0.44.1 pennylane-catalyst==0.14.1 pennylane-lightning==0.45.0
+    python3.11 -m pip install -q pennylane==0.44.1 pennylane-catalyst==0.14.1 pennylane-lightning==0.45.0
 
 fi
 

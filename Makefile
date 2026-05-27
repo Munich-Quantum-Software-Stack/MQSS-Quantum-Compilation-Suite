@@ -8,23 +8,25 @@ MQSS_INSTALL_DIR = /workspaces/mqss-install
 
 VENV_DIR=$(CURDIR)/_deps/.venv
 
-INSTALL_PATH := $(HOME)/.local/bin
+INSTALL_DIR := $(HOME)/.local/bin
 
 SRC_SCRIPT=scripts/mqss-cc
 RESOLVER_SCRIPT=scripts/resolve_python_input.py
 CUDAQ_QUAKE=_deps/mqss-cudaq/cudaq/bin/cudaq-quake
 
+CMAKE_BIN=_deps/cmake-3.29.0-linux-aarch64/bin/cmake
+
 .PHONY: mqss-cudaq mqss-catalyst all
 
-INSTALL_DIR = --install-dir ${INSTALL_PATH}
+INSTALL_PATH = --install-dir ${INSTALL_DIR}
 
 DEBUG_FLAG =
 
 mqss-cudaq:
-	@./scripts/build_cudaq.sh ${DEBUG_FLAG} ${INSTALL_DIR} 
+	@./scripts/build_cudaq.sh ${DEBUG_FLAG} ${INSTALL_PATH} 
 
 mqss-catalyst:
-	@./scripts/build_catalyst.sh ${DEBUG_FLAG} ${INSTALL_DIR} 
+	@./scripts/build_catalyst.sh ${DEBUG_FLAG} ${INSTALL_PATH} 
 
 docs:
 	@./scripts/build_docs.sh
@@ -33,12 +35,21 @@ compile_commands:
 	$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
 	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
-python:
-	@./scripts/python-setup.sh
+set-target-paths:
+	echo 'source $(VENV_DIR)/bin/activate'
+	echo 'export PATH="$(HOME)/.local/bin:$$PATH"'
+	echo 'export PATH="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$$PATH"'
+
+setup-env: 
+	@./scripts/setup-env.sh
+# 	@ln -sf $(abspath $(CMAKE_BIN)) $(INSTALL_DIR)/cmake
 
 target:
 	@ninja -j $(NUM_JOBS) -C $(CURDIR)/build/lib/mqss-catalyst
 	@ninja -j $(NUM_JOBS) -C $(CURDIR)/build/lib/mqss-cudaq
+	@ln -sf $(abspath $(RESOLVER_SCRIPT)) $(INSTALL_DIR)/resolve_python_input.py
+	@ln -sf $(abspath $(SRC_SCRIPT)) $(INSTALL_DIR)/mqss-cc
+	@chmod +x $(INSTALL_DIR)/mqss-cc 
 
 test-dialects:
 	@ninja -C $(CURDIR)/build/lib/mqss-catalyst check-mqss
@@ -49,21 +60,10 @@ test-all:
 	@ninja -C $(CURDIR)/build/lib/mqss-cudaq check-mqss
 	@ninja -C $(CURDIR)/build/lib/mqss-cudaq check-mqss-code
 	@ninja -C $(CURDIR)/build/lib/mqss-catalyst check-mqss-code
-
-setup-env:
-	echo 'source $(VENV_DIR)/bin/activate'
-	echo 'export PATH="~/.local/bin:$$PATH"'
-	echo 'export PATH="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$$PATH"'
 	
 build: mqss-cudaq mqss-catalyst
-	@mkdir -p $(INSTALL_PATH)
-	@ln -sf $(abspath $(RESOLVER_SCRIPT)) $(INSTALL_PATH)/resolve_python_input.py
-	@ln -sf $(abspath $(SRC_SCRIPT)) $(INSTALL_PATH)/mqss-cc
-	@chmod +x $(INSTALL_PATH)/mqss-cc 
-	@echo " "
-	@echo "Installed scripts to $(INSTALL_PATH)"
-	@echo 'Make sure $(INSTALL_PATH) is in your PATH'
-	@echo 'PLEASE RUN THE COMMAND: eval "$$(make setup-env)"'
+	@echo "	"
+	@echo "Configured Build, PLEASE RUN: make target"
 
 ccdb-clean:
 	rm -f $(MERGED_CCDB)

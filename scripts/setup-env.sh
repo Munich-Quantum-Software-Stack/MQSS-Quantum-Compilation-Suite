@@ -1,6 +1,43 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+############# Pretty-print variables#################
+
+msg() {
+  printf '%s\n' "$1"
+}
+
+blank() {
+  printf '\n'
+}
+
+section() {
+  blank
+  printf '====== %s ======\n' "$1"
+  blank
+}
+
+info() {
+  printf '🔧 %s\n' "$1"
+}
+
+fail() {
+  printf '❌ %s\n' "$1"
+}
+
+
+ok() {
+  printf '✅ %s\n' "$1"
+}
+
+warn() {
+  printf '⚠️ %s\n' "$1"
+}
+
+step() {
+  printf '-> %s\n' "$1"
+}
+
 REQUIRED_VERSION="3.11.14"
 
 CURRENT_DIR="$(pwd)"
@@ -9,11 +46,14 @@ VENV_DIR="${DEPS_DIR}/.venv"
 
 mkdir -p "${DEPS_DIR}"
 
+INSTALL_DIR="${HOME}/.local/bin"
+mkdir -p "${INSTALL_DIR}"
+
 echo "Using deps dir: ${DEPS_DIR}"
 
 # ─── 1. Ensure pyenv is installed ────────────────────────────────────────────
 
-export PYENV_ROOT="${HOME}/.pyenv"
+export PYENV_ROOT="${DEPS_DIR}/.pyenv"
 export PATH="${PYENV_ROOT}/bin:${PYENV_ROOT}/shims:${PATH}"
 
 if ! command -v pyenv >/dev/null 2>&1; then
@@ -41,7 +81,7 @@ if ! pyenv versions --bare | grep -qx "${REQUIRED_VERSION}"; then
     echo "Python ${REQUIRED_VERSION} not found in pyenv."
 
     echo "Installing Python ${REQUIRED_VERSION}..."
-    pyenv install "${REQUIRED_VERSION}"
+    pyenv install -s "${REQUIRED_VERSION}" > /dev/null
 else
     echo "Python ${REQUIRED_VERSION} already installed via pyenv."
 fi

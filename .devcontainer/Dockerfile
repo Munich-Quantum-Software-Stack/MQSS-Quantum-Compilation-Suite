@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 #     apt-get autoremove -y --purge && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 
-ARG CMAKE_ARCH=aarch64
+ARG CMAKE_ARCH=x86_64
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget ca-certificates && \
     wget https://github.com/Kitware/CMake/releases/download/v3.29.0/cmake-3.29.0-linux-${CMAKE_ARCH}.tar.gz && \
@@ -51,7 +51,6 @@ RUN apt-get update && \
     libz3-dev \
     git \
     make \
-    cmake \
     libtinfo-dev \
     lld \
     jq \
