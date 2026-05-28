@@ -45,9 +45,6 @@ jobs:
               source _deps/.venv/bin/activate
               export PATH="${HOME}/.local/bin:$PATH"
               export PATH="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$PATH"
-              which python
-              which cmake
-              which cudaq-opt
               make build
               make target
             '
@@ -69,7 +66,4 @@ jobs:
             which cudaq-opt
             which catalyst
             which python
-            lit -v /workspaces/MQSS-Passes-Suite/tests/code/catalyst/tests/CommuteCNOTX.test
-            lit -v /workspaces/MQSS-Passes-Suite/tests/code/catalyst/tests/HZHToXPass.test
-            lit -v /workspaces/MQSS-Passes-Suite/tests/code/catalyst/tests/HZHToXPass.test
             make test-all '

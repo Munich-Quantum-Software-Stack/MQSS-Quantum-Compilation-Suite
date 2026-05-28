@@ -2,7 +2,7 @@
 
 #ifdef BUILD_CUDAQ_ENABLED
 #include "MQSSQuakePasses/Pipelines.h"
-#include "MQSSQuakePasses/Transforms.hpp"
+#include "MQSSQuakePasses/Transforms.h"
 #include "include/analysis/QuakeExtractor.h"
 namespace mqss_backend = mqss_cudaq::opt;
 

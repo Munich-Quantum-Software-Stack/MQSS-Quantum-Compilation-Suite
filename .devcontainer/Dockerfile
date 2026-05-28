@@ -66,6 +66,7 @@ RUN apt-get update && \
     libboost-program-options-dev \
     nano \
     vim \
+    doxygen \
     libzip-dev && \
     # Clean up cache to reduce image size
     rm -rf /var/lib/apt/lists/*

@@ -23,7 +23,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   </picture>
 </div>
 
-# Munich Quantum Software Stack-Quantum Compilation Suite
+# Munich Quantum Software Stack (MQSS)-Quantum Compilation Suite
 
 <!-- [DOXYGEN MAIN] -->
 
@@ -36,7 +36,7 @@ The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](ht
 
 ## Key features
 
-1. __Representation-agnostic optimizations__: Apply the same passes across multiple quantum IRs.
+1. __Representation-Agnostic Optimizations__: Apply the same passes across multiple quantum IRs.
 
 2. __Cross-framework support__: Works with ecosystems like cudaq-quantum and Catalyst.
 

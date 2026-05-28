@@ -19,18 +19,29 @@
 # Set the Doxygen configuration file. In the Doxyfile.in file, there are some
 # placeholders that are replaced by CMake. That is also the reason for the
 # extension `.in`. For details see below for the command `configure_file`.
+cmake_minimum_required(VERSION 3.19...3.30)
+
+# set(CMAKE_MODULE_PATH "${MQSS_SRC_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+if(POLICY CMP0116)
+  cmake_policy(SET CMP0116 NEW)
+endif()
+
+
 find_package(Doxygen REQUIRED)
 set(DOXYGEN_CONFIG_FILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
 
 # Set the input directories for doxygen, i.e., all files that contain source
 # code with documentation.
-set(DOXYGEN_INPUT_DIRS ${PROJECT_SOURCE_DIR}/include)
+set(DOXYGEN_INPUT_DIRS ${MQSS_SRC_DIR}/lib/common/include)
 # This variable is only needed to setup the dependency tracking of CMake
 # correctly and is not passed to Doxygen. Whenever such a file is modified,
 # CMake detects that change and will rerun the Doxygen command instead of using
 # the cached result when the target `mlir_passes_docs`is built.
-file(GLOB_RECURSE DOXYGEN_INPUT_FILES ${PROJECT_SOURCE_DIR}/include/*.hpp
-     ${CMAKE_CURRENT_SOURCE_DIR}/*.md)
+file(GLOB_RECURSE DOXYGEN_INPUT_FILES ${MQSS_SRC_DIR}/lib/common/include
+      ${MQSS_SRC_DIR}/lib/mqss-catalyst/include
+      ${MQSS_SRC_DIR}/lib/mqss-cudaq/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/*.md)
 # After the variable above is correctly initialized, we can add the additional
 # files that are not source code but still part of the documentation. IMPORTANT:
 # The order the files with the static content are added here influences their
@@ -40,7 +51,7 @@ set(DOXYGEN_INPUT_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/index.md
     ${CMAKE_CURRENT_SOURCE_DIR}/faq.md
     ${CMAKE_CURRENT_SOURCE_DIR}/guide.md
-    ${CMAKE_CURRENT_SOURCE_DIR}/cudaq-decompositions.md
+    ${CMAKE_CURRENT_SOURCE_DIR}/dependencies.md
     ${CMAKE_CURRENT_SOURCE_DIR}/cudaq-transpiler.md
     ${CMAKE_CURRENT_SOURCE_DIR}/templates.md)
 # ${CMAKE_CURRENT_SOURCE_DIR}/tests.md
@@ -52,9 +63,9 @@ string(REPLACE ";" " " DOXYGEN_INPUT_DIRS "${DOXYGEN_INPUT_DIRS}")
 # Such that the content of other files than files listed in DOXYGEN_INPUT_DIRS
 # can be included with the `\include`or `\snippet` command, we need to add the
 # directories where these files are located.
-set(DOXYGEN_EXAMPLE_DIRS # ${PROJECT_SOURCE_DIR}/examples
-                         # ${PROJECT_SOURCE_DIR}/.github
-    ${PROJECT_SOURCE_DIR}/README.md)
+set(DOXYGEN_EXAMPLE_DIRS # ${MQSS_SRC_DIR}/examples
+                         # ${MQSS_SRC_DIR}/.github
+    ${MQSS_SRC_DIR}/README.md)
 # Again, replace the semicolon with a space such that Doxygen can handle it.
 string(REPLACE ";" " " DOXYGEN_EXAMPLE_DIRS "${DOXYGEN_EXAMPLE_DIRS}")
 
@@ -69,7 +80,7 @@ set(DOXYGEN_CONFIG_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 # Save the location the files of the project doxygen-awesome-css were cloned
 # into. This allows us to get the path to doxygen-awesome.css. For its usage
 # also see the occurrences of @AWESOME_CSS_DIR@ in the Doxyfile.in.
-FetchContent_GetProperties(doxygen-awesome-css SOURCE_DIR AWESOME_CSS_DIR)
+# FetchContent_GetProperties(doxygen-awesome-css SOURCE_DIR AWESOME_CSS_DIR)
 
 # Copy over the dark mode logos as they are not automatically copied by Doxygen.
 file(COPY _static/mqss_logo_dark.svg _static/mlir-passes.png
@@ -98,7 +109,6 @@ set(PROJECT_LOGO "mqss_logo.svg")
 # DOXYGEN_INPUT_DIRS.
 configure_file(${DOXYGEN_CONFIG_FILE_IN} ${DOXYGEN_CONFIG_FILE_OUT} @ONLY)
 
-message(STATUS "Doxygen input files: ${DOXYGEN_INPUT_FILES}")
 
 # Create a custom command to run Doxygen
 add_custom_command(
@@ -108,12 +118,17 @@ add_custom_command(
           ${CMAKE_CURRENT_SOURCE_DIR}/header.html
           ${CMAKE_CURRENT_SOURCE_DIR}/layout.xml
           ${CMAKE_CURRENT_SOURCE_DIR}/style.css
-          ${CMAKE_SOURCE_DIR}/README.md
+          ${MQSS_SRC_DIR}/README.md
           # ${CMAKE_SOURCE_DIR}/.github/support.md
   COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_CONFIG_FILE_OUT}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMENT "Generating API documentation with Doxygen"
   VERBATIM)
+
+message(STATUS "Doxygen input files: ${DOXYGEN_INPUT_FILES}")
+
+message(STATUS "Doxygen executable: ${DOXYGEN_EXECUTABLE}")
+message(STATUS "Doxygen config out: ${DOXYGEN_CONFIG_FILE_OUT}")
 
 # Create a custom target
 add_custom_target(generate_docs ALL

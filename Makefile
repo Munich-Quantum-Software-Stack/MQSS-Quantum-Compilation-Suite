@@ -29,11 +29,12 @@ mqss-catalyst:
 	@./scripts/build_catalyst.sh ${DEBUG_FLAG} ${INSTALL_PATH} 
 
 docs:
-	@./scripts/build_docs.sh
+	./scripts/build_docs.sh
 
 compile_commands:
-	$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
-	$(MAKE) merge-one SRC=$(CATALYST_CCDB)
+	@ln -sf _deps/mqss-cudaq/clang+llvm-16.0.4-aarch64-linux-gnu/bin/clangd /usr/local/bin/clangd
+	@$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
+	@$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
 set-target-paths:
 	echo 'source $(VENV_DIR)/bin/activate'
