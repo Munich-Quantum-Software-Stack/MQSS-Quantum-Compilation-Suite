@@ -24,7 +24,7 @@ This documentation provides helpful information to get you started with the Quan
 Compilation suite of the Munich Quantum Software Stack (MQSS).
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1.5
 :caption: Contents
 
 README

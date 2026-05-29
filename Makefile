@@ -1,14 +1,29 @@
 
-CATALYST_CCDB = build/lib/mqss-catalyst/compile_commands.json
-CUDAQ_CCDB    = build/lib/mqss-cudaq/compile_commands.json
-MERGED_CCDB   = build/compile_commands.json
-NUM_JOBS = 4
+################ User Settings#######################
 
 MQSS_INSTALL_DIR = /workspaces/mqss-install
 
-VENV_DIR=$(CURDIR)/_deps/.venv
+NUM_JOBS = 4
 
 INSTALL_DIR := $(HOME)/.local/bin
+
+INSTALL_PATH = --install-dir ${INSTALL_DIR}
+
+DEBUG_FLAG =  		# --debug (if you want pass debug info)
+
+######################################################
+
+##################### Clangd Paths ###################
+
+CATALYST_CCDB = build/lib/mqss-catalyst/compile_commands.json
+CUDAQ_CCDB    = build/lib/mqss-cudaq/compile_commands.json
+MERGED_CCDB   = build/compile_commands.json
+
+######################################################
+
+################# Paths to Dependencies ###############
+
+VENV_DIR=$(CURDIR)/_deps/.venv
 
 SRC_SCRIPT=scripts/mqss-cc
 RESOLVER_SCRIPT=scripts/resolve_python_input.py
@@ -16,11 +31,11 @@ CUDAQ_QUAKE=_deps/mqss-cudaq/cudaq/bin/cudaq-quake
 
 CMAKE_BIN=_deps/cmake-3.29.0-linux-aarch64/bin/cmake
 
+######################################################
+
+##################### Key Commands ###################
+
 .PHONY: mqss-cudaq mqss-catalyst all
-
-INSTALL_PATH = --install-dir ${INSTALL_DIR}
-
-DEBUG_FLAG =
 
 mqss-cudaq:
 	@./scripts/build_cudaq.sh ${DEBUG_FLAG} ${INSTALL_PATH} 

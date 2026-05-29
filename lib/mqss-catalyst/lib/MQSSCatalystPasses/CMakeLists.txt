@@ -34,7 +34,7 @@ add_mlir_library(MLIRPasses
 )
 
 if(BUILD_CATALYST)
-  target_compile_definitions(MLIRPasses PRIVATE BUILD_CATALYST_ENABLED MQSS_ENABLE_DEBUG)
+  target_compile_definitions(MLIRPasses PRIVATE BUILD_CATALYST_ENABLED)
   target_compile_options(MLIRPasses PRIVATE -fexceptions)
   if(MQSS_ENABLE_DEBUG)
     target_compile_definitions(MLIRPasses PRIVATE MQSS_ENABLE_DEBUG)

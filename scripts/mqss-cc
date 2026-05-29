@@ -42,22 +42,54 @@ Usage:
 
 options:
   Common:
-    --out-dir DIR
+    --out-dir <Path/to/DIR>
+    --emit-qir
 
   Python-only:
-    --function NAME
-    --stage NAME
-    --resolver PATH
+    --function <NAME>
 
-  Example Usage:
+Compiler passes to run
+    Passes:
+      CommonCommutePass                              -   This pass searches commutes gates that match a specific pattern.
+        --mode=<string>                                - Select Pattern to Commute: CX-RX, RX-CX, CX-X, X-CX, CX-Z, Z-CX.
+      CommonDecompositionPass                        -   Perform Gate Decomposition, {Cx} -> HCzH or {Cz} -> HCxH or ReverseCx. 
+        --mode=<string>                                - Select PassMode CxToHCzH ,CzToHCxH or ReverseCx.
+      CommonGateCancellationPass                     -   Performs cancellation of Gates following a specific pattern
+        --mode=<string>                                - Select Pattern to Cancel: CancelGate or CancelNullRotation.
+      CommonMappingPass                              -   A Dialect agnostic mapping pass
+        --input=<string>                               - Path to json input.
+      CommonNormalizeArgAnglePass                    -   Normalize Arg angle of RX, RY, RZ gates. 
+      CommonReductionPass                            -   Perform Circuit Reduction, {HZH} -> X, {HXH} -> Z, {SAdjZ} -> S or {SZ} -> SAdj. 
+        --mode=<string>                                - Select PassMode HXHToZ , HZHToX, SAdjZToS or SZToSAdj.
+      CommonSwitchPass                               -   Commute and Switch Gates.
+        --mode=<string>                                - Select Pattern to Switch: XYZHtoHXYZ or HXYZtoXYZH.
+      canonicalize                                   -   Canonicalize operations
+        --disable-patterns=<string>                    - Labels of patterns that should be filtered out during application
+        --enable-patterns=<string>                     - Labels of patterns that should be used during application, all other patterns are filtered out
+        --max-iterations=<long>                        - Max. iterations between applying patterns / simplifying regions
+        --max-num-rewrites=<long>                      - Max. number of pattern rewrites within an iteration
+        --region-simplify                              - Perform control flow optimizations to the region tree
+        --test-convergence                             - Test only: Fail pass on non-convergence to detect cyclic pattern
+        --top-down                                     - Seed the worklist in general top-down order
+      cse                                            -   Eliminate common sub-expressions
+      print-quake-gates-pass                         -   Example pass that traverses a given mlir module, print its gates and a description of the operands of each gate
+      print-catalyst-gates-pass                      -   Example pass that traverses a given mlir module, print its gates and a description of the operands of each gate
+
+Example Usage:
   1. For cudaq-quake
-      mqss-cc test.cpp --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
+      mqss-cc test.cpp --emit-qir --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 
   2. For catalyst-quantum
       mqss-cc test.py --function circuit --stage QuantumCompilationStage --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 EOF
 }
 
+while getopts "h" opt; do
+  case "$opt" in
+    h) usage; exit 0 ;;
+    *) usage; exit 1 ;;
+  esac
+done
 
 PASSES=""
 OTHER_ARGS=()
@@ -95,7 +127,7 @@ STAGE="HLOLoweringStage"
 OUT_DIR=""
 TOOL_ARGS=()
 
-EMIT_QIR=0
+EMIT_QIR=OFF
 DEBUG_ONLY=""
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -104,7 +136,10 @@ while [[ $# -gt 0 ]]; do
       OUT_DIR="$2"
       shift 2
       ;;
-
+    --emit-qir)
+      EMIT_QIR=ON
+      shift
+      ;;
     --function)
       if [[ "${EXT}" != "py" ]]; then
         echo "Error: --function is only valid for Python input." >&2
@@ -167,20 +202,32 @@ for p in "${PASS_LIST[@]}"; do
     PASS_ARGS+=(--"$p")
 done
 
-
+filename=$(basename "$INPUT_FILE")
 # Dispatch to correct optimizer
 if [[ "${EXT}" == "cpp" ]]; then
     blank
     info "Converting the input to MLIR and applying specified optimization passes.."
-    filename=$(basename "$INPUT_FILE")
     GENERATED_MLIR="${filename%.*}.qke"
     
     if [[ "${OUT_DIR}" != "" ]]; then
       cudaq-quake "${INPUT_FILE}" -o "${OUT_DIR}/${GENERATED_MLIR}"
       mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
-      #cudaq-opt --quake-to-qir "${OUT_DIR}/${GENERATED_MLIR}"
+
+      if [[ "${EMIT_QIR}" == "ON" ]]; then
+        info "Emitting QIR..."
+        echo " "
+        cudaq-translate --convert-to=qir-full "${OUT_DIR}/${GENERATED_MLIR}" -o "${OUT_DIR}/${filename%.*}.ll"
+      fi
+      
     else
-      cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${PASS_ARGS[@]}" # | cudaq-opt --quake-to-qir
+
+      if [[ "${EMIT_QIR}" == "ON" ]]; then
+        info "Emitting QIR..."
+        echo " "
+        cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${PASS_ARGS[@]}" | cudaq-opt --quake-to-qir
+      else
+        cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${PASS_ARGS[@]}"
+      fi
     fi
     
     # TODO: Further convert to QIR?
@@ -203,6 +250,7 @@ elif [[ "${EXT}" == "py" ]]; then
     fi
 
     COMMAND=""
+    
     if [[ "${OUT_DIR}" != "" ]]; then
       COMMAND="$(
       python3.11 "${RESOLVER}" \
@@ -218,17 +266,34 @@ elif [[ "${EXT}" == "py" ]]; then
         warn "MLIR dialect could not be extracted"
         exit 1
       fi
-      mqss-catalyst-opt "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
+      if [[ "${EMIT_QIR}" == "ON" ]]; then
+        mqss-catalyst-opt "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
+        info "Emitting QIR..."
+        echo " "
+        catalyst --tool=all "${MLIR_FILE}" > "${OUT_DIR}/${filename%.*}.ll"
+      else 
+        mqss-catalyst-opt "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
+      fi
+      
 
     else
-      python3.11 "${RESOLVER}" \
-        --input "${INPUT_FILE}" \
-        --function "${FUNCTION_NAME}" \
-        --stage "${STAGE}" |  mqss-catalyst-opt "${PASS_ARGS[@]}"
+      if [[ "${EMIT_QIR}" == "ON" ]]; then
+        info "Emitting QIR..."
+        echo " "
+       python3.11 "${RESOLVER}" \
+          --input "${INPUT_FILE}" \
+          --function "${FUNCTION_NAME}" \
+          --stage "${STAGE}" |  mqss-catalyst-opt "${PASS_ARGS[@]}" | catalyst --tool=all
+      else
+        python3.11 "${RESOLVER}" \
+          --input "${INPUT_FILE}" \
+          --function "${FUNCTION_NAME}" \
+          --stage "${STAGE}" |  mqss-catalyst-opt "${PASS_ARGS[@]}"
+      fi
     fi
 
     # TODO: Further convert to QIR? Use the following command
-    # catalyst --tool=all input.mlir 
+    
 else
     warn "Unknown input type: $INPUT_FILE"
     exit 1
