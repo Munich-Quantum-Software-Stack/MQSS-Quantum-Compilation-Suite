@@ -71,7 +71,13 @@ Compiler passes to run
         --region-simplify                              - Perform control flow optimizations to the region tree
         --test-convergence                             - Test only: Fail pass on non-convergence to detect cyclic pattern
         --top-down                                     - Seed the worklist in general top-down order
-      cse                                            -   Eliminate common sub-expressions
+      cse                                              -   Eliminate common sub-expressions
+      fermioniq-gate-set-mapping                     -   Convert Quake kernels to Fermioniq gate set.
+      ionq-gate-set-mapping                          -   Convert Quake kernels to IonQ gate set.
+      iqm-gate-set-mapping                           -   Convert Quake kernels to IQM gate set.
+      oqc-gate-set-mapping                           -   Convert Quake kernels to OQC gate set.
+      qci-gate-set-mapping                           -   Convert Quake kernels to QCI gate set.
+      quantinuum-gate-set-mapping                    -   Convert Quake kernels to Quantinuum gate set.
       print-quake-gates-pass                         -   Example pass that traverses a given mlir module, print its gates and a description of the operands of each gate
       print-catalyst-gates-pass                      -   Example pass that traverses a given mlir module, print its gates and a description of the operands of each gate
 
@@ -195,11 +201,19 @@ fi
 # done
 
 # Split passes at commas
-PASS_ARGS=()
+MQSS_PASS_ARGS=()
+DECOMP_ARGS=()
 IFS=',' read -ra PASS_LIST <<< "$PASSES"
 
 for p in "${PASS_LIST[@]}"; do
-    PASS_ARGS+=(--"$p")
+  if [[ "$p" == "iqm-gate-set-mapping" ||
+        "$p" == "fermioniq-gate-set-mapping" ||
+        "$p" == "ionq-gate-set-mapping" ||
+        "$p" == "oqc-gate-set-mapping" ]]; then
+    DECOMP_ARGS+=(--"$p")
+  else
+    MQSS_PASS_ARGS+=(--"$p")
+  fi
 done
 
 filename=$(basename "$INPUT_FILE")
@@ -211,7 +225,7 @@ if [[ "${EXT}" == "cpp" ]]; then
     
     if [[ "${OUT_DIR}" != "" ]]; then
       cudaq-quake "${INPUT_FILE}" -o "${OUT_DIR}/${GENERATED_MLIR}"
-      mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+      mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${MQSS_PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
 
       if [[ "${EMIT_QIR}" == "ON" ]]; then
         info "Emitting QIR..."
@@ -222,11 +236,27 @@ if [[ "${EXT}" == "cpp" ]]; then
     else
 
       if [[ "${EMIT_QIR}" == "ON" ]]; then
-        info "Emitting QIR..."
-        echo " "
-        cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${PASS_ARGS[@]}" | cudaq-opt --quake-to-qir
+
+          if [ ${#DECOMP_ARGS[@]} -gt 0 ]; then
+              info "Emitting QIR after gate decomposition..."
+              echo " "
+              cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" | cudaq-opt "${DECOMP_ARGS[@]}" \
+                    | cudaq-translate --convert-to=qir-full
+          else
+            info "Emitting QIR..."
+            echo " "
+            cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" | cudaq-translate --convert-to=qir-full
+          fi
       else
-        cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${PASS_ARGS[@]}"
+        if [ ${#DECOMP_ARGS[@]} -gt 0 ]; then
+          info "Emitting Optimized Quake with decomposition..."
+          echo " "
+          cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" | cudaq-opt "${DECOMP_ARGS[@]}"
+        else
+          info "Emitting Optimized Quake..."
+          echo " "
+          cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}"
+        fi
       fi
     fi
     
@@ -267,12 +297,12 @@ elif [[ "${EXT}" == "py" ]]; then
         exit 1
       fi
       if [[ "${EMIT_QIR}" == "ON" ]]; then
-        mqss-catalyst-opt "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
+        mqss-catalyst-opt "${MLIR_FILE}" "${MQSS_PASS_ARGS[@]}" -o "${MLIR_FILE}"
         info "Emitting QIR..."
         echo " "
         catalyst --tool=all "${MLIR_FILE}" > "${OUT_DIR}/${filename%.*}.ll"
       else 
-        mqss-catalyst-opt "${MLIR_FILE}" "${PASS_ARGS[@]}" -o "${MLIR_FILE}"
+        mqss-catalyst-opt "${MLIR_FILE}" "${MQSS_PASS_ARGS[@]}" -o "${MLIR_FILE}"
       fi
       
 
@@ -283,12 +313,12 @@ elif [[ "${EXT}" == "py" ]]; then
        python3.11 "${RESOLVER}" \
           --input "${INPUT_FILE}" \
           --function "${FUNCTION_NAME}" \
-          --stage "${STAGE}" |  mqss-catalyst-opt "${PASS_ARGS[@]}" | catalyst --tool=all
+          --stage "${STAGE}" |  mqss-catalyst-opt "${MQSS_PASS_ARGS[@]}" | catalyst --tool=all
       else
         python3.11 "${RESOLVER}" \
           --input "${INPUT_FILE}" \
           --function "${FUNCTION_NAME}" \
-          --stage "${STAGE}" |  mqss-catalyst-opt "${PASS_ARGS[@]}"
+          --stage "${STAGE}" |  mqss-catalyst-opt "${MQSS_PASS_ARGS[@]}"
       fi
     fi
 

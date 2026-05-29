@@ -79,6 +79,7 @@ std::unique_ptr<mlir::Pass> CommonCommutePass();
 std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();
 std::unique_ptr<mlir::Pass> CommonMappingPass();
+std::unique_ptr<mlir::Pass> IQMGateSetMappingPass();
 
 /**
  * @brief Example MLIR pass that traverses a given MLIR/Quake.

@@ -24,6 +24,10 @@ config.substitutions.append(
 )
 
 config.substitutions.append(
+    ('%cudaq-opt', '/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin/cudaq-opt ')
+)
+
+config.substitutions.append(
     ('%mqss-catalyst-opt', '/root/.local/bin/mqss-catalyst-opt')
 )
 

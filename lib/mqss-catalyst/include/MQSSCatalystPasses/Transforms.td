@@ -115,3 +115,13 @@ def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
 
  let constructor = "mqss_catalyst::opt::CommonMappingPass()";
 }
+
+def IQMGateSetMappingPass : Pass<"IQMGateSetMappingPass", "mlir::ModuleOp"> {
+  let summary = "Native Gate Set Mapping Pass";
+ 
+  let description = [{
+    Native Gate Set Mapping Pass for IQM Device
+  }];
+
+ let constructor = "mqss_catalyst::opt::IQMGateSetMappingPass()";
+}

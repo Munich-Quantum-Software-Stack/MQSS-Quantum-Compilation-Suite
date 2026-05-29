@@ -1,0 +1,63 @@
+
+// RUN: %mqss-cudaq-opt %s --CommonGateCancellationPass=mode=CancelGate --cse --canonicalize | %cudaq-opt --iqm-gate-set-mapping 2>&1 | FileCheck %s
+
+module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__testILm2EE = "_ZN4testILm2EEclEv"}} {
+  func.func @__nvqpp__mlirgen__testILm2EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %0 = quake.alloca !quake.veq<2>
+    %1 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x %1 : (!quake.ref) -> ()
+    %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x [%2] %3 : (!quake.ref, !quake.ref) -> ()
+    %4 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    %5 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x [%4] %5 : (!quake.ref, !quake.ref) -> ()
+    %6 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    %7 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x [%6] %7 : (!quake.ref, !quake.ref) -> ()
+    %8 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    %9 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x [%8] %9 : (!quake.ref, !quake.ref) -> ()
+    %10 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    %11 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x [%10] %11 : (!quake.ref, !quake.ref) -> ()
+    %12 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x %12 : (!quake.ref) -> ()
+    %13 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    %14 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    quake.x [%13] %14 : (!quake.ref, !quake.ref) -> ()
+    
+    %q0 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    %q1 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+
+    %m0 = quake.mz %q0 : (!quake.ref) -> !quake.measure
+    %m1 = quake.mz %q1 : (!quake.ref) -> !quake.measure
+    return
+  }
+  func.func @_ZN4testILm2EEclEv(%arg0: !cc.ptr<i8>) {
+    return
+  }
+}
+
+
+// CHECK: quake.phased_rx (%cst_0, %cst) %1 : (f64, f64, !quake.ref) -> ()
+// CHECK: %cst_1 = arith.constant 0.000000e+00 : f64
+// CHECK: %cst_2 = arith.constant 3.1415926535897931 : f64
+// CHECK: %cst_3 = arith.constant 1.5707963267948966 : f64
+// CHECK: quake.phased_rx (%cst_3, %cst_3) %1 : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%cst_2, %cst_1) %1 : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.z [%2] %1 : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%cst_6, %cst_6) %1 : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%cst_5, %cst_4) %1 : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%cst_8, %cst_7) %1 : (f64, f64, !quake.ref) -> ()
+// CHECK: %cst_9 = arith.constant 0.000000e+00 : f64
+// CHECK: %cst_10 = arith.constant 3.1415926535897931 : f64
+// CHECK: %cst_11 = arith.constant 1.5707963267948966 : f64
+// CHECK: quake.phased_rx (%cst_11, %cst_11) %2 : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%cst_10, %cst_9) %2 : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.z [%1] %2 : (!quake.ref, !quake.ref) -> ()
+// CHECK: %cst_12 = arith.constant 0.000000e+00 : f64
+// CHECK: %cst_13 = arith.constant 3.1415926535897931 : f64
+// CHECK: %cst_14 = arith.constant 1.5707963267948966 : f64
+// CHECK: quake.phased_rx (%cst_14, %cst_14) %2 : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%cst_13, %cst_12) %2 : (f64, f64, !quake.ref) -> ()
