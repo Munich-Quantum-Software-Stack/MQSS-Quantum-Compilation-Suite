@@ -8,43 +8,6 @@
 //                                          "H",        "X",      "Y", "Z"};
 // static const StringSet<> multiQubitSet = {"CNOT", "CZ", "SWAP"};
 
-static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
-    {
-        // Controlled gates
-        {"CNOT", {QubitRole::Control, QubitRole::Target}},
-        {"CX", {QubitRole::Control, QubitRole::Target}},
-        {"CY", {QubitRole::Control, QubitRole::Target}},
-        {"CZ", {QubitRole::Control, QubitRole::Target}},
-
-        // Single-qubit gates
-        {"PauliX", {QubitRole::Target}},
-        {"PauliY", {QubitRole::Target}},
-        {"PauliZ", {QubitRole::Target}},
-        {"Hadamard", {QubitRole::Target}},
-        {"H", {QubitRole::Target}},
-        {"S", {QubitRole::Target}},
-        {"T", {QubitRole::Target}},
-        {"SAdj", {QubitRole::Target}},
-
-        // Rotations
-        {"RX", {QubitRole::Target}},
-        {"RY", {QubitRole::Target}},
-        {"RZ", {QubitRole::Target}},
-
-        // Two-qubit symmetric gates
-        {"SWAP", {QubitRole::Target, QubitRole::Target}}
-        // TODO:Add more Here
-};
-
-static const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
-  auto it = gateOperandRoleTable.find(gateName);
-  if (it != gateOperandRoleTable.end())
-    return it->second;
-
-  return {};
-}
-
-
 class CatalystQuantumAnalysis : public MyModuleAnalysis {
 
 public:

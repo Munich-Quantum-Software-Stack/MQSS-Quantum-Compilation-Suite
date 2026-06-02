@@ -43,6 +43,18 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
+#ifdef MQSS_ENABLE_DEBUG
+#define MQSS_DEBUG(X)                                                          \
+  do {                                                                         \
+    llvm::errs() << X;                                                         \
+  } while (false)
+#else
+#define MQSS_DEBUG(X)                                                          \
+  do {                                                                         \
+  } while (false)
+#endif
+
+
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Pass/PassRegistry.h"
@@ -79,7 +91,8 @@ std::unique_ptr<mlir::Pass> CommonCommutePass();
 std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();
 std::unique_ptr<mlir::Pass> CommonMappingPass();
-std::unique_ptr<mlir::Pass> IQMGateSetMappingPass();
+std::unique_ptr<mlir::Pass> BasisConversionPass();
+std::unique_ptr<mlir::Pass> CommonCNOTReversePass();
 
 /**
  * @brief Example MLIR pass that traverses a given MLIR/Quake.

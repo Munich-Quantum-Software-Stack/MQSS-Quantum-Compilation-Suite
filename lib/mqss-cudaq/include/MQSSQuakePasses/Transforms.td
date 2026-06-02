@@ -75,7 +75,7 @@ def CommonReductionPass : Pass<"CommonReductionPass", "mlir::ModuleOp"> {
 }
 
 def CommonDecompositionPass : Pass<"CommonDecompositionPass", "mlir::ModuleOp"> {
-  let summary = "Perform Gate Decomposition, {Cx} -> HCzH or {Cz} -> HCxH or ReverseCx. ";
+  let summary = "Perform Gate Decomposition, {Cx} -> HCzH or {Cz} -> HCxH. ";
  
   let description = [{
         Perform Gate Decomposition, {Cx} -> HCzH or {Cz} -> HCxH. Also, can
@@ -89,6 +89,16 @@ def CommonDecompositionPass : Pass<"CommonDecompositionPass", "mlir::ModuleOp"> 
     Option<"mode", "mode", "std::string",
       /*default=*//*default=*/"\"CxToHCzH\"", "Select PassMode CxToHCzH ,CzToHCxH or ReverseCx.">,
   ];
+}
+
+def CommonCNOTReversePass : Pass<"CommonCNOTReversePass", "mlir::ModuleOp"> {
+  let summary = "Reverse the control and targets of each CNot gate in a circuit";
+ 
+  let description = [{
+       Reverse the control and targets of each CNot gate in a circuit.
+  }];
+ 
+ let constructor = "mqss_cudaq::opt::CommonCNOTReversePass()";
 }
 
 def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::ModuleOp"> {

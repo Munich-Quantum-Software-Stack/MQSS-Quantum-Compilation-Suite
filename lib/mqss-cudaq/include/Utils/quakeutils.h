@@ -102,7 +102,7 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
     return builder.create<quake::HOp>(loc, false, mlir::ValueRange(),
                                       mlir::ValueRange(), TargetQubitOps);
   }
-  if (NewGateTy == "CNOT") {
+  if (NewGateTy == "CNOT" || NewGateTy == "CX") {
     return builder.create<quake::XOp>(loc, ControlQubits, TargetQubitOps);
   }
   if (NewGateTy == "CY") {
@@ -118,13 +118,13 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
   return nullptr;
 }
 
-inline arith::ConstantFloatOp createQuakeConstOp(Location loc,
-                                                 mlir::IRRewriter &builder,
-                                                 llvm::APFloat constantValue) {
-
-  // Define the type as f64.
+inline arith::ConstantOp createQuakeConstOp(Location loc,
+                                            mlir::IRRewriter &builder,
+                                            llvm::APFloat constantValue) {
   auto floatType = builder.getF64Type();
-  return builder.create<arith::ConstantFloatOp>(loc, constantValue, floatType);
+  auto NewOp = builder.create<mlir::arith::ConstantFloatOp>(loc, constantValue,
+                                                            floatType);
+  return NewOp;
 }
 
 inline quake::AllocaOp

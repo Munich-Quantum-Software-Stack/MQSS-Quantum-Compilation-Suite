@@ -90,6 +90,16 @@ def CommonDecompositionPass : Pass<"CommonDecompositionPass", "mlir::ModuleOp"> 
   ];
 }
 
+def CommonCNOTReversePass : Pass<"CommonCNOTReversePass", "mlir::ModuleOp"> {
+  let summary = "Reverse the control and targets of each CNot gate in a circuit";
+ 
+  let description = [{
+       Reverse the control and targets of each CNot gate in a circuit.
+  }];
+ 
+ let constructor = "mqss_catalyst::opt::CommonCNOTReversePass()";
+}
+
 
 def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::ModuleOp"> {
   let summary = "Normalize Arg angle of RX, RY, RZ gates. ";
@@ -116,12 +126,17 @@ def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
  let constructor = "mqss_catalyst::opt::CommonMappingPass()";
 }
 
-def IQMGateSetMappingPass : Pass<"IQMGateSetMappingPass", "mlir::ModuleOp"> {
+def BasisConversionPass : Pass<"BasisConversionPass", "mlir::ModuleOp"> {
   let summary = "Native Gate Set Mapping Pass";
  
   let description = [{
-    Native Gate Set Mapping Pass for IQM Device
+    Native Gate Set Mapping Pass for IBM Device
   }];
 
- let constructor = "mqss_catalyst::opt::IQMGateSetMappingPass()";
+  let options = [
+    Option<"device", "mode", "std::string",
+      /*default=*//*default=*/"\"IBM\"", "Select device IBM ,IONQ or Quantinuum.">,
+  ];
+
+ let constructor = "mqss_catalyst::opt::BasisConversionPass()";
 }

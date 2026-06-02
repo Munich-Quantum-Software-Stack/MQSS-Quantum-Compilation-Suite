@@ -2,7 +2,7 @@
 
 // test-mqss-passes/code/catalyst/tests/ReverseCNot.test
 
-// RUN: %mqss-cc %S/../ReverseCNot.py --function circuit_ReverseCx --passes=CommonDecompositionPass=mode=ReverseCx | FileCheck %s
+// RUN: %mqss-cc %S/../ReverseCNot.py --function circuit_ReverseCx --passes=CommonCNOTReversePass | FileCheck %s
 
 
 // CHECK: %out_qubits_1 = quantum.custom "H"() %out_qubits_0 : !quantum.bit

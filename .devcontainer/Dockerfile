@@ -17,9 +17,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 #     apt-get autoremove -y --purge && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 
-ARG CMAKE_ARCH=x86_64
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget ca-certificates && \
+    wget ca-certificates
+    
+ARG TARGETARCH
+
+RUN case "$TARGETARCH" in \
+      amd64) CMAKE_ARCH="x86_64" ;; \
+      arm64) CMAKE_ARCH="aarch64" ;; \
+      *) echo "Unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+    esac  && \
     wget https://github.com/Kitware/CMake/releases/download/v3.29.0/cmake-3.29.0-linux-${CMAKE_ARCH}.tar.gz && \
     tar -xzf cmake-3.29.0-linux-${CMAKE_ARCH}.tar.gz -C /opt && \
     ln -sf /opt/cmake-3.29.0-linux-${CMAKE_ARCH}/bin/cmake /usr/local/bin/cmake && \
@@ -66,10 +73,14 @@ RUN apt-get update && \
     libboost-program-options-dev \
     nano \
     vim \
-    doxygen \
     libzip-dev && \
     # Clean up cache to reduce image size
     rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install lit
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    locales
+RUN python3 -m pip install sphinx myst-parser furo
+
 RUN git config --global gc.auto 0

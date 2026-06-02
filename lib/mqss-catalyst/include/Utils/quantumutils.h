@@ -87,14 +87,16 @@ createCatalystGate(Location loc, llvm::StringRef NewGateTy,
   // OpToReplace->getResult(1).replaceAllUsesWith(NewOp->getResult(1));
 }
 
-inline mlir::arith::ConstantFloatOp
+inline mlir::arith::ConstantOp
 createCatalystConstOp(Location loc, mlir::IRRewriter &builder,
                       llvm::APFloat constantValue) {
 
-  // Define the type as f64.
   auto floatType = builder.getF64Type();
-  return builder.create<mlir::arith::ConstantFloatOp>(loc, floatType,
-                                                      constantValue);
+  auto valueAttr = builder.getFloatAttr(floatType, constantValue);
+
+  // arith::ConstantOp with FloatAttr works on both LLVM-16 and LLVM-21
+  auto NewOp =
+      builder.create<mlir::arith::ConstantOp>(loc, floatType, valueAttr);
 }
 
 inline quantum::AllocOp createCatalystAlloca(Location loc,

@@ -9,7 +9,7 @@ INSTALL_DIR := $(HOME)/.local/bin
 
 INSTALL_PATH = --install-dir ${INSTALL_DIR}
 
-DEBUG_FLAG =  		# --debug (if you want pass debug info)
+DEBUG_FLAG =  --debug		# --debug (if you want pass debug info)
 
 ######################################################
 
@@ -47,13 +47,14 @@ docs:
 	./scripts/build_docs.sh
 
 compile_commands:
-	@ln -sf _deps/mqss-cudaq/clang+llvm-16.0.4-aarch64-linux-gnu/bin/clangd /usr/local/bin/clangd
+	@ln -sf "$(realpath _deps/mqss-cudaq/clang+llvm-16.0.4-aarch64-linux-gnu/bin/clangd)" /usr/local/bin/clangd
 	@$(MAKE) merge-one SRC=$(CUDAQ_CCDB)
 	@$(MAKE) merge-one SRC=$(CATALYST_CCDB)
 
 set-target-paths:
 	echo 'source $(VENV_DIR)/bin/activate'
 	echo 'export PATH="$(HOME)/.local/bin:$$PATH"'
+	echo 'export PATH="/usr/local/bin:$$PATH"'
 	echo 'export PATH="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$$PATH"'
 
 setup-env: 

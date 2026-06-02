@@ -1,5 +1,7 @@
 
 
+#include <mlir/IR/Value.h>
+#include <vector>
 #ifdef BUILD_CUDAQ_ENABLED
 #include "MQSSQuakePasses/Pipelines.h"
 #include "MQSSQuakePasses/Transforms.h"
@@ -308,10 +310,10 @@ static mlir::Value createExtractOp(Location loc, mlir::IRRewriter &builder,
   return NewOp;
 }
 
-static mlir::Value createArithFloatOp(Location loc, mlir::IRRewriter &builder,
+static mlir::Value createArithConstantOp(Location loc, mlir::IRRewriter &builder,
                                 llvm::APFloat constantValue) {
 
-  mlir::arith::ConstantFloatOp NewOp;
+  mlir::arith::ConstantOp NewOp;
 #ifdef BUILD_CUDAQ_ENABLED
   NewOp = createQuakeConstOp(loc, builder, constantValue);
 #endif

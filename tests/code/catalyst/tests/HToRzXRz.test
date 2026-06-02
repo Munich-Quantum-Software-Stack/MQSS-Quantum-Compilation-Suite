@@ -1,0 +1,11 @@
+
+// test-mqss-passes/code/cudaq/tests/HToRzXRz.test
+
+// RUN: %mqss-cc %S/../HToRzXRz.py --function circuit_HToRzXRz --passes=CommonDecompositionPass=mode=HToRzXRz | FileCheck %s
+
+// CHECK:  %cst = arith.constant 3.1415926535897931 : f64
+// CHECK:  %cst_0 = arith.constant 1.5707963267948966 : f64
+// CHECK:  %out_qubits_1 = quantum.custom "RZ"(%cst) %out_qubits#0 : !quantum.bit
+// CHECK:  %out_qubits_2 = quantum.custom "PauliX"() %out_qubits_1 : !quantum.bit
+// CHECK:  %out_qubits_3 = quantum.custom "RZ"(%cst_0) %out_qubits_2 : !quantum.bit
+// CHECK: %mres, %out_qubit = quantum.measure %out_qubits_3 : i1, !quantum.bit

@@ -37,6 +37,7 @@ enum Gate {
   UNKNOWN
 };
 
+
 struct QubitID {
   Value base;
   int64_t index;
@@ -49,6 +50,43 @@ using tupleVectorsValues =
     std::tuple<SmallVector<mlir::Value, 2>, SmallVector<mlir::Value, 2>>;
 
 enum class QubitRole { Control, Target };
+
+static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
+    {
+        // Controlled gates
+        {"CNOT", {QubitRole::Control, QubitRole::Target}},
+        {"CX", {QubitRole::Control, QubitRole::Target}},
+        {"CY", {QubitRole::Control, QubitRole::Target}},
+        {"CZ", {QubitRole::Control, QubitRole::Target}},
+
+        // Single-qubit gates
+        {"PauliX", {QubitRole::Target}},
+        {"PauliY", {QubitRole::Target}},
+        {"PauliZ", {QubitRole::Target}},
+        {"Hadamard", {QubitRole::Target}},
+        {"H", {QubitRole::Target}},
+        {"S", {QubitRole::Target}},
+        {"T", {QubitRole::Target}},
+        {"SAdj", {QubitRole::Target}},
+
+        // Rotations
+        {"RX", {QubitRole::Target}},
+        {"RY", {QubitRole::Target}},
+        {"RZ", {QubitRole::Target}},
+
+        // Two-qubit symmetric gates
+        {"SWAP", {QubitRole::Target, QubitRole::Target}}
+        // TODO:Add more Here
+};
+
+static const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
+  auto it = gateOperandRoleTable.find(gateName);
+  if (it != gateOperandRoleTable.end())
+    return it->second;
+
+  return {};
+}
+
 
 struct QubitOperands {
   SmallVector<QubitID, 2> ids;

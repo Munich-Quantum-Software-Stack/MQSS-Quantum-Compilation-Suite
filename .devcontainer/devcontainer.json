@@ -3,6 +3,10 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "remoteEnv": {
+    "LANG": "en_US.UTF-8",
+    "LC_ALL": "en_US.UTF-8"
+  },
   "workspaceFolder": "/workspaces/MQSS-Passes-Suite",
   "customizations": {
     "vscode": {
