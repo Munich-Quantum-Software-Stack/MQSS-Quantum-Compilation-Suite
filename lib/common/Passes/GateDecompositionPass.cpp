@@ -1,6 +1,7 @@
 
 
 #include "include/transforms/Decomposition.h"
+
 #include <cmath>
 
 using namespace mlir;
@@ -8,7 +9,7 @@ using namespace llvm;
 
 namespace {
 
-enum class PassMode { CxToHCzH, CzToHCxH, HToRzXRz, NA };
+enum class PassMode { CxToHCzH, CzToHCxH, HToRzXRz, CHToCX, NA };
 
 struct SharedPassLogic {
 
@@ -23,21 +24,40 @@ struct SharedPassLogic {
     } else if (passmode == PassMode::CzToHCxH) {
       PassInfo.GateToDecompose = Gate::CZ;
       PassInfo.Pattern.push_back({Gate::H, {}});
-      PassInfo.Pattern.push_back({Gate::CNOT,{}});
+      PassInfo.Pattern.push_back({Gate::CNOT, {}});
       PassInfo.Pattern.push_back({Gate::H, {}});
-    }
-    else if (passmode == PassMode::HToRzXRz) {
+    } else if (passmode == PassMode::HToRzXRz) {
 
-      PassInfo.GateToDecompose = Gate::H;    
+      PassInfo.GateToDecompose = Gate::H;
       PassInfo.Pattern.push_back({Gate::RZ, {M_PI}});
       PassInfo.Pattern.push_back({Gate::PauliX, {}});
       PassInfo.Pattern.push_back({Gate::RZ, {M_PI_2}});
+    } else if (passmode == PassMode::CHToCX) {
+      // quake.h control, target
+      // ───────────────────────────────────
+      // quake.s target;
+      // quake.h target;
+      // quake.t target;
+      // quake.x control, target;
+      // quake.t<adj> target;
+      // quake.h target;
+      // quake.s<adj> target;
+      PassInfo.GateToDecompose = Gate::CH;
+      PassInfo.Pattern.push_back({Gate::S, {}});
+      PassInfo.Pattern.push_back({Gate::H, {}});
+      PassInfo.Pattern.push_back({Gate::T, {}});
+      PassInfo.Pattern.push_back({Gate::CNOT, {}});
+      PassInfo.Pattern.push_back({Gate::TAdj, {}});
+      PassInfo.Pattern.push_back({Gate::H, {}});
+      PassInfo.Pattern.push_back({Gate::SAdj, {}});
     }
+
     performDecomposition(analysis, PassInfo);
   }
 };
 
-class CommonDecomposition : public mqss_backend::CommonDecompositionPassBase<class CommonDecomposition> {
+class CommonDecomposition : public mqss_backend::CommonDecompositionPassBase<
+                                class CommonDecomposition> {
 
 public:
   void runOnOperation() override {
@@ -49,10 +69,9 @@ public:
     SharedPassLogic PassLogic;
 
     auto passmode = getPassMode(mode);
-    if(passmode != PassMode::NA){
+    if (passmode != PassMode::NA) {
       PassLogic.run(analysis, passmode);
-    } 
-    else {
+    } else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
     }
@@ -63,8 +82,8 @@ public:
     }
   }
 
-  private:
-    PassMode getPassMode(const StringRef &mode) {
+private:
+  PassMode getPassMode(const StringRef &mode) {
     if (mode == "CxToHCzH") {
       return PassMode::CxToHCzH;
     } else if (mode == "CzToHCxH") {
@@ -72,8 +91,11 @@ public:
     } else if (mode == "HToRzXRz") {
       return PassMode::HToRzXRz;
     }
-      return PassMode::NA;
+    else if (mode == "CHToCX") {
+      return PassMode::CHToCX;
     }
+    return PassMode::NA;
+  }
 };
 
 } // namespace

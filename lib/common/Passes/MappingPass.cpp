@@ -298,8 +298,7 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
     for (auto p : parameter) {
       // TODO: Apparently all the parameters are floats in QC, may be the case
       //       this is not always true
-      llvm::APFloat constantValue(p);
-      auto constantOp = createArithConstantOp(loc, builder, constantValue);
+      auto constantOp = createArithConstantOp(loc, builder, p);
       params.push_back(constantOp);
     }
 

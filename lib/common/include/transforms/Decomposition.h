@@ -7,6 +7,7 @@
 
 #include "llvm/Support/raw_ostream.h"
 
+#include <cassert>
 #include <cmath>
 #include <llvm/ADT/APFloat.h>
 #include <llvm/ADT/MapVector.h>
@@ -102,12 +103,16 @@ static void performDecomposition(MyModuleAnalysis &analysis,
         auto NewGateTy = parseGateTy(GateToCreate);
         auto GateQubitRoles = getGateOpRoles(NewGateTy);
 
+        if (GateQubitRoles.empty()){
+          report_fatal_error(Twine("Unsupported Gate: ") + Twine(NewGateTy));
+        }
+        
         SmallVector<Value, 2> params;
 
         if (!ConstVals.empty()) {
           for (auto val : ConstVals) {
             auto arithVal = createArithConstantOp(
-                kernel->getLoc(), ConstOpBuilder, llvm::APFloat(val));
+                kernel->getLoc(), ConstOpBuilder, val);
             params.push_back(arithVal);
           }
         }

@@ -8,6 +8,8 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <mlir/IR/PatternMatch.h>
+
 using namespace mlir;
 using namespace llvm;
 inline std::tuple<bool, StringLiteral>
@@ -38,16 +40,22 @@ isQuakeQuantumGate(Operation *op) {
   if (auto x = dyn_cast<quake::RzOp>(op))
     return {true, "RZ"};
 
-  if (auto x = dyn_cast<quake::HOp>(op))
+  if (auto x = dyn_cast<quake::HOp>(op)) {
+    if (!x.getControls().empty())
+      return {true, "CH"};
     return {true, "H"};
+  }
 
   if (auto x = dyn_cast<quake::SOp>(op)) {
     if (x.isAdj())
       return {true, "SAdj"};
     return {true, "S"};
   }
-  if (auto t = dyn_cast<quake::TOp>(op))
+  if (auto t = dyn_cast<quake::TOp>(op)) {
+    if (t.isAdj())
+      return {true, "TAdj"};
     return {true, "T"};
+  }
   return {false, ""};
 }
 
@@ -83,6 +91,10 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
   }
   if (NewGateTy == "SAdj") {
     return builder.create<quake::SOp>(loc, true, params, ControlQubits,
+                                      TargetQubitOps);
+  }
+  if (NewGateTy == "TAdj") {
+    return builder.create<quake::TOp>(loc, true, params, ControlQubits,
                                       TargetQubitOps);
   }
 
@@ -125,6 +137,34 @@ inline arith::ConstantOp createQuakeConstOp(Location loc,
   auto NewOp = builder.create<mlir::arith::ConstantFloatOp>(loc, constantValue,
                                                             floatType);
   return NewOp;
+}
+
+inline mlir::Value createFloatConstant(mlir::Location loc,
+                                       mlir::OpBuilder &builder,
+                                       llvm::APFloat value,
+                                       mlir::FloatType type) {
+  return builder.create<mlir::arith::ConstantFloatOp>(loc, value, type);
+}
+
+inline mlir::Value createFloatConstant(mlir::Location loc,
+                                       mlir::OpBuilder &builder, double value,
+                                       mlir::FloatType type) {
+  if (type == builder.getF32Type())
+    return createFloatConstant(loc, builder, llvm::APFloat((float)value), type);
+  return createFloatConstant(loc, builder, llvm::APFloat(value), type);
+}
+
+inline mlir::Value createConstant(Location loc, double value, Type type,
+                                  mlir::IRRewriter &rewriter) {
+  auto fltTy = cast<FloatType>(type);
+  return createFloatConstant(loc, rewriter, value, fltTy);
+}
+
+inline Value createQuakeDivF(Location loc, Value numerator, double denominator,
+                             mlir::IRRewriter &rewriter) {
+  auto denominatorValue =
+      createConstant(loc, denominator, numerator.getType(), rewriter);
+  return rewriter.create<arith::DivFOp>(loc, numerator, denominatorValue);
 }
 
 inline quake::AllocaOp

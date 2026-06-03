@@ -48,7 +48,7 @@ The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](ht
 
 6. __Qubit Circuit Mapping__: A representation-agnostic logical to physical qubit mapping pass using [MQT-QMAP](https://github.com/munich-quantum-toolkit/qmap)
 
-Note: Please refer to the FAQs section for more details on the passes, MLIR, MQSS and other related questions.
+Note: Please refer to the [FAQs](https://github.com/akshay9594/MQSS-Passes-Suite/blob/catalyst-integration/docs/faq.md) section for more details on the passes, MLIR, MQSS and other related questions.
 <!-- [DOXYGEN MAIN] -->
 
 <div align="center">

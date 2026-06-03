@@ -3,6 +3,10 @@
 #include "IR/QuantumOps.h"
 #include "mlir/AsmParser/AsmParser.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include <mlir/IR/Attributes.h>
+#include <mlir/IR/BuiltinTypeInterfaces.h>
+#include <mlir/IR/Types.h>
+#include <mlir/IR/Value.h>
 
 using namespace mlir;
 using namespace catalyst;
@@ -43,6 +47,10 @@ createCatalystGate(Location loc, llvm::StringRef NewGateTy,
     }
     if (NewGateTy == "SAdj") {
       NewGateTy = "S";
+      isAdj = true;
+    }
+    if (NewGateTy == "TAdj") {
+      NewGateTy = "T";
       isAdj = true;
     }
 
@@ -88,15 +96,29 @@ createCatalystGate(Location loc, llvm::StringRef NewGateTy,
 }
 
 inline mlir::arith::ConstantOp
-createCatalystConstOp(Location loc, mlir::IRRewriter &builder,
-                      llvm::APFloat constantValue) {
-
-  auto floatType = builder.getF64Type();
-  auto valueAttr = builder.getFloatAttr(floatType, constantValue);
+createConstant(Location loc, mlir::IRRewriter &builder,
+                      TypedAttr attr) {
 
   // arith::ConstantOp with FloatAttr works on both LLVM-16 and LLVM-21
-  auto NewOp =
-      builder.create<mlir::arith::ConstantOp>(loc, floatType, valueAttr);
+  return 
+      builder.create<mlir::arith::ConstantOp>(loc, attr);
+}
+
+inline mlir::arith::ConstantOp
+createCatalystConstOp(Location loc, mlir::IRRewriter &builder,
+                      double constantValue, mlir::Type type) {
+
+  if(isa<FloatType>(type)){
+    auto valueAttr = builder.getFloatAttr(type, constantValue);
+    return createConstant(loc, builder, valueAttr);
+  }
+}
+
+inline Value createCatalystDivF(Location loc, Value numerator, double denominator,
+                        mlir::IRRewriter &rewriter) {
+  auto denominatorValue = rewriter.create<arith::ConstantOp>(
+      loc, rewriter.getF64FloatAttr(denominator));
+  return rewriter.create<arith::DivFOp>(loc, numerator, denominatorValue);
 }
 
 inline quantum::AllocOp createCatalystAlloca(Location loc,

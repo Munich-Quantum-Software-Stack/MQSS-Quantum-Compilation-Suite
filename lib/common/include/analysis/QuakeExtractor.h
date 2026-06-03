@@ -2,6 +2,7 @@
 
 #include "Extractor.h"
 #include "Utils/quakeutils.h"
+#include <llvm/Support/raw_ostream.h>
 
 class QuakeAnalysis : public MyModuleAnalysis {
 

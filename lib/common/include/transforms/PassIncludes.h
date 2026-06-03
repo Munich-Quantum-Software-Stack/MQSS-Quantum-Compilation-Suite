@@ -311,16 +311,29 @@ static mlir::Value createExtractOp(Location loc, mlir::IRRewriter &builder,
 }
 
 static mlir::Value createArithConstantOp(Location loc, mlir::IRRewriter &builder,
-                                llvm::APFloat constantValue) {
+                                double constantValue) {
 
-  mlir::arith::ConstantOp NewOp;
+  mlir::Value NewOp;
 #ifdef BUILD_CUDAQ_ENABLED
-  NewOp = createQuakeConstOp(loc, builder, constantValue);
+  NewOp = createConstant(loc, constantValue, builder.getF64Type(), builder);
 #endif
 #ifdef BUILD_CATALYST_ENABLED
-  NewOp = createCatalystConstOp(loc, builder, constantValue);
+  NewOp = createCatalystConstOp(loc, builder, constantValue, builder.getF64Type());
 #endif
-  return NewOp.getResult();
+  return NewOp;
+}
+
+static mlir::Value createDivFOp(Location loc, Value numerator, double denominator,
+                        mlir::IRRewriter &rewriter) {
+
+  mlir::Value NewOp;
+#ifdef BUILD_CUDAQ_ENABLED
+  NewOp = createQuakeDivF(loc, numerator, denominator, rewriter);
+#endif
+#ifdef BUILD_CATALYST_ENABLED
+  NewOp = createCatalystDivF(loc, numerator, denominator, rewriter);
+#endif
+  return NewOp;
 }
 
 static SmallVector<mlir::Value, 2>

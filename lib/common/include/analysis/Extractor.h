@@ -26,6 +26,7 @@ enum Gate {
   PauliY,
   CY,
   H,
+  CH,
   Hadamard,
   RX,
   RY,
@@ -33,10 +34,10 @@ enum Gate {
   S,
   SAdj,
   T,
+  TAdj,
   SWAP,
   UNKNOWN
 };
-
 
 struct QubitID {
   Value base;
@@ -65,9 +66,11 @@ static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         {"PauliZ", {QubitRole::Target}},
         {"Hadamard", {QubitRole::Target}},
         {"H", {QubitRole::Target}},
+        {"CH", {QubitRole::Control, QubitRole::Target}},
         {"S", {QubitRole::Target}},
         {"T", {QubitRole::Target}},
         {"SAdj", {QubitRole::Target}},
+        {"TAdj", {QubitRole::Target}},
 
         // Rotations
         {"RX", {QubitRole::Target}},
@@ -86,7 +89,6 @@ static const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
 
   return {};
 }
-
 
 struct QubitOperands {
   SmallVector<QubitID, 2> ids;
@@ -169,6 +171,10 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return SAdj;
   if (GateTy == "T")
     return T;
+  if (GateTy == "CH")
+    return CH;
+  if (GateTy == "TAdj")
+    return TAdj;
   if (GateTy == "SWAP")
     return SWAP;
   return UNKNOWN;
@@ -181,6 +187,8 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "PauliX";
   if (GateTy == Gate::H || GateTy == Gate::Hadamard)
     return "H";
+  if (GateTy == Gate::CH)
+    return "CH";
   if (GateTy == Gate::RX)
     return "RX";
   if (GateTy == Gate::RY)
@@ -199,6 +207,8 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "T";
   if (GateTy == Gate::SAdj)
     return "SAdj";
+  if (GateTy == Gate::TAdj)
+    return "TAdj";
   if (GateTy == Gate::SWAP)
     return "SWAP";
   return "UNKNOWN";
