@@ -140,3 +140,13 @@ def BasisConversionPass : Pass<"BasisConversionPass", "mlir::ModuleOp"> {
 
  let constructor = "mqss_catalyst::opt::BasisConversionPass()";
 }
+
+def QuantBasisConversionPass : Pass<"QuantBasisConversionPass", "mlir::ModuleOp"> {
+  let summary = "Perform Gate Decomposition for AQT back-end. ";
+ 
+  let description = [{
+        Perform Gate Decomposition for AQT back-end. 
+  }];
+ 
+ let constructor = "mqss_catalyst::opt::QuantBasisConversionPass()";
+}

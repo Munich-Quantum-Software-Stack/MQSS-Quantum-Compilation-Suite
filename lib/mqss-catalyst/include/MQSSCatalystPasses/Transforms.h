@@ -87,6 +87,7 @@ namespace mqss_catalyst::opt {
 std::unique_ptr<mlir::Pass> CommonGateCancellationPass();
 std::unique_ptr<mlir::Pass> CommonNormalizeArgAnglePass();
 std::unique_ptr<mlir::Pass> CommonDecompositionPass();
+std::unique_ptr<mlir::Pass> QuantBasisConversionPass();
 std::unique_ptr<mlir::Pass> CommonCommutePass();
 std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();

@@ -1,6 +1,7 @@
 
 #include "Extractor.h"
 #include "Utils/quantumutils.h"
+#include <llvm/Support/raw_ostream.h>
 
 // static const StringSet<> rotationsSet = {"RX", "RY", "RZ"};
 // static const StringSet<> hermitianSet = {"Hadamard", "PauliX", "PauliY",
@@ -51,7 +52,7 @@ public:
           // }
           if (auto allocaOp = dyn_cast<catalyst::quantum::AllocOp>(Op)) {
             kernelInfo.AllocatedQubits = allocaOp.getNqubitsAttr().value();
-             assert(!kernelInfo.AllocOp &&
+            assert(!kernelInfo.AllocOp &&
                    "Can only have 1 alloc instruction in a quantum kernel!");
             kernelInfo.AllocOp = allocaOp;
             return;
@@ -106,7 +107,6 @@ public:
     }
   }
 
-
   MapVector<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
     return KernelDialectInfo;
   }
@@ -140,6 +140,10 @@ private:
 
       if (gateName == "S" && view.isAdjoint)
         gateName = "SAdj";
+      else if ((gateName == "Hadamard" || gateName == "H") &&
+          (g.getQubitOperands().size() == 2)) {
+        gateName = "CH";
+      }
 
       view.GateTy = parseGateTy(gateName);
 

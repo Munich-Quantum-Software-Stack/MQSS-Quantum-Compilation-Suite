@@ -1,6 +1,6 @@
 
 
-#include "PassIncludes.h"
+
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -13,10 +13,13 @@
 #include <llvm/ADT/MapVector.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/StringSet.h>
+#include "llvm/Support/Registry.h"
 #include <llvm/Support/Debug.h>
 #include <mlir/IR/Operation.h>
 #include <mlir/IR/Value.h>
 #include <vector>
+#include "PassIncludes.h"
+
 
 struct GateTy {
   Gate NewGateTy = Gate::UNKNOWN;
@@ -27,6 +30,7 @@ struct DecomposePassInfoTy {
   Gate GateToDecompose = Gate::UNKNOWN;
   std::vector<GateTy> Pattern;
 };
+
 
 
 /**

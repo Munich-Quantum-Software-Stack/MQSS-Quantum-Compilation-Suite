@@ -91,6 +91,16 @@ def CommonDecompositionPass : Pass<"CommonDecompositionPass", "mlir::ModuleOp"> 
   ];
 }
 
+def QuantBasisConversionPass : Pass<"QuantBasisConversionPass", "mlir::ModuleOp"> {
+  let summary = "Perform Gate Decomposition for AQT back-end. ";
+ 
+  let description = [{
+        Perform Gate Decomposition for AQT back-end. 
+  }];
+ 
+ let constructor = "mqss_cudaq::opt::QuantBasisConversionPass()";
+}
+
 def CommonCNOTReversePass : Pass<"CommonCNOTReversePass", "mlir::ModuleOp"> {
   let summary = "Reverse the control and targets of each CNot gate in a circuit";
  

@@ -1,0 +1,4 @@
+# .clangd at project root
+CompileFlags:
+  Remove:
+    - -resource-dir*
