@@ -83,5 +83,5 @@
       }
     }
   },
-"postCreateCommand": "make -C /workspaces/MQSS-Passes-Suite setup-env && echo 'eval \"$(make set-target-paths)\"' >> ~/.bashrc"
+"postCreateCommand": "make -C /workspaces/MQSS-Passes-Suite setup-env && echo 'source $(VENV_DIR)/bin/activate' >> ~/.bashrc && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.bashrc && echo 'export PATH=\"/usr/local/bin:$PATH\"' >> ~/.bashrc && echo 'export PATH=\"/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$PATH\"' >> ~/.bashrc"
 }

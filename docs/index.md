@@ -29,6 +29,8 @@ Compilation suite of the Munich Quantum Software Stack (MQSS).
 
 README
 guide
+passes
+transpiler
 templates
 faq
 ```
