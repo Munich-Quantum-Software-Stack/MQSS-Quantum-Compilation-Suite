@@ -11,6 +11,10 @@ namespace {
 class CommonCNOTReverse : public mqss_backend::CommonCNOTReversePassBase<class CommonCNOTReverse> {
 
 public:
+
+  // Default constructor (required for pass registry)
+  CommonCNOTReverse() = default;
+
   void runOnOperation() override {
 
     auto &analysis = getAnalysis<DialectAnalysis>();

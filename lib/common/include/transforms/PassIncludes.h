@@ -3,8 +3,8 @@
 #include <mlir/IR/Value.h>
 #include <vector>
 #ifdef BUILD_CUDAQ_ENABLED
-#include "MQSSQuakePasses/Pipelines.h"
 #include "MQSSQuakePasses/Transforms.h"
+#include "MQSSQuakePasses/Pipelines.h"
 #include "include/analysis/QuakeExtractor.h"
 namespace mqss_backend = mqss_cudaq::opt;
 
@@ -18,8 +18,8 @@ namespace mqss_cudaq::opt {
 #endif
 
 #ifdef BUILD_CATALYST_ENABLED
-#include "MQSSCatalystPasses/Pipelines.h"
 #include "MQSSCatalystPasses/Transforms.h"
+#include "MQSSCatalystPasses/Pipelines.h"
 #include "include/analysis/CatalystExtractor.h"
 
 namespace mqss_backend = mqss_catalyst::opt;

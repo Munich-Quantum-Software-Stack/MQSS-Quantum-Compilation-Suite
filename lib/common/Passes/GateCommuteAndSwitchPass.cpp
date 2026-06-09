@@ -44,6 +44,14 @@ struct SharedPassLogic {
 class CommonSwitch : public mqss_backend::CommonSwitchPassBase<CommonSwitch> {
 
 public:
+  // Default constructor (required for pass registry)
+  CommonSwitch() = default;
+
+  // Forward the options constructor to the base
+  CommonSwitch(const CommonSwitchPassOptions &options) : CommonSwitchPassBase() {
+    mode = options.mode;
+  }
+
   void runOnOperation() override {
     auto &analysis = getAnalysis<DialectAnalysis>();
 
@@ -70,4 +78,9 @@ public:
 
 std::unique_ptr<mlir::Pass> mqss_backend::CommonSwitchPass() {
   return std::make_unique<CommonSwitch>();
+}
+
+std::unique_ptr<mlir::Pass> mqss_backend::createCommonSwitchPass(
+    const CommonSwitchPassOptions &options) {
+  return std::make_unique<CommonSwitch>(options);
 }

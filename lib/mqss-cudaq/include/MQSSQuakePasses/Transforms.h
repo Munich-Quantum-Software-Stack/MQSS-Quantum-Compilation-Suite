@@ -53,6 +53,13 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   } while (false)
 #endif
 
+/**
+ * @def GEN_PASS_REGISTRATION
+ * @brief Macro for pass registration
+ */
+
+#define GEN_PASS_DECL
+#include "MQSSQuakePasses/Transforms.h.inc"
 
 /**
  * @def CUDAQ_PREFIX_FUNCTION
@@ -76,24 +83,30 @@ std::unique_ptr<mlir::Pass> CommonReductionPass();
 std::unique_ptr<mlir::Pass> CommonCNOTReversePass();
 std::unique_ptr<mlir::Pass> CommonMappingPass();
 
+// Programmatic Pass Registration
+std::unique_ptr<mlir::Pass>
+createCommonCommutePass(const CommonCommutePassOptions &options);
+
+std::unique_ptr<mlir::Pass> createCommonGateCancellationPass(
+    const CommonGateCancellationPassOptions &options);
+
+std::unique_ptr<mlir::Pass>
+createCommonSwitchPass(const CommonSwitchPassOptions &options);
+
+std::unique_ptr<mlir::Pass>
+createCommonDecompositionPass(const CommonDecompositionPassOptions &options);
+
+std::unique_ptr<mlir::Pass>
+createCommonReductionPass(const CommonReductionPassOptions &options);
+
+std::unique_ptr<mlir::Pass>
+createCommonMappingPass(const CommonMappingPassOptions &options);
+
 } // namespace mqss_cudaq::opt
 
 // namespace mq_cudaq::opt{
 //   std::unique_ptr<mlir::Pass> createLoopNormalizePass();
 // } // namespace mq_cudaq::opt
 
-/**
- * @def GEN_PASS_DECL
- * @brief Macro for declaring passes for registration
- */
-// declarative passes
-#define GEN_PASS_DECL
-
-/**
- * @def GEN_PASS_REGISTRATION
- * @brief Macro for pass registration
- */
 #define GEN_PASS_REGISTRATION
 #include "MQSSQuakePasses/Transforms.h.inc"
-
-

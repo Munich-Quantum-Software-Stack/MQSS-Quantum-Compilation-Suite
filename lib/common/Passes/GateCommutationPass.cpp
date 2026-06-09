@@ -63,8 +63,14 @@ struct SharedPassLogic {
 class CommonCommute
     : public mqss_backend::CommonCommutePassBase<CommonCommute> {
 
-  using Base = mqss_backend::CommonCommutePassBase<CommonCommute>;
-  using Base::Base;
+public:
+  // Default constructor (required for pass registry)
+  CommonCommute() = default;
+
+  // Forward the options constructor to the base
+  CommonCommute(const CommonCommutePassOptions &options) : CommonCommutePassBase() {
+    mode = options.mode;
+  }
 
   void runOnOperation() override {
 
@@ -101,4 +107,9 @@ class CommonCommute
 
 std::unique_ptr<mlir::Pass> mqss_backend::CommonCommutePass() {
   return std::make_unique<CommonCommute>();
+}
+
+std::unique_ptr<mlir::Pass> mqss_backend::createCommonCommutePass(
+    const CommonCommutePassOptions &options) {
+  return std::make_unique<CommonCommute>(options);
 }

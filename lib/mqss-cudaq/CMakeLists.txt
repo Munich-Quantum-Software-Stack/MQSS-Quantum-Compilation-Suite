@@ -68,7 +68,7 @@ set(CMAKE_MODULE_PATH "${MQSS_SRC_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # set(CMAKE_CXX_STANDARD 11) Find QDMI package find_package(qdmi REQUIRED) Find
 # QInfo package find_package(qinfo REQUIRED)
-find_package(Z3 REQUIRED)
+# find_package(Z3 REQUIRED)
 
 # find_package(mqt-qcec REQUIRED)
 # Find the QMAP package
@@ -81,14 +81,19 @@ set(CMAKE_CXX_STANDARD 20)
 set(MQT_QMAP_INCLUDE_DIR "${mqt-qmap_SOURCE_DIR}/include/")
 set(MQT_QCEC_INCLUDE_DIR "${mqt-qcec_SOURCE_DIR}/include/")
 set(MQT_CORE_INCLUDE_DIR "${mqt-core_SOURCE_DIR}/include/mqt-core")
-# set(qdmi_INCLUDE_DIRS "${QDMI_INCLUDE_DIRS}/qdmi")
+set(QDMI_INCLUDE_DIR "${qdmi_SOURCE_DIR}/include")
+set(QDMI_EXAMPLES_DIR "${qdmi_SOURCE_DIR}/examples/")
 # set(qinfo_INCLUDE_DIRS "${qinfo_SOURCE_DIR}/include/qinfo")
+
+message("QDMI Source = ${qdmi_SOURCE_DIR}")
 
 include_directories(
         BEFORE
         ${nlohmann_json_SOURCE_DIR}/include
         ${MQT_QMAP_INCLUDE_DIR}
         ${MQT_CORE_INCLUDE_DIR}
+        ${QDMI_INCLUDE_DIR}
+        ${QDMI_EXAMPLES_DIR}
         # ${qdmi_INCLUDE_DIRS}
         # ${qinfo_INCLUDE_DIRS}
         )

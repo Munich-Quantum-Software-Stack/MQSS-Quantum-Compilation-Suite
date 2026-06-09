@@ -46,7 +46,7 @@ namespace mqss_catalyst::opt {
   @param[out] pm is the `mlir::PassManager` after appending the list of passes
   corresponding to optimization level `O1`.
 */
-void O1(mlir::PassManager &pm);
+void O1(mlir::OpPassManager &pm);
 /**
   @brief Function defining the optimization level `O2`.
   @details This functions appends to a `mlir::PassManager` the list of passes
@@ -54,7 +54,7 @@ void O1(mlir::PassManager &pm);
   @param[out] pm is the `mlir::PassManager` after appending the list of passes
   corresponding to optimization level `O2`.
 */
-void O2(mlir::PassManager &pm);
+void O2(mlir::OpPassManager &pm);
 /**
   @brief Function defining the optimization level `O3`.
   @details This functions appends to a `mlir::PassManager` the list of passes
@@ -62,5 +62,5 @@ void O2(mlir::PassManager &pm);
   @param[out] pm is the `mlir::PassManager` after appending the list of passes
   corresponding to optimization level `O3`.
 */
-void O3(mlir::PassManager &pm);
+void O3(mlir::OpPassManager &pm);
 } // namespace mqss_catalyst::opt

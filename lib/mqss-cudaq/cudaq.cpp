@@ -6,10 +6,11 @@
  * the terms of the Apache License 2.0 which accompanies this distribution.    *
  ******************************************************************************/
 
-
-
 #include "IR/Dialect/CC/CCDialect.h"
 #include "IR/Dialect/Quake/QuakeDialect.h"
+#include "MQSSQuakePasses/Examples.h"
+#include "MQSSQuakePasses/Pipelines.h"
+#include "MQSSQuakePasses/Transforms.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
@@ -26,11 +27,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/Pass/PassRegistry.h>
 
-#include "MQSSQuakePasses/Examples.h"
-#include "MQSSQuakePasses/Transforms.h"
-
 using namespace mlir;
-
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
@@ -54,15 +51,50 @@ int main(int argc, char **argv) {
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::createCanonicalizerPass();
   });
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mlir::createCSEPass();
-  });
+  mlir::registerPass(
+      []() -> std::unique_ptr<mlir::Pass> { return mlir::createCSEPass(); });
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mqss_cudaq::opt::createPrintQuakeGatesPass(llvm::outs());
   });
 
+  mlir::registerPassPipeline(
+      "O1",                            // pipeline name (used on CLI too)
+      "MQSS-O1 optimization pipeline", // description
+      [](mlir::OpPassManager &pm, StringRef options,
+         std::function<LogicalResult(const Twine &)> errorHandler) {
+        // build your pipeline here
+        mqss_cudaq::opt::O1(pm); // populate pm instead of returning a pass
+        return mlir::success();
+      },
+      [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
+      // options callback
+  );
+  mlir::registerPassPipeline(
+      "O2",                            // pipeline name (used on CLI too)
+      "MQSS-O2 optimization pipeline", // description
+      [](mlir::OpPassManager &pm, StringRef options,
+         std::function<LogicalResult(const Twine &)> errorHandler) {
+        // build your pipeline here
+        mqss_cudaq::opt::O2(pm); // populate pm instead of returning a pass
+        return mlir::success();
+      },
+      [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
+      // options callback
+  );
+  mlir::registerPassPipeline(
+      "O3",                            // pipeline name (used on CLI too)
+      "MQSS-O3 optimization pipeline", // description
+      [](mlir::OpPassManager &pm, StringRef options,
+         std::function<LogicalResult(const Twine &)> errorHandler) {
+        // build your pipeline here
+        mqss_cudaq::opt::O3(pm); // populate pm instead of returning a pass
+        return mlir::success();
+      },
+      [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
+      // options callback
+  );
+
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));
 }
-

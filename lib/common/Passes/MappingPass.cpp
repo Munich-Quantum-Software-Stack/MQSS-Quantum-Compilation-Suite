@@ -428,7 +428,17 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
   }
 }
 
-class Mapping : public mqss_backend::CommonMappingPassBase<Mapping> {
+class CommonMapping : public mqss_backend::CommonMappingPassBase<CommonMapping> {
+
+  public:
+
+  // Default constructor (required for pass registry)
+  CommonMapping() = default;
+
+  // Forward the options constructor to the base
+  CommonMapping(const CommonMappingPassOptions &options) : CommonMappingPassBase() {
+    input = options.input;
+  }
 
   void runOnOperation() override {
 
@@ -462,5 +472,11 @@ class Mapping : public mqss_backend::CommonMappingPassBase<Mapping> {
 } // namespace
 
 std::unique_ptr<mlir::Pass> mqss_backend::CommonMappingPass() {
-  return std::make_unique<Mapping>();
+  return std::make_unique<CommonMapping>();
+}
+
+
+std::unique_ptr<mlir::Pass> mqss_backend::createCommonMappingPass(
+    const CommonMappingPassOptions &options) {
+  return std::make_unique<CommonMapping>(options);
 }

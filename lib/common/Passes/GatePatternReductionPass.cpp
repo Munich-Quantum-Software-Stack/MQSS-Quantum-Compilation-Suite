@@ -46,6 +46,15 @@ class CommonReduction
     : public mqss_backend::CommonReductionPassBase<CommonReduction> {
 
 public:
+
+// Default constructor (required for pass registry)
+  CommonReduction() = default;
+
+  // Forward the options constructor to the base
+  CommonReduction(const CommonReductionPassOptions &options) : CommonReductionPassBase() {
+    mode = options.mode;
+  }
+
   void runOnOperation() override {
 
     auto &analysis = getAnalysis<DialectAnalysis>();
@@ -78,4 +87,9 @@ public:
 
 std::unique_ptr<mlir::Pass> mqss_backend::CommonReductionPass() {
   return std::make_unique<CommonReduction>();
+}
+
+std::unique_ptr<mlir::Pass> mqss_backend::createCommonReductionPass(
+    const CommonReductionPassOptions &options) {
+  return std::make_unique<CommonReduction>(options);
 }

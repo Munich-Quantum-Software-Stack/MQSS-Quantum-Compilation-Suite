@@ -2,6 +2,7 @@
 
 #include "IR/QuantumDialect.h"
 #include "MQSSCatalystPasses/Analysis.h"
+#include "MQSSCatalystPasses/Pipelines.h"
 #include "MQSSCatalystPasses/Transforms.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/InitAllDialects.h"
@@ -42,6 +43,43 @@ int main(int argc, char **argv) {
   });
   mlir::registerPass(
       []() -> std::unique_ptr<mlir::Pass> { return mlir::createCSEPass(); });
+
+  mlir::registerPassPipeline(
+      "O1",                            // pipeline name (used on CLI too)
+      "MQSS-O1 optimization pipeline", // description
+      [](mlir::OpPassManager &pm, StringRef options,
+         std::function<LogicalResult(const Twine &)> errorHandler) {
+        // build your pipeline here
+        mqss_catalyst::opt::O1(pm); // populate pm instead of returning a pass
+        return mlir::success();
+      },
+      [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
+      // options callback
+  );
+  mlir::registerPassPipeline(
+      "O2",                            // pipeline name (used on CLI too)
+      "MQSS-O2 optimization pipeline", // description
+      [](mlir::OpPassManager &pm, StringRef options,
+         std::function<LogicalResult(const Twine &)> errorHandler) {
+        // build your pipeline here
+        mqss_catalyst::opt::O2(pm); // populate pm instead of returning a pass
+        return mlir::success();
+      },
+      [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
+      // options callback
+  );
+  mlir::registerPassPipeline(
+      "O3",                            // pipeline name (used on CLI too)
+      "MQSS-O3 optimization pipeline", // description
+      [](mlir::OpPassManager &pm, StringRef options,
+         std::function<LogicalResult(const Twine &)> errorHandler) {
+        // build your pipeline here
+        mqss_catalyst::opt::O3(pm); // populate pm instead of returning a pass
+        return mlir::success();
+      },
+      [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
+      // options callback
+  );
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));

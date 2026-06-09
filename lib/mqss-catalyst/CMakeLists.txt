@@ -128,16 +128,18 @@ set(CMAKE_CXX_STANDARD 20)
 set(MQT_QMAP_INCLUDE_DIR "${mqt-qmap_SOURCE_DIR}/include/")
 set(MQT_QCEC_INCLUDE_DIR "${mqt-qcec_SOURCE_DIR}/include/")
 set(MQT_CORE_INCLUDE_DIR "${mqt-core_SOURCE_DIR}/include/mqt-core")
-# set(qdmi_INCLUDE_DIRS "${QDMI_INCLUDE_DIRS}/qdmi")
-# set(qinfo_INCLUDE_DIRS "${qinfo_SOURCE_DIR}/include/qinfo")
+set(QDMI_INCLUDE_DIR "${qdmi_SOURCE_DIR}/include")
+set(QDMI_EXAMPLES_DIR "${qdmi_SOURCE_DIR}/examples/")
 
-message("MQT_CORE_INCLUDE_DIR = ${MQT_CORE_INCLUDE_DIR}")
-message("MQT_QMAP_INCLUDE_DIR = ${MQT_QMAP_INCLUDE_DIR}")
+message("QDMI Source = ${qdmi_SOURCE_DIR}")
+
 include_directories(
         BEFORE
         ${nlohmann_json_SOURCE_DIR}/include
         ${MQT_QMAP_INCLUDE_DIR}
         ${MQT_CORE_INCLUDE_DIR}
+        ${QDMI_INCLUDE_DIR}
+        ${QDMI_EXAMPLES_DIR}
         # ${qdmi_INCLUDE_DIRS}
         # ${qinfo_INCLUDE_DIRS}
         )

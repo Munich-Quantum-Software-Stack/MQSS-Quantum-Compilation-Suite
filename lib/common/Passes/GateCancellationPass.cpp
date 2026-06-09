@@ -9,8 +9,16 @@ using namespace llvm;
 namespace {
 
 class CommonGateCancellation
-    : public mqss_backend::CommonGateCancellationPassBase<
-          CommonGateCancellation> {
+    : public mqss_backend::CommonGateCancellationPassBase<CommonGateCancellation> {
+
+  public:
+  // Default constructor (required for pass registry)
+  CommonGateCancellation() = default;
+
+  // Forward the options constructor to the base
+   CommonGateCancellation(const CommonGateCancellationPassOptions &options) : CommonGateCancellationPassBase() {
+    mode = options.mode;
+  }
 
   std::vector<Gate> GatesToCancel{CNOT, PauliX, PauliZ, PauliY, H, Hadamard};
 
@@ -30,6 +38,7 @@ class CommonGateCancellation
     //        Parsing would involve a more sophisticated Internal IR to
     //        represent operations of all supported dialects.
 
+    
     MQSS_DEBUG("[Applying Pass: CommonGateCancellationPass]\n");
 
     auto &analysis = getAnalysis<DialectAnalysis>();
@@ -37,6 +46,7 @@ class CommonGateCancellation
 
     // Empty CompareKey meaning - both control and target qubit operands
     // of the gates to be cancelled will be compared
+
 
     int count = 0;
     if (mode == "CancelGate") {
@@ -70,4 +80,9 @@ class CommonGateCancellation
 
 std::unique_ptr<mlir::Pass> mqss_backend::CommonGateCancellationPass() {
   return std::make_unique<CommonGateCancellation>();
+}
+
+std::unique_ptr<mlir::Pass> mqss_backend::createCommonGateCancellationPass(
+    const CommonGateCancellationPassOptions &options) {
+  return std::make_unique<CommonGateCancellation>(options);
 }

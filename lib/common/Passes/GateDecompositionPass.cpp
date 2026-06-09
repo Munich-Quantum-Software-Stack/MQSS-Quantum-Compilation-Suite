@@ -60,6 +60,15 @@ class CommonDecomposition : public mqss_backend::CommonDecompositionPassBase<
                                 class CommonDecomposition> {
 
 public:
+
+ // Default constructor (required for pass registry)
+  CommonDecomposition() = default;
+
+  // Forward the options constructor to the base
+  CommonDecomposition(const CommonDecompositionPassOptions &options) : CommonDecompositionPassBase() {
+    mode = options.mode;
+  }
+
   void runOnOperation() override {
 
     auto &analysis = getAnalysis<DialectAnalysis>();
@@ -102,4 +111,9 @@ private:
 
 std::unique_ptr<mlir::Pass> mqss_backend::CommonDecompositionPass() {
   return std::make_unique<CommonDecomposition>();
+}
+
+std::unique_ptr<mlir::Pass> mqss_backend::createCommonDecompositionPass(
+    const CommonDecompositionPassOptions &options) {
+  return std::make_unique<CommonDecomposition>(options);
 }
