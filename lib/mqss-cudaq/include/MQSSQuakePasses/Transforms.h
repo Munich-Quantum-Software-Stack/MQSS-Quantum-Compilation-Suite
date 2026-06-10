@@ -41,9 +41,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <stdexcept>
 // #include "qdmi.h"
 #include "sc/heuristic/HeuristicMapper.hpp"
-#include "qdmi/client.h"
-#include "qdmi/constants.h"
-#include "qdmi/device.h"
 
 #ifdef MQSS_ENABLE_DEBUG
 #define MQSS_DEBUG(X)                                                          \
@@ -70,6 +67,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  * MLIR/Quake. This macro is used to identify MLIR/Quake quantum kernels.
  */
 #define CUDAQ_PREFIX_FUNCTION "__nvqpp__mlirgen__"
+
+
 
 namespace mqss_cudaq::opt {
 

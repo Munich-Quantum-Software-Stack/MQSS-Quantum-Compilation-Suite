@@ -1,7 +1,7 @@
 
 // test-mqss-passes/code/cudaq/tests/QuakeQMapPass-02.test
 
-// RUN: %mqss-cc %S/../QuakeQMapPass-02.cpp --passes=CommonMappingPass=input=/workspaces/MQSS-Passes-Suite/tests/code/cudaq/input/qmap.json | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
+// RUN: %mqss-cc %S/../QuakeQMapPass-02.cpp --passes=CommonMappingPass=input=/workspaces/MQSS-Passes-Suite/tests/input/qmap.json | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
 
 // CHECK: i:   0   1   2   3   4
 // CHECK: 1:   |   |   |   x   c

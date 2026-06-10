@@ -89,10 +89,10 @@ For a full list of dependencies check ```.devcontainer/Dockerfile```.
 Clone the project:
 
 ```bash
-git clone https://github.com/akshay9594/MQSS-Passes-Suite.git \
+git clone https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git \
        /workspaces/MQSS-Passes-Suite
 cd /workspaces/MQSS-Passes-Suite
-git checkout bfbc0832ecd23de753b23f749f19bcba683af2e2
+git checkout 646eed6b2311587b803aaddd3f1f9cbcb4592da5
 ```
 
 If using docker, RUN the commands:

@@ -17,6 +17,8 @@ add_mlir_library(MLIRPasses
     MQSSTransformsPassIncGen
 
   LINK_LIBS PUBLIC
+    qdmi::qdmi
+    qdmi::example_driver
     MLIRQuantum
     MLIRFuncDialect         # <--- Fixes the func.func error
     MLIRArithDialect        # <--- For constants and math
@@ -33,11 +35,18 @@ add_mlir_library(MLIRPasses
     MQT::QMapSCHeuristic
 )
 
+set_target_properties(MLIRPasses PROPERTIES
+  BUILD_RPATH "$<TARGET_FILE_DIR:qdmi::example_driver>"
+  INSTALL_RPATH "$<TARGET_FILE_DIR:qdmi::example_driver>"
+)
+
 if(BUILD_CATALYST)
-  target_compile_definitions(MLIRPasses PRIVATE BUILD_CATALYST_ENABLED)
+  target_compile_definitions(MLIRPasses PRIVATE BUILD_CATALYST_ENABLED
+                                QDMI_DEVICE_PATH="$<TARGET_FILE:cxx-qdmi-device>")
   target_compile_options(MLIRPasses PRIVATE -fexceptions)
   if(MQSS_ENABLE_DEBUG)
-    target_compile_definitions(MLIRPasses PRIVATE MQSS_ENABLE_DEBUG)
+    target_compile_definitions(MLIRPasses PRIVATE MQSS_ENABLE_DEBUG
+                                    QDMI_DEVICE_PATH="$<TARGET_FILE:cxx-qdmi-device>")
   endif()
 endif()
 

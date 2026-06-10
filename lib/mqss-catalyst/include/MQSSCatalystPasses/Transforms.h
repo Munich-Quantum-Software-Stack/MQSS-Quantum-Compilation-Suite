@@ -66,6 +66,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "qdmi/client.h"
 #include "qdmi/constants.h"
 #include "qdmi/device.h"
+#include "driver/qdmi_example_driver.h"
 // declarative passes
 
 /**

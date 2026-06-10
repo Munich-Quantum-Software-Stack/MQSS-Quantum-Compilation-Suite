@@ -56,7 +56,7 @@ include(AddLLVM)
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
 
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
-add_definitions(${LLVM_DEFINITIONS})
+add_definitions(${LLVM_DEFINITIONS} ${MLIR_DEFINITIONS})
 
 # ############### ADDITIONAL PACKAGES #######################################
 
@@ -74,6 +74,7 @@ set(CMAKE_MODULE_PATH "${MQSS_SRC_DIR}/cmake" ${CMAKE_MODULE_PATH})
 # Find the QMAP package
 # set(CMAKE_CXX_STANDARD 17)
 set(MQT_QMAP_TESTS OFF)
+find_package(qdmi REQUIRED)
 find_package(mqt-qmap REQUIRED)
 # Restore the original CXX flags and compiler
 set(CMAKE_CXX_STANDARD 20)
@@ -84,8 +85,6 @@ set(MQT_CORE_INCLUDE_DIR "${mqt-core_SOURCE_DIR}/include/mqt-core")
 set(QDMI_INCLUDE_DIR "${qdmi_SOURCE_DIR}/include")
 set(QDMI_EXAMPLES_DIR "${qdmi_SOURCE_DIR}/examples/")
 # set(qinfo_INCLUDE_DIRS "${qinfo_SOURCE_DIR}/include/qinfo")
-
-message("QDMI Source = ${qdmi_SOURCE_DIR}")
 
 include_directories(
         BEFORE
@@ -138,7 +137,11 @@ add_subdirectory(include)
 
 #1. Define the executable and its source file
 add_executable(mqss-cudaq-opt cudaq.cpp)
-target_compile_definitions(mqss-cudaq-opt PRIVATE BUILD_CUDAQ_ENABLED)
+target_compile_definitions(mqss-cudaq-opt PRIVATE 
+                                    ${MLIR_DEFINITIONS}
+                                    ${LLVM_DEFINITIONS}
+                                    QDMI_DEVICE_PATH="$<TARGET_FILE:cxx-qdmi-device>")
+
 target_compile_options(mqss-cudaq-opt PRIVATE -fexceptions)
 
 
@@ -160,6 +163,8 @@ target_include_directories(mqss-cudaq-opt
 target_link_libraries(mqss-cudaq-opt 
   PUBLIC 
     qdmi::qdmi
+    qdmi::example_driver
+    qdmi::qdmi_project_warnings
     CCDialect
     QuakeDialect
     MLIRPasses
@@ -179,6 +184,8 @@ target_link_libraries(mqss-cudaq-opt
     MLIROptLib              # Provides MlirOptMain engine
     ${COMMON_LIBRARIES}     # Your CUDA-Q runtime + GTest
 )
+
+add_dependencies(mqss-cudaq-opt cxx-qdmi-device)
 
 # 4. Ensure it outputs to build/bin
 set_target_properties(mqss-cudaq-opt PROPERTIES 

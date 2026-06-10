@@ -3,6 +3,7 @@
 
 // TODO: This pass should be able to query QDMI for device coupling map
 #include "include/transforms/PassUtils.h"
+#include "include/transforms/qdmi_conf.h"
 
 using namespace mlir;
 using namespace llvm;
@@ -74,6 +75,11 @@ struct PipelineConfig {
     return config;
   }
 
+  static PipelineConfig fromQDMI(){
+    createAndsubmitJob();
+    return {};
+  }
+
 private:
   // -- String -> Enum helpers --
   static Heuristic heuristicFromString(const std::string &s) {
@@ -126,6 +132,8 @@ std::optional<double> getConstantDouble(mlir::Value v) {
 
   return attr.getValueAsDouble();
 }
+
+
 
 void resolveSSAformForMeasureOps(mlir::Operation *OldMeasOp,
                                  SmallVector<mlir::Value, 2> newResults) {
@@ -452,8 +460,15 @@ class CommonMapping : public mqss_backend::CommonMappingPassBase<CommonMapping> 
     MQSS_DEBUG("\n[Applying Pass: MappingPass]\n");
 
     PipelineConfig config;
-    if (!input.empty())
-      config = PipelineConfig::fromFile(input);
+    if (!input.empty()){
+      if(input == "QDMI"){
+        PipelineConfig::fromQDMI();
+          // Query QDMI and fetch config
+      }
+      else{
+        config = PipelineConfig::fromFile(input);
+      }
+    }
     else {
       MQSS_DEBUG("--> No input file provided, using pass defaults!" << "\n");
       config = PipelineConfig::defaults();

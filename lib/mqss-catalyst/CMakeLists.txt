@@ -79,7 +79,7 @@ endif()
 include(TableGen)
 include(AddLLVM)
 include(AddMLIR)
-include(HandleLLVMOptions)
+# include(HandleLLVMOptions)
 
 # if(APPLE)
 #   string(REPLACE "-Wl,-undefined -Wl,suppress" "" CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS}")
@@ -115,12 +115,15 @@ set(CMAKE_MODULE_PATH "${MQSS_SRC_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # set(CMAKE_CXX_STANDARD 11) Find QDMI package find_package(qdmi REQUIRED) Find
 # QInfo package find_package(qinfo REQUIRED)
-find_package(Z3 REQUIRED)
+# find_package(Z3 REQUIRED)
 
 # find_package(mqt-qcec REQUIRED)
 # Find the QMAP package
 # set(CMAKE_CXX_STANDARD 17)
 set(MQT_QMAP_TESTS OFF)
+# set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+find_package(qdmi REQUIRED)
+# set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)  # restore after
 find_package(mqt-qmap REQUIRED)
 # Restore the original CXX flags and compiler
 set(CMAKE_CXX_STANDARD 20)
@@ -131,8 +134,6 @@ set(MQT_CORE_INCLUDE_DIR "${mqt-core_SOURCE_DIR}/include/mqt-core")
 set(QDMI_INCLUDE_DIR "${qdmi_SOURCE_DIR}/include")
 set(QDMI_EXAMPLES_DIR "${qdmi_SOURCE_DIR}/examples/")
 
-message("QDMI Source = ${qdmi_SOURCE_DIR}")
-
 include_directories(
         BEFORE
         ${nlohmann_json_SOURCE_DIR}/include
@@ -140,9 +141,6 @@ include_directories(
         ${QDMI_EXAMPLES_DIR}
         ${MQT_QMAP_INCLUDE_DIR}
         ${MQT_CORE_INCLUDE_DIR}
-       
-        # ${qdmi_INCLUDE_DIRS}
-        # ${qinfo_INCLUDE_DIRS}
         )
   
 ########### MQSS Settings ########################
@@ -159,8 +157,6 @@ include_directories(BEFORE ${MQSS_CATALYST_MAIN_INCLUDE_DIR}
 
 
 include(FetchContent)
-
-
 
 #########################LLVM-LIT TESTING SETTINGS###############################
 # TODO: Change this path. Should point to llvm-lit in an LLVM toolchain within build/_Deps
@@ -181,16 +177,24 @@ add_custom_target(check-mqss-code
 
 ################################-MQSS Settings-###############################
 
+add_custom_target(mqss-catalyst-headers)
+set_target_properties(mqss-catalyst-headers PROPERTIES FOLDER "Misc")
+
 add_subdirectory(include) # Must come first to set up targets
 add_subdirectory(lib)
 
 add_executable(mqss-catalyst-opt catalyst.cpp)
+target_compile_definitions(mqss-catalyst-opt PRIVATE
+                                    ${MLIR_DEFINITIONS}
+                                    ${LLVM_DEFINITIONS}
+                                    QDMI_DEVICE_PATH="$<TARGET_FILE:cxx-qdmi-device>")
 
+target_compile_options(mqss-catalyst-opt PRIVATE -fexceptions)
 # 3. Set include directories so the compiler finds your headers
 target_include_directories(mqss-catalyst-opt
   PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    # ${CMAKE_SOURCE_DIR}/include/Passes
+   ${CMAKE_CURRENT_SOURCE_DIR}/../common
     # 2. Build Includes (CRITICAL): Allows finding the generated .inc files
     ${CMAKE_CURRENT_BINARY_DIR}/include
     #${MLIR_INCLUDE_DIRS}
@@ -200,8 +204,10 @@ target_include_directories(mqss-catalyst-opt
 # 2. Link the required libraries
 # Note: We must include the Dialects to resolve those "undefined symbols"
 target_link_libraries(mqss-catalyst-opt 
-  PRIVATE 
+  PUBLIC 
     qdmi::qdmi
+    qdmi::example_driver
+    qdmi::qdmi_project_warnings
     MLIRPasses
     MLIRQuantum
     # The missing MLIR dialects
@@ -221,6 +227,8 @@ target_link_libraries(mqss-catalyst-opt
     # Interfaces              # MQSS Interfaces
     MLIROptLib              # Provides MlirOptMain engine
 )
+
+add_dependencies(mqss-catalyst-opt cxx-qdmi-device)
 
 # 4. Ensure it outputs to build/bin
 set_target_properties(mqss-catalyst-opt PROPERTIES 
