@@ -18,6 +18,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 # Getting Started
 
+Note: It is highly recommended to use docker container to build and install the project.
+
 ## System Requirements
 
 - OS : Linux (tested on Ubuntu 22.04)
@@ -70,7 +72,8 @@ make setup-env
 ```
 
 Next, we need to set paths to the directories where the executables are generated
-i.e. ```~/.local/bin``` as well as path to ```cudaq-opt```. RUN command:
+i.e. ```~/.local/bin``` as well as path to ```cudaq-opt``` (pre-built tool from cudaq-quantum).
+RUN command:
 
 ```bash
 eval "$(make set-target-paths)"
@@ -93,17 +96,17 @@ Finally, build the targets by running:
 make target
 ```
 
-This builds the targets using ```ninja``` and if the build succeeds,
+This builds the targets using ```ninja``` (build system) and if the build succeeds,
 generates the executables ```mqss-catalyst-opt```, ```mqss-cudaq-opt```.
 You can change the installation directory by modifying the ```INSTALL_DIR```
 variable within the  MakeFile.
 
 - If you make any changes to the source
-code i.e. to the C++ files within ```MQSS-Passes-Suite/lib/*```, then just rerun the ```make target```
+code i.e. to the C++/.h files within ```MQSS-Passes-Suite/lib/*```, then just rerun the ```make target```
 command.
 
 - If any changes are made to the build scripts i.e. ```build_catalyst.sh``` or ```build_cudaq.sh``` or
-to the CMakeLists then do ```make build``` first and then ```make target```.
+to the ```CMakeLists``` then do ```make build``` first and then ```make target```.
 
 ## Enabling Pass Debug Information
 

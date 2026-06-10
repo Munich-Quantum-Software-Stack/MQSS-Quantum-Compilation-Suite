@@ -1,6 +1,6 @@
-## FAQ
+# Frequently Asked Questions
 
-<!-- [DOXYGEN FAQ] -->
+## MQSS FAQs
 
 ### What is MQSS?
 
@@ -21,6 +21,8 @@ a web portal, command line access via web credentials as well as the option for 
 tight integration with LRZ's HPC systems. It facilitates the connection between end-users and
 quantum computing platforms by its integration within HPC infrastructures, such as those found at
 the LRZ.
+
+## MLIR FAQs
 
 ### What is MLIR?
 

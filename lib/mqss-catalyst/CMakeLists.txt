@@ -136,10 +136,11 @@ message("QDMI Source = ${qdmi_SOURCE_DIR}")
 include_directories(
         BEFORE
         ${nlohmann_json_SOURCE_DIR}/include
-        ${MQT_QMAP_INCLUDE_DIR}
-        ${MQT_CORE_INCLUDE_DIR}
         ${QDMI_INCLUDE_DIR}
         ${QDMI_EXAMPLES_DIR}
+        ${MQT_QMAP_INCLUDE_DIR}
+        ${MQT_CORE_INCLUDE_DIR}
+       
         # ${qdmi_INCLUDE_DIRS}
         # ${qinfo_INCLUDE_DIRS}
         )
@@ -200,6 +201,7 @@ target_include_directories(mqss-catalyst-opt
 # Note: We must include the Dialects to resolve those "undefined symbols"
 target_link_libraries(mqss-catalyst-opt 
   PRIVATE 
+    qdmi::qdmi
     MLIRPasses
     MLIRQuantum
     # The missing MLIR dialects

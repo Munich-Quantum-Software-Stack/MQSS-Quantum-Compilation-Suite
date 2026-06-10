@@ -27,10 +27,7 @@ Compilation suite of the Munich Quantum Software Stack (MQSS).
 :maxdepth: 2
 :caption: Contents
 
-README
-guide
-passes
-transpiler
-templates
-faq
+user_guide/index
+develop-guide/index
+faqs/index
 ```
