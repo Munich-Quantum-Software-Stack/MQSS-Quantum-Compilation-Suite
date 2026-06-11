@@ -1,7 +1,7 @@
 
 // RUN: %mqss-catalyst-opt %s --CommonMappingPass 2>&1  | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
 
-func.func @circuit() attributes {qnode} {
+func.func @circuit_qmap1() attributes {qnode} {
   %0 = quantum.alloc(5) : !quantum.reg
 
   %q0 = quantum.extract %0[0] : !quantum.reg -> !quantum.bit

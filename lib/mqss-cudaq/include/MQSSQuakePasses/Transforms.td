@@ -123,7 +123,7 @@ def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::Mod
 
 
 def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
-   let summary = "A dialect-agnostic mapping pass";
+  let summary = "A dialect-agnostic mapping pass";
   let description = [{
     A dialect-agnostic mapping pass that accepts an input JSON
     and a QDMI device name.
@@ -136,6 +136,6 @@ def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
            /*default=*/"\"\"",
            "QDMI device name.">,
   ];
- 
+
  let constructor = "mqss_cudaq::opt::CommonMappingPass()";
 }
