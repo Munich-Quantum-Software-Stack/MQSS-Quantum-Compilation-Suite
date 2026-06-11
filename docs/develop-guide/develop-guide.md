@@ -129,6 +129,11 @@ for correctness is the output optimized/transformed MLIR dialect.
        passes defined using the ```--passes``` flag.
     5. Finally, the optimized/transformed dialect is emitted which is checked by FileCheck.
 
+## Enabling Pass Debug Information
+
+The Pass debug information can be enabled by passing in the flag ```--debug``` to the ```DEBUG_FLAG```
+variable within the MakeFile. Simply remove the flag if no debug information is needed.
+
 ## Enabling clangd for linting
 
 RUN command : ```make compile_commands```.

@@ -37,6 +37,7 @@ namespace mqss_catalyst::opt {
 using namespace mlir;
 using namespace llvm;
 
+
 struct Comparety {
   QubitRole KeyGate1;
   QubitRole KeyGate2;
@@ -93,6 +94,7 @@ public:
 private:
   std::vector<CommuteTy> CommuteCandidates;
 };
+
 
 static std::vector<mlir::Value> getQubitValues(std::vector<QubitID> QubitVector) {
   std::vector<mlir::Value> QubitValues;

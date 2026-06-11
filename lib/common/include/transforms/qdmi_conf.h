@@ -6,16 +6,22 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <set>
+#include <string>
+#include <utility>
 #include <vector>
 #include <filesystem>
 #include "qdmi/client.h"
 #include "qdmi/constants.h"
 #include "qdmi/device.h"
 #include "driver/qdmi_example_driver.h"
+#include "sc/utils.hpp"
 
-#define QDMI_CONF_PATH "qdmi.conf"
+#define QDMI_CONF_PATH "cxx_qdmi.conf"
 
-std::vector<QDMI_Site> getDeviceCouplingMap(QDMI_Device device) {
+enum PROPERTY {COUPLING_MAP, NATIVE_GATE_SET};
+
+static CouplingMap getDeviceCouplingMap(QDMI_Device device) {
   // Step 1: get the size
   size_t size_ret = 0;
   int ret = -223;
@@ -30,18 +36,19 @@ std::vector<QDMI_Site> getDeviceCouplingMap(QDMI_Device device) {
   size_t num_pairs = num_entries / 2;                // = 10
 
   // Step 2: retrieve
-  std::vector<QDMI_Site> coupling_map(num_entries);
+  std::vector<QDMI_Site> queired_coupling_map(num_entries);
   ret = QDMI_device_query_device_property(
              device, QDMI_DEVICE_PROPERTY_COUPLINGMAP, size_ret,
-             static_cast<void *>(coupling_map.data()),
+             static_cast<void *>(queired_coupling_map.data()),
              nullptr);
 
-  std::cout << "-->Query coupling map entries: " << coupling_map.size() << "\n";
+  std::cout << "-->Query coupling map entries: " << queired_coupling_map.size() << "\n";
   assert(ret == QDMI_SUCCESS);
+  CouplingMap coupling_map_set;
   // Step 3: iterate over pairs
   for (size_t i = 0; i < num_entries; i += 2) {
-    QDMI_Site src = coupling_map[i];
-    QDMI_Site dst = coupling_map[i + 1];
+    QDMI_Site src = queired_coupling_map[i];
+    QDMI_Site dst = queired_coupling_map[i + 1];
 
     // query the index of each site
     uint64_t src_id = 0, dst_id = 0;
@@ -51,32 +58,24 @@ std::vector<QDMI_Site> getDeviceCouplingMap(QDMI_Device device) {
                                     sizeof(uint64_t), &dst_id, nullptr);
 
     std::cout << src_id << " -> " << dst_id << "\n";
+    coupling_map_set.insert({src_id, dst_id});
   }
-  return coupling_map;
+  return coupling_map_set;
 }
 
-QDMI_Job createAndsubmitJob() {
-
-  QDMI_Job job = nullptr;
+static QDMI_Device createQDMIDevice(const char* device_conf_path){
+    QDMI_Job job = nullptr;
   int num_shots = 1000;
 
   std::cout << "Initializing QDMI driver...\n";
 
-  setenv("QDMI_CONF", QDMI_CONF_PATH, 1);
+  setenv("QDMI_CONF", device_conf_path, 1);
 
   std::cout << "CWD: " << std::filesystem::current_path() << "\n";
   std::cout << "QDMI_CONF: " << std::getenv("QDMI_CONF") << "\n";
 
   int ret = QDMI_driver_init();
   assert(ret == QDMI_SUCCESS);
-  // Immediately check what the conf file actually contains
-  std::ifstream conf("qdmi.conf");
-  if (!conf.is_open()) {
-    std::cout << "ERROR: qdmi.conf not found!\n";
-  } else {
-    std::cout << "=== qdmi.conf ===\n"
-              << conf.rdbuf() << "\n=================\n";
-  }
 
   QDMI_Session session = nullptr;
   ret = QDMI_session_alloc(&session);
@@ -112,10 +111,11 @@ QDMI_Job createAndsubmitJob() {
   
   // Create a Job
   QDMI_Device dev = devices[0];
-  getDeviceCouplingMap(dev);
 
-  // QDMI_device_create_job(dev, &job);
-  
+  return dev;
+}
+
+
 
   // const auto format = QDMI_PROGRAM_FORMAT_QIRBASESTRING;
   // QDMI_job_set_parameter(job, QDMI_JOB_PARAMETER_PROGRAMFORMAT,
@@ -133,4 +133,3 @@ QDMI_Job createAndsubmitJob() {
   // QDMI_driver_shutdown(); // dlclose() happens here
 
   // return job;
-}

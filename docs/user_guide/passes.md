@@ -9,7 +9,7 @@ MLIR dialects.
 2. Transpilation or Native-gate-set mapping is currently only enabled for ```Quake```.
 3. Please refer to the example usage section below on instructions for how to enable a pass
 
-## Standard Optimization Passes
+## Standard Optimization Passes (Target Device Agnostic)
 
 ### CommonCommutePass
 
@@ -61,7 +61,7 @@ Canonicalize operations.
 
 Eliminate common sub-expressions.
 
-## Transpilation passes
+## Transpilation passes (Target Device Specific)
 
 ### CommonMappingPass
 

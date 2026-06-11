@@ -75,9 +75,23 @@ struct PipelineConfig {
     return config;
   }
 
-  static PipelineConfig fromQDMI(){
-    createAndsubmitJob();
-    return {};
+  static PipelineConfig fromQDMI(string device_name){
+
+    PipelineConfig config;
+
+    auto device_conf = device_name + "_qdmi.conf";
+    MQSS_DEBUG("Device conf is: " << device_conf << "\n");
+    auto dev = createQDMIDevice(device_conf.c_str());
+    auto device_coupling_map =
+        getDeviceCouplingMap(dev);
+
+    assert(!device_coupling_map.empty() &&
+           "Could not fetch the coupling map of QDMI device!");
+
+    //TODO: Need to query num_qubits (first input to loadCouplingMap)
+    config.arch.loadCouplingMap(5, device_coupling_map);
+    MQSS_DEBUG("Device Coupling Map loaded!!");
+    return config;
   }
 
 private:
@@ -461,13 +475,10 @@ class CommonMapping : public mqss_backend::CommonMappingPassBase<CommonMapping> 
 
     PipelineConfig config;
     if (!input.empty()){
-      if(input == "QDMI"){
-        PipelineConfig::fromQDMI();
-          // Query QDMI and fetch config
-      }
-      else{
         config = PipelineConfig::fromFile(input);
-      }
+    }
+    else if(!qdmi.empty()){
+      PipelineConfig::fromQDMI(qdmi);
     }
     else {
       MQSS_DEBUG("--> No input file provided, using pass defaults!" << "\n");

@@ -153,8 +153,6 @@ command.
 - If any changes are made to the build scripts i.e. ```build_catalyst.sh``` or ```build_cudaq.sh``` or
 to the CMakeLists then do ```make build``` first and then ```make target```.
 
-## Enabling Pass Debug Information
-
 ## Testing the installation
 
 After the build is successful, use the following commands to test
