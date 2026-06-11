@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Getting Started" href="README.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="User Guide" href="user_guide/index.html">
 
     <!-- Generated with Sphinx 9.0.4 and Furo 2025.12.19 -->
         <title>MQSS Quantum Compilation Suite documentation</title>
@@ -192,12 +192,23 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="README.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="guide.html">Development Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="passes.html">Passes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
-<li class="toctree-l1"><a class="reference internal" href="templates.html">Writing Passes for the MQSS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="user_guide/index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/build.html">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/running.html">Running test circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/passes.html">Passes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="develop-guide/index.html">Development Guide</a><input aria-label="Toggle navigation of Development Guide" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="develop-guide/develop-guide.html">Development Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop-guide/templates.html">Writing Passes for the MQSS</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="faqs/index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="faqs/mqss-faq.html">MQSS FAQs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faqs/mlir-faq.html">MLIR FAQs</a></li>
+</ul>
+</li>
 </ul>
 
 </div>
@@ -257,60 +268,21 @@ Compilation suite of the Munich Quantum Software Stack (MQSS).</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="README.html">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="README.html#system-requirements">System Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="README.html#development-environment">Development Environment</a></li>
-<li class="toctree-l2"><a class="reference internal" href="README.html#dependencies">Dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="README.html#prerequisites">Prerequisites</a></li>
-<li class="toctree-l2"><a class="reference internal" href="README.html#building-and-installing-the-project">Building and Installing the project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="README.html#enabling-pass-debug-information">Enabling Pass Debug Information</a></li>
-<li class="toctree-l2"><a class="reference internal" href="README.html#testing-the-installation">Testing the installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide/index.html">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/build.html">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/running.html">Running test circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/passes.html">Passes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="guide.html">Development Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="guide.html#development-environment">Development Environment</a></li>
-<li class="toctree-l2"><a class="reference internal" href="guide.html#building-the-tool">Building the tool</a></li>
-<li class="toctree-l2"><a class="reference internal" href="guide.html#project-structure">Project structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="guide.html#testing">Testing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="guide.html#enabling-clangd-for-linting">Enabling clangd for linting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="develop-guide/index.html">Development Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="develop-guide/develop-guide.html">Development Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop-guide/templates.html">Writing Passes for the MQSS</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="passes.html">Passes</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#commoncommutepass">CommonCommutePass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#commondecompositionpass">CommonDecompositionPass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#commongatecancellationpass">CommonGateCancellationPass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#commonmappingpass">CommonMappingPass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#commonnormalizearganglepass">CommonNormalizeArgAnglePass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#commonreductionpass">CommonReductionPass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#commonswitchpass">CommonSwitchPass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#canonicalize">canonicalize</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#cse">cse</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#fermioniq-gate-set-mapping">fermioniq-gate-set-mapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#ionq-gate-set-mapping">ionq-gate-set-mapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#iqm-gate-set-mapping">iqm-gate-set-mapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#oqc-gate-set-mapping">oqc-gate-set-mapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#qci-gate-set-mapping">qci-gate-set-mapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#quantinuum-gate-set-mapping">quantinuum-gate-set-mapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#print-quake-gates-pass">print-quake-gates-pass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#print-catalyst-gates-pass">print-catalyst-gates-pass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="passes.html#example-usage">Example Usage</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
-<li class="toctree-l1"><a class="reference internal" href="templates.html">Writing Passes for the MQSS</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="templates.html#adding-your-pass">Adding your pass</a></li>
-<li class="toctree-l2"><a class="reference internal" href="templates.html#pass-structure">Pass Structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="templates.html#adding-a-dialect">Adding a Dialect</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#what-is-mqss">What is MQSS?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#what-is-mlir">What is MLIR?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#what-is-an-mlir-dialect">What is an MLIR Dialect?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#what-is-an-mlir-pass">What is an MLIR pass?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#why-include-mlir-into-the-mqss">Why include MLIR into the MQSS?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#where-do-mlir-passes-fit-into-the-mqss">Where do MLIR passes fit into the MQSS?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#under-which-license-is-this-collection-of-passes-released">Under which license is this collection of passes released?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faqs/index.html">FAQs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faqs/mqss-faq.html">MQSS FAQs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faqs/mlir-faq.html">MLIR FAQs</a></li>
 </ul>
 </li>
 </ul>
@@ -322,12 +294,12 @@ Compilation suite of the Munich Quantum Software Stack (MQSS).</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="README.html">
+          <a class="next-page" href="user_guide/index.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Getting Started</div>
+                <div class="title">User Guide</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>

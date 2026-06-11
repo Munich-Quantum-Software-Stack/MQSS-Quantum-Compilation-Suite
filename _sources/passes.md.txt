@@ -9,6 +9,8 @@ MLIR dialects.
 2. Transpilation or Native-gate-set mapping is currently only enabled for ```Quake```.
 3. Please refer to the example usage section below on instructions for how to enable a pass
 
+## Standard Optimization Passes
+
 ### CommonCommutePass
 
 This pass searches commutes gates that match a specific pattern.
@@ -26,12 +28,6 @@ Perform gate decomposition: `{Cx}` → `HCzH`, `{Cz}` → `HCxH`, or `ReverseCx`
 Performs cancellation of gates following a specific pattern.
 
 - `--mode=<string>` — Select pattern to cancel: `CancelGate` or `CancelNullRotation`
-
-### CommonMappingPass
-
-A dialect-agnostic mapping pass.
-
-- `--input=<string>` — Path to JSON input
 
 ### CommonNormalizeArgAnglePass
 
@@ -64,6 +60,14 @@ Canonicalize operations.
 ### cse
 
 Eliminate common sub-expressions.
+
+## Transpilation passes
+
+### CommonMappingPass
+
+A dialect-agnostic Qubit mapping pass. Maps logical qubits to physical qubits.
+
+- `--input=<string>` — Path to JSON input
 
 ### fermioniq-gate-set-mapping
 

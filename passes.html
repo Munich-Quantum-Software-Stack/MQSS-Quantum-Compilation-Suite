@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="MQSS-Quantum Compilation Suite Transpiler" href="transpiler.html"><link rel="prev" title="Development Guide" href="guide.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="MQSS-Quantum Compilation Suite Transpiler" href="transpiler.html"><link rel="prev" title="Development Guide" href="develop-guide.html">
 
     <!-- Generated with Sphinx 9.0.4 and Furo 2025.12.19 -->
         <title>Passes - MQSS Quantum Compilation Suite documentation</title>
@@ -192,8 +192,12 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="README.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="guide.html">Development Guide</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="user_guide/index.html">Munich Quantum Software Stack (MQSS) Quantum Compilation Suite</a><input aria-label="Toggle navigation of Munich Quantum Software Stack (MQSS) Quantum Compilation Suite" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/build.html">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/running.html">Running test circuits</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="develop-guide.html">Development Guide</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Passes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Writing Passes for the MQSS</a></li>
@@ -246,54 +250,49 @@ MLIR dialects.</p></li>
 <li><p>Transpilation or Native-gate-set mapping is currently only enabled for <code class="docutils literal notranslate"><span class="pre">Quake</span></code>.</p></li>
 <li><p>Please refer to the example usage section below on instructions for how to enable a pass</p></li>
 </ol>
+<section id="standard-optimization-passes">
+<h2>Standard Optimization Passes<a class="headerlink" href="#standard-optimization-passes" title="Link to this heading">¶</a></h2>
 <section id="commoncommutepass">
-<h2>CommonCommutePass<a class="headerlink" href="#commoncommutepass" title="Link to this heading">¶</a></h2>
+<h3>CommonCommutePass<a class="headerlink" href="#commoncommutepass" title="Link to this heading">¶</a></h3>
 <p>This pass searches commutes gates that match a specific pattern.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pattern to commute: <code class="docutils literal notranslate"><span class="pre">CX-RX</span></code>, <code class="docutils literal notranslate"><span class="pre">RX-CX</span></code>, <code class="docutils literal notranslate"><span class="pre">CX-X</span></code>, <code class="docutils literal notranslate"><span class="pre">X-CX</span></code>, <code class="docutils literal notranslate"><span class="pre">CX-Z</span></code>, <code class="docutils literal notranslate"><span class="pre">Z-CX</span></code></p></li>
 </ul>
 </section>
 <section id="commondecompositionpass">
-<h2>CommonDecompositionPass<a class="headerlink" href="#commondecompositionpass" title="Link to this heading">¶</a></h2>
+<h3>CommonDecompositionPass<a class="headerlink" href="#commondecompositionpass" title="Link to this heading">¶</a></h3>
 <p>Perform gate decomposition: <code class="docutils literal notranslate"><span class="pre">{Cx}</span></code> → <code class="docutils literal notranslate"><span class="pre">HCzH</span></code>, <code class="docutils literal notranslate"><span class="pre">{Cz}</span></code> → <code class="docutils literal notranslate"><span class="pre">HCxH</span></code>, or <code class="docutils literal notranslate"><span class="pre">ReverseCx</span></code>.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pass mode: <code class="docutils literal notranslate"><span class="pre">CxToHCzH</span></code>, <code class="docutils literal notranslate"><span class="pre">CzToHCxH</span></code>, or <code class="docutils literal notranslate"><span class="pre">ReverseCx</span></code></p></li>
 </ul>
 </section>
 <section id="commongatecancellationpass">
-<h2>CommonGateCancellationPass<a class="headerlink" href="#commongatecancellationpass" title="Link to this heading">¶</a></h2>
+<h3>CommonGateCancellationPass<a class="headerlink" href="#commongatecancellationpass" title="Link to this heading">¶</a></h3>
 <p>Performs cancellation of gates following a specific pattern.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pattern to cancel: <code class="docutils literal notranslate"><span class="pre">CancelGate</span></code> or <code class="docutils literal notranslate"><span class="pre">CancelNullRotation</span></code></p></li>
 </ul>
 </section>
-<section id="commonmappingpass">
-<h2>CommonMappingPass<a class="headerlink" href="#commonmappingpass" title="Link to this heading">¶</a></h2>
-<p>A dialect-agnostic mapping pass.</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">--input=&lt;string&gt;</span></code> — Path to JSON input</p></li>
-</ul>
-</section>
 <section id="commonnormalizearganglepass">
-<h2>CommonNormalizeArgAnglePass<a class="headerlink" href="#commonnormalizearganglepass" title="Link to this heading">¶</a></h2>
+<h3>CommonNormalizeArgAnglePass<a class="headerlink" href="#commonnormalizearganglepass" title="Link to this heading">¶</a></h3>
 <p>Normalize arg angle of RX, RY, RZ gates.</p>
 </section>
 <section id="commonreductionpass">
-<h2>CommonReductionPass<a class="headerlink" href="#commonreductionpass" title="Link to this heading">¶</a></h2>
+<h3>CommonReductionPass<a class="headerlink" href="#commonreductionpass" title="Link to this heading">¶</a></h3>
 <p>Perform circuit reduction: <code class="docutils literal notranslate"><span class="pre">{HZH}</span></code> → <code class="docutils literal notranslate"><span class="pre">X</span></code>, <code class="docutils literal notranslate"><span class="pre">{HXH}</span></code> → <code class="docutils literal notranslate"><span class="pre">Z</span></code>, <code class="docutils literal notranslate"><span class="pre">{SAdjZ}</span></code> → <code class="docutils literal notranslate"><span class="pre">S</span></code>, or <code class="docutils literal notranslate"><span class="pre">{SZ}</span></code> → <code class="docutils literal notranslate"><span class="pre">SAdj</span></code>.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pass mode: <code class="docutils literal notranslate"><span class="pre">HXHToZ</span></code>, <code class="docutils literal notranslate"><span class="pre">HZHToX</span></code>, <code class="docutils literal notranslate"><span class="pre">SAdjZToS</span></code>, or <code class="docutils literal notranslate"><span class="pre">SZToSAdj</span></code></p></li>
 </ul>
 </section>
 <section id="commonswitchpass">
-<h2>CommonSwitchPass<a class="headerlink" href="#commonswitchpass" title="Link to this heading">¶</a></h2>
+<h3>CommonSwitchPass<a class="headerlink" href="#commonswitchpass" title="Link to this heading">¶</a></h3>
 <p>Commute and switch gates.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pattern to switch: <code class="docutils literal notranslate"><span class="pre">XYZHtoHXYZ</span></code> or <code class="docutils literal notranslate"><span class="pre">HXYZtoXYZH</span></code></p></li>
 </ul>
 </section>
 <section id="canonicalize">
-<h2>canonicalize<a class="headerlink" href="#canonicalize" title="Link to this heading">¶</a></h2>
+<h3>canonicalize<a class="headerlink" href="#canonicalize" title="Link to this heading">¶</a></h3>
 <p>Canonicalize operations.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--disable-patterns=&lt;string&gt;</span></code> — Labels of patterns to filter out</p></li>
@@ -306,52 +305,63 @@ MLIR dialects.</p></li>
 </ul>
 </section>
 <section id="cse">
-<h2>cse<a class="headerlink" href="#cse" title="Link to this heading">¶</a></h2>
+<h3>cse<a class="headerlink" href="#cse" title="Link to this heading">¶</a></h3>
 <p>Eliminate common sub-expressions.</p>
 </section>
+</section>
+<section id="transpilation-passes">
+<h2>Transpilation passes<a class="headerlink" href="#transpilation-passes" title="Link to this heading">¶</a></h2>
+<section id="commonmappingpass">
+<h3>CommonMappingPass<a class="headerlink" href="#commonmappingpass" title="Link to this heading">¶</a></h3>
+<p>A dialect-agnostic Qubit mapping pass. Maps logical qubits to physical qubits.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--input=&lt;string&gt;</span></code> — Path to JSON input</p></li>
+</ul>
+</section>
 <section id="fermioniq-gate-set-mapping">
-<h2>fermioniq-gate-set-mapping<a class="headerlink" href="#fermioniq-gate-set-mapping" title="Link to this heading">¶</a></h2>
+<h3>fermioniq-gate-set-mapping<a class="headerlink" href="#fermioniq-gate-set-mapping" title="Link to this heading">¶</a></h3>
 <p>Convert Quake kernels to Fermioniq gate set.</br>
 The fermioniq backend supports the following gates:</br>
 <code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span>&#160; <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span>&#160; <span class="pre">&quot;x(1)&quot;</span></code>.</p>
 </section>
 <section id="ionq-gate-set-mapping">
-<h2>ionq-gate-set-mapping<a class="headerlink" href="#ionq-gate-set-mapping" title="Link to this heading">¶</a></h2>
+<h3>ionq-gate-set-mapping<a class="headerlink" href="#ionq-gate-set-mapping" title="Link to this heading">¶</a></h3>
 <p>Convert Quake kernels to IONQ gate set.</br>
 The IONQ backend supports the following gates:</br>
 <code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span>&#160; <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span>&#160; <span class="pre">&quot;x(1)&quot;</span></code>.</p>
 </section>
 <section id="iqm-gate-set-mapping">
-<h2>iqm-gate-set-mapping<a class="headerlink" href="#iqm-gate-set-mapping" title="Link to this heading">¶</a></h2>
+<h3>iqm-gate-set-mapping<a class="headerlink" href="#iqm-gate-set-mapping" title="Link to this heading">¶</a></h3>
 <p>Convert Quake kernels to IQM gate set.</br>
 The IQM backend supports the following gates:</br>
 <code class="docutils literal notranslate"><span class="pre">&quot;phased_rx&quot;,</span> <span class="pre">&quot;z(1)&quot;</span></code>.</p>
 </section>
 <section id="oqc-gate-set-mapping">
-<h2>oqc-gate-set-mapping<a class="headerlink" href="#oqc-gate-set-mapping" title="Link to this heading">¶</a></h2>
+<h3>oqc-gate-set-mapping<a class="headerlink" href="#oqc-gate-set-mapping" title="Link to this heading">¶</a></h3>
 <p>Convert Quake kernels to OQC gate set.</br>
 The OQC backend supports the following gates:</br>
 <code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span> <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;r1&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span> <span class="pre">&quot;x(1)&quot;</span></code></p>
 </section>
 <section id="qci-gate-set-mapping">
-<h2>qci-gate-set-mapping<a class="headerlink" href="#qci-gate-set-mapping" title="Link to this heading">¶</a></h2>
+<h3>qci-gate-set-mapping<a class="headerlink" href="#qci-gate-set-mapping" title="Link to this heading">¶</a></h3>
 <p>Convert Quake kernels to QCI gate set.</br>
 The QCI backend supports the following gates:</br>
 <code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span> <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span> <span class="pre">&quot;x(1)&quot;</span></code></p>
 </section>
 <section id="quantinuum-gate-set-mapping">
-<h2>quantinuum-gate-set-mapping<a class="headerlink" href="#quantinuum-gate-set-mapping" title="Link to this heading">¶</a></h2>
+<h3>quantinuum-gate-set-mapping<a class="headerlink" href="#quantinuum-gate-set-mapping" title="Link to this heading">¶</a></h3>
 <p>Convert Quake kernels to Quantinuum gate set.</br>
 The Quantinuum backend supports the following gates:</br>
 <code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span> <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span> <span class="pre">&quot;x(1)&quot;,</span></code>.</p>
 </section>
 <section id="print-quake-gates-pass">
-<h2>print-quake-gates-pass<a class="headerlink" href="#print-quake-gates-pass" title="Link to this heading">¶</a></h2>
+<h3>print-quake-gates-pass<a class="headerlink" href="#print-quake-gates-pass" title="Link to this heading">¶</a></h3>
 <p>Traverses a given MLIR module, prints its gates and a description of the operands of each gate.</p>
 </section>
 <section id="print-catalyst-gates-pass">
-<h2>print-catalyst-gates-pass<a class="headerlink" href="#print-catalyst-gates-pass" title="Link to this heading">¶</a></h2>
+<h3>print-catalyst-gates-pass<a class="headerlink" href="#print-catalyst-gates-pass" title="Link to this heading">¶</a></h3>
 <p>Traverses a given MLIR module, prints its gates and a description of the operands of each gate.</p>
+</section>
 </section>
 <hr class="docutils" />
 <section id="example-usage">
@@ -381,7 +391,7 @@ The Quantinuum backend supports the following gates:</br>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="guide.html">
+          <a class="prev-page" href="develop-guide.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
@@ -423,15 +433,19 @@ The Quantinuum backend supports the following gates:</br>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Passes</a><ul>
+<li><a class="reference internal" href="#standard-optimization-passes">Standard Optimization Passes</a><ul>
 <li><a class="reference internal" href="#commoncommutepass">CommonCommutePass</a></li>
 <li><a class="reference internal" href="#commondecompositionpass">CommonDecompositionPass</a></li>
 <li><a class="reference internal" href="#commongatecancellationpass">CommonGateCancellationPass</a></li>
-<li><a class="reference internal" href="#commonmappingpass">CommonMappingPass</a></li>
 <li><a class="reference internal" href="#commonnormalizearganglepass">CommonNormalizeArgAnglePass</a></li>
 <li><a class="reference internal" href="#commonreductionpass">CommonReductionPass</a></li>
 <li><a class="reference internal" href="#commonswitchpass">CommonSwitchPass</a></li>
 <li><a class="reference internal" href="#canonicalize">canonicalize</a></li>
 <li><a class="reference internal" href="#cse">cse</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#transpilation-passes">Transpilation passes</a><ul>
+<li><a class="reference internal" href="#commonmappingpass">CommonMappingPass</a></li>
 <li><a class="reference internal" href="#fermioniq-gate-set-mapping">fermioniq-gate-set-mapping</a></li>
 <li><a class="reference internal" href="#ionq-gate-set-mapping">ionq-gate-set-mapping</a></li>
 <li><a class="reference internal" href="#iqm-gate-set-mapping">iqm-gate-set-mapping</a></li>
@@ -440,6 +454,8 @@ The Quantinuum backend supports the following gates:</br>
 <li><a class="reference internal" href="#quantinuum-gate-set-mapping">quantinuum-gate-set-mapping</a></li>
 <li><a class="reference internal" href="#print-quake-gates-pass">print-quake-gates-pass</a></li>
 <li><a class="reference internal" href="#print-catalyst-gates-pass">print-catalyst-gates-pass</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#example-usage">Example Usage</a></li>
 </ul>
 </li>
