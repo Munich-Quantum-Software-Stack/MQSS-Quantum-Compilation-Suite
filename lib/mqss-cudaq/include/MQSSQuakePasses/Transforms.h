@@ -41,6 +41,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <stdexcept>
 // #include "qdmi.h"
 #include "sc/heuristic/HeuristicMapper.hpp"
+#include "sc/exact/ExactMapper.hpp"
 
 #ifdef MQSS_ENABLE_DEBUG
 #define MQSS_DEBUG(X)                                                          \

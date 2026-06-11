@@ -63,6 +63,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/Pass/PassManager.h"
 #include <stdexcept>
 #include "sc/heuristic/HeuristicMapper.hpp"
+#include "sc/exact/ExactMapper.hpp"
 #include "qdmi/client.h"
 #include "qdmi/constants.h"
 #include "qdmi/device.h"

@@ -2,14 +2,15 @@
 
 
 // TODO: This pass should be able to query QDMI for device coupling map
-#include "include/transforms/PassUtils.h"
-#include "include/transforms/qdmi_conf.h"
+
+#include "include/transforms/TranspilationPassUtils.h"
 
 using namespace mlir;
 using namespace llvm;
 using namespace qc;
 namespace {
 
+//TODO: Use Exact Mapper if Number of Qubits >=8, Heursitic Mapper otherwise.
 struct PipelineConfig {
   Architecture arch;
   Configuration settings;
@@ -82,15 +83,26 @@ struct PipelineConfig {
     auto device_conf = device_name + "_qdmi.conf";
     MQSS_DEBUG("Device conf is: " << device_conf << "\n");
     auto dev = createQDMIDevice(device_conf.c_str());
-    auto device_coupling_map =
-        getDeviceCouplingMap(dev);
 
+    auto device_porperties = getDeviceProperties(dev);
+
+    auto numQubits = device_porperties.numQubits;
+    auto device_coupling_map = device_porperties.cm;
     assert(!device_coupling_map.empty() &&
            "Could not fetch the coupling map of QDMI device!");
 
-    //TODO: Need to query num_qubits (first input to loadCouplingMap)
-    config.arch.loadCouplingMap(5, device_coupling_map);
+    config.arch.loadCouplingMap(numQubits, device_coupling_map);
     MQSS_DEBUG("Device Coupling Map loaded!!");
+      // Defining the settings of the mqt-mapper
+    config.settings.heuristic = Heuristic::GateCountMaxDistance;
+    config.settings.layering = Layering::DisjointQubits;
+    config.settings.initialLayout = InitialLayout::Identity;
+    config.settings.preMappingOptimizations = false;
+    config.settings.postMappingOptimizations = false;
+    config.settings.lookaheadHeuristic = LookaheadHeuristic::None;
+    config.settings.debug = false;
+    config.settings.addMeasurementsToMappedCircuit = true;
+
     return config;
   }
 
@@ -427,11 +439,15 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
 
     // Map the circuit
     const auto mapper = std::make_unique<HeuristicMapper>(qc, architecture);
+    MQSS_DEBUG("--> Could not create Mapper\n");
+
     mapper->map(settings);
 
+    MQSS_DEBUG("--> Mapper failed\n");
     auto qcMapped = qc::QuantumComputation();
     qcMapped = mapper->moveMappedCircuit();
 
+    MQSS_DEBUG("--> Cannot move mapped circuit\n");
     mlir::IRRewriter builder(kernel->getContext());
     mlir::Location loc = kernel.getLoc();
 
@@ -478,7 +494,7 @@ class CommonMapping : public mqss_backend::CommonMappingPassBase<CommonMapping> 
         config = PipelineConfig::fromFile(input);
     }
     else if(!qdmi.empty()){
-      PipelineConfig::fromQDMI(qdmi);
+      config = PipelineConfig::fromQDMI(qdmi);
     }
     else {
       MQSS_DEBUG("--> No input file provided, using pass defaults!" << "\n");
