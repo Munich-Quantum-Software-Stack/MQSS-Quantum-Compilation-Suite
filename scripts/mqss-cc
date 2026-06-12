@@ -20,20 +20,26 @@ section() {
 }
 
 info() {
-  printf '[INFO] %s\n' "$1"
+  printf '🔧 %s\n' "$1"
 }
 
+fail() {
+  printf '❌ %s\n' "$1"
+}
+
+
 ok() {
-  printf '[OK]   %s\n' "$1"
+  printf '✅ %s\n' "$1"
 }
 
 warn() {
-  printf '[WARN] %s\n' "$1"
+  printf '⚠️ %s\n' "$1"
 }
 
 step() {
-  printf '  -> %s\n' "$1"
+  printf '-> %s\n' "$1"
 }
+
 
 usage() {
   cat <<'EOF'
@@ -43,7 +49,8 @@ Usage:
 options:
   Common:
     --out-dir <Path/to/DIR>
-    --emit-qir
+    --convert-to=<format>
+       <format>                                     - qasm2(only for cpp and quake dialect) or qir output formats supported.
 
   Python-only:
     --function <NAME>
@@ -83,10 +90,10 @@ Compiler passes to run
 
 Example Usage:
   1. For cudaq-quake
-      mqss-cc test.cpp --emit-qir --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
+      mqss-cc test.cpp --convert-to=qasm2 --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 
   2. For catalyst-quantum
-      mqss-cc test.py --function circuit --stage QuantumCompilationStage --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
+      mqss-cc test.py --convert-to=qir --function circuit --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 EOF
 }
 
@@ -135,6 +142,7 @@ TOOL_ARGS=()
 
 EMIT_QIR=OFF
 DEBUG_ONLY=""
+OUT_FORMAT=""
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -142,8 +150,12 @@ while [[ $# -gt 0 ]]; do
       OUT_DIR="$2"
       shift 2
       ;;
-    --emit-qir)
-      EMIT_QIR=ON
+    --convert-to=*)
+      OUT_FORMAT="${1#--convert-to=}"
+      if [[ "$OUT_FORMAT" != "qasm2" && "$OUT_FORMAT" != "qir" ]]; then
+        echo "Error: unsupported format '$OUT_FORMAT'. Expected 'qasm2' or 'qir'." >&2
+        exit 1
+      fi
       shift
       ;;
     --function)
@@ -171,10 +183,9 @@ while [[ $# -gt 0 ]]; do
       RESOLVER="$2"
       shift 2
       ;;
-
       --passes=*)
         PASSES="${1#--passes=}"
-        break
+        shift          # <-- shift, not break
       ;;
     *)
       echo "Unknown argument: $1" >&2
@@ -216,54 +227,85 @@ for p in "${PASS_LIST[@]}"; do
   fi
 done
 
+OUT_FORMAT_FLAG=""
+OUT_EXT=""
+if [[ "${OUT_FORMAT}" != "" ]]; then
+    if [[ "${OUT_FOMAT}" == "qir" ]]; then
+      OUT_FORMAT_FLAG="--convert-to=qir-full"
+      OUT_EXT=".ll"
+    elif [[ "${OUT_FORMAT}" == "qasm2" ]]; then
+      OUT_FORMAT_FLAG="--convert-to=openqasm2"
+      OUT_EXT=".qasm"
+    else
+      OUT_FORMAT_FLAG=""
+      OUT_EXT=""
+    fi 
+fi
+
 filename=$(basename "$INPUT_FILE")
 # Dispatch to correct optimizer
 if [[ "${EXT}" == "cpp" ]]; then
-    blank
-    info "Converting the input to MLIR and applying specified optimization passes.."
-    GENERATED_MLIR="${filename%.*}.qke"
-    
-    if [[ "${OUT_DIR}" != "" ]]; then
+  info "Converting the input to MLIR and applying specified optimization passes.."
+  GENERATED_MLIR="${filename%.*}.qke"
+
+  if [[ -n "${OUT_FORMAT}" ]]; then
+    # Emit to a target format (qasm or qir)
+    info "Emitting here ${OUT_FORMAT}..."
+    echo " "
+    if [[ -n "${OUT_DIR}" ]]; then
       cudaq-quake "${INPUT_FILE}" -o "${OUT_DIR}/${GENERATED_MLIR}"
       mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${MQSS_PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
-
-      if [[ "${EMIT_QIR}" == "ON" ]]; then
-        info "Emitting QIR..."
-        echo " "
-        cudaq-translate --convert-to=qir-full "${OUT_DIR}/${GENERATED_MLIR}" -o "${OUT_DIR}/${filename%.*}.ll"
-      fi
-      
-    else
-
-      if [[ "${EMIT_QIR}" == "ON" ]]; then
-
-          if [ ${#DECOMP_ARGS[@]} -gt 0 ]; then
-              info "Emitting QIR after gate decomposition..."
-              echo " "
-              cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" | cudaq-opt "${DECOMP_ARGS[@]}" \
-                    | cudaq-translate --convert-to=qir-full
-          else
-            info "Emitting QIR..."
-            echo " "
-            cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" | cudaq-translate --convert-to=qir-full
-          fi
+      if [[ ${#DECOMP_ARGS[@]} -gt 0 ]]; then
+        cudaq-opt "${DECOMP_ARGS[@]}" "${OUT_DIR}/${GENERATED_MLIR}" \
+          | cudaq-translate ${OUT_FORMAT_FLAG} -o "${OUT_DIR}/${filename%.*}${OUT_EXT}"
       else
-        if [ ${#DECOMP_ARGS[@]} -gt 0 ]; then
-          info "Emitting Optimized Quake with decomposition..."
-          echo " "
-          cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" | cudaq-opt "${DECOMP_ARGS[@]}"
-        else
-          info "Emitting Optimized Quake..."
-          echo " "
-          cudaq-quake "${INPUT_FILE}" | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}"
-        fi
+        cudaq-translate ${OUT_FORMAT_FLAG} "${OUT_DIR}/${GENERATED_MLIR}" \
+          -o "${OUT_DIR}/${filename%.*}${OUT_EXT}"
+      fi
+    else
+      if [[ ${#DECOMP_ARGS[@]} -gt 0 ]]; then
+        cudaq-quake "${INPUT_FILE}" \
+          | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" \
+          | cudaq-opt "${DECOMP_ARGS[@]}" \
+          | cudaq-translate ${OUT_FORMAT_FLAG}
+      else
+        cudaq-quake "${INPUT_FILE}" \
+          | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" \
+          | cudaq-translate ${OUT_FORMAT_FLAG}
       fi
     fi
-    
-    # TODO: Further convert to QIR?
 
+  else
+    # Emit optimized Quake MLIR
+    info "Emitting Optimized Quake..."
+    echo " "
+    if [[ -n "${OUT_DIR}" ]]; then
+      cudaq-quake "${INPUT_FILE}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+      if [[ ${#DECOMP_ARGS[@]} -gt 0 ]]; then
+        mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${MQSS_PASS_ARGS[@]}" \
+          | cudaq-opt "${DECOMP_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+      else
+        mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${MQSS_PASS_ARGS[@]}" \
+          -o "${OUT_DIR}/${GENERATED_MLIR}"
+      fi
+    else
+      if [[ ${#DECOMP_ARGS[@]} -gt 0 ]]; then
+        cudaq-quake "${INPUT_FILE}" \
+          | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" \
+          | cudaq-opt "${DECOMP_ARGS[@]}"
+      else
+        cudaq-quake "${INPUT_FILE}" \
+          | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}"
+      fi
+    fi
+  fi
 elif [[ "${EXT}" == "py" ]]; then
     blank
+    if [[ "${OUT_FORMAT}" == "qasm2" ]]; then
+        warn "Pennylane-catalyst can only emit QIR..."
+        exit 1
+    fi
+
     msg "Python job details..."
     info "Function name: ${FUNCTION_NAME}"
     info "Stage: ${STAGE}"
@@ -296,18 +338,17 @@ elif [[ "${EXT}" == "py" ]]; then
         warn "MLIR dialect could not be extracted"
         exit 1
       fi
-      if [[ "${EMIT_QIR}" == "ON" ]]; then
+      if [[ "${OUT_FORMAT}" != "" ]]; then
         mqss-catalyst-opt "${MLIR_FILE}" "${MQSS_PASS_ARGS[@]}" -o "${MLIR_FILE}"
         info "Emitting QIR..."
         echo " "
-        catalyst --tool=all "${MLIR_FILE}" > "${OUT_DIR}/${filename%.*}.ll"
+        catalyst --tool=translate "${MLIR_FILE}" -o "${OUT_DIR}/${filename%.*}.ll"
       else 
         mqss-catalyst-opt "${MLIR_FILE}" "${MQSS_PASS_ARGS[@]}" -o "${MLIR_FILE}"
       fi
-      
-
     else
-      if [[ "${EMIT_QIR}" == "ON" ]]; then
+
+      if [[ "${OUT_FORMAT}" != "" ]]; then
         info "Emitting QIR..."
         echo " "
        python3.11 "${RESOLVER}" \
@@ -321,9 +362,6 @@ elif [[ "${EXT}" == "py" ]]; then
           --stage "${STAGE}" |  mqss-catalyst-opt "${MQSS_PASS_ARGS[@]}"
       fi
     fi
-
-    # TODO: Further convert to QIR? Use the following command
-    
 else
     warn "Unknown input type: $INPUT_FILE"
     exit 1
