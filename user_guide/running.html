@@ -296,7 +296,7 @@ Following is an example:</p>
 </pre></div>
 </div>
 <p>To run the above test circuit using <code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code> use the following command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.cpp<span class="w"> </span>--emit-qir<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonCommutePass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CX-RX
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.cpp<span class="w"> </span>--convert-to<span class="o">=</span>qasm2<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">Commutation</span> <span class="pre">Optimization</span> <span class="pre">pass</span></code> is applied to commute <code class="docutils literal notranslate"><span class="pre">CNOT</span> <span class="pre">and</span> <span class="pre">RX</span></code> gates.
@@ -333,7 +333,8 @@ Following is an example:</p>
 
 </pre></div>
 </div>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.py<span class="w"> </span>--function<span class="w"> </span>circuit_CommuteCNOTRx<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.py<span class="w"> </span>--convert-to<span class="o">=</span>qir<span class="w"> </span>--function<span class="w"> </span>circuit<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
 </pre></div>
 </div>
 <p>Do Not forget to mention the function to compile afer the <code class="docutils literal notranslate"><span class="pre">--function</span></code> flag.
