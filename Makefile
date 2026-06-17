@@ -5,7 +5,7 @@ MQSS_INSTALL_DIR = /workspaces/mqss-install
 
 NUM_JOBS = 4
 
-INSTALL_DIR := $(HOME)/.local/bin
+INSTALL_DIR ?= $(HOME)/.local/bin
 
 INSTALL_PATH = --install-dir ${INSTALL_DIR}
 
@@ -23,7 +23,8 @@ MERGED_CCDB   = build/compile_commands.json
 
 ################# Paths to Dependencies ###############
 
-VENV_DIR=$(CURDIR)/_deps/.venv
+DEPS_DIR=$(CURDIR)/_deps
+VENV_DIR=$(DEPS_DIR)/.venv
 
 SRC_SCRIPT=scripts/mqss-cc
 RESOLVER_SCRIPT=scripts/resolve_python_input.py
@@ -53,9 +54,9 @@ compile_commands:
 
 set-target-paths:
 	echo 'source $(VENV_DIR)/bin/activate'
-	echo 'export PATH="$(HOME)/.local/bin:$$PATH"'
+	echo 'export PATH="$(INSTALL_DIR):$$PATH"'
 	echo 'export PATH="/usr/local/bin:$$PATH"'
-	echo 'export PATH="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$$PATH"'
+	echo 'export PATH="$(DEPS_DIR)/mqss-cudaq/cudaq/bin:$$PATH"'
 
 setup-env: 
 	@./scripts/setup-env.sh

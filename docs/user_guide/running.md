@@ -55,7 +55,7 @@ int main() {
 To run the above test circuit using ```mqss-cc``` use the following command:
 
 ```bash
-mqss-cc test.cpp --emit-qir --out-dir output/ --passes=CommonCommutePass=mode=CX-RX
+mqss-cc test.cpp --convert-to=qasm2 --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 ```
 
 The ```Commutation Optimization pass``` is applied to commute ```CNOT and RX``` gates.
@@ -96,7 +96,8 @@ def circuit_CommuteCNOTRx():
 ```
 
 ```bash
-mqss-cc test.py --function circuit_CommuteCNOTRx --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
+mqss-cc test.py --convert-to=qir --function circuit \
+           --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 ```
 
 Do Not forget to mention the function to compile afer the ```--function``` flag.
