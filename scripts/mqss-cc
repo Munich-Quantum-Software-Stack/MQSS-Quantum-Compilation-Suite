@@ -88,6 +88,10 @@ Compiler passes to run
       print-quake-gates-pass                         -   Example pass that traverses a given mlir module, print its gates and a description of the operands of each gate
       print-catalyst-gates-pass                      -   Example pass that traverses a given mlir module, print its gates and a description of the operands of each gate
 
+    Pass Pipelines:
+      --O1                                             -   MQSS-O1 optimization pipeline
+      --O2                                             -   MQSS-O2 optimization pipeline
+      --O3                                             -   MQSS-O3 optimization pipeline
 Example Usage:
   1. For cudaq-quake
       mqss-cc test.cpp --convert-to=qasm2 --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
