@@ -12,4 +12,5 @@ your own MLIR pass to integrate within the suite.
 
 develop-guide
 templates
+integrate
 ```

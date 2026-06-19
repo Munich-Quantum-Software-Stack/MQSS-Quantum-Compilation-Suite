@@ -1,10 +1,11 @@
 
-
 #include "include/transforms/PassUtils.h"
 
 using namespace mlir;
 
 void mqss_backend::O1(mlir::OpPassManager &pm) {
+
+  CommonMappingPassOptions MappingOpts;
   pm.addPass(createCSEPass());
   pm.addPass(createCanonicalizerPass());
 }

@@ -4,6 +4,7 @@
 // TODO: This pass should be able to query QDMI for device coupling map
 
 #include "include/transforms/TranspilationPassUtils.h"
+#include <llvm/Support/raw_ostream.h>
 
 using namespace mlir;
 using namespace llvm;
@@ -76,11 +77,12 @@ struct PipelineConfig {
     return config;
   }
 
-  static PipelineConfig fromQDMI(string device_name){
+  static PipelineConfig fromQDMI(string device_conf){
 
     PipelineConfig config;
 
-    auto device_conf = device_name + "_qdmi.conf";
+    // auto device_conf = "/workspaces/MQSS-Passes-Suite/tests/" + device_name + "_qdmi.conf";
+    // // /workspaces/MQSS-Passes-Suite/tests/cxx_qdmi.conf
     MQSS_DEBUG("Device conf is: " << device_conf << "\n");
     auto dev = createQDMIDevice(device_conf.c_str());
 
@@ -439,15 +441,14 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
 
     // Map the circuit
     const auto mapper = std::make_unique<HeuristicMapper>(qc, architecture);
-    MQSS_DEBUG("--> Could not create Mapper\n");
 
     mapper->map(settings);
-
-    MQSS_DEBUG("--> Mapper failed\n");
     auto qcMapped = qc::QuantumComputation();
     qcMapped = mapper->moveMappedCircuit();
 
-    MQSS_DEBUG("--> Cannot move mapped circuit\n");
+    if(qcMapped.empty())
+        llvm::errs() << "Could not Map circuit!" << "\n";
+
     mlir::IRRewriter builder(kernel->getContext());
     mlir::Location loc = kernel.getLoc();
 
@@ -478,6 +479,7 @@ class CommonMapping : public mqss_backend::CommonMappingPassBase<CommonMapping> 
   // Forward the options constructor to the base
   CommonMapping(const CommonMappingPassOptions &options) : CommonMappingPassBase() {
     input = options.input;
+    qdmi = options.qdmi;
   }
 
   void runOnOperation() override {
