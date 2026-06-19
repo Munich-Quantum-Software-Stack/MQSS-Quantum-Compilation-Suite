@@ -47,7 +47,7 @@ static CouplingMap getDeviceCouplingMap(QDMI_Device device) {
   ret = QDMI_device_query_device_property(
       device, QDMI_DEVICE_PROPERTY_COUPLINGMAP, 0, nullptr, &size_ret);
 
-  std::cout << "-->Query coupling map size: " << size_ret << "\n";
+  MQSS_DEBUG("-->Query coupling map size: " << size_ret << "\n");
   assert(ret == QDMI_SUCCESS);
   // size_ret = 20 * sizeof(QDMI_Site) for the cxx device
   size_t num_entries = size_ret / sizeof(QDMI_Site); // = 20
@@ -59,8 +59,7 @@ static CouplingMap getDeviceCouplingMap(QDMI_Device device) {
       device, QDMI_DEVICE_PROPERTY_COUPLINGMAP, size_ret,
       static_cast<void *>(queired_coupling_map.data()), nullptr);
 
-  std::cout << "-->Query coupling map entries: " << queired_coupling_map.size()
-            << "\n";
+  MQSS_DEBUG("-->Query coupling map entries: " << queired_coupling_map.size());
   assert(ret == QDMI_SUCCESS);
   CouplingMap coupling_map_set;
   // Step 3: iterate over pairs
@@ -83,7 +82,6 @@ static CouplingMap getDeviceCouplingMap(QDMI_Device device) {
 
 static QDMI_Device createQDMIDevice(const char *device_conf_path) {
   QDMI_Job job = nullptr;
-  int num_shots = 1000;
 
   MQSS_DEBUG("Initializing QDMI driver...\n");
 
