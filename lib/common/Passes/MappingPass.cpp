@@ -401,7 +401,7 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
     }
   }
   // builder.create<func::ReturnOp>(loc);
-#ifdef DEBUG
+#ifdef MQSS_ENABLE_DEBUG
   MQSS_DEBUG("Dumping QC after mapping:\n");
   qcMapped.print(std::cout);
 #endif
@@ -435,10 +435,10 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
         MeasureOps[Op] = qview.measurements.size();
       }
     }
-
+#ifdef MQSS_ENABLE_DEBUG
     MQSS_DEBUG("--> Before mapping, Dumping QC:\n");
     qc.print(std::cout);
-
+#endif
     // Map the circuit
     const auto mapper = std::make_unique<HeuristicMapper>(qc, architecture);
 

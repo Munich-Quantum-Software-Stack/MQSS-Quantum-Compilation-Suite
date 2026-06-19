@@ -9,7 +9,7 @@ INSTALL_DIR ?= $(HOME)/.local/bin
 
 INSTALL_PATH = --install-dir ${INSTALL_DIR}
 
-DEBUG_FLAG =  --debug		# --debug (if you want pass debug info)
+DEBUG_FLAG =		# --debug (if you want pass debug info)
 
 ######################################################
 
