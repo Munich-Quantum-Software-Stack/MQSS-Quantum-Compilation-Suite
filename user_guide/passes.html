@@ -323,7 +323,8 @@ MLIR dialects.</p></li>
 <h3>CommonMappingPass<a class="headerlink" href="#commonmappingpass" title="Link to this heading">¶</a></h3>
 <p>A dialect-agnostic Qubit mapping pass. Maps logical qubits to physical qubits.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">--input=&lt;string&gt;</span></code> — Path to JSON input</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--input=&lt;string&gt;</span></code> — Path to JSON input (Coupling Map)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--qdmi=&lt;QDMI</span> <span class="pre">Device</span> <span class="pre">Name&gt;</span></code> - Query QDMI Device for Coupling Map (Needs Device .so file).</p></li>
 </ul>
 </section>
 <section id="fermioniq-gate-set-mapping">
@@ -371,7 +372,27 @@ The Quantinuum backend supports the following gates:</br>
 <p>Traverses a given MLIR module, prints its gates and a description of the operands of each gate.</p>
 </section>
 </section>
-<hr class="docutils" />
+<section id="pass-pipelines">
+<h2>Pass Pipelines<a class="headerlink" href="#pass-pipelines" title="Link to this heading">¶</a></h2>
+<section id="o1">
+<h3>O1<a class="headerlink" href="#o1" title="Link to this heading">¶</a></h3>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>The MQSS-O1 optimization pipeline
+</pre></div>
+</div>
+</section>
+<section id="o2">
+<h3>O2<a class="headerlink" href="#o2" title="Link to this heading">¶</a></h3>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>MQSS-O2 optimization pipeline
+</pre></div>
+</div>
+</section>
+<section id="o3">
+<h3>O3<a class="headerlink" href="#o3" title="Link to this heading">¶</a></h3>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>MQSS-O3 optimization pipeline
+</pre></div>
+</div>
+</section>
+</section>
 <section id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading">¶</a></h2>
 <p><strong>1. For cudaq-quake</strong></p>
@@ -462,6 +483,12 @@ The Quantinuum backend supports the following gates:</br>
 <li><a class="reference internal" href="#quantinuum-gate-set-mapping">quantinuum-gate-set-mapping</a></li>
 <li><a class="reference internal" href="#print-quake-gates-pass">print-quake-gates-pass</a></li>
 <li><a class="reference internal" href="#print-catalyst-gates-pass">print-catalyst-gates-pass</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pass-pipelines">Pass Pipelines</a><ul>
+<li><a class="reference internal" href="#o1">O1</a></li>
+<li><a class="reference internal" href="#o2">O2</a></li>
+<li><a class="reference internal" href="#o3">O3</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#example-usage">Example Usage</a></li>
