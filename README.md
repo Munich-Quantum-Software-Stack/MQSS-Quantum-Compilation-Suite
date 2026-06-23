@@ -52,7 +52,7 @@ The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](ht
 
 5. __Native-IR interoperability__: Connect frameworks without replacing their IRs.
 
-6. __Qubit Mapping__: A representation-agnostic logical to physical qubit mapping pass using [MQT-QMAP](https://github.com/munich-quantum-toolkit/qmap)
+6. __Qubit Mapping__: A representation-agnostic logical to physical qubit mapping pass that uses [QDMI](https://github.com/Munich-Quantum-Software-Stack/QDMI) and [MQT-QMAP](https://github.com/munich-quantum-toolkit/qmap)
 
 Note: Please refer to the [FAQs](https://github.com/akshay9594/MQSS-Passes-Suite/blob/catalyst-integration/docs/faq.md) section for more details on the passes, MLIR, MQSS and other related questions.
 
@@ -92,9 +92,10 @@ Clone the project:
 git clone https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git \
        /workspaces/MQSS-Passes-Suite
 cd /workspaces/MQSS-Passes-Suite
-git checkout 646eed6b2311587b803aaddd3f1f9cbcb4592da5
+git checkout <branch-name>
 ```
 
+```branch-name``` could be ```develop``` or any other branch from this repository.
 If using docker, RUN the commands:
 
 ```sh

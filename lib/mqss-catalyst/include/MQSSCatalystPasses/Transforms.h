@@ -1,10 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2022 - 2026 NVIDIA Corporation & Affiliates.                  *
- * All rights reserved.                                                        *
- *                                                                             *
- * This source code and the accompanying materials are made available under    *
- * the terms of the Apache License 2.0 which accompanies this distribution.    *
- ******************************************************************************/
 
 /* This code and any associated documentation is provided "as is"
 
@@ -24,8 +17,8 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************
-  author Martin Letras
-  date   February 2025
+  author Akshay Bhosale
+  date   June 2026
   version 1.0
 *************************************************************************/
 /** @file
@@ -64,6 +57,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <stdexcept>
 #include "sc/heuristic/HeuristicMapper.hpp"
 #include "sc/exact/ExactMapper.hpp"
+
 #include "qdmi/client.h"
 #include "qdmi/constants.h"
 #include "qdmi/device.h"

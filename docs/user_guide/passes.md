@@ -67,7 +67,8 @@ Eliminate common sub-expressions.
 
 A dialect-agnostic Qubit mapping pass. Maps logical qubits to physical qubits.
 
-- `--input=<string>` — Path to JSON input
+- `--input=<string>` — Path to JSON input (Coupling Map)
+- `--qdmi=<QDMI Device Name>` - Query QDMI Device for Coupling Map (Needs Device .so file).
 
 ### fermioniq-gate-set-mapping
 
@@ -113,7 +114,19 @@ Traverses a given MLIR module, prints its gates and a description of the operand
 
 Traverses a given MLIR module, prints its gates and a description of the operands of each gate.
 
----
+## Pass Pipelines
+
+### O1
+
+    The MQSS-O1 optimization pipeline
+
+### O2
+
+    MQSS-O2 optimization pipeline
+
+### O3
+
+    MQSS-O3 optimization pipeline
 
 ## Example Usage
 

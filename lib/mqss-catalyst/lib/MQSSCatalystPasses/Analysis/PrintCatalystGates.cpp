@@ -16,8 +16,8 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 -------------------------------------------------------------------------
-  author Martin Letras
-  date   December 2024
+  author Akshay Bhosale
+  date   June 2026
   version 1.0
   brief
   PrintCatalystGatesPass(llvm::raw_string_ostream ostream)
