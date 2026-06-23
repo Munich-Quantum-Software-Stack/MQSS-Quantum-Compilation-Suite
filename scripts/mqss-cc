@@ -64,7 +64,8 @@ Compiler passes to run
       CommonGateCancellationPass                     -   Performs cancellation of Gates following a specific pattern
         --mode=<string>                                - Select Pattern to Cancel: CancelGate or CancelNullRotation.
       CommonMappingPass                              -   A Dialect agnostic mapping pass
-        --input=<string>                               - Path to json input.
+        --input=<string>                               - Path to json input (Coupling Map).
+        --qdmi=<Device name>                           - Query QDMI device for Coupling Map.
       CommonNormalizeArgAnglePass                    -   Normalize Arg angle of RX, RY, RZ gates. 
       CommonReductionPass                            -   Perform Circuit Reduction, {HZH} -> X, {HXH} -> Z, {SAdjZ} -> S or {SZ} -> SAdj. 
         --mode=<string>                                - Select PassMode HXHToZ , HZHToX, SAdjZToS or SZToSAdj.
