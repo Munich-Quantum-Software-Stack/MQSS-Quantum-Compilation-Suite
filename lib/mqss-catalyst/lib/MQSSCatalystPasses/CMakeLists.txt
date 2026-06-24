@@ -5,6 +5,7 @@ file(GLOB CATALYST_PASSES "Transforms/*.cpp")
 
 set(PASS_ANALYSIS_SOURCES
   Analysis/PrintCatalystGates.cpp
+  ${MQSS_COMMON}/QDMI/Driver.cpp
   ${COMMON_PASSES}
   ${CATALYST_PASSES}
 )
@@ -54,8 +55,7 @@ target_include_directories(MLIRPasses
   PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_BINARY_DIR}/include
-    ${MQSS_COMMON}
     ${nlohmann_json_SOURCE_DIR}/include
     ${MQT_QMAP_INCLUDE_DIR}
+    ${MQSS_COMMON}
 )
-

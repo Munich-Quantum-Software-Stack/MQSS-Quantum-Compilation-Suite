@@ -22,7 +22,7 @@ CMakeUserPresets.json
 *.lo
 *.o
 *.obj
-
+tests/.lit_test_times.txt
 # Precompiled Headers
 *.gch
 *.pch

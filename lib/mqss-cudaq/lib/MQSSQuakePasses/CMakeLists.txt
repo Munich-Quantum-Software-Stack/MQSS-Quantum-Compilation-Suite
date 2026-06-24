@@ -6,6 +6,7 @@ file(GLOB CUDAQ_PASSES "Transforms/*.cpp")
 
 set(PASS_ANALYSIS_SOURCES
   Analysis/PrintQuakeGates.cpp
+  ${MQSS_COMMON}/QDMI/Driver.cpp
   ${COMMON_PASSES}
   ${CUDAQ_PASSES}
 )
@@ -63,7 +64,6 @@ if(BUILD_CUDAQ)
   target_compile_options(MLIRPasses PRIVATE -fexceptions)
 endif()
 
-add_dependencies(MLIRPasses cxx-qdmi-device)
 
 target_include_directories(MLIRPasses
   PUBLIC
@@ -75,4 +75,5 @@ target_include_directories(MLIRPasses
     ${MQT_QMAP_INCLUDE_DIR}
     ${MQSS_COMMON}
 )
+
 

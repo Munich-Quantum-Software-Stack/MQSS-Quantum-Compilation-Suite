@@ -182,7 +182,7 @@ target_link_libraries(mqss-cudaq-opt
     # SupportQuake            # MQSS/Quake support
     # Interfaces              # MQSS Interfaces
     MLIROptLib              # Provides MlirOptMain engine
-    ${COMMON_LIBRARIES}     # Your CUDA-Q runtime + GTest
+
 )
 
 add_dependencies(mqss-cudaq-opt cxx-qdmi-device)
