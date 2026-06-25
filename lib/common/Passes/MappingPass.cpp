@@ -1,6 +1,5 @@
 
 
-
 /* This code and any associated documentation is provided "as is"
 
 Copyright 2024 Munich Quantum Software Stack Project
@@ -25,6 +24,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************/
 
 #include "include/transforms/TranspilationPassUtils.h"
+#include "include/transforms/QdmiDriver.h"
 #include <llvm/Support/raw_ostream.h>
 
 using namespace mlir;
@@ -32,7 +32,7 @@ using namespace llvm;
 using namespace qc;
 namespace {
 
-//TODO: Use Exact Mapper if Number of Qubits >=8, Heursitic Mapper otherwise.
+// TODO: Use Exact Mapper if Number of Qubits >=8, Heursitic Mapper otherwise.
 struct PipelineConfig {
   Architecture arch;
   Configuration settings;
@@ -98,12 +98,12 @@ struct PipelineConfig {
     return config;
   }
 
-  static PipelineConfig fromQDMI(string device_conf){
+  static PipelineConfig fromQDMI(string device_conf) {
 
     PipelineConfig config;
+    qdmi_main_driver::DeviceSessionConfig Deviceconfig;
+    
 
-    // auto device_conf = "/workspaces/MQSS-Passes-Suite/tests/" + device_name + "_qdmi.conf";
-    // // /workspaces/MQSS-Passes-Suite/tests/cxx_qdmi.conf
     MQSS_DEBUG("Device conf is: " << device_conf << "\n");
     auto dev = createQDMIDevice(device_conf.c_str());
 
@@ -116,7 +116,7 @@ struct PipelineConfig {
 
     config.arch.loadCouplingMap(numQubits, device_coupling_map);
     MQSS_DEBUG("Device Coupling Map loaded!!");
-      // Defining the settings of the mqt-mapper
+    // Defining the settings of the mqt-mapper
     config.settings.heuristic = Heuristic::GateCountMaxDistance;
     config.settings.layering = Layering::DisjointQubits;
     config.settings.initialLayout = InitialLayout::Identity;
@@ -181,8 +181,6 @@ std::optional<double> getConstantDouble(mlir::Value v) {
 
   return attr.getValueAsDouble();
 }
-
-
 
 void resolveSSAformForMeasureOps(mlir::Operation *OldMeasOp,
                                  SmallVector<mlir::Value, 2> newResults) {
@@ -294,7 +292,7 @@ void loadGatesIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
   int64_t controlQubitIdx = -2;
   int64_t targetQubitIdx = -2;
   auto targetQubitVector = qview.getQubits(QubitRole::Target).ids;
-  
+
   if (isControlled) {
     auto controlQubitVector = qview.getQubits(QubitRole::Control).ids;
     assert((controlQubitVector.size() == 1) &&
@@ -320,7 +318,8 @@ void loadGatesIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
     auto operand = targetQubitVector[0].base;
     targetQubitIdx = getOriginQubit(operand)->index;
   }
-  loadGates(gateOp, qc, controlQubitIdx, targetQubitIdx, qview.GateTy, qview.params);
+  loadGates(gateOp, qc, controlQubitIdx, targetQubitIdx, qview.GateTy,
+            qview.params);
 }
 
 struct MeasureMentOpInfoTy {
@@ -434,12 +433,23 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
   for (auto &[kernel, info] : analysis.getKernelDialectInfo()) {
 
     MQSS_DEBUG("\nkernel: " << kernel.getSymName() << "\n"
-                 << " total input qubits: " << info.AllocatedQubits
-                 << " Measure qubits: " << info.NumMeasureQubits << "\n\n");
+                            << " total input qubits: " << info.AllocatedQubits
+                            << " Measure qubits: " << info.NumMeasureQubits
+                            << "\n\n");
 
-    if(info.AllocatedQubits == 0)
+    if (info.AllocatedQubits == 0)
       continue;
-    
+
+    if (architecture.getNqubits() < info.AllocatedQubits) {
+      MQSS_DEBUG("Physical device Qubits: " << architecture.getNqubits()
+                                            << " are less than the no. of "
+                                               "logical circuit qubits: "
+                                            << info.AllocatedQubits
+                                            << "\n Mapping aborted for the "
+                                               "kernel!\n");
+      continue;
+    }
+
     qc::QuantumComputation qc{info.AllocatedQubits, info.NumMeasureQubits};
     MapVector<mlir::Operation *, int> MeasureOps;
     SmallPtrSet<mlir::Operation *, 16> OpsToErase;
@@ -460,15 +470,18 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
     MQSS_DEBUG("--> Before mapping, Dumping QC:\n");
     qc.print(std::cout);
 #endif
+
     // Map the circuit
     const auto mapper = std::make_unique<HeuristicMapper>(qc, architecture);
 
     mapper->map(settings);
+
     auto qcMapped = qc::QuantumComputation();
     qcMapped = mapper->moveMappedCircuit();
 
-    if(qcMapped.empty())
-        llvm::errs() << "Could not Map circuit!" << "\n";
+    if (qcMapped.empty())
+      llvm::errs() << "Could not Map circuit!"
+                   << "\n";
 
     mlir::IRRewriter builder(kernel->getContext());
     mlir::Location loc = kernel.getLoc();
@@ -490,15 +503,16 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
   }
 }
 
-class CommonMapping : public mqss_backend::CommonMappingPassBase<CommonMapping> {
+class CommonMapping
+    : public mqss_backend::CommonMappingPassBase<CommonMapping> {
 
-  public:
-
+public:
   // Default constructor (required for pass registry)
   CommonMapping() = default;
 
   // Forward the options constructor to the base
-  CommonMapping(const CommonMappingPassOptions &options) : CommonMappingPassBase() {
+  CommonMapping(const CommonMappingPassOptions &options)
+      : CommonMappingPassBase() {
     input = options.input;
     qdmi = options.qdmi;
   }
@@ -513,14 +527,14 @@ class CommonMapping : public mqss_backend::CommonMappingPassBase<CommonMapping> 
     MQSS_DEBUG("\n[Applying Pass: MappingPass]\n");
 
     PipelineConfig config;
-    if (!input.empty()){
-        config = PipelineConfig::fromFile(input);
-    }
-    else if(!qdmi.empty()){
+    if (!input.empty()) {
+      config = PipelineConfig::fromFile(input);
+    } else if (!qdmi.empty()) {
+      MQSS_DEBUG("-->Selected QDMI device Mapping...\n");
       config = PipelineConfig::fromQDMI(qdmi);
-    }
-    else {
-      MQSS_DEBUG("--> No input file provided, using pass defaults!" << "\n");
+    } else {
+      MQSS_DEBUG("--> No input file provided, using pass defaults!"
+                 << "\n");
       config = PipelineConfig::defaults();
     }
     auto architecture = config.arch;
@@ -542,8 +556,7 @@ std::unique_ptr<mlir::Pass> mqss_backend::CommonMappingPass() {
   return std::make_unique<CommonMapping>();
 }
 
-
-std::unique_ptr<mlir::Pass> mqss_backend::createCommonMappingPass(
-    const CommonMappingPassOptions &options) {
+std::unique_ptr<mlir::Pass>
+mqss_backend::createCommonMappingPass(const CommonMappingPassOptions &options) {
   return std::make_unique<CommonMapping>(options);
 }

@@ -22,6 +22,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 1.0
 *************************************************************************/
 
+#include "QdmiDriver.h"
 #include "driver/qdmi_example_driver.h"
 #include "include/transforms/PassUtils.h"
 #include "qdmi/client.h"
@@ -36,12 +37,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <iostream>
 #include <set>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
-#define QDMI_CONF_PATH "cxx_qdmi.conf"
-
-struct DeviceProperty { 
+struct DeviceProperty {
   int numQubits = -223;
   CouplingMap cm = {};
 };
@@ -102,55 +102,67 @@ static CouplingMap getDeviceCouplingMap(QDMI_Device device) {
   return coupling_map_set;
 }
 
+static std::tuple<string, string> extractQDMIObj(std::string conf_path) {
+  std::ifstream conf(conf_path);
+  std::string line;
+
+  while (std::getline(conf, line)) {
+    // Skip empty lines and comments
+    if (line.empty() || line[0] == '#')
+      continue;
+
+    std::istringstream iss(line);
+    std::string path, prefix;
+
+    if (iss >> path >> prefix) {
+      MQSS_DEBUG("QDMI Device SO Path: " << path);
+      MQSS_DEBUG(" QDMI Device Prefix: " << prefix);
+      return std::make_tuple(path, prefix);
+    }
+  }
+}
+
+// Load the device library dynamically
+static std::pair<std::reference_wrapper<qdmi_main_driver::Driver>, QDMI_Device>
+addDynamicDeviceLibrary(const std::string &libName, const std::string &prefix) {
+
+  qdmi_main_driver::DeviceSessionConfig config;
+  // If connecting to a remote device, use:
+  // config.baseUrl = "http://localhost:8080";
+  // config.token = "test_token";
+  // config.authUrl = "https://auth.example.com";
+  // config.username = "user";
+  // config.password = "pass";
+  // config.custom1 = "value1";
+  // config.custom2 = "value2";
+  // config.custom3 = "value3";
+  // config.custom4 = "value4";
+  // config.custom5 = "value5";
+
+  auto &driver = qdmi_main_driver::Driver::get();
+
+  auto *device = driver.addDynamicDeviceLibrary(libName, prefix, config);
+  size_t namesSize = 0;
+  size_t ret = 0;
+  ret = QDMI_device_query_device_property(device, QDMI_DEVICE_PROPERTY_NAME, 0,
+                                          nullptr, &namesSize);
+
+  assert(ret == QDMI_SUCCESS);
+  std::string name(namesSize - 1, '\0');
+  ret = QDMI_device_query_device_property(device, QDMI_DEVICE_PROPERTY_NAME,
+                                          namesSize, name.data(), nullptr);
+
+  assert(ret == QDMI_SUCCESS);
+  return std::make_pair(std::ref(driver), device);
+}
+
 static QDMI_Device createQDMIDevice(const char *device_conf_path) {
   QDMI_Job job = nullptr;
 
   MQSS_DEBUG("Initializing QDMI driver...\n");
-
-  setenv("QDMI_CONF", device_conf_path, 1);
-
-  MQSS_DEBUG("CWD: " << std::filesystem::current_path() << "\n");
-  MQSS_DEBUG("QDMI_CONF: " << std::getenv("QDMI_CONF") << "\n");
-
-  int ret = QDMI_driver_init();
-  assert(ret == QDMI_SUCCESS);
-
-  QDMI_Session session = nullptr;
-  ret = QDMI_session_alloc(&session);
-  assert(ret == QDMI_SUCCESS);
-
-  // Empty token = read-only; non-empty token = read/write
-  const char *token = "XX12Mayi98"; // read-only
-  ret = QDMI_session_set_parameter(session, QDMI_SESSION_PARAMETER_TOKEN,
-                                   strlen(token) + 1, token);
-  assert(ret == QDMI_SUCCESS);
-
-  // Initialize QDMI session
-  ret = QDMI_session_init(session); // device sessions are created here
-  MQSS_DEBUG("QDMI_session_init() : " << ret << " session = " << session
-                                      << "\n");
-  assert(ret == QDMI_SUCCESS);
-
-  // Query the number of devices
-  size_t size_ret = 0;
-  ret = QDMI_session_query_session_property(
-      session, QDMI_SESSION_PROPERTY_DEVICES, 0, nullptr, &size_ret);
-
-  assert(ret == QDMI_SUCCESS);
-
-  size_t num_devices = size_ret / sizeof(QDMI_Device);
-  std::vector<QDMI_Device> devices(num_devices);
-  ret = QDMI_session_query_session_property(
-      session, QDMI_SESSION_PROPERTY_DEVICES, size_ret,
-      static_cast<void *>(devices.data()), nullptr);
-
-  MQSS_DEBUG("--> QDMI Num Devices: " << devices.size() << "\n");
-  assert(ret == QDMI_SUCCESS);
-
-  // Create a Job
-  QDMI_Device dev = devices[0];
-
-  return dev;
+  auto [libName, prefix] = extractQDMIObj(device_conf_path);
+  auto [driver_ref, device] = addDynamicDeviceLibrary(libName, prefix);
+  return device;
 }
 
 static DeviceProperty getDeviceProperties(QDMI_Device Device) {
@@ -161,20 +173,3 @@ static DeviceProperty getDeviceProperties(QDMI_Device Device) {
 
   return Properties;
 }
-
-// const auto format = QDMI_PROGRAM_FORMAT_QIRBASESTRING;
-// QDMI_job_set_parameter(job, QDMI_JOB_PARAMETER_PROGRAMFORMAT,
-//                        sizeof(QDMI_Program_Format), &format);
-// QDMI_job_set_parameter(job, QDMI_JOB_PARAMETER_PROGRAM,
-//                        TEST_CIRCUIT.size() + 1, TEST_CIRCUIT.c_str());
-// if (num_shots > 0) {
-//   QDMI_job_set_parameter(job, QDMI_JOB_PARAMETER_SHOTSNUM, sizeof(size_t),
-//                          &num_shots);
-// }
-// QDMI_job_submit(job);
-// QDMI_job_wait(job, 0);
-// // Teardown (in reverse order)
-// QDMI_session_free(session);
-// QDMI_driver_shutdown(); // dlclose() happens here
-
-// return job;
