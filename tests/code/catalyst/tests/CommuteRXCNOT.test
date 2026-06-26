@@ -1,0 +1,8 @@
+// test-mqss-passes/code/catalyst/tests/CommuteRXCNOT.test
+
+// RUN: %mqss-cc %S/../CommuteRXCNOT.py --function circuit_CommuteRXCNOT --passes=CommonCommutePass=mode=RX-CX | FileCheck %s
+
+// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %3, %2 : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_3 = quantum.custom "RX"(%cst) %out_qubits_2#1 : !quantum.bit
+// CHECK: %out_qubits_4 = quantum.custom "RX"(%cst_0) %out_qubits_2#1 : !quantum.bit
+// CHECK: %out_qubits_5:2 = quantum.custom "CNOT"() %out_qubits_4, %out_qubits_2#0 : !quantum.bit, !quantum.bit

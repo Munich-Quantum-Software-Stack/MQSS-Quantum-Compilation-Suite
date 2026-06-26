@@ -1,0 +1,22 @@
+
+// test-mqss-passes/code/catalyst/tests/HadamardAndXYZSwitch.test
+
+// RUN: %mqss-cc %S/../HadamardAndXYZSwitch.py --function module_HAndXYZSwitch --passes=CommonSwitchPass=mode=HXYZtoXYZH | FileCheck %s
+
+
+// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_1 = quantum.custom "PauliZ"() %2 : !quantum.bit
+// CHECK-NEXT: %out_qubits_2 = quantum.custom "Hadamard"() %out_qubits_1 : !quantum.bit
+// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_0 : !quantum.reg, !quantum.bit
+
+// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_1 = quantum.custom "PauliX"() %2 : !quantum.bit
+// CHECK: %out_qubits_2 = quantum.custom "Hadamard"() %out_qubits_1 : !quantum.bit
+// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_0 : !quantum.reg, !quantum.bit
+// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_1 : !quantum.reg, !quantum.bit
+
+// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_1 = quantum.custom "PauliY"() %2 : !quantum.bit
+// CHECK: %out_qubits_2 = quantum.custom "Hadamard"() %out_qubits_1 : !quantum.bit
+// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_0 : !quantum.reg, !quantum.bit
+// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_1 : !quantum.reg, !quantum.bit

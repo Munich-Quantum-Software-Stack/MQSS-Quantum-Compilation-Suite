@@ -1,0 +1,10 @@
+
+
+// test-mqss-passes/code/catalyst/tests/CommuteZCNot.test
+
+// RUN: %mqss-cc %S/../CommuteZCNot.py --function circuit_CommuteZCNot --passes=CommonCommutePass=mode=Z-CX | FileCheck %s
+
+// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %3, %out_qubits_1 : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_3:2 = quantum.custom "CNOT"() %out_qubits_2#1, %out_qubits_2#0 : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_4 = quantum.custom "PauliZ"() %out_qubits_3#0 : !quantum.bit
+// CHECK: %out_qubits_5 = quantum.custom "PauliZ"() %out_qubits_3#0 : !quantum.bit

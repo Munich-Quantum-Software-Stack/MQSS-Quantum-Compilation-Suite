@@ -1,0 +1,373 @@
+#!/usr/bin/env bash
+
+# Simple driver for selecting the correct optimizer
+
+############# Pretty-print variables#################
+
+
+msg() {
+  printf '%s\n' "$1"
+}
+
+blank() {
+  printf '\n'
+}
+
+section() {
+  blank
+  printf '====== %s ======\n' "$1"
+  blank
+}
+
+info() {
+  printf '🔧 %s\n' "$1"
+}
+
+fail() {
+  printf '❌ %s\n' "$1"
+}
+
+
+ok() {
+  printf '✅ %s\n' "$1"
+}
+
+warn() {
+  printf '⚠️ %s\n' "$1"
+}
+
+step() {
+  printf '-> %s\n' "$1"
+}
+
+
+usage() {
+  cat <<'EOF'
+Usage:
+  mqss-cc <input.{cpp|py}> [options] --passes=<pass-name>=mode=<mode>
+
+options:
+  Common:
+    --out-dir <Path/to/DIR>
+    --convert-to=<format>
+       <format>                                     - qasm2(only for cpp and quake dialect) or qir output formats supported.
+
+  Python-only:
+    --function <NAME>
+
+Compiler passes to run
+    Passes:
+      CommonCommutePass                              -   This pass searches commutes gates that match a specific pattern.
+        --mode=<string>                                - Select Pattern to Commute: CX-RX, RX-CX, CX-X, X-CX, CX-Z, Z-CX.
+      CommonDecompositionPass                        -   Perform Gate Decomposition, {Cx} -> HCzH or {Cz} -> HCxH or ReverseCx. 
+        --mode=<string>                                - Select PassMode CxToHCzH ,CzToHCxH or ReverseCx.
+      CommonGateCancellationPass                     -   Performs cancellation of Gates following a specific pattern
+        --mode=<string>                                - Select Pattern to Cancel: CancelGate or CancelNullRotation.
+      CommonMappingPass                              -   A Dialect agnostic mapping pass
+        --input=<string>                               - Path to json input (Coupling Map).
+        --qdmi=<Device name>                           - Query QDMI device for Coupling Map.
+      CommonNormalizeArgAnglePass                    -   Normalize Arg angle of RX, RY, RZ gates. 
+      CommonReductionPass                            -   Perform Circuit Reduction, {HZH} -> X, {HXH} -> Z, {SAdjZ} -> S or {SZ} -> SAdj. 
+        --mode=<string>                                - Select PassMode HXHToZ , HZHToX, SAdjZToS or SZToSAdj.
+      CommonSwitchPass                               -   Commute and Switch Gates.
+        --mode=<string>                                - Select Pattern to Switch: XYZHtoHXYZ or HXYZtoXYZH.
+      canonicalize                                   -   Canonicalize operations
+        --disable-patterns=<string>                    - Labels of patterns that should be filtered out during application
+        --enable-patterns=<string>                     - Labels of patterns that should be used during application, all other patterns are filtered out
+        --max-iterations=<long>                        - Max. iterations between applying patterns / simplifying regions
+        --max-num-rewrites=<long>                      - Max. number of pattern rewrites within an iteration
+        --region-simplify                              - Perform control flow optimizations to the region tree
+        --test-convergence                             - Test only: Fail pass on non-convergence to detect cyclic pattern
+        --top-down                                     - Seed the worklist in general top-down order
+      cse                                              -   Eliminate common sub-expressions
+      fermioniq-gate-set-mapping                     -   Convert Quake kernels to Fermioniq gate set.
+      ionq-gate-set-mapping                          -   Convert Quake kernels to IonQ gate set.
+      iqm-gate-set-mapping                           -   Convert Quake kernels to IQM gate set.
+      oqc-gate-set-mapping                           -   Convert Quake kernels to OQC gate set.
+      qci-gate-set-mapping                           -   Convert Quake kernels to QCI gate set.
+      quantinuum-gate-set-mapping                    -   Convert Quake kernels to Quantinuum gate set.
+      print-quake-gates-pass                         -   Example pass that traverses a given mlir module, print its gates and a description of the operands of each gate
+      print-catalyst-gates-pass                      -   Example pass that traverses a given mlir module, print its gates and a description of the operands of each gate
+
+    Pass Pipelines:
+      --O1                                             -   MQSS-O1 optimization pipeline
+      --O2                                             -   MQSS-O2 optimization pipeline
+      --O3                                             -   MQSS-O3 optimization pipeline
+Example Usage:
+  1. For cudaq-quake
+      mqss-cc test.cpp --convert-to=qasm2 --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
+
+  2. For catalyst-quantum
+      mqss-cc test.py --convert-to=qir --function circuit --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
+EOF
+}
+
+while getopts "h" opt; do
+  case "$opt" in
+    h) usage; exit 0 ;;
+    *) usage; exit 1 ;;
+  esac
+done
+
+PASSES=""
+OTHER_ARGS=()
+
+# MQSS_INSTALL_DIR="/workspaces/mqss-install"
+# # The following paths should be set on the command-line
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# export CUDA_QUAKE="/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin/cudaq-quake"
+
+for cmd in mqss-cudaq-opt mqss-catalyst-opt mqss-cc; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "$cmd not found"
+    fi
+done
+
+
+if [[ $# -lt 1 ]]; then
+  usage
+  exit 1
+fi
+
+INPUT_FILE="$1"
+shift
+
+if [[ ! -f "${INPUT_FILE}" ]]; then
+  echo "Error: input file not found: ${INPUT_FILE}" >&2
+  exit 1
+fi
+
+EXT="${INPUT_FILE##*.}"
+FUNCTION_NAME=""
+RESOLVER="${SCRIPT_DIR}/resolve_python_input.py"
+STAGE="HLOLoweringStage"
+OUT_DIR=""
+TOOL_ARGS=()
+
+EMIT_QIR=OFF
+DEBUG_ONLY=""
+OUT_FORMAT=""
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --out-dir)
+      OUT_DIR="$2"
+      shift 2
+      ;;
+    --convert-to=*)
+      OUT_FORMAT="${1#--convert-to=}"
+      if [[ "$OUT_FORMAT" != "qasm2" && "$OUT_FORMAT" != "qir" ]]; then
+        echo "Error: unsupported format '$OUT_FORMAT'. Expected 'qasm2' or 'qir'." >&2
+        exit 1
+      fi
+      shift
+      ;;
+    --function)
+      if [[ "${EXT}" != "py" ]]; then
+        echo "Error: --function is only valid for Python input." >&2
+        exit 1
+      fi
+      FUNCTION_NAME="$2"
+      shift 2
+      ;;
+    --stage)
+      if [[ "${EXT}" != "py" ]]; then
+        echo "Error: --stage is only valid for Python input." >&2
+        exit 1
+      fi
+      STAGE="$2"
+      shift 2
+      ;;
+
+    --resolver)
+      if [[ "${EXT}" != "py" ]]; then
+        echo "Error: --resolver is only valid for Python input." >&2
+        exit 1
+      fi
+      RESOLVER="$2"
+      shift 2
+      ;;
+      --passes=*)
+        PASSES="${1#--passes=}"
+        shift          # <-- shift, not break
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+# TODO: Following code needs improvement
+if [[ -z "$INPUT_FILE" ]]; then
+echo "No valid input file found!"
+exit 1
+fi
+
+# TODO: Code to display helper options
+# for arg in "${OTHER_ARGS[@]}"; do
+#     if [[ "$arg" == -h ]]; then
+#         {
+#             "${MQSS_CUDAQ_OPT}" -h
+#             "${MQSS_CATALYST_OPT}" -h
+#         } | awk '!seen[$0]++'
+#     fi
+# done
+
+# Split passes at commas
+MQSS_PASS_ARGS=()
+DECOMP_ARGS=()
+IFS=',' read -ra PASS_LIST <<< "$PASSES"
+
+for p in "${PASS_LIST[@]}"; do
+  if [[ "$p" == "iqm-gate-set-mapping" ||
+        "$p" == "fermioniq-gate-set-mapping" ||
+        "$p" == "ionq-gate-set-mapping" ||
+        "$p" == "oqc-gate-set-mapping" ]]; then
+    DECOMP_ARGS+=(--"$p")
+  else
+    MQSS_PASS_ARGS+=(--"$p")
+  fi
+done
+
+OUT_FORMAT_FLAG=""
+OUT_EXT=""
+if [[ "${OUT_FORMAT}" != "" ]]; then
+    if [[ "${OUT_FOMAT}" == "qir" ]]; then
+      OUT_FORMAT_FLAG="--convert-to=qir-full"
+      OUT_EXT=".ll"
+    elif [[ "${OUT_FORMAT}" == "qasm2" ]]; then
+      OUT_FORMAT_FLAG="--convert-to=openqasm2"
+      OUT_EXT=".qasm"
+    else
+      OUT_FORMAT_FLAG=""
+      OUT_EXT=""
+    fi 
+fi
+
+filename=$(basename "$INPUT_FILE")
+# Dispatch to correct optimizer
+if [[ "${EXT}" == "cpp" ]]; then
+  info "Converting the input to MLIR and applying specified optimization passes.."
+  GENERATED_MLIR="${filename%.*}.qke"
+
+  if [[ -n "${OUT_FORMAT}" ]]; then
+    # Emit to a target format (qasm or qir)
+    info "Emitting here ${OUT_FORMAT}..."
+    echo " "
+    if [[ -n "${OUT_DIR}" ]]; then
+      cudaq-quake "${INPUT_FILE}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+      mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${MQSS_PASS_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+      if [[ ${#DECOMP_ARGS[@]} -gt 0 ]]; then
+        cudaq-opt "${DECOMP_ARGS[@]}" "${OUT_DIR}/${GENERATED_MLIR}" \
+          | cudaq-translate ${OUT_FORMAT_FLAG} -o "${OUT_DIR}/${filename%.*}${OUT_EXT}"
+      else
+        cudaq-translate ${OUT_FORMAT_FLAG} "${OUT_DIR}/${GENERATED_MLIR}" \
+          -o "${OUT_DIR}/${filename%.*}${OUT_EXT}"
+      fi
+    else
+      if [[ ${#DECOMP_ARGS[@]} -gt 0 ]]; then
+        cudaq-quake "${INPUT_FILE}" \
+          | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" \
+          | cudaq-opt "${DECOMP_ARGS[@]}" \
+          | cudaq-translate ${OUT_FORMAT_FLAG}
+      else
+        cudaq-quake "${INPUT_FILE}" \
+          | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" \
+          | cudaq-translate ${OUT_FORMAT_FLAG}
+      fi
+    fi
+
+  else
+    # Emit optimized Quake MLIR
+    info "Emitting Optimized Quake..."
+    echo " "
+    if [[ -n "${OUT_DIR}" ]]; then
+      cudaq-quake "${INPUT_FILE}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+      if [[ ${#DECOMP_ARGS[@]} -gt 0 ]]; then
+        mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${MQSS_PASS_ARGS[@]}" \
+          | cudaq-opt "${DECOMP_ARGS[@]}" -o "${OUT_DIR}/${GENERATED_MLIR}"
+      else
+        mqss-cudaq-opt "${OUT_DIR}/${GENERATED_MLIR}" "${MQSS_PASS_ARGS[@]}" \
+          -o "${OUT_DIR}/${GENERATED_MLIR}"
+      fi
+    else
+      if [[ ${#DECOMP_ARGS[@]} -gt 0 ]]; then
+        cudaq-quake "${INPUT_FILE}" \
+          | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}" \
+          | cudaq-opt "${DECOMP_ARGS[@]}"
+      else
+        cudaq-quake "${INPUT_FILE}" \
+          | mqss-cudaq-opt "${MQSS_PASS_ARGS[@]}"
+      fi
+    fi
+  fi
+elif [[ "${EXT}" == "py" ]]; then
+    blank
+    if [[ "${OUT_FORMAT}" == "qasm2" ]]; then
+        warn "Pennylane-catalyst can only emit QIR..."
+        exit 1
+    fi
+
+    msg "Python job details..."
+    info "Function name: ${FUNCTION_NAME}"
+    info "Stage: ${STAGE}"
+    info "Resolver file: ${RESOLVER}"
+    info "Passes: ${PASSES}"
+    info "Out Dir: ${OUT_DIR}"
+
+    if python3.11 -c "import catalyst"; then
+     info "Catalyst python package found in current env"
+    else
+      warn "Catalyst python package not found"
+      warn "Please enable the python virtual environment: source  MQSS-Passes-Suite/build/_deps/venv/bin/activate"
+      exit 1
+    fi
+
+    COMMAND=""
+    
+    if [[ "${OUT_DIR}" != "" ]]; then
+      COMMAND="$(
+      python3.11 "${RESOLVER}" \
+        --input "${INPUT_FILE}" \
+        --function "${FUNCTION_NAME}" \
+        --stage "${STAGE}" \
+        --out-dir "${OUT_DIR}"
+      )"
+      MLIR_FILE="${OUT_DIR}/${FUNCTION_NAME}-${STAGE}.mlir"
+      if [[ -e "${MLIR_FILE}" ]]; then
+        info "MLIR Extracted: ${MLIR_FILE}"
+      else
+        warn "MLIR dialect could not be extracted"
+        exit 1
+      fi
+      if [[ "${OUT_FORMAT}" != "" ]]; then
+        mqss-catalyst-opt "${MLIR_FILE}" "${MQSS_PASS_ARGS[@]}" -o "${MLIR_FILE}"
+        info "Emitting QIR..."
+        echo " "
+        catalyst --tool=translate "${MLIR_FILE}" -o "${OUT_DIR}/${filename%.*}.ll"
+      else 
+        mqss-catalyst-opt "${MLIR_FILE}" "${MQSS_PASS_ARGS[@]}" -o "${MLIR_FILE}"
+      fi
+    else
+
+      if [[ "${OUT_FORMAT}" != "" ]]; then
+        info "Emitting QIR..."
+        echo " "
+       python3.11 "${RESOLVER}" \
+          --input "${INPUT_FILE}" \
+          --function "${FUNCTION_NAME}" \
+          --stage "${STAGE}" |  mqss-catalyst-opt "${MQSS_PASS_ARGS[@]}" | catalyst --tool=all
+      else
+        python3.11 "${RESOLVER}" \
+          --input "${INPUT_FILE}" \
+          --function "${FUNCTION_NAME}" \
+          --stage "${STAGE}" |  mqss-catalyst-opt "${MQSS_PASS_ARGS[@]}"
+      fi
+    fi
+else
+    warn "Unknown input type: $INPUT_FILE"
+    exit 1
+fi

@@ -1,0 +1,552 @@
+/*
+ * Copyright (c) 2023 - 2026 Chair for Design Automation, TUM
+ * Copyright (c) 2025 - 2026 Munich Quantum Software Company GmbH
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * Licensed under the MIT License
+ */
+
+#include "include/transforms/QdmiDriver.h"
+#include "include/transforms/QdmiCommon.h"
+
+#include <qdmi/client.h>
+#include <qdmi/device.h>
+
+#include <array>
+#include <cassert>
+#include <cstddef>
+#include <cstring>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#ifdef _WIN32
+#include <windows.h>
+
+#include <filesystem>
+#else
+#include <dlfcn.h>
+#endif // _WIN32
+
+namespace qdmi_main_driver {
+#ifdef _WIN32
+namespace {
+/// Returns the directory of the currently loaded driver library.
+[[nodiscard]] auto getDriverDirectory() -> std::filesystem::path {
+  HMODULE module = nullptr;
+  if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                         reinterpret_cast<LPCWSTR>(&getDriverDirectory),
+                         &module) == 0) {
+    return {};
+  }
+
+  std::wstring buffer(MAX_PATH, L'\0');
+  DWORD size = 0;
+  while (true) {
+    size = GetModuleFileNameW(module, buffer.data(),
+                              static_cast<DWORD>(buffer.size()));
+    if (size == 0) {
+      return {};
+    }
+    if (size < buffer.size()) {
+      buffer.resize(size);
+      break;
+    }
+    buffer.resize(buffer.size() * 2);
+  }
+
+  return std::filesystem::path(buffer).parent_path();
+}
+
+/// Loads the device library with the given name, searching in the driver
+/// directory if no path is specified.
+[[nodiscard]] auto loadDeviceLibrary(const std::string& libName) -> HMODULE {
+  const auto requested = std::filesystem::path(libName);
+
+  if (requested.has_parent_path()) {
+    // A directory component was supplied: Directly load the library.
+    return LoadLibraryW(requested.wstring().c_str());
+  }
+
+  // Bare filename: resolve relative to the driver's own directory so that
+  // builtin device DLLs installed next to the driver are found reliably.
+  const auto path = getDriverDirectory() / requested;
+  return LoadLibraryExW(path.wstring().c_str(), nullptr,
+                        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
+                            LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+}
+} // namespace
+
+#define DL_OPEN(lib) loadDeviceLibrary((lib))
+#define DL_SYM(lib, sym)                                                       \
+  reinterpret_cast<void*>(GetProcAddress(static_cast<HMODULE>((lib)), (sym)))
+#define DL_CLOSE(lib) FreeLibrary(static_cast<HMODULE>((lib)))
+#else
+#define DL_OPEN(lib) dlopen((lib), RTLD_NOW | RTLD_LOCAL)
+#define DL_SYM(lib, sym) dlsym((lib), (sym))
+#define DL_CLOSE(lib) dlclose((lib))
+#endif
+
+DynamicDeviceLibrary::DynamicDeviceLibrary(const std::string& libName,
+                                           const std::string& prefix)
+    : libHandle_(DL_OPEN(libName.c_str())) {
+  if (libHandle_ == nullptr) {
+    throw std::runtime_error("Couldn't open the device library: " + libName);
+  }
+
+//===----------------------------------------------------------------------===//
+// Macro for loading a symbol from the dynamic library.
+// @param symbol is the name of the symbol to load.
+#define LOAD_DYNAMIC_SYMBOL(symbol)                                            \
+  {                                                                            \
+    const std::string symbolName = std::string(prefix) + "_QDMI_" + #symbol;   \
+    (symbol) = reinterpret_cast<decltype(symbol)>(                             \
+        DL_SYM(libHandle_, symbolName.c_str()));                               \
+    if ((symbol) == nullptr) {                                                 \
+      throw std::runtime_error("Failed to load symbol: " + symbolName);        \
+    }                                                                          \
+  }
+  //===----------------------------------------------------------------------===//
+
+  try {
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    // load the function symbols from the dynamic library
+    LOAD_DYNAMIC_SYMBOL(device_initialize)
+    LOAD_DYNAMIC_SYMBOL(device_finalize)
+    // device session interface
+    LOAD_DYNAMIC_SYMBOL(device_session_alloc)
+    LOAD_DYNAMIC_SYMBOL(device_session_init)
+    LOAD_DYNAMIC_SYMBOL(device_session_free)
+    LOAD_DYNAMIC_SYMBOL(device_session_set_parameter)
+    // device job interface
+    LOAD_DYNAMIC_SYMBOL(device_session_create_device_job)
+    LOAD_DYNAMIC_SYMBOL(device_job_free)
+    LOAD_DYNAMIC_SYMBOL(device_job_set_parameter)
+    LOAD_DYNAMIC_SYMBOL(device_job_query_property)
+    LOAD_DYNAMIC_SYMBOL(device_job_submit)
+    LOAD_DYNAMIC_SYMBOL(device_job_cancel)
+    LOAD_DYNAMIC_SYMBOL(device_job_check)
+    LOAD_DYNAMIC_SYMBOL(device_job_wait)
+    LOAD_DYNAMIC_SYMBOL(device_job_get_results)
+    // device query interface
+    LOAD_DYNAMIC_SYMBOL(device_session_query_device_property)
+    LOAD_DYNAMIC_SYMBOL(device_session_query_site_property)
+    LOAD_DYNAMIC_SYMBOL(device_session_query_operation_property)
+    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
+  } catch (const std::exception&) {
+    DL_CLOSE(libHandle_);
+    throw;
+  }
+  // initialize the device
+  device_initialize();
+}
+
+DynamicDeviceLibrary::~DynamicDeviceLibrary() {
+  // Check if QDMI_device_finalize is not NULL before calling it.
+  if (device_finalize != nullptr) {
+    device_finalize();
+  }
+  // close the dynamic library
+  if (libHandle_ != nullptr) {
+    DL_CLOSE(libHandle_);
+  }
+}
+
+#undef DL_OPEN
+#undef DL_SYM
+#undef DL_CLOSE
+} // namespace qdmi_main_driver
+
+QDMI_Device_impl_d::QDMI_Device_impl_d(
+    std::unique_ptr<qdmi_main_driver::DeviceLibrary>&& lib,
+    const qdmi_main_driver::DeviceSessionConfig& config)
+    : library_(std::move(lib)) {
+  if (library_->device_session_alloc(&deviceSession_) != QDMI_SUCCESS) {
+    throw std::runtime_error("Failed to allocate device session");
+  }
+
+  // Set device session parameters from config
+  auto setParameter = [this](const std::optional<std::string>& value,
+                             QDMI_Device_Session_Parameter param) {
+    if (value && library_->device_session_set_parameter) {
+      const auto status =
+          static_cast<QDMI_STATUS>(library_->device_session_set_parameter(
+              deviceSession_, param, value->size() + 1, value->c_str()));
+      if (status == QDMI_SUCCESS) {
+        return;
+      }
+
+      if (status == QDMI_ERROR_NOTSUPPORTED) {
+        // SPDLOG_INFO(
+        //     "Device session parameter {} not supported by device (skipped)",
+        //     qdmi_main_driver::toString(param));
+        return;
+      }
+      library_->device_session_free(deviceSession_);
+      std::ostringstream ss;
+      ss << "Failed to set device session parameter " << qdmi_main_driver::toString(param)
+         << ": " << qdmi_main_driver::toString(status);
+      throw std::runtime_error(ss.str());
+    }
+  };
+
+  setParameter(config.baseUrl, QDMI_DEVICE_SESSION_PARAMETER_BASEURL);
+  setParameter(config.token, QDMI_DEVICE_SESSION_PARAMETER_TOKEN);
+  setParameter(config.authFile, QDMI_DEVICE_SESSION_PARAMETER_AUTHFILE);
+  setParameter(config.authUrl, QDMI_DEVICE_SESSION_PARAMETER_AUTHURL);
+  setParameter(config.username, QDMI_DEVICE_SESSION_PARAMETER_USERNAME);
+  setParameter(config.password, QDMI_DEVICE_SESSION_PARAMETER_PASSWORD);
+  setParameter(config.custom1, QDMI_DEVICE_SESSION_PARAMETER_CUSTOM1);
+  setParameter(config.custom2, QDMI_DEVICE_SESSION_PARAMETER_CUSTOM2);
+  setParameter(config.custom3, QDMI_DEVICE_SESSION_PARAMETER_CUSTOM3);
+  setParameter(config.custom4, QDMI_DEVICE_SESSION_PARAMETER_CUSTOM4);
+  setParameter(config.custom5, QDMI_DEVICE_SESSION_PARAMETER_CUSTOM5);
+
+  if (library_->device_session_init(deviceSession_) != QDMI_SUCCESS) {
+    library_->device_session_free(deviceSession_);
+    throw std::runtime_error("Failed to initialize device session");
+  }
+}
+
+auto QDMI_Device_impl_d::createJob(QDMI_Job* job) -> int {
+  if (job == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  QDMI_Device_Job deviceJob = nullptr;
+  auto result =
+      library_->device_session_create_device_job(deviceSession_, &deviceJob);
+  if (result != QDMI_SUCCESS) {
+    return result;
+  }
+  auto uniqueJob = std::make_unique<QDMI_Job_impl_d>(deviceJob, this);
+  const auto it = jobs_.emplace(uniqueJob.get(), std::move(uniqueJob)).first;
+  *job = it->first;
+  return QDMI_SUCCESS;
+}
+
+auto QDMI_Device_impl_d::freeJob(QDMI_Job job) -> void {
+  if (job != nullptr) {
+    jobs_.erase(job);
+  }
+}
+
+auto QDMI_Device_impl_d::queryDeviceProperty(QDMI_Device_Property prop,
+                                             const size_t size, void* value,
+                                             size_t* sizeRet) const -> int {
+  return library_->device_session_query_device_property(deviceSession_, prop,
+                                                        size, value, sizeRet);
+}
+
+auto QDMI_Device_impl_d::querySiteProperty(QDMI_Site site,
+                                           QDMI_Site_Property prop,
+                                           const size_t size, void* value,
+                                           size_t* sizeRet) const -> int {
+  return library_->device_session_query_site_property(
+      deviceSession_, site, prop, size, value, sizeRet);
+}
+
+auto QDMI_Device_impl_d::queryOperationProperty(
+    QDMI_Operation operation, const size_t numSites, const QDMI_Site* sites,
+    const size_t numParams, const double* params, QDMI_Operation_Property prop,
+    const size_t size, void* value, size_t* sizeRet) const -> int {
+  return library_->device_session_query_operation_property(
+      deviceSession_, operation, numSites, sites, numParams, params, prop, size,
+      value, sizeRet);
+}
+
+namespace {
+[[nodiscard]] auto toDeviceJobParameter(const QDMI_Job_Parameter& param)
+    -> QDMI_Device_Job_Parameter {
+  switch (param) {
+  case QDMI_JOB_PARAMETER_PROGRAM:
+    return QDMI_DEVICE_JOB_PARAMETER_PROGRAM;
+  case QDMI_JOB_PARAMETER_PROGRAMFORMAT:
+    return QDMI_DEVICE_JOB_PARAMETER_PROGRAMFORMAT;
+  case QDMI_JOB_PARAMETER_SHOTSNUM:
+    return QDMI_DEVICE_JOB_PARAMETER_SHOTSNUM;
+  default:
+    return QDMI_DEVICE_JOB_PARAMETER_MAX;
+  }
+}
+} // namespace
+
+QDMI_Job_impl_d::~QDMI_Job_impl_d() {
+  device_->getLibrary().device_job_free(deviceJob_);
+}
+auto QDMI_Job_impl_d::setParameter(QDMI_Job_Parameter param, const size_t size,
+                                   const void* value) const -> int {
+  if ((value != nullptr && size == 0) || param >= QDMI_JOB_PARAMETER_MAX) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return device_->getLibrary().device_job_set_parameter(
+      deviceJob_, toDeviceJobParameter(param), size, value);
+}
+
+namespace {
+[[nodiscard]] auto toDeviceJobProperty(const QDMI_Job_Property& prop)
+    -> QDMI_Device_Job_Property {
+  switch (prop) {
+  case QDMI_JOB_PROPERTY_ID:
+    return QDMI_DEVICE_JOB_PROPERTY_ID;
+  case QDMI_JOB_PROPERTY_PROGRAM:
+    return QDMI_DEVICE_JOB_PROPERTY_PROGRAM;
+  case QDMI_JOB_PROPERTY_PROGRAMFORMAT:
+    return QDMI_DEVICE_JOB_PROPERTY_PROGRAMFORMAT;
+  case QDMI_JOB_PROPERTY_SHOTSNUM:
+    return QDMI_DEVICE_JOB_PROPERTY_SHOTSNUM;
+  default:
+    return QDMI_DEVICE_JOB_PROPERTY_MAX;
+  }
+}
+} // namespace
+
+auto QDMI_Job_impl_d::queryProperty(QDMI_Job_Property prop, const size_t size,
+                                    void* value, size_t* sizeRet) const -> int {
+  return device_->getLibrary().device_job_query_property(
+      deviceJob_, toDeviceJobProperty(prop), size, value, sizeRet);
+}
+
+auto QDMI_Job_impl_d::submit() const -> int {
+  return device_->getLibrary().device_job_submit(deviceJob_);
+}
+
+auto QDMI_Job_impl_d::cancel() const -> int {
+  return device_->getLibrary().device_job_cancel(deviceJob_);
+}
+
+auto QDMI_Job_impl_d::check(QDMI_Job_Status* status) const -> int {
+  return device_->getLibrary().device_job_check(deviceJob_, status);
+}
+
+auto QDMI_Job_impl_d::wait(size_t timeout) const -> int {
+  return device_->getLibrary().device_job_wait(deviceJob_, timeout);
+}
+
+auto QDMI_Job_impl_d::getResults(QDMI_Job_Result result, const size_t size,
+                                 void* data, size_t* sizeRet) const -> int {
+  return device_->getLibrary().device_job_get_results(deviceJob_, result, size,
+                                                      data, sizeRet);
+}
+
+auto QDMI_Job_impl_d::free() -> void { device_->freeJob(this); }
+
+auto QDMI_Session_impl_d::init() -> int {
+  if (status_ != qdmi_main_driver::SessionStatus::ALLOCATED) {
+    return QDMI_ERROR_BADSTATE;
+  }
+  status_ = qdmi_main_driver::SessionStatus::INITIALIZED;
+  return QDMI_SUCCESS;
+}
+
+auto QDMI_Session_impl_d::setParameter(QDMI_Session_Parameter param,
+                                       const size_t size,
+                                       const void* value) const -> int {
+  if ((value != nullptr && size == 0) || param >= QDMI_SESSION_PARAMETER_MAX) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  if (status_ != qdmi_main_driver::SessionStatus::ALLOCATED) {
+    return QDMI_ERROR_BADSTATE;
+  }
+  return QDMI_ERROR_NOTSUPPORTED;
+}
+
+auto QDMI_Session_impl_d::querySessionProperty(QDMI_Session_Property prop,
+                                               size_t size, void* value,
+                                               size_t* sizeRet) const -> int {
+  if ((value != nullptr && size == 0) || prop >= QDMI_SESSION_PROPERTY_MAX) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  if (status_ != qdmi_main_driver::SessionStatus::INITIALIZED) {
+    return QDMI_ERROR_BADSTATE;
+  }
+  if (prop == QDMI_SESSION_PROPERTY_DEVICES) {
+    if (value != nullptr) {
+      if (size < devices_->size() * sizeof(QDMI_Device)) {
+        return QDMI_ERROR_INVALIDARGUMENT;
+      }
+      memcpy(value, static_cast<const void*>(devices_->data()),
+             devices_->size() * sizeof(QDMI_Device));
+    }
+    if (sizeRet != nullptr) {
+      *sizeRet = devices_->size() * sizeof(QDMI_Device);
+    }
+    return QDMI_SUCCESS;
+  }
+  return QDMI_ERROR_NOTSUPPORTED;
+}
+
+namespace qdmi_main_driver {
+Driver::Driver() {
+  // for (const auto& [lib, prefix] : std::array{DYN_DEV_LIBS}) {
+  //   try {
+  //     addDynamicDeviceLibrary(lib, prefix);
+  //   } catch (const std::exception& ex) {
+  //     SPDLOG_WARN("Skipping builtin QDMI device library '{}': {}", lib,
+  //                 ex.what());
+  //   }
+  // }
+}
+
+auto Driver::addDynamicDeviceLibrary(const std::string& libName,
+                                     const std::string& prefix,
+                                     const DeviceSessionConfig& config)
+    -> QDMI_Device {
+  devices_.emplace_back(std::make_unique<QDMI_Device_impl_d>(
+      std::make_unique<DynamicDeviceLibrary>(libName, prefix), config));
+  return devices_.back().get();
+}
+
+auto Driver::sessionAlloc(QDMI_Session* session) -> int {
+  if (session == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  auto uniqueSession = std::make_unique<QDMI_Session_impl_d>(devices_);
+  *session = sessions_.emplace(uniqueSession.get(), std::move(uniqueSession))
+                 .first->first;
+  return QDMI_SUCCESS;
+}
+
+auto Driver::sessionFree(QDMI_Session session) -> void {
+  if (session != nullptr) {
+    sessions_.erase(session);
+  }
+}
+} // namespace qdmi
+
+int QDMI_session_alloc(QDMI_Session* session) {
+  return qdmi_main_driver::Driver::get().sessionAlloc(session);
+}
+
+int QDMI_session_init(QDMI_Session session) {
+  if (session == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return session->init();
+}
+
+void QDMI_session_free(QDMI_Session session) {
+  qdmi_main_driver::Driver::get().sessionFree(session);
+}
+
+int QDMI_session_set_parameter(QDMI_Session session,
+                               QDMI_Session_Parameter param, const size_t size,
+                               const void* value) {
+  if (session == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return session->setParameter(param, size, value);
+}
+
+int QDMI_session_query_session_property(QDMI_Session session,
+                                        QDMI_Session_Property prop, size_t size,
+                                        void* value, size_t* sizeRet) {
+  if (session == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return session->querySessionProperty(prop, size, value, sizeRet);
+}
+
+int QDMI_device_create_job(QDMI_Device dev, QDMI_Job* job) {
+  if (dev == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return dev->createJob(job);
+}
+
+void QDMI_job_free(QDMI_Job job) {
+  if (job != nullptr) {
+    job->free();
+  }
+}
+
+int QDMI_job_set_parameter(QDMI_Job job, QDMI_Job_Parameter param,
+                           const size_t size, const void* value) {
+  if (job == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return job->setParameter(param, size, value);
+}
+
+int QDMI_job_query_property(QDMI_Job job, QDMI_Job_Property prop,
+                            const size_t size, void* value, size_t* sizeRet) {
+  if (job == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return job->queryProperty(prop, size, value, sizeRet);
+}
+
+int QDMI_job_submit(QDMI_Job job) {
+  if (job == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return job->submit();
+}
+
+int QDMI_job_cancel(QDMI_Job job) {
+  if (job == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return job->cancel();
+}
+
+int QDMI_job_check(QDMI_Job job, QDMI_Job_Status* status) {
+  if (job == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return job->check(status);
+}
+
+int QDMI_job_wait(QDMI_Job job, size_t timeout) {
+  if (job == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return job->wait(timeout);
+}
+
+int QDMI_job_get_results(QDMI_Job job, QDMI_Job_Result result,
+                         const size_t size, void* data, size_t* sizeRet) {
+  if (job == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return job->getResults(result, size, data, sizeRet);
+}
+
+int QDMI_device_query_device_property(QDMI_Device device,
+                                      QDMI_Device_Property prop,
+                                      const size_t size, void* value,
+                                      size_t* sizeRet) {
+  if (device == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return device->queryDeviceProperty(prop, size, value, sizeRet);
+}
+
+int QDMI_device_query_site_property(QDMI_Device device, QDMI_Site site,
+                                    QDMI_Site_Property prop, const size_t size,
+                                    void* value, size_t* sizeRet) {
+  if (device == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return device->querySiteProperty(site, prop, size, value, sizeRet);
+}
+
+int QDMI_device_query_operation_property(
+    QDMI_Device device, QDMI_Operation operation, const size_t numSites,
+    const QDMI_Site* sites, const size_t numParams, const double* params,
+    QDMI_Operation_Property prop, const size_t size, void* value,
+    size_t* sizeRet) {
+  if (device == nullptr) {
+    return QDMI_ERROR_INVALIDARGUMENT;
+  }
+  return device->queryOperationProperty(operation, numSites, sites, numParams,
+                                        params, prop, size, value, sizeRet);
+}

@@ -1,0 +1,22 @@
+include_guard()
+
+set(LLVM_TARGET_DEFINITIONS CCDialect.td)
+mlir_tablegen(CCDialect.h.inc -gen-dialect-decls -dialect=cc)
+mlir_tablegen(CCDialect.cpp.inc -gen-dialect-defs -dialect=cc)
+add_public_tablegen_target(CCDialectIncGen)
+set(LLVM_TARGET_DEFINITIONS CCOps.td)
+mlir_tablegen(CCOps.h.inc -gen-op-decls)
+mlir_tablegen(CCOps.cpp.inc -gen-op-defs)
+add_public_tablegen_target(CCOpsIncGen)
+set(LLVM_TARGET_DEFINITIONS CCTypes.td)
+mlir_tablegen(CCTypes.h.inc -gen-typedef-decls -typedefs-dialect=cc)
+mlir_tablegen(CCTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=cc)
+add_public_tablegen_target(CCTypesIncGen)
+add_dependencies(mqss-cudaq-headers
+    CCDialectIncGen CCOpsIncGen CCTypesIncGen)
+
+set(LLVM_TARGET_DEFINITIONS CCInterfaces.td)
+mlir_tablegen(CCInterfaces.h.inc -gen-op-interface-decls)
+mlir_tablegen(CCInterfaces.cpp.inc -gen-op-interface-defs)
+add_public_tablegen_target(CCInterfacesIncGen)
+add_dependencies(mqss-cudaq-headers CCInterfacesIncGen)

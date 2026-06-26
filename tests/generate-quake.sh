@@ -2,10 +2,12 @@
 
 # Set the base directory and output folder
 base_dir="code"
-output_dir="quake"
+output_dir="dialects/quake"
 
 # Ensure the output base directory exists
 mkdir -p "$output_dir"
+CUDAQQUAKE="/workspaces/MQSS-Passes-Suite/build/_deps/cuda-quantum/build/bin/cudaq-quake"
+CUDAQOPT="/workspaces/MQSS-Passes-Suite/build/_deps/cuda-quantum/build/bin/cudaq-opt"
 
 # Find all .cpp files in the code directory and loop through them
 find "$base_dir" -type f -name "*.cpp" | while read -r cpp_file; do
@@ -21,10 +23,9 @@ find "$base_dir" -type f -name "*.cpp" | while read -r cpp_file; do
     output_file="$output_dir/$subdir/$(basename "${cpp_file%.cpp}.qke")"
 
     # Run the cudaq-quake command
-    cudaq-quake "$cpp_file" -o o.qke && \
+    ${CUDAQQUAKE} "$cpp_file" -o o.qke && \
     # Run the cudaq-opt command
-    cudaq-opt --canonicalize --unrolling-pipeline o.qke -o x.qke && \
-    ../build/tools/cpp-to-only-quake --input x.qke --output "$output_file" && \
+    ${CUDAQOPT} --canonicalize --unrolling-pipeline o.qke -o "$output_file" && \
     # Remove the intermediate o.qke file
     rm -f o.qke x.qke
 

@@ -1,0 +1,22 @@
+// test-mqss-passes/code/cudaq/tests/XYZHadamardSwitchPass.test
+
+// RUN: %mqss-cc %S/../XYZHadamardSwitchPass.cpp --passes=CommonSwitchPass=mode=XYZHtoHXYZ | FileCheck %s
+
+// CHECK: %1 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.h %2 : (!quake.ref) -> ()
+// CHECK: quake.z %1 : (!quake.ref) -> ()
+
+// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.h %2 : (!quake.ref) -> ()
+// CHECK: quake.y %1 : (!quake.ref) -> ()
+// CHECK: %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+
+// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.h %2 : (!quake.ref) -> ()
+// CHECK: quake.x %1 : (!quake.ref) -> ()
+// CHECK: %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+
+
+
+

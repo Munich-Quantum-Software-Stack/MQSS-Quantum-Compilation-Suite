@@ -1,0 +1,14 @@
+
+
+// test-mqss-passes/code/catalyst/tests/ReverseCNot.test
+
+// RUN: %mqss-cc %S/../ReverseCNot.py --function circuit_ReverseCx --passes=CommonCNOTReversePass | FileCheck %s
+
+
+// CHECK: %out_qubits_1 = quantum.custom "H"() %out_qubits_0 : !quantum.bit
+// CHECK: %out_qubits_2 = quantum.custom "H"() %out_qubits : !quantum.bit
+// CHECK: %out_qubits_3:2 = quantum.custom "CNOT"() %out_qubits_1, %out_qubits_2 : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_4 = quantum.custom "H"() %out_qubits_3#0 : !quantum.bit
+// CHECK: %out_qubits_5 = quantum.custom "H"() %out_qubits_3#1 : !quantum.bit
+// CHECK: %out_qubits_6 = quantum.custom "PauliY"() %out_qubits_4 : !quantum.bit
+// CHECK: %out_qubits_7 = quantum.custom "PauliY"() %out_qubits_5 : !quantum.bit

@@ -1,9 +1,11 @@
 include(FetchContent)
 
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+
 FetchContent_Declare(
   mqt-qmap
   GIT_REPOSITORY https://github.com/cda-tum/mqt-qmap.git
-  GIT_TAG fa598ff831d5e598e2ff9748137b86cbddad6f28)
+  GIT_TAG 186b9dcb5bc3395f865e734bc69dc6887071045f)
 
 FetchContent_MakeAvailable(mqt-qmap)
 

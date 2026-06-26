@@ -1,9 +1,10 @@
+<<<<<<< HEAD
 *.swp
 *.swo
 *.swn
 *.swm
 build
-
+_deps
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
@@ -16,14 +17,12 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
-build
-
 # Compiled Object files
 *.slo
 *.lo
 *.o
 *.obj
-
+tests/.lit_test_times.txt
 # Precompiled Headers
 *.gch
 *.pch
@@ -43,3 +42,7 @@ build
 *.a
 *.lib
 git-emoji-commit.sh
+=======
+.cache/
+build/
+>>>>>>> localrepo/master

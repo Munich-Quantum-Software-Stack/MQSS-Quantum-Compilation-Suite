@@ -23,197 +23,176 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   </picture>
 </div>
 
-# Collection of MLIR Passes of the MQSS
+# Munich Quantum Software Stack (MQSS)-Quantum Compilation Suite
 
-<!-- [DOXYGEN MAIN] -->
+This repository contains a collection of compiler passes integrated into the MQSS
+to optimize, transform, and lower quantum programs to instructions compliant with target Quantum devices.
+The passes in this suite operate on quantum circuits represented using the state-of-the-art [Multi-Level Intermediate Representation
+(MLIR)](https://mlir.llvm.org) framework.
 
-This repository holds a collection of MLIR passes that operate on Quantum programs to optimize,
-transform, and lower quantum circuits to instructions compliant with the target devices. The
-presented passes are integrated into the Munich Quantum Software Stack (MQSS) infrastructure. In
-particular, this collection of passes is used in the Quantum Resource Manager (QRM) to optimize,
-transform, and lower quantum programs to quantum devices. The passes stored in this collection can
-be classified as target-agnostic and target-specific. Target agnostic passes can be applied to any
-quantum circuit and do not require information on the selected quantum target device. In contrast,
-target-specific passes tightly depend on the selected quantum device. For instance, transpilation
-passes that convert a quantum circuit defined using arbitrary gates to a quantum circuit compliant
-with the native gate set of the selected quantum device.
+The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](https://github.com/NVIDIA/cuda-quantum) or catalyst-quantum dialect by [pennlylane-catalyst](https://github.com/PennyLaneAI/catalyst).
 
-<!-- [DOXYGEN MAIN] -->
+ <span style="color: red;">[NOTE] : This Suite is still under active development. You can expect bugs.</span>
 
 <div align="center">
-  <a href="https://munich-quantum-software-stack.github.io/MQSS-Passes-Documentation/mlir/">
+  <a href="https://munich-quantum-software-stack.github.io/MQSS-Quantum-Compilation-Suite/">
   <img style="min-width: 200px !important; width: 30%;" src="https://img.shields.io/badge/documentation-blue?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNi4wIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjQgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTk2IDBDNDMgMCAwIDQzIDAgOTZMMCA0MTZjMCA1MyA0MyA5NiA5NiA5NmwyODggMCAzMiAwYzE3LjcgMCAzMi0xNC4zIDMyLTMycy0xNC4zLTMyLTMyLTMybDAtNjRjMTcuNyAwIDMyLTE0LjMgMzItMzJsMC0zMjBjMC0xNy43LTE0LjMtMzItMzItMzJMMzg0IDAgOTYgMHptMCAzODRsMjU2IDAgMCA2NEw5NiA0NDhjLTE3LjcgMC0zMi0xNC4zLTMyLTMyczE0LjMtMzIgMzItMzJ6bTMyLTI0MGMwLTguOCA3LjItMTYgMTYtMTZsMTkyIDBjOC44IDAgMTYgNy4yIDE2IDE2cy03LjIgMTYtMTYgMTZsLTE5MiAwYy04LjggMC0xNi03LjItMTYtMTZ6bTE2IDQ4bDE5MiAwYzguOCAwIDE2IDcuMiAxNiAxNnMtNy4yIDE2LTE2IDE2bC0xOTIgMGMtOC44IDAtMTYtNy4yLTE2LTE2czcuMi0xNiAxNi0xNnoiLz48L3N2Zz4=" alt="Documentation" />
   </a>
 </div>
 
-## FAQ
+## Key features
 
-<!-- [DOXYGEN FAQ] -->
+1. __Representation-Agnostic Optimizations__: Apply the same passes across multiple quantum IRs.
 
-### What is MQSS?
+2. __Cross-framework support__: Works with ecosystems like cudaq-quantum and Catalyst.
 
-**MQSS** stands for _Munich Quantum Software Stack_, which is a project of the _Munich Quantum
-Valley (MQV)_ initiative and is jointly developed by the _Leibniz Supercomputing Centre (LRZ)_ and
-the Chairs for _Design Automation (CDA)_ and for _Computer Architecture and Parallel Systems (CAPS)_
-at TUM. It provides a comprehensive compilation and runtime infrastructure for on-premise and remote
-quantum devices, supports modern compilation and optimization techniques, and enables current and
-future high-level abstractions for quantum programming. This stack is designed to deploy in various
-scenarios via flexible configuration options, including stand-alone scenarios for individual
-systems, cloud access to multiple devices, and tight integration into HPC environments supporting
-quantum acceleration. A concrete instance of the MQSS is deployed at the LRZ for the MQV, serving as
-a single access point to all of its quantum devices via multiple compatible access paths, including
-a web portal, command line access via web credentials as well as the option for hybrid access with
-tight integration with LRZ's HPC systems. It facilitates the connection between end-users and
-quantum computing platforms by its integration within HPC infrastructures, such as those found at
-the LRZ.
+3. __Write once, reuse everywhere__: Share optimization logic across compiler representations.
 
-### What is MLIR?
+4. __Built to extend__: Add new passes without redesigning the framework.
 
-MLIR (Multi-Level Intermediate Representation) is a versatile compiler framework for developing
-domain-specific compilers and optimizing transformations. MLIR originated as part of the LLVM
-ecosystem and is particularly tailored for modern, complex computational workflows, including
-machine learning, AI, and heterogeneous hardware.
+5. __Native-IR interoperability__: Connect frameworks without replacing their IRs.
 
-MLIR supports multiple levels of abstraction within a single framework, allowing developers to work
-with high-level domain-specific operations down to hardware-specific operations. Users can define
-their **dialects** (custom operations and types) for specific problem domains while leveraging the
-shared infrastructure for optimization and code generation already provided by MLIR.
+6. __Qubit Mapping__: A representation-agnostic logical to physical qubit mapping pass that uses [QDMI](https://github.com/Munich-Quantum-Software-Stack/QDMI) and [MQT-QMAP](https://github.com/munich-quantum-toolkit/qmap)
 
-<div align="center">
-    <img src="./docs/_static/mlir.png" width="70%">
-</div>
+Note: Please refer to the [FAQs](https://github.com/akshay9594/MQSS-Passes-Suite/blob/catalyst-integration/docs/faq.md) section for more details on the passes, MLIR, MQSS and other related questions.
 
-Additionally, MLIR promotes interoperability among different models of computation and supports
-**optimization passes** across various abstraction levels, including high-level and low-level
-operations.
+## Getting Started
 
-For more information on [MLIR](https://github.com/llvm/llvm-project.git).
+### System Requirements
 
-### What is an MLIR Dialect?
+- OS : Linux (tested on Ubuntu 22.04)
+  - Use docker container if on a different OS
+- Architecture : aarch64, X86
 
-An MLIR dialect is a modular and extensible namespace within the MLIR framework that defines a set
-of **operations**, **types** and **attributes** specific to a domain, language, or model of
-computation. Dialects enable MLIR to be a highly flexible intermediate representation (IR).
+### Development Environment
 
-For instance, **Quake** is an MLIR dialect designed for quantum computing. It serves as part of
-NVIDIA's CUDAQ framework, facilitating the development, optimization, and deployment of
-quantum-classical hybrid programs. Quake represents quantum programs within MLIR, providing a
-high-level abstraction for quantum operations and allowing developers to leverage the MLIR
-infrastructure for optimization and compilation. Below is an example of a quantum circuit and its
-corresponding representation using Quake. Each instruction at MLIR level matches the gates
-represented in the diagram. Though, at first, this representation might resemble other
-representations such as QASM and QIR, there exists a difference in the flexibility of the
-representation that allows transformations at different levels of abstraction, which is provided by
-the MLIR framework.
+- Docker
+- VSCode
+- VSCode Dev Containers extension
 
-<div align="center">
-    <img src="./docs/_static/mlir-quake.png" width="70%">
-</div>
+### Major Dependencies
 
-For more information on [QUAKE MLIR Dialect](https://github.com/NVIDIA/cuda-quantum.git).
+Note: These are automatically downloaded and installed by the build scripts
 
-### What is an MLIR pass?
+- Clang+LLVM : 16.0.6 toolchain and 21.8 toolchain
+- CMake : 3.29...4.2
+- cudaq-quantum toolchain : 0.14.0
+- pennylane-catalyst toolchain: 0.14.1
+- python : 3.11
+- C++ : 17...20
+- Compiler : gcc and g++ 11.4
 
-An MLIR pass is a transformation or analysis applied to an MLIR intermediate representation (IR) to
-**modify**, **optimize**, or **gather information**. Passes are a central concept in compiler
-frameworks, including MLIR, enabling modular, reusable,and extensible code transformations at
-various abstraction levels.
+For a full list of dependencies check ```.devcontainer/Dockerfile```.
 
-<div align="center">
-    <img src="./docs/_static/mlir-pass.png" width="45%">
-</div>
+### Prerequisites
 
-For instance, in the figure above, an MLIR optimization pass is applied to the input example
-circuit, which contains two consecutive Hadamard gates on qubit 0. Accordingly, in the
-output-optimized circuit shown on the right, those two consecutive Hadamards are removed because
-they are equivalent to an identity operation.
+Clone the project:
 
-MLIR has two categories of passes: **transformation** passes and **analysis** passes. The pass
-presented above is a transformation pass. Moreover, passes can be applied in sequences defined as
-**pass pipelines**.
+```bash
+git clone https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git \
+       /workspaces/MQSS-Passes-Suite
+cd /workspaces/MQSS-Passes-Suite
+git checkout <branch-name>
+```
 
-<div align="center">
-    <img src="./docs/_static/mlir-passes.png" width="100%">
-</div>
+```branch-name``` could be ```develop``` or any other branch from this repository.
+If using docker, RUN the commands:
 
-In the figure shown above, three pass pipelines are defined. In purple, a synthesis to QUAKE
-pipeline synthesizes QUAKE MLIRcode from a given input C++ program. In green, an optimization
-pipeline that applies a series of transformations passes on MLIR modules. Finally, in orange, a pass
-pipeline that lowers QUAKE MLIR modules to the Quantum Intermediate Representation (QIR).
+```sh
+docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
+docker run --rm -it \
+  -v "$PWD":/workspaces/MQSS-Passes-Suite \
+  -w /workspaces/MQSS-Passes-Suite \
+  mqss-pass-dev \
+  bash
+```
 
-The compiler converts the high-level HPCQC application to MLIR and forwards the quantum circuits to
-the QRM. Then, the QRM represents the quantum circuits as quantum kernels using the MLIR dialect
-Quake (see purple blocks). Optimization involves applying a pipeline of target-agnostic and
-target-specific passes that transform the input quantum circuit into an optimized version (see green
-blocks) that is compliant with the target device. Finally, the optimized MLIR/Quake circuit is
-lowered to a program with instructions accepted by the selected target backend (see orange blocks).
-In this example, the optimized MLIR code is lowered to QIR. Note that the code presented here is not
-functional and is only for illustrative purposes.
+Note: The project root is at ```/workspaces/MQSS-Passes-Suite```
 
-### Why include MLIR into the MQSS?
+## Building and Installing the project
 
-One fundamental feature of MLIR is its ability to model different levels of abstraction related to a
-domain-specific language. In contrast, Quantum representations such as the QIR or QASM are
-instruction-level representations. Performing transformations on a low-level abstraction, such as
-instruction-level, might not be a good choice. Instruction-level representations are a list of
-quantum gates that operate on qubits. The figure below shows a non-compliant and a compliant SSA
-MLIR/Quake quantum kernel on the left and right, respectively. The problem with using
-representations that do not expose the data dependencies, as shown on the left and QIR, is that the
-compiler might apply incorrect transformations during optimization.
+The first thing to do is to setup a virtual environment and install
+python3.11 into it. We also need to install cmake. RUN:
 
-<div align="center">
-    <img src="./docs/_static/mlir-why2.png" width="100%">
-</div>
+```bash
+make setup-env
+```
 
-The representation presented on the left assumes a value referencing each qubit. Values %1 and %2
-correspond to qubits 1 and 2, respectively. By following only the value %1, the compiler might
-wrongly assume that _h1_ has produced the value %1 and is immediately consumed by _h2_. The compiler
-will try to remove gates _h1_ and _h2_ since two consecutive Hadamard gates result in an identity.
-However, following this assumption, the compiler could ignore the fact that a measurement exists
-between the two gates. Thus, representations using values referencing qubits might not be a good
-choice when applying transformation that relies on the data dependencies among gates. In contrast,
-as presented on the figure's right, an SSA-compliant representation exposes the data dependencies
-without ambiguity since each gate consumes/produces values.
+Next, we need to set paths to the directories where the executables are generated
+i.e. ```~/.local/bin``` as well as path to ```cudaq-opt```. RUN command:
 
-These values can also be visualized as the wires connecting the gates in the quantum circuit.
-Accordingly, there is no ambiguity in the representation, and eliminating _h1_ and _h2_ is
-impossible because both gates reference different values at their output and input, respectively.
-There, gate _h1_ consumes the value %3, corresponding to unwrapping the qubit reference value %1,
-and producing the value %5. Gate _h2_ consumes the value %7 corresponding to unwrapping the qubit
-reference value %1 after the measurement. Accordingly, there is no ambiguity in the representation,
-and eliminating _h1_ and _h2_ is impossible because both gates reference different values at their
-output and input, respectively.
+```bash
+eval "$(make set-target-paths)"
+```
 
-### Where do MLIR passes fit into the MQSS?
+Then, configure the build by running the command:
 
-The collection of MLIR passes stored in this repository is part of the Munich Quantum Software Stack
-(MQSS). The passes are utilized inside the Quantum Resource Manager
-([QRM](https://github.com/Munich-Quantum-Software-Stack/QRM)).
+```bash
+make build
+```
 
-<div align="center">
-    <img src="./docs/_static/mlir-fit.png" width="60%">
-</div>
+This invokes two scripts ```scripts/build_cudaq.sh``` and ```scripts/build_catalyst.sh```.
+These scripts download and install all the required dependencies for building the targets
+(```mqss-cudaq-opt``` and ```mqss-catalyst-opt```). These scripts contain the required
+cmake commands to configure the project.
 
-For example, a hybrid quantum application can be defined in a high-level programming language such
-as C++ using the CUDAQ library. Those code fragments in a hybrid quantum application defined as
-quantum kernels will be submitted to the QRM.
+Finally, build the targets by running:
 
-By specifying the target as MQSS at compilation time, the generated binary will orchestrate the
-classical and quantum resources. Every time a quantum kernel has to be executed, the compiled binary
-submits the MLIR code of the correspondent quantum kernel to the MQSS stack. Thus, on the MQSS side,
-the MLIR module is processed by the QRM, which perform **agnostic passes** (optimization passes) and
-**target-specific passes** (transpilation passes and lowering passes). The lowered code is sent to
-the Quantum device, and the results are collected and sent back to the hybrid application.
+```bash
+make target
+```
 
-### Where is the code?
+This builds the targets using ```ninja``` and if the build succeeds,
+generates the executables ```mqss-catalyst-opt```, ```mqss-cudaq-opt```.
+You can change the installation directory by modifying the ```INSTALL_DIR```
+variable within the  MakeFile.
 
-The code is publicly available and hosted on GitHub:
-https://github.com/Munich-Quantum-Software-Stack/passes.
+- If you make any changes to the source
+code i.e. to the C++ files within ```MQSS-Passes-Suite/lib/*```, then just rerun the ```make target```
+command.
 
-### Under which license is this collection of passes released?
+- If any changes are made to the build scripts i.e. ```build_catalyst.sh``` or ```build_cudaq.sh``` or
+to the CMakeLists then do ```make build``` first and then ```make target```.
 
-This collection of MLIR passes is released under the Apache License v2.0 with LLVM Exceptions. See
-[LICENSE](https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE) for more
-information. Any contribution to the project is assumed to be under the same license.
+## Testing the installation
 
-<!-- [DOXYGEN FAQ] -->
+After the build is successful, use the following commands to test
+the installation.
+
+For mlir dialect-level testing (faster), RUN:
+
+```bash
+make test-dialects
+```
+
+For slower end-to-end testing (input: c++/python code, output: optimized mlir-dialect), RUN:
+
+```bash
+make test-all
+```
+
+This command will run all the available test cases in the ```tests/dialects``` and
+```tests/code``` directories. There are a total of 82 test cases currently, with
+more added regularly.
+
+## Citation
+
+```bibtex
+@INPROCEEDINGS{letrasMQSSCI2025,
+  author={Letras, Martín and Echavarria, Jorge and Farooqi, Muhammad Nufail and De Pascale, Marco and Vera, Mario Hernández and Tornow, Nathaniel and Schulz, Laura and Schulz, Martin},
+  booktitle={2025 IEEE International Conference on Quantum Computing and Engineering (QCE)},
+  title={Towards a Unified Multi-Target Mlir-Based Compiler: A Heterogeneous Compilation Framework for High-Performance and Quantum Computing Integration},
+  year={2025},
+  volume={02},
+  number={},
+  pages={28-33},
+  keywords={Performance evaluation;Quantum computing;Runtime;High performance computing;Full stack;Graphics processing units;Optimization;Quantum Compilation;Intermediate Representation (IR);MLIR;HPCQC Integration},
+  doi={10.1109/QCE65121.2025.10288}
+  }
+```
+
+## Contact
+
+The development of this project is led by the QCT department at the LRZ and the QSI department at MQV gGmbH. You can also always reach us at <mqss@munich-quantum-valley.de>.
+
+Please try to use the publicly accessible GitHub channels (issues, discussions, pull requests) to allow for a transparent and open discussion as much as possible.

@@ -1,0 +1,22 @@
+
+include_guard()
+set(LLVM_TARGET_DEFINITIONS QuakeDialect.td)
+mlir_tablegen(QuakeDialect.h.inc -gen-dialect-decls -dialect=quake)
+mlir_tablegen(QuakeDialect.cpp.inc -gen-dialect-defs -dialect=quake)
+add_public_tablegen_target(QuakeDialectIncGen)
+set(LLVM_TARGET_DEFINITIONS QuakeOps.td)
+mlir_tablegen(QuakeOps.h.inc -gen-op-decls)
+mlir_tablegen(QuakeOps.cpp.inc -gen-op-defs)
+add_public_tablegen_target(QuakeOpsIncGen)
+set(LLVM_TARGET_DEFINITIONS QuakeTypes.td)
+mlir_tablegen(QuakeTypes.h.inc -gen-typedef-decls -typedefs-dialect=quake)
+mlir_tablegen(QuakeTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=quake)
+add_public_tablegen_target(QuakeTypesIncGen)
+add_dependencies(mqss-cudaq-headers
+    QuakeDialectIncGen QuakeOpsIncGen QuakeTypesIncGen)
+
+set(LLVM_TARGET_DEFINITIONS QuakeInterfaces.td)
+mlir_tablegen(QuakeInterfaces.h.inc -gen-op-interface-decls)
+mlir_tablegen(QuakeInterfaces.cpp.inc -gen-op-interface-defs)
+add_public_tablegen_target(QuakeInterfacesIncGen)
+add_dependencies(mqss-cudaq-headers QuakeInterfacesIncGen)

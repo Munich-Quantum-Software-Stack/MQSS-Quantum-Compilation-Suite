@@ -1,0 +1,9 @@
+// test-mqss-passes/code/cudaq/tests/CzToHCxHDecompositionPass.test
+
+// RUN: %mqss-cc %S/../CzToHCxHDecompositionPass.cpp --passes=CommonDecompositionPass=mode=CzToHCxH | FileCheck %s
+
+// CHECK: quake.h %2 : (!quake.ref) -> ()
+// CHECK: quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.h %2 : (!quake.ref) -> ()
+
+

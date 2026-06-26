@@ -1,0 +1,12 @@
+
+// test-mqss-passes/code/cudaq/tests/QubitMapping-01.test
+
+// RUN: %mqss-cc %S/../QubitMapping-01.py --function circuit_QubitMapping --passes=CommonMappingPass | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
+
+// CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %4, %3 : !quantum.bit, !quantum.bit
+// CHECK: %5 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
+// CHECK: %6 = quantum.extract %0[ 4] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_1:2 = quantum.custom "SWAP"() %5, %6 : !quantum.bit, !quantum.bit
+// CHECK: %7 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %8 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %8, %7 : !quantum.bit, !quantum.bit

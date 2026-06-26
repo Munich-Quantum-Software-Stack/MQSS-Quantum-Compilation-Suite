@@ -1,30 +1,19 @@
 {
-  "name": "passes-dev",
+  "name": "mqss-pass-dev",
   "build": {
-    "dockerfile": "dockerContainer.Dockerfile",
-    "args": {
-      "destination": "workspaces/passes"
-    }
+    "dockerfile": "Dockerfile"
   },
-  // If you do not have the NVIDIA container runtime installed, available GPUs will not be automatically detected.
-  // You can manually pass the flag to enable GPU support to docker by uncommenting the line below.
-  // "runArgs": [ "--gpus=all" ],
-  "hostRequirements": {
-    "gpu": "optional"
+  "remoteEnv": {
+    "LANG": "en_US.UTF-8",
+    "LC_ALL": "en_US.UTF-8"
   },
-  // To use certain debugging tools, you may want uncomment the two lines below.
-  // Be mindful of security implications when you do. See also
-  // - https://github.com/rr-debugger/rr/wiki/Docker
-  // - https://www.cybereason.com/blog/container-escape-all-you-need-is-cap-capabilities
-  // "capAdd": ["SYS_PTRACE"],
-  // "securityOpt": [ "seccomp=unconfined" ],
+  "workspaceFolder": "/workspaces/MQSS-Passes-Suite",
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "twxs.cmake",
         "ms-vscode.cmake-tools",
-        "ms-vscode.cpptools",
         "cschlosser.doxdocgen",
         "psioniq.psi-header",
         "streetsidesoftware.code-spell-checker",
@@ -34,9 +23,14 @@
         "qiu.llvm-ir-language-support",
         "llvm-vs-code-extensions.vscode-mlir",
         "ms-azuretools.vscode-docker",
-        "ritwickdey.liveserver"
+        "ritwickdey.liveserver",
+        "llvm-vs-code-extensions.vscode-clangd"
       ],
       "settings": {
+        "clangd.path": "/usr/local/bin/clangd",
+        "clangd.arguments": [
+          "--compile-commands-dir=/workspaces/MQSS-Passes-Suite/build"
+        ],
         "files.associations": {
           "CMakeLists.txt": "cmake",
           "*.cmake.in": "cmake",
@@ -44,10 +38,8 @@
           "*.h.in": "cpp",
           "*.sh.in": "shellscript",
           "*.qke": "mlir",
-          "*.qtx": "mlir"
+          "*.mlir": "mlir"
         },
-        "mlir.server_path": "cudaq-lsp-server",
-        "mlir.onSettingsChanged": "restart",
         "markdownlint.config": {
           "MD013": { "tables": false, "code_blocks": false },
           "MD033": { "allowed_elements": ["br"] }
@@ -63,174 +55,13 @@
           "LLVM",
           "bitcode",
           "Quake",
-          "QTX",
-          "CUDA",
-          "cuQuantum",
+          "catalyst",
           "qubit",
           "qubits"
         ],
         "[python]": {
           "editor.formatOnType": true
         },
-        "psi-header.config": {
-          "forceToTop": false,
-          "blankLinesAfter": 1,
-          "license": "Apache-2.0",
-          "company": "NVIDIA",
-          "copyrightHolder": "NVIDIA Corporation & Affiliates"
-        },
-        "psi-header.variables": [["projectCreationYear", "2022"]],
-        "psi-header.changes-tracking": {
-          "isActive": true,
-          "enforceHeader": false,
-          "autoHeader": "autoSave",
-          "include": [
-            "cpp",
-            "c",
-            "tablegen",
-            "mlir",
-            "rust",
-            "python",
-            "cuda-cpp",
-            "cmake",
-            "makefile",
-            "perl",
-            "shellscript",
-            "dockerfile",
-            "css"
-          ],
-          "replace": ["Copyright (c)", "File", "Last Modified"],
-          // needs to be true to replace license related information
-          "updateLicenseVariables": false
-        },
-        "psi-header.lang-config": [
-          {
-            "language": "shellscript",
-            "forceToTop": true,
-            "begin": "# ============================================================================ #",
-            "prefix": "# ",
-            "suffix": " #",
-            "lineLength": 80,
-            "end": "# ============================================================================ #",
-            "ignoreLines": ["#!"]
-          },
-          {
-            "language": "perl",
-            "mapTo": "shellscript"
-          },
-          {
-            "language": "dockerfile",
-            "mapTo": "shellscript"
-          },
-          {
-            "language": "cmake",
-            "mapTo": "shellscript"
-          },
-          {
-            "language": "makefile",
-            "mapTo": "shellscript"
-          },
-          {
-            "language": "python",
-            "forceToTop": true,
-            "begin": "# ============================================================================ #",
-            "prefix": "# ",
-            "suffix": " #",
-            "lineLength": 80,
-            "end": "# ============================================================================ #",
-            "ignoreLines": []
-          },
-          {
-            "language": "rust",
-            "forceToTop": true,
-            "begin": "/*******************************************************************************",
-            "prefix": " * ",
-            "suffix": " *",
-            "lineLength": 80,
-            "end": " ******************************************************************************/",
-            "ignoreLines": []
-          },
-          {
-            "language": "css",
-            "mapTo": "rust"
-          },
-          {
-            "language": "c",
-            "forceToTop": true,
-            "begin": "/*******************************************************************************",
-            "prefix": " * ",
-            "suffix": " *",
-            "lineLength": 80,
-            "end": " ******************************************************************************/",
-            "ignoreLines": []
-          },
-          {
-            "language": ".h",
-            "forceToTop": true,
-            "begin": "/****************************************************************-*- C++ -*-****",
-            "prefix": " * ",
-            "suffix": " *",
-            "lineLength": 80,
-            "end": " ******************************************************************************/",
-            "ignoreLines": []
-          },
-          {
-            "language": "cpp",
-            "forceToTop": true,
-            "begin": "/*******************************************************************************",
-            "prefix": " * ",
-            "suffix": " *",
-            "lineLength": 80,
-            "end": " ******************************************************************************/",
-            "ignoreLines": []
-          },
-          {
-            "language": "cuda-cpp",
-            "mapTo": "cpp"
-          },
-          {
-            "language": "tablegen",
-            "forceToTop": true,
-            "begin": "/***********************************************************-*- tablegen -*-****",
-            "prefix": " * ",
-            "suffix": " *",
-            "lineLength": 80,
-            "end": " ******************************************************************************/",
-            "ignoreLines": []
-          },
-          {
-            "language": "mlir",
-            "forceToTop": true,
-            "begin": "// ========================================================================== //",
-            "prefix": "// ",
-            "suffix": " //",
-            "lineLength": 80,
-            "end": "// ========================================================================== //",
-            "ignoreLines": []
-          },
-          {
-            "language": "*",
-            "forceToTop": false,
-            "begin": "# ============================================================================ #",
-            "prefix": "# ",
-            "suffix": " #",
-            "lineLength": 80,
-            "end": "# ============================================================================ #",
-            "ignoreLines": ["#", "@"]
-          }
-        ],
-        "psi-header.templates": [
-          {
-            "language": "*",
-            "template": [
-              "Copyright (c) <<projectCreationYear>> - <<year>> <<copyrightholder>>.",
-              "All rights reserved.",
-              "",
-              "This source code and the accompanying materials are made available under",
-              "the terms of the <<licensename>> which accompanies this distribution."
-            ]
-          }
-        ],
         "C_Cpp.inlayHints.autoDeclarationTypes.enabled": false,
         "C_Cpp.inlayHints.referenceOperator.enabled": false,
         "C_Cpp.doxygen.generateOnType": false,
@@ -240,8 +71,6 @@
         "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
         "C_Cpp.default.includePath": [
           "${workspaceFolder}/**",
-          "${CUDAQ_INSTALL_PREFIX}/**",
-          "${LLVM_INSTALL_PREFIX}/**",
           "/usr/include/c++/**",
           "/usr/include/**/c++/**"
         ],
@@ -253,5 +82,6 @@
         "doxdocgen.generic.order": ["brief", "tparam", "param", "return", "exception"]
       }
     }
-  }
+  },
+"postCreateCommand": "make -C /workspaces/MQSS-Passes-Suite setup-env && echo 'source $(VENV_DIR)/bin/activate' >> ~/.bashrc && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.bashrc && echo 'export PATH=\"/usr/local/bin:$PATH\"' >> ~/.bashrc && echo 'export PATH=\"/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$PATH\"' >> ~/.bashrc"
 }
