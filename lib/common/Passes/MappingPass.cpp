@@ -24,7 +24,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************/
 
 #include "include/transforms/TranspilationPassUtils.h"
-#include "include/transforms/QdmiDriver.h"
 #include <llvm/Support/raw_ostream.h>
 
 using namespace mlir;
@@ -101,10 +100,8 @@ struct PipelineConfig {
   static PipelineConfig fromQDMI(string device_conf) {
 
     PipelineConfig config;
-    qdmi_main_driver::DeviceSessionConfig Deviceconfig;
     
-
-    MQSS_DEBUG("Device conf is: " << device_conf << "\n");
+    MQSS_DEBUG("-->Device conf is: " << device_conf << "\n");
     auto dev = createQDMIDevice(device_conf.c_str());
 
     auto device_porperties = getDeviceProperties(dev);

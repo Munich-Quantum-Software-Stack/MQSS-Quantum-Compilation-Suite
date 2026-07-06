@@ -4,7 +4,7 @@ name: Deploy Docs
 
 on:
   push:
-    branches: [develop, catalyst-integration]
+    branches: [develop]
 
 jobs:
   deploy:

@@ -1,5 +1,5 @@
 
-// RUN: %mqss-cudaq-opt %s --CommonMappingPass=input=/workspaces/MQSS-Passes-Suite/tests/input/qmap.json 2>&1  | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
+// RUN: %mqss-cudaq-opt %s --CommonMappingPass=qdmi=cxx_qdmi.conf 2>&1  | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
 
 module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__ghzILm5EE = "_ZN3ghzILm5EEclEv"}} {
   func.func @__nvqpp__mlirgen__ghzILm5EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
@@ -32,6 +32,12 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
+// CHECK: %0 = quake.alloca !quake.veq<5>
+// CHECK: %1 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
+// CHECK: %2 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
+// CHECK: quake.x [%2] %1 : (!quake.ref, !quake.ref) -> ()
+// CHECK: %3 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+// CHECK: %4 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
 // CHECK: quake.x [%4] %3 : (!quake.ref, !quake.ref) -> ()
 // CHECK: %5 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
 // CHECK: %6 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
@@ -39,3 +45,14 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
 // CHECK: %7 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
 // CHECK: %8 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
 // CHECK: quake.x [%8] %7 : (!quake.ref, !quake.ref) -> ()
+// CHECK: %9 = quake.extract_ref %0[3] : (!quake.veq<5>) -> !quake.ref
+// CHECK: %cst = arith.constant 3.141600e+00 : f64
+// CHECK: quake.ry (%cst) %9 : (f64, !quake.ref) -> ()
+// CHECK: %10 = quake.extract_ref %0[2] : (!quake.veq<5>) -> !quake.ref
+// CHECK: %cst_0 = arith.constant 2.250000e+00 : f64
+// CHECK: quake.rz (%cst_0) %10 : (f64, !quake.ref) -> ()
+// CHECK: %11 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
+// CHECK: %cst_1 = arith.constant 1.500000e+00 : f64
+// CHECK: quake.rx (%cst_1) %11 : (f64, !quake.ref) -> ()
+// CHECK: %12 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
+// CHECK: quake.t %12 : (!quake.ref) -> ()
