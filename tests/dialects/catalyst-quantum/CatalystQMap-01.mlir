@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonMappingPass=input=/workspaces/MQSS-Passes-Suite/tests/input/qmap.json 2>&1  | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
+// RUN: %mqss-opt %s --CommonMappingPass=input=/workspaces/MQSS-Passes-Suite/tests/input/qmap.json 2>&1  | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
 
 func.func @circuit_qmap1() attributes {qnode} {
   %0 = quantum.alloc(5) : !quantum.reg

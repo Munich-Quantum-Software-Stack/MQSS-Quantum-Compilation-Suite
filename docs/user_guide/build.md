@@ -23,7 +23,6 @@ Note: It is highly recommended to use docker container to build and install the 
 ## System Requirements
 
 - OS : Linux (tested on Ubuntu 22.04)
-  - Use docker container if on a different OS
 - Architecture : aarch64, X86
 
 ## Development Environment
@@ -46,7 +45,7 @@ Clone the project:
 git clone https://github.com/akshay9594/MQSS-Passes-Suite.git \
        /workspaces/MQSS-Passes-Suite
 cd /workspaces/MQSS-Passes-Suite
-git checkout bfbc0832ecd23de753b23f749f19bcba683af2e2
+git checkout <branch-name or commit hash>
 ```
 
 If using docker, RUN the commands:
@@ -71,9 +70,8 @@ python3.11 into it. We also need to install cmake. RUN:
 make setup-env
 ```
 
-Next, we need to set paths to the directories where the executables are generated
-i.e. ```~/.local/bin``` as well as path to ```cudaq-opt``` (pre-built tool from cudaq-quantum).
-RUN command:
+Next, we need to set paths to the directories where the executables are placed
+i.e. ```~/.local/bin``` as well as path to ```cudaq tools```. RUN command:
 
 ```bash
 eval "$(make set-target-paths)"
@@ -85,9 +83,8 @@ Then, configure the build by running the command:
 make build
 ```
 
-This invokes two scripts ```scripts/build_cudaq.sh``` and ```scripts/build_catalyst.sh```.
-These scripts download and install all the required dependencies for building the targets
-(```mqss-cudaq-opt``` and ```mqss-catalyst-opt```). These scripts contain the required
+This invokes the scripts ```scripts/build.sh``` which downloads and installs all the
+required dependencies for building the target ```mqss-opt```. This script contains the required
 cmake commands to configure the project.
 
 Finally, build the targets by running:
@@ -96,19 +93,28 @@ Finally, build the targets by running:
 make target
 ```
 
-This builds the targets using ```ninja``` (build system) and if the build succeeds,
-generates the executables ```mqss-catalyst-opt```, ```mqss-cudaq-opt```.
-You can change the installation directory by modifying the ```INSTALL_DIR```
-variable within the  MakeFile.
+This builds the targets using the ```ninja``` build system and if the build succeeds,
+generates the executable ```mqss-opt```. You can change the installation directory by
+modifying the ```INSTALL_DIR``` variable within the  MakeFile.
 
 - If you make any changes to the source
-code i.e. to the C++/.h files within ```MQSS-Passes-Suite/lib/*```, then just rerun the ```make target```
+code i.e. to the C++ files within ```lib/*```, then just rerun the ```make target```
 command.
 
-- If any changes are made to the build scripts i.e. ```build_catalyst.sh``` or ```build_cudaq.sh``` or
-to the ```CMakeLists``` then do ```make build``` first and then ```make target```.
+- If any changes are made to the build script i.e. ```build.sh``` or
+to the CMakeLists or to the files within ```include/``` then do
+```make build``` first and then ```make target```.
 
 ## Enabling Pass Debug Information
+
+To enable pass debug information, set the following flag within ```Makefile```:
+
+```Makefile
+DEBUG_FLAG =  # --debug (if you want pass debug info)
+```
+
+By default the debug information is enabled i.e. ```DEBUG_FLAG =  --debug```. To disable the
+debug info, just remove the ```---debug``` value.
 
 ## Testing the installation
 
@@ -121,12 +127,5 @@ For mlir dialect-level testing (faster), RUN:
 make test-dialects
 ```
 
-For slower end-to-end testing (input: c++/python code, output: optimized mlir-dialect), RUN:
-
-```bash
-make test-all
-```
-
-This command will run all the available test cases in the ```tests/dialects``` and
-```tests/code``` directories. There are a total of 82 test cases currently, with
-more added regularly.
+This command will run all the available test cases in the ```tests/dialects``` directory.
+There are a total of 60 test cases currently, with more added regularly.

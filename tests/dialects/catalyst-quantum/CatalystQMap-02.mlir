@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonMappingPass=qdmi=cxx_qdmi.conf 2>&1  | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
+// RUN: %mqss-opt %s --CommonMappingPass=qdmi=cxx_qdmi.conf 2>&1  | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
 
 func.func @circuit_qmap2() attributes {qnode} {
   %cst   = arith.constant 2.250000e+00 : f64

@@ -1,0 +1,18 @@
+// RUN: %mqss-cc %S/../PLANQCBasisConversion.cpp --passes="cse,canonicalize,BasisConversionPass=gates=(rx,cz,rz),quake-to-qasm2" 2>&1 | FileCheck %s
+
+
+// CHECK: qreg var0[2];
+// CHECK: rz(3.141593e+00) var0[0];
+// CHECK: rx(3.141593e+00) var0[0];
+// CHECK: rz(1.570796e+00) var0[0];
+// CHECK: rz(3.141593e+00) var0[1];
+// CHECK: rx(3.141593e+00) var0[1];
+// CHECK: rz(1.570796e+00) var0[1];
+// CHECK: cz var0[0], var0[1];
+// CHECK: rz(3.141593e+00) var0[1];
+// CHECK: rx(3.141593e+00) var0[1];
+// CHECK: rz(1.570796e+00) var0[1];
+// CHECK: creg var3[1];
+// CHECK: measure var0[0] -> var3[0];
+// CHECK: creg var4[1];
+// CHECK: measure var0[1] -> var4[0];

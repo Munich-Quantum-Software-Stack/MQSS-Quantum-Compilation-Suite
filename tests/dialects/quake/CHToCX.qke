@@ -1,5 +1,5 @@
 
-// RUN: %mqss-cudaq-opt %s --CommonDecompositionPass=mode=CHToCX 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonDecompositionPass=mode=CHToCX 2>&1 | FileCheck %s
 
 func.func @circuit() attributes {"cudaq-entrypoint", "cudaq-kernel"}{
   %0 = quake.alloca !quake.veq<2>

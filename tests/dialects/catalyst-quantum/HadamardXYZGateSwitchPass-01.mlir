@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonSwitchPass=mode=HXYZtoXYZH 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonSwitchPass=mode=HXYZtoXYZH 2>&1 | FileCheck %s
 
 module {
   func.func @HadamardX_GateSwitch_test0() {
@@ -22,9 +22,7 @@ module {
 
     return
   }
-}
 
-module {
   func.func @HadamardY_GateSwitch_test1() {
    
     %q = quantum.alloc(2) : !quantum.reg
@@ -45,10 +43,6 @@ module {
 
     return
   }
-}
-
-
-module {
   func.func @HadamardX_GateSwitch_test2() {
    
     %cst = arith.constant 3.140000e+00 : f64

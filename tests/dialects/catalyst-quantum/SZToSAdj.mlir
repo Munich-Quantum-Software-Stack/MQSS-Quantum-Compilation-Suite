@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonReductionPass=mode=SZToSAdj --canonicalize  2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonReductionPass=mode=SZToSAdj --canonicalize  2>&1 | FileCheck %s
 
 module @circuit_SZToSAdj {
   func.func public @jit_circuit_SZToSAdj() -> (tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {

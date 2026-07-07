@@ -1,4 +1,4 @@
-// RUN: %mqss-catalyst-opt %s --CommonCommutePass=mode=CX-X 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCommutePass=mode=CX-X 2>&1 | FileCheck %s
 
 module @kernel_CommuteCNOTX {
   func.func public @jit_kernel_CommuteCNOTX() -> (tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {

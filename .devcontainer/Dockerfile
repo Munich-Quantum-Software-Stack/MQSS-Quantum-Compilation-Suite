@@ -16,6 +16,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 # RUN apt-get update && apt-get install -y --no-install-recommends python3 && \
 #     apt-get autoremove -y --purge && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y locales && \
+    sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen
+ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget ca-certificates
@@ -50,6 +54,7 @@ RUN apt-get update && \
       libffi-dev \
       libzstd-dev \
       zstd \
+      clangd \
       liblzma-dev
 
 RUN apt-get update && \

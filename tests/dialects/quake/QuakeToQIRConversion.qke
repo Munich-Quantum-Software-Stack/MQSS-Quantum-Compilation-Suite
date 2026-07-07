@@ -1,0 +1,85 @@
+
+// RUN: %mqss-opt %s --CommonCommutePass=mode=CX-RX --lower-quake-to-qir=profile=qir:2.0  -o /dev/null 2>&1 | FileCheck %s
+module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__testILm3EE = "_ZN4testILm3EEclEv"}} {
+  func.func @__nvqpp__mlirgen__testILm3EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %cst = arith.constant 5.141600e+00 : f64
+    %cst_0 = arith.constant 3.141600e+00 : f64
+    %cst_1 = arith.constant 2.400000e+00 : f64
+    %0 = quake.alloca !quake.veq<3>
+    %1 = quake.extract_ref %0[0] : (!quake.veq<3>) -> !quake.ref
+    %2 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
+    quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+    %3 = quake.extract_ref %0[2] : (!quake.veq<3>) -> !quake.ref
+    quake.x %3 : (!quake.ref) -> ()
+    %4 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
+    quake.rx (%cst_1) %4 : (f64, !quake.ref) -> ()
+    %5 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
+    %6 = quake.extract_ref %0[0] : (!quake.veq<3>) -> !quake.ref
+    quake.x [%5] %6 : (!quake.ref, !quake.ref) -> ()
+    %7 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
+    quake.rx (%cst_0) %7 : (f64, !quake.ref) -> ()
+    %8 = quake.extract_ref %0[0] : (!quake.veq<3>) -> !quake.ref
+    %9 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
+    quake.x [%8] %9 : (!quake.ref, !quake.ref) -> ()
+    %10 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
+    quake.x %10 : (!quake.ref) -> ()
+    %11 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
+    quake.rx (%cst) %11 : (f64, !quake.ref) -> ()
+    %measOut = quake.mz %0 : (!quake.veq<3>) -> !cc.stdvec<!quake.measure>
+    return
+  }
+  func.func @_ZN4testILm3EEclEv(%arg0: !cc.ptr<i8>) {
+    return
+  }
+}
+
+
+// CHECK: define void @__nvqpp__mlirgen__testILm3EE() {
+// CHECK:  %1 = call ptr @__quantum__rt__qubit_allocate_array(i64 3)
+// CHECK:  %2 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 0)
+// CHECK:  %3 = load ptr, ptr %2, align 8
+// CHECK:  %4 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
+// CHECK:  %5 = load ptr, ptr %4, align 8
+// CHECK:  %6 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 2)
+// CHECK:  %7 = load ptr, ptr %6, align 8
+// CHECK:  call void @__quantum__qis__x(ptr %7)
+// CHECK:  %8 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
+// CHECK:  %9 = load ptr, ptr %8, align 8
+// CHECK:  call void @__quantum__qis__rx(double 2.400000e+00, ptr %9)
+// CHECK:  call void (i64, i64, i64, i64, ptr, ...) @generalizedInvokeWithRotationsControlsTargets(i64 0, i64 0, i64 1, i64 1, ptr @__quantum__qis__x__ctl, ptr %3, ptr %5)
+// CHECK:  %10 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
+// CHECK:  %11 = load ptr, ptr %10, align 8
+// CHECK:  %12 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 0)
+// CHECK:  %13 = load ptr, ptr %12, align 8
+// CHECK:  call void (i64, i64, i64, i64, ptr, ...) @generalizedInvokeWithRotationsControlsTargets(i64 0, i64 0, i64 1, i64 1, ptr @__quantum__qis__x__ctl, ptr %11, ptr %13)
+// CHECK:  %14 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
+// CHECK:  %15 = load ptr, ptr %14, align 8
+// CHECK:  call void @__quantum__qis__rx(double 3.141600e+00, ptr %15)
+// CHECK:  %16 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 0)
+// CHECK:  %17 = load ptr, ptr %16, align 8
+// CHECK:  %18 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
+// CHECK:  %19 = load ptr, ptr %18, align 8
+// CHECK:  call void (i64, i64, i64, i64, ptr, ...) @generalizedInvokeWithRotationsControlsTargets(i64 0, i64 0, i64 1, i64 1, ptr @__quantum__qis__x__ctl, ptr %17, ptr %19)
+// CHECK:  %20 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
+// CHECK:  %21 = load ptr, ptr %20, align 8
+// CHECK:  call void @__quantum__qis__x(ptr %21)
+// CHECK:  %22 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
+// CHECK:  %23 = load ptr, ptr %22, align 8
+// CHECK:  call void @__quantum__qis__rx(double 5.141600e+00, ptr %23)
+// CHECK:  %24 = call ptr @__quantum__qis__mz(ptr %1)
+// CHECK:  ret void
+// CHECK: }
+
+// CHECK: declare ptr @__quantum__rt__qubit_allocate_array(i64 %0)
+
+// CHECK: declare ptr @__quantum__rt__array_get_element_ptr_1d(ptr %0, i64 %1)
+
+// CHECK: declare void @__quantum__qis__x__ctl(ptr %0, ptr %1)
+
+// CHECK: declare void @generalizedInvokeWithRotationsControlsTargets(i64 %0, i64 %1, i64 %2, i64 %3, ptr %4, ...)
+
+// CHECK: declare void @__quantum__qis__x(ptr %0)
+
+// CHECK: declare ptr @__quantum__qis__mz(ptr %0)
+
+// CHECK: declare void @__quantum__qis__rx(double %0, ptr %1)

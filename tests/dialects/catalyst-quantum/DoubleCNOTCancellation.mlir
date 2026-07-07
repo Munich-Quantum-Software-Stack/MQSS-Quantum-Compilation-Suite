@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonGateCancellationPass=mode=CancelGate  2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonGateCancellationPass=mode=CancelGate  2>&1 | FileCheck %s
 
 module @circuit_DoubleCNOTCancellation {
   func.func public @jit_circuit_DoubleCNOTCancellation() -> (tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {

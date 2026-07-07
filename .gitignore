@@ -1,48 +1,7 @@
-<<<<<<< HEAD
-*.swp
-*.swo
-*.swn
-*.swm
-build
-_deps
-CMakeLists.txt.user
-CMakeCache.txt
-CMakeFiles
-CMakeScripts
-Testing
-Makefile
-cmake_install.cmake
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-_deps
-CMakeUserPresets.json
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-tests/.lit_test_times.txt
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-git-emoji-commit.sh
-=======
-.cache/
 build/
->>>>>>> localrepo/master
+tests/code/catalyst/__pycache__/
+tests/.lit_test_times.txt
+.vscode
+.cache
+_build/
+_deps/
