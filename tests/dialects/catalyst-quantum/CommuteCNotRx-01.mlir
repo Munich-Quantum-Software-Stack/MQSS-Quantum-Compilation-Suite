@@ -1,4 +1,4 @@
-// RUN: %mqss-catalyst-opt %s --CommonCommutePass=mode=CX-RX 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCommutePass=mode=CX-RX 2>&1 | FileCheck %s
 module {
   func.func @CommuteCNot_Z_test() {
    
@@ -24,7 +24,7 @@ module {
     %q1_6 = quantum.custom "RX"(%cst) %q1_5 : !quantum.bit
     %q1_7 = quantum.custom "PauliZ"() %q1_6 : !quantum.bit
 
-    %meas = quantum.compbasis qreg %qreg : !quantum.obs
+    %mz0:2 = quantum.measure %q1_7 : i1, !quantum.bit
 
     return
   }

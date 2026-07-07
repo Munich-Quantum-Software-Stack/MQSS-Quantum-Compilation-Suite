@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonCommutePass=mode=Z-CX 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCommutePass=mode=Z-CX 2>&1 | FileCheck %s
 
 module @circuit_CommuteZCNot {
   func.func public @jit_circuit_CommuteZCNot() -> (tensor<8xi64>, tensor<8xi64>) attributes {llvm.emit_c_interface} {

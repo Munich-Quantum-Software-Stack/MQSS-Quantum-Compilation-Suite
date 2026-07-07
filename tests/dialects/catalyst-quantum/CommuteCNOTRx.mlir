@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonCommutePass=mode=CX-RX 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCommutePass=mode=CX-RX 2>&1 | FileCheck %s
 module @circuit_CommuteCNOTRx {
   func.func public @jit_circuit_CommuteCNOTRx() -> (tensor<8xi64>, tensor<8xi64>) attributes {llvm.emit_c_interface} {
     %0:2 = call @circuit_CommuteCNOTRx_0() : () -> (tensor<8xi64>, tensor<8xi64>)

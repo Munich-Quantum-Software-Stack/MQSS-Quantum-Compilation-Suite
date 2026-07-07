@@ -1,0 +1,39 @@
+// RUN: %mqss-opt %s --cse --canonicalize --BasisConversionPass=gates=cz,x,y,rz --lower-quake-to-qir=profile=base:2.0 -o /dev/null 2>&1 | FileCheck %s
+
+module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__rotILm2EE = "_ZN3rotILm2EEclEv"}} {
+  func.func @__nvqpp__mlirgen__rotILm2EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %cst = arith.constant 0.78539816339744828 : f64
+    %0 = quake.alloca !quake.veq<2>
+    %1 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    quake.h %1 : (!quake.ref) -> ()
+    quake.rz (%cst) %1 : (f64, !quake.ref) -> ()
+    %2 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x %2 : (!quake.ref) -> ()
+    %3 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    %4 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x [%3] %4 : (!quake.ref, !quake.ref) -> ()
+    %q0 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    %q1 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    %m0 = quake.mz %q0 : (!quake.ref) -> !quake.measure
+    %m1 = quake.mz %q1 : (!quake.ref) -> !quake.measure
+    return
+  }
+  func.func @_ZN3rotILm2EEclEv(%arg0: !cc.ptr<i8>) {
+    return
+  }
+}
+
+// CHECK: call void @__quantum__qis__rz__body(double 0x400921FB54442D18, ptr null)
+// CHECK: call void @__quantum__qis__x__body(ptr null)
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FF921FB54442D18, ptr null)
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FE921FB54442D18, ptr null)
+// CHECK: call void @__quantum__qis__x__body(ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x400921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__x__body(ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FF921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__cz__body(ptr null, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x400921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__x__body(ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FF921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__mz__body(ptr null, ptr null)
+// CHECK: call void @__quantum__qis__mz__body(ptr inttoptr (i64 1 to ptr), ptr inttoptr (i64 1 to ptr))

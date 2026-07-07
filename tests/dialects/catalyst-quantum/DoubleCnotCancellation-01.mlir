@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonGateCancellationPass=mode=CancelGate 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonGateCancellationPass=mode=CancelGate 2>&1 | FileCheck %s
 
 module {
   func.func @cnot_cancel_test() {

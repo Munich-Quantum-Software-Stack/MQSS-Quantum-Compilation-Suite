@@ -1,4 +1,4 @@
-// RUN: %mqss-catalyst-opt %s --CommonCommutePass=mode=RX-CX 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCommutePass=mode=RX-CX 2>&1 | FileCheck %s
 
 func.func @__nvqpp__mlirgen__testILm3EE() {
 

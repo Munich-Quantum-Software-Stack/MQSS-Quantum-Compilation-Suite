@@ -1,0 +1,38 @@
+
+// RUN: %mqss-cc %S/../WMIBasisConversion.cpp --passes="cse,canonicalize,BasisConversionPass=gates=(cz,x,y,rz),lower-quake-to-qir=profile=base:2.0" 2>&1 | FileCheck %s
+
+
+// CHECK: call void @__quantum__qis__rz__body(double 0x400921FB54442D18, ptr null)
+// CHECK: call void @__quantum__qis__x__body(ptr null)
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FF921FB54442D18, ptr null)
+// CHECK: call void @__quantum__qis__rz__body(double 0x400921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__x__body(ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FF921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__cz__body(ptr null, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x400921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__x__body(ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FF921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__mz__body(ptr null, ptr null)
+// CHECK: call void @__quantum__qis__mz__body(ptr inttoptr (i64 1 to ptr), ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__rt__array_record_output(i64 2, ptr @cstr.61727261793C6931207820323E00)
+// CHECK: call void @__quantum__rt__result_record_output(ptr null, ptr @cstr.72303030303000)
+// CHECK: call void @__quantum__rt__result_record_output(ptr inttoptr (i64 1 to ptr), ptr @cstr.72303030303100)
+
+
+// CHECK: call void @__quantum__qis__rz__body(double 0x400921FB54442D18, ptr null)
+// CHECK: call void @__quantum__qis__x__body(ptr null)
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FF921FB54442D18, ptr null)
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FE921FB54442D18, ptr null)
+// CHECK: call void @__quantum__qis__x__body(ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x400921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__x__body(ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FF921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__cz__body(ptr null, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x400921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__x__body(ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__rz__body(double 0x3FF921FB54442D18, ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__qis__mz__body(ptr null, ptr null)
+// CHECK: call void @__quantum__qis__mz__body(ptr inttoptr (i64 1 to ptr), ptr inttoptr (i64 1 to ptr))
+// CHECK: call void @__quantum__rt__array_record_output(i64 2, ptr @cstr.61727261793C6931207820323E00)
+// CHECK: call void @__quantum__rt__result_record_output(ptr null, ptr @cstr.72303030303000)
+// CHECK: call void @__quantum__rt__result_record_output(ptr inttoptr (i64 1 to ptr), ptr @cstr.72303030303100)

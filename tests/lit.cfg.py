@@ -11,9 +11,8 @@ config.suffixes = ['.qke', '.mlir', '.cpp', '.test']
 config.test_source_root = os.path.dirname(__file__)
 repo_root = os.path.dirname(config.test_source_root)
 
-
 config.substitutions.append(
-    ('%mqss-cudaq-opt', '/root/.local/bin/mqss-cudaq-opt')
+    ('%mqss-opt', '/root/.local/bin/mqss-opt')
 )
 
 config.substitutions.append(
@@ -21,17 +20,13 @@ config.substitutions.append(
 )
 
 config.substitutions.append(
-    ('%cudaq-quake', os.path.join(repo_root, '_deps/mqss-cudaq/cudaq/bin/cudaq-quake '))
+    ('%cudaq-quake', os.path.join(repo_root, 'build/_deps/cudaq/bin/cudaq-quake '))
 )
 
 config.substitutions.append(
-    ('%cudaq-opt', os.path.join(repo_root, '_deps/mqss-cudaq/cudaq/bin/cudaq-opt '))
+    ('%cudaq-opt', os.path.join(repo_root, 'build/_deps/cudaq/bin/cudaq-opt '))
 )
 
 config.substitutions.append(
-    ('%mqss-catalyst-opt', '/root/.local/bin/mqss-catalyst-opt')
-)
-
-config.substitutions.append(
-    ('FileCheck', os.path.join(repo_root, '_deps/mqss-catalyst/LLVM-21.1.8-toolchain/bin/FileCheck'))
+    ('FileCheck', os.path.join(repo_root, 'build/_deps/LLVM-22.1.0-toolchain/bin/FileCheck'))
 )

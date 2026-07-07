@@ -42,17 +42,19 @@ The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](ht
 
 ## Key features
 
-1. __Representation-Agnostic Optimizations__: Apply the same passes across multiple quantum IRs.
+1. __Representation-Agnostic Optimizations__: Apply the same passes across multiple MLIR dialects.
 
 2. __Cross-framework support__: Works with ecosystems like cudaq-quantum and Catalyst.
 
-3. __Write once, reuse everywhere__: Share optimization logic across compiler representations.
+3. __Write once, reuse everywhere__: Shared optimization logic across compiler representations.
 
 4. __Built to extend__: Add new passes without redesigning the framework.
 
-5. __Native-IR interoperability__: Connect frameworks without replacing their IRs.
+5. __Native-IR interoperability__: Connect frameworks without replacing their IRs/dialects.
 
-6. __Qubit Mapping__: A representation-agnostic logical to physical qubit mapping pass that uses [QDMI](https://github.com/Munich-Quantum-Software-Stack/QDMI) and [MQT-QMAP](https://github.com/munich-quantum-toolkit/qmap)
+6. __Qubit Mapping__: A representation-agnostic logical/algorithmic to physical qubit mapping pass that uses [QDMI](https://github.com/Munich-Quantum-Software-Stack/QDMI) and [MQT-QMAP](https://github.com/munich-quantum-toolkit/qmap)
+
+7. __Transpilation__: A transpilation pass to decompose to the native-gate set of target quantum devices (currently only for cudaq-quake).
 
 Note: Please refer to the [FAQs](https://github.com/akshay9594/MQSS-Passes-Suite/blob/catalyst-integration/docs/faq.md) section for more details on the passes, MLIR, MQSS and other related questions.
 
@@ -61,7 +63,6 @@ Note: Please refer to the [FAQs](https://github.com/akshay9594/MQSS-Passes-Suite
 ### System Requirements
 
 - OS : Linux (tested on Ubuntu 22.04)
-  - Use docker container if on a different OS
 - Architecture : aarch64, X86
 
 ### Development Environment
@@ -74,9 +75,9 @@ Note: Please refer to the [FAQs](https://github.com/akshay9594/MQSS-Passes-Suite
 
 Note: These are automatically downloaded and installed by the build scripts
 
-- Clang+LLVM : 16.0.6 toolchain and 21.8 toolchain
+- LLVM  : 22.1.0 toolchain
 - CMake : 3.29...4.2
-- cudaq-quantum toolchain : 0.14.0
+- cudaq-quantum toolchain : 0.15.0
 - pennylane-catalyst toolchain: 0.14.1
 - python : 3.11
 - C++ : 17...20
@@ -119,7 +120,7 @@ make setup-env
 ```
 
 Next, we need to set paths to the directories where the executables are generated
-i.e. ```~/.local/bin``` as well as path to ```cudaq-opt```. RUN command:
+i.e. ```~/.local/bin``` as well as path to ```cudaq tools```. RUN command:
 
 ```bash
 eval "$(make set-target-paths)"
@@ -131,9 +132,8 @@ Then, configure the build by running the command:
 make build
 ```
 
-This invokes two scripts ```scripts/build_cudaq.sh``` and ```scripts/build_catalyst.sh```.
-These scripts download and install all the required dependencies for building the targets
-(```mqss-cudaq-opt``` and ```mqss-catalyst-opt```). These scripts contain the required
+This invokes the scripts ```scripts/build.sh``` which downloads and installs all the
+required dependencies for building the target ```mqss-opt```. This script contains the required
 cmake commands to configure the project.
 
 Finally, build the targets by running:
@@ -142,17 +142,17 @@ Finally, build the targets by running:
 make target
 ```
 
-This builds the targets using ```ninja``` and if the build succeeds,
-generates the executables ```mqss-catalyst-opt```, ```mqss-cudaq-opt```.
-You can change the installation directory by modifying the ```INSTALL_DIR```
-variable within the  MakeFile.
+This builds the targets using the ```ninja``` build system and if the build succeeds,
+generates the executable ```mqss-opt```. You can change the installation directory by
+modifying the ```INSTALL_DIR``` variable within the  MakeFile.
 
 - If you make any changes to the source
-code i.e. to the C++ files within ```MQSS-Passes-Suite/lib/*```, then just rerun the ```make target```
+code i.e. to the C++ files within ```lib/*```, then just rerun the ```make target```
 command.
 
-- If any changes are made to the build scripts i.e. ```build_catalyst.sh``` or ```build_cudaq.sh``` or
-to the CMakeLists then do ```make build``` first and then ```make target```.
+- If any changes are made to the build script i.e. ```build.sh``` or
+to the CMakeLists or to the files within ```include/``` then do
+```make build``` first and then ```make target```.
 
 ## Testing the installation
 
@@ -165,31 +165,8 @@ For mlir dialect-level testing (faster), RUN:
 make test-dialects
 ```
 
-For slower end-to-end testing (input: c++/python code, output: optimized mlir-dialect), RUN:
-
-```bash
-make test-all
-```
-
-This command will run all the available test cases in the ```tests/dialects``` and
-```tests/code``` directories. There are a total of 82 test cases currently, with
-more added regularly.
-
-## Citation
-
-```bibtex
-@INPROCEEDINGS{letrasMQSSCI2025,
-  author={Letras, Martín and Echavarria, Jorge and Farooqi, Muhammad Nufail and De Pascale, Marco and Vera, Mario Hernández and Tornow, Nathaniel and Schulz, Laura and Schulz, Martin},
-  booktitle={2025 IEEE International Conference on Quantum Computing and Engineering (QCE)},
-  title={Towards a Unified Multi-Target Mlir-Based Compiler: A Heterogeneous Compilation Framework for High-Performance and Quantum Computing Integration},
-  year={2025},
-  volume={02},
-  number={},
-  pages={28-33},
-  keywords={Performance evaluation;Quantum computing;Runtime;High performance computing;Full stack;Graphics processing units;Optimization;Quantum Compilation;Intermediate Representation (IR);MLIR;HPCQC Integration},
-  doi={10.1109/QCE65121.2025.10288}
-  }
-```
+This command will run all the available test cases in the ```tests/dialects```directory.
+There are a total of about 60 test cases currently, with more added regularly.
 
 ## Contact
 

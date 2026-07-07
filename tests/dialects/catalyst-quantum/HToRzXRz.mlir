@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonDecompositionPass=mode=HToRzXRz  2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonDecompositionPass=mode=HToRzXRz  2>&1 | FileCheck %s
 
 module @circuit_HToRzXRz {
   func.func public @circuit_HToRzXRz_0() -> (tensor<i1>, tensor<i1>, tensor<i1>, tensor<i1>) attributes {diff_method = "adjoint", llvm.linkage = #llvm.linkage<internal>, qnode} {

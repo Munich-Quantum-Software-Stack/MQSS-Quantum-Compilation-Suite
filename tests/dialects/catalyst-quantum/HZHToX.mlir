@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonReductionPass=mode=HZHToX --canonicalize  2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonReductionPass=mode=HZHToX --canonicalize  2>&1 | FileCheck %s
 
 module @circuit_HZHToX {
   func.func public @jit_circuit_HZHToX() -> (tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {

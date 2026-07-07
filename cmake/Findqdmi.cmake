@@ -4,7 +4,7 @@ include(FetchContent)
 FetchContent_Declare(
   qdmi
   GIT_REPOSITORY https://github.com/Munich-Quantum-Software-Stack/QDMI.git
-  GIT_TAG develop)
+  GIT_TAG v1.3.2)
 
 set(BUILD_QDMI_EXAMPLES ON  CACHE BOOL "" FORCE)
 set(BUILD_QDMI_TESTS    OFF CACHE BOOL "" FORCE)

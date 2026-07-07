@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonSwitchPass=mode=HXYZtoXYZH  2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonSwitchPass=mode=HXYZtoXYZH  2>&1 | FileCheck %s
 
 module @module_HAndXYZSwitch {
   func.func public @jit_module_HAndXYZSwitch() -> (tensor<4xi64>, tensor<4xi64>, tensor<4xi64>, tensor<4xi64>, tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {

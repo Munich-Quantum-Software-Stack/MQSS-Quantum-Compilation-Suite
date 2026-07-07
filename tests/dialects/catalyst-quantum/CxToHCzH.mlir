@@ -1,6 +1,6 @@
 
 
-// RUN: %mqss-catalyst-opt %s --CommonDecompositionPass=mode=CxToHCzH  2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonDecompositionPass=mode=CxToHCzH  2>&1 | FileCheck %s
 
 module @circuit_CxToHCzH {
   func.func public @jit_circuit_CxToHCzH() -> (tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {

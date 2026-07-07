@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonDecompositionPass=mode=CHToCX 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonDecompositionPass=mode=CHToCX 2>&1 | FileCheck %s
 
   func.func public @circuit_test_0() ->  !quantum.bit attributes {diff_method = "parameter-shift", llvm.linkage = #llvm.linkage<internal>, qnode} {
     %c1000_i64 = arith.constant 1000 : i64

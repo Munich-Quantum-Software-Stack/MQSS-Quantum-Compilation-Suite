@@ -27,7 +27,7 @@
         "llvm-vs-code-extensions.vscode-clangd"
       ],
       "settings": {
-        "clangd.path": "/usr/local/bin/clangd",
+        "clangd.path": "/usr/bin/clangd",
         "clangd.arguments": [
           "--compile-commands-dir=/workspaces/MQSS-Passes-Suite/build"
         ],
@@ -82,6 +82,5 @@
         "doxdocgen.generic.order": ["brief", "tparam", "param", "return", "exception"]
       }
     }
-  },
-"postCreateCommand": "make -C /workspaces/MQSS-Passes-Suite setup-env && echo 'source $(VENV_DIR)/bin/activate' >> ~/.bashrc && echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.bashrc && echo 'export PATH=\"/usr/local/bin:$PATH\"' >> ~/.bashrc && echo 'export PATH=\"/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin:$PATH\"' >> ~/.bashrc"
+  }
 }
