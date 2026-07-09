@@ -5,7 +5,6 @@ file(GLOB CATALYST_PASSES "Transforms/*.cpp")
 
 set(PASS_ANALYSIS_SOURCES
   Analysis/PrintCatalystGates.cpp
-  ${MQSS_COMMON}/QDMI/Driver.cpp
   ${COMMON_PASSES}
   ${CATALYST_PASSES}
 )

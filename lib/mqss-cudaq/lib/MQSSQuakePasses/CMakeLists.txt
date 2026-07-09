@@ -6,7 +6,6 @@ file(GLOB CUDAQ_PASSES "Transforms/*.cpp")
 
 set(PASS_ANALYSIS_SOURCES
   Analysis/PrintQuakeGates.cpp
-  ${MQSS_COMMON}/QDMI/Driver.cpp
   ${COMMON_PASSES}
   ${CUDAQ_PASSES}
 )
@@ -41,14 +40,11 @@ set_target_properties(MLIRPasses PROPERTIES
 )
 
 if(BUILD_CUDAQ)
-  #set(QDMI_CONF_PATH "${MQSS_SRC_DIR}/config/qdmi.conf")
-  
+
   target_compile_definitions(MLIRPasses PRIVATE
     BUILD_CUDAQ_ENABLED
     ${MLIR_DEFINITIONS}
     ${LLVM_DEFINITIONS}
-    QDMI_DEVICE_PATH="$<TARGET_FILE:cxx-qdmi-device>"
-    #QDMI_CONF_PATH="${_qdmi_conf_path}"
   )
   
   if(MQSS_ENABLE_DEBUG)
@@ -56,8 +52,6 @@ if(BUILD_CUDAQ)
       MQSS_ENABLE_DEBUG
       ${MLIR_DEFINITIONS}
       ${LLVM_DEFINITIONS}
-      QDMI_DEVICE_PATH="$<TARGET_FILE:cxx-qdmi-device>"
-      #QDMI_CONF_PATH="${_qdmi_conf_path}"
     )
   endif()
   

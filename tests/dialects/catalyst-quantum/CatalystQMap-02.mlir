@@ -1,5 +1,5 @@
 
-// RUN: %mqss-catalyst-opt %s --CommonMappingPass 2>&1  | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
+// RUN: %mqss-catalyst-opt %s --CommonMappingPass=qdmi=cxx_qdmi.conf 2>&1  | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
 
 func.func @circuit_qmap2() attributes {qnode} {
   %cst   = arith.constant 2.250000e+00 : f64
@@ -39,6 +39,12 @@ func.func @circuit_qmap2() attributes {qnode} {
   func.return
 }
 
+// CHECK: %0 = quantum.alloc( 5) : !quantum.reg
+// CHECK: %1 = quantum.extract %0[ 3] : !quantum.reg -> !quantum.bit
+// CHECK: %2 = quantum.extract %0[ 4] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits:2 = quantum.custom "CNOT"() %2, %1 : !quantum.bit, !quantum.bit
+// CHECK: %3 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %4 = quantum.extract %0[ 2] : !quantum.reg -> !quantum.bit
 // CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %4, %3 : !quantum.bit, !quantum.bit
 // CHECK: %5 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
 // CHECK: %6 = quantum.extract %0[ 4] : !quantum.reg -> !quantum.bit
@@ -49,3 +55,11 @@ func.func @circuit_qmap2() attributes {qnode} {
 // CHECK: %9 = quantum.extract %0[ 3] : !quantum.reg -> !quantum.bit
 // CHECK: %cst = arith.constant 3.141600e+00 : f64
 // CHECK: %out_qubits_3 = quantum.custom "RY"(%cst) %9 : !quantum.bit
+// CHECK: %10 = quantum.extract %0[ 2] : !quantum.reg -> !quantum.bit
+// CHECK: %cst_4 = arith.constant 2.250000e+00 : f64
+// CHECK: %out_qubits_5 = quantum.custom "RZ"(%cst_4) %10 : !quantum.bit
+// CHECK: %11 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %cst_6 = arith.constant 1.500000e+00 : f64
+// CHECK: %out_qubits_7 = quantum.custom "RX"(%cst_6) %11 : !quantum.bit
+// CHECK: %12 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_8 = quantum.custom "T"() %12 : !quantum.bit
