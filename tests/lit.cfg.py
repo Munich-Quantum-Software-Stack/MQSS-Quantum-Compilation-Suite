@@ -9,6 +9,7 @@ config.test_format = lit.formats.ShTest()
 config.suffixes = ['.qke', '.mlir', '.cpp', '.test']
 
 config.test_source_root = os.path.dirname(__file__)
+repo_root = os.path.dirname(config.test_source_root)
 
 
 config.substitutions.append(
@@ -20,11 +21,11 @@ config.substitutions.append(
 )
 
 config.substitutions.append(
-    ('%cudaq-quake', '/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin/cudaq-quake ')
+    ('%cudaq-quake', os.path.join(repo_root, '_deps/mqss-cudaq/cudaq/bin/cudaq-quake '))
 )
 
 config.substitutions.append(
-    ('%cudaq-opt', '/workspaces/MQSS-Passes-Suite/_deps/mqss-cudaq/cudaq/bin/cudaq-opt ')
+    ('%cudaq-opt', os.path.join(repo_root, '_deps/mqss-cudaq/cudaq/bin/cudaq-opt '))
 )
 
 config.substitutions.append(
@@ -32,5 +33,5 @@ config.substitutions.append(
 )
 
 config.substitutions.append(
-    ('FileCheck', '/workspaces/MQSS-Passes-Suite/_deps/mqss-catalyst/LLVM-21.1.8-toolchain/bin/FileCheck')
+    ('FileCheck', os.path.join(repo_root, '_deps/mqss-catalyst/LLVM-21.1.8-toolchain/bin/FileCheck'))
 )
