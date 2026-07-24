@@ -1,18 +1,28 @@
-// Copyright 2022-2023 Xanadu Quantum Technologies Inc.
+/* This code and any associated documentation is provided "as is"
 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+Copyright 2024 Munich Quantum Software Stack Project
 
-//     http://www.apache.org/licenses/LICENSE-2.0
+Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
+"License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
 
-#include "Passes/transforms/Error.h"
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+*************************************************************************
+  author Akshay Bhosale
+  co-author: Claude AI Sonnet/Opus
+  date   August 2026
+  version 2.0.0
+*************************************************************************/
+
+#include "Passes/Transforms/Error.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
@@ -21,8 +31,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "Passes/transforms/Transforms.h"
-#include "Passes/transforms/PassIncludes.h"
+#include "Passes/Transforms/PassIncludes.h"
 
 #include "Quantum/IR/QuantumOps.h"
 #include "Passes/CodeGen/Patterns.h"
@@ -38,7 +47,7 @@ namespace quantum {
 
 #define GEN_PASS_DECL_QUANTUMCONVERSIONPASS
 #define GEN_PASS_DEF_QUANTUMCONVERSIONPASS
-#include "Passes/transforms/Transforms.h.inc"
+#include "Passes/Transforms/Transforms.h.inc"
 
 struct QIRTypeConverter : public LLVMTypeConverter {
 

@@ -1,0 +1,65 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+  schedule:
+    - cron: '30 2 * * 1'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          docker system prune -af
+
+      - name: Download CodeQL CLI
+        run: |
+          mkdir -p codeql-home
+          # check https://github.com/github/codeql-action/releases for the current bundle tag
+          curl -sSL -o codeql.tar.gz \
+            https://github.com/github/codeql-action/releases/latest/download/codeql-bundle-linux64.tar.gz
+          tar -xzf codeql.tar.gz -C codeql-home
+
+      - name: Build Docker image
+        run: |
+          docker build --build-arg CMAKE_ARCH=x86_64 \
+            --progress=plain -t mqss-pass-dev -f .devcontainer/Dockerfile .
+
+      - name: Build + CodeQL scan
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
+            -w /workspaces/MQSS-Passes-Suite \
+            mqss-pass-dev \
+            bash -lc '
+              export PATH="/workspaces/MQSS-Passes-Suite/codeql-home/codeql:$PATH"
+              codeql database create /tmp/codeql-db \
+                --language=cpp \
+                --source-root=. \
+                --command="bash -lc \"make build && make target\""
+              codeql database analyze /tmp/codeql-db \
+                --format=sarif-latest \
+                --output=codeql-results.sarif
+            '
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: codeql-results.sarif

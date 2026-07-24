@@ -12,11 +12,11 @@ config.test_source_root = os.path.dirname(__file__)
 repo_root = os.path.dirname(config.test_source_root)
 
 config.substitutions.append(
-    ('%mqss-opt', '/root/.local/bin/mqss-opt')
+    ('%mqss-opt', os.path.join(repo_root, 'build/bin/mqss-opt'))
 )
 
 config.substitutions.append(
-    ('%mqss-cc', '/root/.local/bin/mqss-cc')
+    ('%mqss-cc', os.path.join(repo_root, 'build/bin/mqss-cc'))
 )
 
 config.substitutions.append(

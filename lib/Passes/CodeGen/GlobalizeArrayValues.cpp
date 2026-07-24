@@ -8,8 +8,7 @@
 
 
 #include "cudaq/Optimizer/Builder/Intrinsics.h"
-#include "Passes/transforms/Transforms.h"
-#include "Passes/transforms/PassIncludes.h"
+#include "Passes/Transforms/PassIncludes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Dominance.h"
 #include "mlir/IR/PatternMatch.h"

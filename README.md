@@ -1,11 +1,11 @@
-<!----------------------------------------------------------------------------
+<!--------------------------------------------------------------------------------------------------
 Copyright 2024 Munich Quantum Software Stack Project
 
 Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
 "License"); you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -14,7 +14,7 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
----------------------------------------------------------------------------->
+----------------------------------------------------------------------------------------------------->
 
 <div align="center">
   <picture>
@@ -112,21 +112,7 @@ Note: The project root is at ```/workspaces/MQSS-Passes-Suite```
 
 ## Building and Installing the project
 
-The first thing to do is to setup a virtual environment and install
-python3.11 into it. We also need to install cmake. RUN:
-
-```bash
-make setup-env
-```
-
-Next, we need to set paths to the directories where the executables are generated
-i.e. ```~/.local/bin``` as well as path to ```cudaq tools```. RUN command:
-
-```bash
-eval "$(make set-target-paths)"
-```
-
-Then, configure the build by running the command:
+First, we need to configure the build via ```cmake``` by running the command:
 
 ```bash
 make build
@@ -140,6 +126,13 @@ Finally, build the targets by running:
 
 ```bash
 make target
+```
+
+Next, we need to set paths to the directories where the executables are generated
+i.e. ```~/.local/bin```. RUN command:
+
+```bash
+eval "$(make set-target-paths)"
 ```
 
 This builds the targets using the ```ninja``` build system and if the build succeeds,

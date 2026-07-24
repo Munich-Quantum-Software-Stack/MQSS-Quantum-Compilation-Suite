@@ -1,13 +1,15 @@
 
 ################ User Settings#######################
 
-NUM_JOBS = 2
+NUM_JOBS = 4
 
-INSTALL_DIR ?= $(HOME)/.local/bin
+BUILD_DIR=$(CURDIR)/build
+
+INSTALL_DIR ?= $(BUILD_DIR)/bin
 
 INSTALL_PATH = --install-dir ${INSTALL_DIR}
 
-DEBUG_FLAG = --debug		# --debug (if you want pass debug info)
+DEBUG_FLAG =		# --debug (for pass debug info)
 
 ################# Paths to Dependencies ###############
 
@@ -21,9 +23,18 @@ RESOLVER_SCRIPT=scripts/resolve_python_input.py
 
 ##################### Key Commands ###################
 
-.PHONY: mqss-opt all
+.PHONY: mqss-opt setup-env
 
-frontend:
+setup-env: 
+	@./scripts/setup-env.sh
+
+front-end-paths:
+	echo 'export PATH="$(DEPS_DIR)/cudaq/bin:$$PATH"'
+	echo 'source $(VENV_DIR)/bin/activate'
+	echo 'export PATH="$(INSTALL_DIR):$$PATH"'
+	echo 'export PATH="/usr/local/bin:$$PATH"'
+
+frontend: setup-env
 	@./scripts/download_toolchains.sh
 	@ln -sf $(abspath $(RESOLVER_SCRIPT)) $(INSTALL_DIR)/resolve_python_input.py
 	@ln -sf $(abspath $(SRC_SCRIPT)) $(INSTALL_DIR)/mqss-cc
@@ -39,9 +50,6 @@ set-target-paths:
 	echo 'export PATH="$(INSTALL_DIR):$$PATH"'
 	echo 'export PATH="/usr/local/bin:$$PATH"'
 
-setup-env: 
-	@./scripts/setup-env.sh
-
 target:
 	@ninja -j $(NUM_JOBS) -C $(CURDIR)/build
 
@@ -50,7 +58,6 @@ test-dialects:
 	@ninja -C $(CURDIR)/build check-mqss
 
 test-all:
-	@ninja -C $(CURDIR)/build check-mqss
 	@ninja -C $(CURDIR)/build check-mqss-code
 	
 build: mqss-opt

@@ -1,6 +1,6 @@
 
 
-add_mlir_library(MLIRPasses
+add_mlir_library(MQSSCIPasses
   SHARED
   Transforms/CommonCNOTReversalPass.cpp
   Transforms/CommonGateCancellationPass.cpp
@@ -67,25 +67,25 @@ add_mlir_library(MLIRPasses
     MLIRTargetLLVMIRExport
 )
 
-set_target_properties(MLIRPasses PROPERTIES
+set_target_properties(MQSSCIPasses PROPERTIES
   BUILD_RPATH "$<TARGET_FILE_DIR:qdmi::example_driver>"
   INSTALL_RPATH "$<TARGET_FILE_DIR:qdmi::example_driver>"
 )
 
-target_compile_definitions(MLIRPasses PRIVATE
+target_compile_definitions(MQSSCIPasses PRIVATE
   ${MLIR_DEFINITIONS}
   ${LLVM_DEFINITIONS}
 )
   
 if(MQSS_ENABLE_DEBUG)
-    target_compile_definitions(MLIRPasses PRIVATE
+    target_compile_definitions(MQSSCIPasses PRIVATE
       MQSS_ENABLE_DEBUG
     )
 endif()
-target_compile_options(MLIRPasses PRIVATE -fexceptions)
+target_compile_options(MQSSCIPasses PRIVATE -fexceptions)
 
 
-target_include_directories(MLIRPasses
+target_include_directories(MQSSCIPasses
   PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_BINARY_DIR}/include
