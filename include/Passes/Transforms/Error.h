@@ -24,19 +24,21 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
-#include "mlir/Conversion/LLVMCommon/TypeConverter.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/PatternMatch.h"
-#include "mlir/Transforms/DialectConversion.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
+#include "mlir/IR/Diagnostics.h"
+#include <cstdlib>
 
-#include "llvm/ADT/StringMap.h"
-#include "llvm/ADT/StringSet.h"
-#include "llvm/Support/AllocatorBase.h"
+namespace mqss::opt {
 
-namespace catalyst {
-namespace quantum {
-void populateQIRConversionPatterns(mlir::TypeConverter &,
-                                   mlir::RewritePatternSet &, bool);
-} // namespace quantum
-} // namespace catalyst
+/// The emitFatalError() function is used when the compiler reaches a point that
+/// it cannot continue and produce valid output code. This is very much like an
+/// assertion, but it will not be removed if assertions are disabled.
+[[noreturn]] inline void MQSSemitFatalError(mlir::Location loc,
+                                        const llvm::Twine &message) {
+  mlir::emitError(loc, message);
+  llvm::report_fatal_error("fatal error, aborting.");
+}
+
+} // namespace mqss

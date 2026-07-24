@@ -120,6 +120,8 @@ set_target_properties(mqss-cudaq-headers PROPERTIES FOLDER "Misc")
 add_subdirectory(include)
 add_subdirectory(lib)
 
+# Adding the Passes as an external library
+add_library(mqss-ci::mqss-ci ALIAS MQSSCIPasses)
 
 # Define the executable and its source file
 add_executable(mqss-opt mqss-cc.cpp)
@@ -154,7 +156,7 @@ target_link_libraries(mqss-opt
     MLIRFuncDialect
     MLIRFuncInlinerExtension
     MLIRArithDialect
-    MLIRPasses
+    MQSSCIPasses
     CUDAQ::CodeGen
     MLIRTransforms
     MQT::CoreIR

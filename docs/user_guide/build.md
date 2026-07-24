@@ -1,11 +1,11 @@
-<!----------------------------------------------------------------------------
+<!--------------------------------------------------------------------------------------------------
 Copyright 2024 Munich Quantum Software Stack Project
 
 Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
 "License"); you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -14,7 +14,7 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
----------------------------------------------------------------------------->
+----------------------------------------------------------------------------------------------------->
 
 # Getting Started
 
@@ -129,3 +129,42 @@ make test-dialects
 
 This command will run all the available test cases in the ```tests/dialects``` directory.
 There are a total of 60 test cases currently, with more added regularly.
+
+## Source-level Compilation
+
+If C++/Python i.e. Source level compilation and testing is intended follow the following steps:
+
+### Downloading front-end dependencies
+
+Run the following command
+
+```bash
+make frontend
+```
+
+This will setup a python virtual environment, after which, the script ```download_toolchains.sh```
+is executed. This script downloads and installs: ```CUDA-Q``` and ```Catalyst``` toolchains.
+We need ```cudaq-quake``` (translates C++ to Quake) and the ```Catalyst-qjit``` (translates
+python to catalyst-quantum) tools. After the installation is complete, RUN the COMMAND:
+
+```bash
+eval "$(make front-end-paths)"
+```
+
+This will activate the virtual environment and add ```cudaq-quake``` to the ```$PATH``` environment variable.
+Check using:
+
+```bash
+which cudaq-quake
+```
+
+### Testing the Front-end Compilation pipeline
+
+The testing for the frontend involves the script ```mqss-cc```. Check that is also
+on the ```$PATH``` environment variable. After this, RUN the command:
+
+```bash
+make test-all
+```
+
+This runs the test-cases within ```tests/code```.

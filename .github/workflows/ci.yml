@@ -37,13 +37,9 @@ jobs:
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
-            -v ${HOME}/.local/bin:/root/.local/bin \
             -w /workspaces/MQSS-Passes-Suite \
             mqss-pass-dev \
             bash -lc '
-              make setup-env
-              export PATH="${HOME}/.local/bin:$PATH"
-              export PATH="/usr/local/bin:$PATH"
               make build
               make target
             '
@@ -52,11 +48,9 @@ jobs:
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
-            -v ${HOME}/.local/bin:/root/.local/bin \
             -w /workspaces/MQSS-Passes-Suite \
             mqss-pass-dev \
             bash -lc ' 
-            export PATH="${HOME}/.local/bin:$PATH"
-            export PATH="/usr/local/bin:$PATH"
+            export PATH="/workspaces/MQSS-Passes-Suite/build/bin:$PATH"
             which mqss-opt
             make test-dialects '

@@ -6,7 +6,7 @@ Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
 "License"); you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -17,15 +17,16 @@ the License.
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************
   author Akshay Bhosale
-  date   February 2026
-  version 1.0
+  co-author: Claude AI Sonnet/Opus
+  date   August 2026
+  version 2.0.0
 *************************************************************************/
 
 #include "Quantum/IR/QuantumDialect.h"
 #include "cudaq/Optimizer/Dialect/CC/CCDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
-#include "Passes/transforms/Pipelines.h"
-#include "Passes/transforms/Transforms.h"
+#include "Passes/Transforms/Pipelines.h"
+#include "Passes/Transforms/Transforms.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
