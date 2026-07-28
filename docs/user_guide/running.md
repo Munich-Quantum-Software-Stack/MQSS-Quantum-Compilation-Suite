@@ -15,19 +15,20 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ----------------------------------------------------------------------------------------------------->
+
 # Running test circuits
 
 ## Using mqss-opt
 
-The binary ```mqss-opt``` is used to invoke passes on input MLIR dialects.
-To check the list of available passes Run:
+The binary `mqss-opt` is used to invoke passes on input MLIR dialects. To check the list of
+available passes Run:
 
 ```sh
 mqss-opt -h
 ```
 
-Make sure ```mqss-opt``` is on the```$PATH``` environment variable of your shell.
-If it isn't Run: ```eval "$(make set-target-paths)"```.
+Make sure `mqss-opt` is on the`$PATH` environment variable of your shell. If it isn't Run:
+`eval "$(make set-target-paths)"`.
 
 ### MLIR dialect input (quake or catalyst-quantum)
 
@@ -58,31 +59,29 @@ dialect is saved as bell_state.qke):
 mqss-opt bell-state.qke --cse --canonicalize --BasisConversionPass=gates=phased_rx,cz
 ```
 
-The output is the same input ```bell-state.qke``` dialect but with transformations. In this case,
-the hadamard and CNOT gates in the input dialect ```quake.h``` and ```quake.x``` will be decomposed
-to the ```phased_rx``` and ```cz``` gates. Similarly, one can invoke passes on the catalyst-quantum
-mlir dialect by just replacing the quake dialect input with the catalyst-quantum input.
+The output is the same input `bell-state.qke` dialect but with transformations. In this case, the
+hadamard and CNOT gates in the input dialect `quake.h` and `quake.x` will be decomposed to the
+`phased_rx` and `cz` gates. Similarly, one can invoke passes on the catalyst-quantum mlir dialect by
+just replacing the quake dialect input with the catalyst-quantum input.
 
 ## Using mqss-cc script (Frontend test)
 
-Note: Before running a Frontend test, make sure you follow the installation instructions
-      within [build](build.md).</br>
-The driver script for running example circuits (in c++/python) is ```mqss-cc```.
-After the targets are generated this script is installed within the ```INSTALL_DIR```
-and should be on the ```$PATH``` environment variable fo your bash shell.
-Check by running the command:
+Note: Before running a Frontend test, make sure you follow the installation instructions within
+[build](build.md).</br> The driver script for running example circuits (in c++/python) is `mqss-cc`.
+After the targets are generated this script is installed within the `INSTALL_DIR` and should be on
+the `$PATH` environment variable for your bash shell. Check by running the command:
 
 ```sh
 $mqss-cc -h
 ```
 
-If nothing prints, run the command ```eval "$(make set-target-paths)"``` from the ```root```
-directory once again.
+If nothing prints, run the command `eval "$(make set-target-paths)"` from the `root` directory once
+again.
 
 ### C++ test circuits
 
-The compilation suite accepts c++ circuits written using [cudaq](https://github.com/NVIDIA/cuda-quantum).
-Following is an example:
+The compilation suite accepts c++ circuits written using
+[cudaq](https://github.com/NVIDIA/cuda-quantum). Following is an example:
 
 ```c++
 #include <cudaq.h>
@@ -119,22 +118,22 @@ int main() {
 
 ```
 
-To run the above test circuit using ```mqss-cc``` use the following command:
+To run the above test circuit using `mqss-cc` use the following command:
 
 ```bash
 mqss-cc test.cpp --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 ```
 
-The ```Commutation Optimization pass``` is applied to commute ```CNOT and RX``` gates.
-The output in this case will be QIR since the ```emit-qir``` flag is enabled.
+The `Commutation Optimization pass` is applied to commute `CNOT and RX` gates. The output in this
+case will be QIR since the `emit-qir` flag is enabled.
 
-Note: One can use cudaq to write quantum circuits in python. But this is not supported
-      yet within ```mqss-cc```.
+Note: One can use cudaq to write quantum circuits in python. But this is not supported yet within
+`mqss-cc`.
 
 ### Python test circuits
 
-The compilation suite accepts python circuits written using [catalyst](https://github.com/PennyLaneAI/catalyst).
-Following is an example:
+The compilation suite accepts python circuits written using
+[catalyst](https://github.com/PennyLaneAI/catalyst). Following is an example:
 
 ```python
 
@@ -167,5 +166,5 @@ mqss-cc test.py --function circuit \
            --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 ```
 
-Do Not forget to mention the function to compile afer the ```--function``` flag.
-Refer to [Passes](passes.md) for a list of all available MLIR passes.
+Do Not forget to mention the function to compile after the `--function` flag. Refer to
+[Passes](passes.md) for a list of all available MLIR passes.
