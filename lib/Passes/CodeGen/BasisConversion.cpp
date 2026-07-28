@@ -332,8 +332,9 @@ public:
       if (!changed)
         return;
       if (round == maxRounds - 1)
-        mlir::emitWarning(kernel.getLoc()) << "BasisConversion: gave up after " << maxRounds
-                             << " rounds without reaching a fixed point";
+        mlir::emitWarning(kernel.getLoc())
+            << "BasisConversion: gave up after " << maxRounds
+            << " rounds without reaching a fixed point";
     }
   }
 };

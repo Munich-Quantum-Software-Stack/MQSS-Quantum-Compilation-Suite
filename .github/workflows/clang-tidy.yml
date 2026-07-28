@@ -1,23 +1,18 @@
-name: CI
-
+name: clang-tidy
 
 on:
-  push:
-    branches:
-      - '**'
   pull_request:
-    branches: [develop]
+    branches: [ develop ]
 
 jobs:
-  build-and-test:
+  clang-tidy:
     runs-on: ubuntu-latest
     steps:
-
-      # Step 1: Checkout repo (gives us the Dockerfile)
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           submodules: recursive
+          fetch-depth: 0   # need history to diff against the base branch
 
       - name: Free disk space
         run: |
@@ -27,13 +22,12 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache
           docker system prune -af
 
-      # Step 2: Build Docker image using relative path
       - name: Build Docker image
         run: |
           docker build --build-arg CMAKE_ARCH=x86_64 \
-           --progress=plain -t mqss-pass-dev -f .devcontainer/Dockerfile .
+            --progress=plain -t mqss-pass-dev -f .devcontainer/Dockerfile .
 
-      - name: Build
+      - name: Configure build (generate compile_commands.json)
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
@@ -41,16 +35,19 @@ jobs:
             mqss-pass-dev \
             bash -lc '
               make build
-              make target
             '
 
-      - name: Run Tests
+      - name: Run clang-tidy on changed lines
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
+            -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
             -w /workspaces/MQSS-Passes-Suite \
             mqss-pass-dev \
-            bash -lc ' 
-            export PATH="/workspaces/MQSS-Passes-Suite/build/bin:$PATH"
-            which mqss-opt
-            make test-dialects '
+            bash -lc '
+              git fetch origin ${{ github.base_ref }} --depth=1
+              git diff -U0 origin/${{ github.base_ref }} -- "*.cpp" "*.cc" "*.h" "*.hpp" \
+                | python3 .devcontainer/clang-tidy-diff.py -p1 -path build -j"$(nproc)" -quiet \
+                | tee clang-tidy-report.txt
+              # fail the job only if clang-tidy actually reported something
+              ! grep -q "warning:\|error:" clang-tidy-report.txt
+            '
