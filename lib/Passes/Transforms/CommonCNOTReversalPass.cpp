@@ -22,7 +22,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
-
 #include "Passes/Transforms/PassUtils.h"
 
 using namespace mlir;
@@ -36,11 +35,10 @@ namespace mqss::opt {
 
 namespace {
 
-
-class CommonCNOTReverse : public mqss_backend::impl::CommonCNOTReversePassBase<CommonCNOTReverse> {
+class CommonCNOTReverse
+    : public mqss_backend::impl::CommonCNOTReversePassBase<CommonCNOTReverse> {
 
 public:
-
   // Default constructor (required for pass registry)
   CommonCNOTReverse() = default;
 

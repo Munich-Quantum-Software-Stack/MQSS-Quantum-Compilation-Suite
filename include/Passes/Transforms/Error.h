@@ -24,10 +24,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
+#include "mlir/IR/Diagnostics.h"
+
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
-#include "mlir/IR/Diagnostics.h"
+
 #include <cstdlib>
 
 namespace mqss::opt {
@@ -36,9 +38,9 @@ namespace mqss::opt {
 /// it cannot continue and produce valid output code. This is very much like an
 /// assertion, but it will not be removed if assertions are disabled.
 [[noreturn]] inline void MQSSemitFatalError(mlir::Location loc,
-                                        const llvm::Twine &message) {
+                                            const llvm::Twine &message) {
   mlir::emitError(loc, message);
   llvm::report_fatal_error("fatal error, aborting.");
 }
 
-} // namespace mqss
+} // namespace mqss::opt

@@ -26,12 +26,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <cmath>
 
 namespace mqss::opt {
-  
+
 #define GEN_PASS_DEF_COMMONDECOMPOSITIONPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
 } // namespace mqss::opt
-
 
 using namespace mlir;
 using namespace llvm;
@@ -42,7 +41,8 @@ enum class PassMode { CxToHCzH, CzToHCxH, HToRzXRz, CHToCX, NA };
 
 struct SharedPassLogic {
 
-  void run(MyModuleAnalysis &analysis, PassMode passmode, QuantumDialect DialectTy) {
+  void run(MyModuleAnalysis &analysis, PassMode passmode,
+           QuantumDialect DialectTy) {
 
     DecomposePassInfoTy PassInfo;
     if (passmode == PassMode::CxToHCzH) {
@@ -110,7 +110,7 @@ public:
     SharedPassLogic PassLogic;
 
     auto passmode = getPassMode(mode);
-    
+
     if (passmode != PassMode::NA) {
       PassLogic.run(analysis, passmode, DialectTy);
     } else {

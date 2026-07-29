@@ -104,7 +104,7 @@ if [[ -e "$LLVM_BIN_DIR" ]]; then
 else
     warn "LLVM-${LLVM_VERSION}-toolchain not found..."
     info "Downloading and installing it using https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh"
-    curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh | 
+    curl -LsSf https://github.com/munich-quantum-software/setup-mlir/releases/latest/download/setup-mlir.sh |
         bash -s -- -v ${LLVM_VERSION} -p ${LLVM_BIN_DIR}
 
     ok LLVM-${LLVM_VERSION}-toolchain downloaded and paths set

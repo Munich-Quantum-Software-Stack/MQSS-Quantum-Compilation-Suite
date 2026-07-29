@@ -25,7 +25,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 
 namespace mqss::opt {
-  
+
 #define GEN_PASS_DEF_COMMONNORMALIZEARGANGLEPASS
 #include "Passes/Transforms/Transforms.h.inc"
 

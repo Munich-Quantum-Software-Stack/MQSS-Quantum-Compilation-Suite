@@ -211,7 +211,7 @@ elif [[ "${EXT}" == "py" ]]; then
     fi
 
     COMMAND=""
-    
+
     if [[ "${OUT_DIR}" != "" ]]; then
       COMMAND="$(
       python3.11 "${RESOLVER}" \

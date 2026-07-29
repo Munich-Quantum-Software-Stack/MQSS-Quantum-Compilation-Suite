@@ -2,7 +2,7 @@ name: clang-tidy
 
 on:
   pull_request:
-    branches: [ develop ]
+    branches: [develop]
 
 jobs:
   clang-tidy:
@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           submodules: recursive
-          fetch-depth: 0   # need history to diff against the base branch
+          fetch-depth: 0 # need history to diff against the base branch
 
       - name: Free disk space
         run: |

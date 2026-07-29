@@ -90,7 +90,7 @@ public:
     assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
     auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
     assert(!QInfo.count(NewOp) &&
-           "Adding New Op: Op already present in QunatumInfoMap");
+           "Adding New Op: Op already present in QuantumInfoMap");
     auto view =
         createQuantumView(NewOp, KernelDialectInfo[funcOp].NumMeasureQubits);
     QInfo[NewOp] = view;
@@ -101,7 +101,7 @@ public:
     auto funcOp = getOpParentFunc(Op);
     assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
     auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
-    assert(QInfo.count(Op) && "Updating Op: Op not present in QunatumInfoMap");
+    assert(QInfo.count(Op) && "Updating Op: Op not present in QuantumInfoMap");
     QuantumOpView &OpQView = QInfo[Op];
     auto &Operands = OpQView.getQubits(Role).in;
     auto it = std::find(Operands.begin(), Operands.end(), OrigValue);

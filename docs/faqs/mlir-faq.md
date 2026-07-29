@@ -15,6 +15,7 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ----------------------------------------------------------------------------------------------------->
+
 # MLIR FAQs
 
 ## What is MLIR?
@@ -26,7 +27,7 @@ machine learning, AI, and heterogeneous hardware.
 
 MLIR supports multiple levels of abstraction within a single framework, allowing developers to work
 with high-level domain-specific operations down to hardware-specific operations. Users can define
-their __dialects__ (custom operations and types) for specific problem domains while leveraging the
+their **dialects** (custom operations and types) for specific problem domains while leveraging the
 shared infrastructure for optimization and code generation already provided by MLIR.
 
 <div align="center">
@@ -34,7 +35,7 @@ shared infrastructure for optimization and code generation already provided by M
 </div>
 
 Additionally, MLIR promotes interoperability among different models of computation and supports
-__optimization passes__ across various abstraction levels, including high-level and low-level
+**optimization passes** across various abstraction levels, including high-level and low-level
 operations.
 
 For more information on [MLIR](https://github.com/llvm/llvm-project.git).
@@ -42,10 +43,10 @@ For more information on [MLIR](https://github.com/llvm/llvm-project.git).
 ## What is an MLIR Dialect?
 
 An MLIR dialect is a modular and extensible namespace within the MLIR framework that defines a set
-of __operations__, __types__ and __attributes__ specific to a domain, language, or model of
+of **operations**, **types** and **attributes** specific to a domain, language, or model of
 computation. Dialects enable MLIR to be a highly flexible intermediate representation (IR).
 
-For instance, __Quake__ is an MLIR dialect designed for quantum computing. It serves as part of
+For instance, **Quake** is an MLIR dialect designed for quantum computing. It serves as part of
 NVIDIA's CUDAQ framework, facilitating the development, optimization, and deployment of
 quantum-classical hybrid programs. Quake represents quantum programs within MLIR, providing a
 high-level abstraction for quantum operations and allowing developers to leverage the MLIR
@@ -65,7 +66,7 @@ For more information on [QUAKE MLIR Dialect](https://github.com/NVIDIA/cuda-quan
 ## What is an MLIR pass?
 
 An MLIR pass is a transformation or analysis applied to an MLIR intermediate representation (IR) to
-__modify__, __optimize__, or __gather information__. Passes are a central concept in compiler
+**modify**, **optimize**, or **gather information**. Passes are a central concept in compiler
 frameworks, including MLIR, enabling modular, reusable,and extensible code transformations at
 various abstraction levels.
 
@@ -78,9 +79,9 @@ circuit, which contains two consecutive Hadamard gates on qubit 0. Accordingly, 
 output-optimized circuit shown on the right, those two consecutive Hadamards are removed because
 they are equivalent to an identity operation.
 
-MLIR has two categories of passes: __transformation__ passes and __analysis__ passes. The pass
+MLIR has two categories of passes: **transformation** passes and **analysis** passes. The pass
 presented above is a transformation pass. Moreover, passes can be applied in sequences defined as
-__pass pipelines__.
+**pass pipelines**.
 
 <div align="center">
     <img src="../_static/mlir-passes.png" width="100%">

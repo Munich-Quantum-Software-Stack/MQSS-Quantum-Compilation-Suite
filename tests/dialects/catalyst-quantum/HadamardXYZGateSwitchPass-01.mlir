@@ -3,7 +3,7 @@
 
 module {
   func.func @HadamardX_GateSwitch_test0() {
-   
+
     %cst = arith.constant 3.140000e+00 : f64
     %_ = quantum.alloc( 2) : !quantum.reg
     %ZERO_0 = quantum.extract %_[ 0] : !quantum.reg -> !quantum.bit
@@ -16,7 +16,7 @@ module {
 
     // CHECK: %out_qubits_1 = quantum.custom "PauliZ"() %2 : !quantum.bit
     // CHECK: %out_qubits_2 = quantum.custom "H"() %2 : !quantum.bit
-   
+
 
     %obs = quantum.compbasis qreg %_ : !quantum.obs
 
@@ -24,7 +24,7 @@ module {
   }
 
   func.func @HadamardY_GateSwitch_test1() {
-   
+
     %q = quantum.alloc(2) : !quantum.reg
 
     %q0_0 = quantum.extract %q[0] : !quantum.reg -> !quantum.bit
@@ -44,7 +44,7 @@ module {
     return
   }
   func.func @HadamardX_GateSwitch_test2() {
-   
+
     %cst = arith.constant 3.140000e+00 : f64
     %_ = quantum.alloc( 2) : !quantum.reg
     %ZERO_0 = quantum.extract %_[ 0] : !quantum.reg -> !quantum.bit
@@ -57,7 +57,7 @@ module {
 
     // CHECK: %out_qubits_1 = quantum.custom "PauliX"() %2 : !quantum.bit
     // CHECK: %out_qubits_2 = quantum.custom "H"() %2 : !quantum.bit
-   
+
 
     %obs = quantum.compbasis qreg %_ : !quantum.obs
 

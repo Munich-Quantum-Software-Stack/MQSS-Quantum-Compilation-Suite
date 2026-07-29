@@ -25,12 +25,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 
 namespace mqss::opt {
-  
+
 #define GEN_PASS_DEF_COMMONREDUCTIONPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
 } // namespace mqss::opt
-
 
 using namespace mlir;
 using namespace llvm;
@@ -41,7 +40,8 @@ enum class PassMode { HXHToZ, HZHToX, SAdjZToS, SZToSAdj, NA };
 
 struct SharedPassLogic {
 
-  void run(MyModuleAnalysis &analysis, PassMode Mode, QuantumDialect DialectTy) {
+  void run(MyModuleAnalysis &analysis, PassMode Mode,
+           QuantumDialect DialectTy) {
 
     ReductionPassInfoty PassInfo;
     if (Mode == PassMode::HXHToZ) {
@@ -77,12 +77,12 @@ class CommonReduction
     : public mqss_backend::impl::CommonReductionPassBase<CommonReduction> {
 
 public:
-
-// Default constructor (required for pass registry)
+  // Default constructor (required for pass registry)
   CommonReduction() = default;
 
   // Forward the options constructor to the base
-  CommonReduction(const CommonReductionPassOptions &options) : CommonReductionPassBase() {
+  CommonReduction(const CommonReductionPassOptions &options)
+      : CommonReductionPassBase() {
     mode = options.mode;
   }
 

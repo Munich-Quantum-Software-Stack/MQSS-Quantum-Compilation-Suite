@@ -24,7 +24,6 @@ template <std::size_t N> struct test {
   }
 };
 
-
 template <std::size_t N> struct test1 {
   auto operator()() __qpu__ {
 
@@ -38,7 +37,7 @@ template <std::size_t N> struct test1 {
   }
 };
 
-template <std::size_t N> struct test2{
+template <std::size_t N> struct test2 {
   auto operator()() __qpu__ {
 
     // Compile-time sized array like std::array

@@ -6,4 +6,3 @@
 // CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
 // CHECK: %out_qubits_0 = quantum.custom "S"() %2 : !quantum.bit
 // CHECK: %3 = quantum.insert %0[ 0], %out_qubits : !quantum.reg, !quantum.bit
-

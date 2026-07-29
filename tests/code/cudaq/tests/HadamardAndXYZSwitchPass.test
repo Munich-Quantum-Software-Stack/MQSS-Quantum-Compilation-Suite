@@ -19,6 +19,3 @@
 // CHECK: %4 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
 // CHECK-NEXT: quake.y %4 : (!quake.ref) -> ()
 // CHECK-NEXT: quake.h %3 : (!quake.ref) -> ()
-
-
-

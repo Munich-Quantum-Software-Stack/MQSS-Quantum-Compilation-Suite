@@ -22,8 +22,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   date   August 2026
   version 2.0.0
 *************************************************************************/
-#include "Passes/Transforms/PassIncludes.h"
 #include "Passes/Transforms/Error.h"
+#include "Passes/Transforms/PassIncludes.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 
 namespace mqss::opt {
@@ -37,10 +37,10 @@ using namespace llvm;
 namespace {
 
 class LLVMDialectToLLVMIR
-    : public mqss_backend::impl::LLVMDialectToLLVMIRPassBase<LLVMDialectToLLVMIR> {
+    : public mqss_backend::impl::LLVMDialectToLLVMIRPassBase<
+          LLVMDialectToLLVMIR> {
 
 public:
-
   void runOnOperation() override {
 
     MQSS_DEBUG("\n[Applying Pass: LLVMDialectToLLVMIR]\n");

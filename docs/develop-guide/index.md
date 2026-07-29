@@ -18,9 +18,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 # Development Guide
 
-This guide outlines the implementation details of the project and how to write
-your own MLIR pass to integrate within the suite. It also outlines the process
-of introducing a new MLIR dialect into the suite.
+This guide outlines the implementation details of the project and how to write your own MLIR pass to
+integrate within the suite. It also outlines the process of introducing a new MLIR dialect into the
+suite.
 
 ```{toctree}
 :maxdepth: 1

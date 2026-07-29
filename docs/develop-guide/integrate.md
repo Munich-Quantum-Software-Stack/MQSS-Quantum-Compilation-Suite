@@ -15,10 +15,11 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ----------------------------------------------------------------------------------------------------->
+
 # Integrating the MQSS Quantum Compilation Suite within your project
 
-One can integrate MQSS-Quantum Compilation Suite into their project as a cmake module
-using the following entry:
+One can integrate MQSS-Quantum Compilation Suite into their project as a cmake module using the
+following entry:
 
 ```cmake
 
@@ -41,7 +42,7 @@ ExternalProject_Add(mqssci
 set(MQSSCI_SRC_DIR ${CMAKE_BINARY_DIR}/_deps/mqssci-src)
 ```
 
-Then within the appropriate ```CMakeLists.txt```:
+Then within the appropriate `CMakeLists.txt`:
 
 ```cmake
 find_package(MQSSCI REQUIRED).   # If the name of file is FindMQSSCI.cmake

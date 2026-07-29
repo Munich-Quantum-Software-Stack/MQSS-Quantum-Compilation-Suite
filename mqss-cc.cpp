@@ -22,11 +22,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
+#include "Passes/Transforms/Pipelines.h"
+#include "Passes/Transforms/Transforms.h"
 #include "Quantum/IR/QuantumDialect.h"
 #include "cudaq/Optimizer/Dialect/CC/CCDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
-#include "Passes/Transforms/Pipelines.h"
-#include "Passes/Transforms/Transforms.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
@@ -68,7 +68,7 @@ struct ToQirPipelineOptions
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
-  
+
   // Explicitly register the standard dialects
   registry.insert<mlir::func::FuncDialect, mlir::arith::ArithDialect,
                   mlir::cf::ControlFlowDialect, mlir::linalg::LinalgDialect,
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
       "MQSS-O1 optimization pipeline", // description
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::opt::O1(pm); 
+        mqss::opt::O1(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
       "MQSS-O3 optimization pipeline", // description
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::opt::O3(pm); 
+        mqss::opt::O3(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}

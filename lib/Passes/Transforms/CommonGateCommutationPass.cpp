@@ -25,12 +25,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 
 namespace mqss::opt {
-  
+
 #define GEN_PASS_DEF_COMMONCOMMUTEPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
 } // namespace mqss::opt
-
 
 using namespace mlir;
 using namespace llvm;
@@ -98,7 +97,8 @@ public:
   CommonCommute() = default;
 
   // Forward the options constructor to the base
-  CommonCommute(const CommonCommutePassOptions &options) : CommonCommutePassBase() {
+  CommonCommute(const CommonCommutePassOptions &options)
+      : CommonCommutePassBase() {
     mode = options.mode;
   }
 
@@ -140,7 +140,7 @@ std::unique_ptr<mlir::Pass> mqss_backend::CommonCommutePass() {
   return std::make_unique<CommonCommute>();
 }
 
-std::unique_ptr<mlir::Pass> mqss_backend::createCommonCommutePass(
-    const CommonCommutePassOptions &options) {
+std::unique_ptr<mlir::Pass>
+mqss_backend::createCommonCommutePass(const CommonCommutePassOptions &options) {
   return std::make_unique<CommonCommute>(options);
 }

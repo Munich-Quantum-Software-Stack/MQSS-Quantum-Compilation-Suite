@@ -9,5 +9,3 @@
 // CHECK: quake.x [%2] %1 : (!quake.ref, !quake.ref) -> ()
 // CHECK: quake.x %1 : (!quake.ref) -> ()
 // CHECK: quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
-
-

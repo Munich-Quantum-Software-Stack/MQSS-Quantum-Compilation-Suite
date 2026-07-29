@@ -7,5 +7,3 @@
 // CHECK: quake.rz (%cst) %3 : (f64, !quake.ref) -> ()
 // CHECK: quake.x %3 : (!quake.ref) -> ()
 // CHECK: quake.rz (%cst_0) %3 : (f64, !quake.ref) -> ()
-
-

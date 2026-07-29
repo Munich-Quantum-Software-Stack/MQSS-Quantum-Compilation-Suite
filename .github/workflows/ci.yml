@@ -1,10 +1,9 @@
 name: CI
 
-
 on:
   push:
     branches:
-      - '**'
+      - "**"
   pull_request:
     branches: [develop]
 
@@ -12,7 +11,6 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-
       # Step 1: Checkout repo (gives us the Dockerfile)
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -50,7 +48,7 @@ jobs:
             -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
             -w /workspaces/MQSS-Passes-Suite \
             mqss-pass-dev \
-            bash -lc ' 
+            bash -lc '
             export PATH="/workspaces/MQSS-Passes-Suite/build/bin:$PATH"
             which mqss-opt
             make test-dialects '

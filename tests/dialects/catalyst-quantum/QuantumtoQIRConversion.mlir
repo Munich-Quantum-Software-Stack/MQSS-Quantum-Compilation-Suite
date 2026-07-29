@@ -2,7 +2,7 @@
 
 module {
   func.func @QuantumToQIRConversion_test() {
-   
+
     %cst = arith.constant 5.141600e+00 : f64
     %cst_0 = arith.constant 2.400000e+00 : f64
 

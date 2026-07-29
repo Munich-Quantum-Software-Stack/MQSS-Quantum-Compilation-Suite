@@ -22,9 +22,10 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
-#include "cudaq/Optimizer/CodeGen/Passes.h"
 #include "Passes/Transforms/PassUtils.h"
 #include "Passes/Transforms/Transforms.h"
+#include "cudaq/Optimizer/CodeGen/Passes.h"
+
 #include <llvm/ADT/StringRef.h>
 #include <string>
 
@@ -44,7 +45,6 @@ static void addQIRConversionPipeline(mlir::OpPassManager &pm,
     cudaq::opt::addConvertToQIRAPIPipeline(pm, "adaptive-profile:" +
                                                    convertFields.second.str());
   } else {
-    
   }
 }
 
@@ -76,14 +76,15 @@ void mqss_backend::O3(mlir::OpPassManager &pm) {
   pm.addPass(createCanonicalizerPass());
 }
 
-void mqss_backend::QIRConversionPipeline(mlir::OpPassManager &pm, StringRef converTo) {
+void mqss_backend::QIRConversionPipeline(mlir::OpPassManager &pm,
+                                         StringRef convertTo) {
 
-  //cudaq::opt::ReturnToOutputLogOptions opts;
-  // auto tgt = StringRef(converTo).split(':').first;
-  // opts.allowDynamicResult = tgt == "qir" || tgt == "qir-full";
-  addQIRConversionPipeline(pm, converTo);
-  //pm.addPass(cudaq::opt::createReturnToOutputLog(opts));
-  // pm.addPass(createConvertMathToFuncs());
+  // cudaq::opt::ReturnToOutputLogOptions opts;
+  //  auto tgt = StringRef(convertTo).split(':').first;
+  //  opts.allowDynamicResult = tgt == "qir" || tgt == "qir-full";
+  addQIRConversionPipeline(pm, convertTo);
+  // pm.addPass(cudaq::opt::createReturnToOutputLog(opts));
+  //  pm.addPass(createConvertMathToFuncs());
   pm.addPass(createSymbolDCEPass());
   pm.addPass(cudaq::opt::createCCToLLVM());
   pm.addPass(LLVMDialectToLLVMIRPass());

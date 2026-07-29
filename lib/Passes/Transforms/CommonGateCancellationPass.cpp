@@ -25,12 +25,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 
 namespace mqss::opt {
-  
+
 #define GEN_PASS_DEF_COMMONGATECANCELLATIONPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
 } // namespace mqss::opt
-
 
 using namespace mlir;
 using namespace llvm;
@@ -38,14 +37,16 @@ using namespace llvm;
 namespace {
 
 class CommonGateCancellation
-    : public mqss_backend::impl::CommonGateCancellationPassBase<CommonGateCancellation> {
+    : public mqss_backend::impl::CommonGateCancellationPassBase<
+          CommonGateCancellation> {
 
-  public:
+public:
   // Default constructor (required for pass registry)
   CommonGateCancellation() = default;
 
   // Forward the options constructor to the base
-   CommonGateCancellation(const CommonGateCancellationPassOptions &options) : CommonGateCancellationPassBase() {
+  CommonGateCancellation(const CommonGateCancellationPassOptions &options)
+      : CommonGateCancellationPassBase() {
     mode = options.mode;
   }
 
@@ -67,7 +68,6 @@ class CommonGateCancellation
     //        Parsing would involve a more sophisticated Internal IR to
     //        represent operations of all supported dialects.
 
-    
     MQSS_DEBUG("[Applying Pass: CommonGateCancellationPass]\n");
 
     auto &selector = getAnalysis<DialectAnalysisSelector>();
@@ -77,7 +77,6 @@ class CommonGateCancellation
     // Empty CompareKey meaning - both control and target qubit operands
     // of the gates to be cancelled will be compared
 
-
     int count = 0;
     if (mode == "CancelGate") {
       Comparety CompareKey;
@@ -85,14 +84,14 @@ class CommonGateCancellation
       for (auto &[kernel, Info] : KernelDialectInfo) {
         MQSS_DEBUG(++count << ". kernel: " << kernel.getSymName() << "\n");
         performCancellation(Info.OpQViewMap, GatesToCancel, CompareKey);
-        MQSS_DEBUG( "\n");
+        MQSS_DEBUG("\n");
       }
     } else if (mode == "CancelNullRotation") {
 
       for (auto &[kernel, Info] : KernelDialectInfo) {
         MQSS_DEBUG(++count << ". kernel: " << kernel.getSymName() << "\n");
         performNullRotationCancellation(Info.OpQViewMap, RotationGatesToCancel);
-        MQSS_DEBUG( "\n");
+        MQSS_DEBUG("\n");
       }
     } else {
       getOperation()->emitError() << "invalid mode: " << mode;

@@ -15,12 +15,14 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ----------------------------------------------------------------------------------------------------->
+
 # QDMI in MQSS Quantum Compilation Suite
 
-The [Quantum Device Management Interface](https://munich-quantum-software-stack.github.io/QDMI/v1.3.2/) (QDMI)
-interface provides a standard interface layer for communicating with back-end quantum hardware. Various
-compiler passes (especially for transpilation) need information about the target-device to efficiently
-map the input quantum circuit to the topology of the target-device.
-Currently, the Qubit Mapping pass (`--CommonMappingPass`) uses the QDMI client interface to query
-a target device for the device coupling map. In the future, we plan to leverage the QDMI
-interface to drive more optimization passes.
+The
+[Quantum Device Management Interface](https://munich-quantum-software-stack.github.io/QDMI/v1.3.2/)
+(QDMI) interface provides a standard interface layer for communicating with back-end quantum
+hardware. Various compiler passes (especially for transpilation) need information about the
+target-device to efficiently map the input quantum circuit to the topology of the target-device.
+Currently, the Qubit Mapping pass (`--CommonMappingPass`) uses the QDMI client interface to query a
+target device for the device coupling map. In the future, we plan to leverage the QDMI interface to
+drive more optimization passes.

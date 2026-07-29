@@ -1,4 +1,3 @@
-
 # Project name and language specification
 cmake_minimum_required(VERSION 3.19...3.30)
 project(MQSS-CC LANGUAGES CXX C)
@@ -27,8 +26,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_compile_definitions(DEBUG)
 endif()
 
-
-# ################ LLVM/MLIR Settings ###########################################
+# ################ LLVM/MLIR Settings
+# ##############################################################################
 # Find MLIR. (MLIR is usually installed as part of an LLVM distribution.)
 find_package(MLIR REQUIRED CONFIG)
 # Append MLIR's CMake modules.
@@ -49,17 +48,17 @@ add_definitions(${LLVM_DEFINITIONS} ${MLIR_DEFINITIONS})
 # ############### ADDITIONAL PACKAGES #######################################
 
 # Tell where to search for Find<package>.cmake files
-set(FETCHCONTENT_BASE_DIR ${BUILD_DIR}/_deps CACHE PATH "FetchContent cache dir")
+set(FETCHCONTENT_BASE_DIR
+    ${BUILD_DIR}/_deps
+    CACHE PATH "FetchContent cache dir")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # set(CMAKE_CXX_STANDARD 11) Find QDMI package find_package(qdmi REQUIRED) Find
-# QInfo package find_package(qinfo REQUIRED)
-# find_package(Z3 REQUIRED)
+# QInfo package find_package(qinfo REQUIRED) find_package(Z3 REQUIRED)
 
-# find_package(mqt-qcec REQUIRED)
-# Find the QMAP package
-# set(CMAKE_CXX_STANDARD 17)
+# find_package(mqt-qcec REQUIRED) Find the QMAP package set(CMAKE_CXX_STANDARD
+# 17)
 set(MQT_QMAP_TESTS OFF)
 find_package(CUDAQ REQUIRED)
 find_package(Catalyst REQUIRED)
@@ -75,43 +74,40 @@ set(QDMI_INCLUDE_DIR "${qdmi_SOURCE_DIR}/include")
 set(QDMI_EXAMPLES_DIR "${qdmi_SOURCE_DIR}/examples/")
 
 include_directories(
-        BEFORE
-        ${nlohmann_json_SOURCE_DIR}/include
-        ${QDMI_INCLUDE_DIR}
-        ${QDMI_EXAMPLES_DIR}
-        ${MQT_QMAP_INCLUDE_DIR}
-        ${CUDAQ_INCLUDE_DIRS}
-        ${CATALYST_INCLUDE_DIRS}
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_BINARY_DIR}/include
-      )
-      
+  BEFORE
+  ${nlohmann_json_SOURCE_DIR}/include
+  ${QDMI_INCLUDE_DIR}
+  ${QDMI_EXAMPLES_DIR}
+  ${MQT_QMAP_INCLUDE_DIR}
+  ${CUDAQ_INCLUDE_DIRS}
+  ${CATALYST_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_BINARY_DIR}/include)
+
 include(FetchContent)
 
-#########################LLVM-LIT TESTING SETTINGS###############################
+# ########################LLVM-LIT TESTING
+# SETTINGS###############################
 
-# TODO: Change this path. Should point to llvm-lit in an LLVM toolchain within build/_Deps
+# TODO: Change this path. Should point to llvm-lit in an LLVM toolchain within
+# build/_Deps
 
-find_program(LLVM_EXTERNAL_LIT
-  NAMES llvm-lit lit
-  REQUIRED
-)
+find_program(LLVM_EXTERNAL_LIT NAMES llvm-lit lit REQUIRED)
 
-add_custom_target(check-mqss
-  COMMAND ${LLVM_EXTERNAL_LIT} 
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/dialects/quake
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/dialects/catalyst-quantum
-  USES_TERMINAL
-)
+add_custom_target(
+  check-mqss
+  COMMAND ${LLVM_EXTERNAL_LIT} ${CMAKE_CURRENT_SOURCE_DIR}/tests/dialects/quake
+          ${CMAKE_CURRENT_SOURCE_DIR}/tests/dialects/catalyst-quantum
+  USES_TERMINAL)
 
-add_custom_target(check-mqss-code
-  COMMAND ${LLVM_EXTERNAL_LIT} 
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/code/cudaq/tests
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/code/catalyst/tests
-  USES_TERMINAL
-)
+add_custom_target(
+  check-mqss-code
+  COMMAND
+    ${LLVM_EXTERNAL_LIT} ${CMAKE_CURRENT_SOURCE_DIR}/tests/code/cudaq/tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/code/catalyst/tests
+  USES_TERMINAL)
 
-################################-MQSS Settings-###############################
+# ###############################-MQSS Settings-###############################
 
 add_custom_target(mqss-cudaq-headers)
 set_target_properties(mqss-cudaq-headers PROPERTIES FOLDER "Misc")
@@ -125,65 +121,55 @@ add_library(mqss-ci::mqss-ci ALIAS MQSSCIPasses)
 
 # Define the executable and its source file
 add_executable(mqss-opt mqss-cc.cpp)
-target_compile_definitions(mqss-opt PRIVATE 
-                                    ${MLIR_DEFINITIONS}
-                                    ${LLVM_DEFINITIONS}
-                                    QDMI_DEVICE_PATH="$<TARGET_FILE:cxx-qdmi-device>")
+target_compile_definitions(
+  mqss-opt PRIVATE ${MLIR_DEFINITIONS} ${LLVM_DEFINITIONS}
+                   QDMI_DEVICE_PATH="$<TARGET_FILE:cxx-qdmi-device>")
 
 target_compile_options(mqss-opt PRIVATE -fexceptions)
 
 # Set include directories so the compiler finds the headers
-target_include_directories(mqss-opt
-  PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_BINARY_DIR}/include
-)
+target_include_directories(mqss-opt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
+                                            ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 # Link the dialect implementations and other dependencies
-target_link_libraries(mqss-opt 
-  PUBLIC 
-    qdmi::qdmi
-    qdmi::example_driver
-    CUDAQ::CC
-    CUDAQ::Quake
-    CUDAQ::QEC
-    CATALYST::MBQC
-    CATALYST::QRef
-    CATALYST::Quantum
-    MLIRLLVMDialect
-    MLIROptLib
-    MLIRIR
-    MLIRFuncDialect
-    MLIRFuncInlinerExtension
-    MLIRArithDialect
-    MQSSCIPasses
-    CUDAQ::CodeGen
-    MLIRTransforms
-    MQT::CoreIR
-    MQT::CoreNA
-    MQT::QMapSC
-    MQT::QMapSCHeuristic
-    MLIROptLib              # Provides MlirOptMain engine
-
-    # Conversions
-    MLIRArithToLLVM
-    MLIRComplexToLibm
-    MLIRComplexToLLVM
-    MLIRControlFlowToLLVM
-    MLIRFuncToLLVM
-    MLIRMathToFuncs
-    MLIRMathToLLVM
-
-    # Translation
-    MLIRTargetLLVMIRExport
-
-)
+target_link_libraries(
+  mqss-opt
+  PUBLIC qdmi::qdmi
+         qdmi::example_driver
+         CUDAQ::CC
+         CUDAQ::Quake
+         CUDAQ::QEC
+         CATALYST::MBQC
+         CATALYST::QRef
+         CATALYST::Quantum
+         MLIRLLVMDialect
+         MLIROptLib
+         MLIRIR
+         MLIRFuncDialect
+         MLIRFuncInlinerExtension
+         MLIRArithDialect
+         MQSSCIPasses
+         CUDAQ::CodeGen
+         MLIRTransforms
+         MQT::CoreIR
+         MQT::CoreNA
+         MQT::QMapSC
+         MQT::QMapSCHeuristic
+         MLIROptLib # Provides MlirOptMain engine
+         # Conversions
+         MLIRArithToLLVM
+         MLIRComplexToLibm
+         MLIRComplexToLLVM
+         MLIRControlFlowToLLVM
+         MLIRFuncToLLVM
+         MLIRMathToFuncs
+         MLIRMathToLLVM
+         # Translation
+         MLIRTargetLLVMIRExport)
 
 # Ensure it outputs to INSTALL_DIR
-set_target_properties(mqss-opt PROPERTIES 
-    RUNTIME_OUTPUT_DIRECTORY "${INSTALL_DIR}"
-)
+set_target_properties(mqss-opt PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+                                          "${INSTALL_DIR}")
 
 # (Optional) Verify links
 mlir_check_all_link_libraries(mqss-opt)
-

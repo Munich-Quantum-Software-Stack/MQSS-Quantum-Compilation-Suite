@@ -36,4 +36,3 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
     return
   }
 }
-

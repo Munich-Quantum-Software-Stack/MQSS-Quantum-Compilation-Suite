@@ -22,11 +22,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
+#include "Quantum/IR/QuantumOps.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeOps.h"
-#include "Quantum/IR/QuantumOps.h"
 #include "mlir/AsmParser/AsmParser.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+
 #include <mlir/IR/Attributes.h>
 #include <mlir/IR/BuiltinTypeInterfaces.h>
 #include <mlir/IR/Types.h>
@@ -38,9 +39,7 @@ using namespace mlir;
 using namespace llvm;
 using namespace cudaq;
 
-
-inline std::tuple<bool, StringLiteral>
-isQuakeQuantumGate(Operation *op) {
+inline std::tuple<bool, StringLiteral> isQuakeQuantumGate(Operation *op) {
 
   if (auto x = dyn_cast<quake::XOp>(op)) {
     if (x.getControls().size() == 0)
@@ -157,27 +156,26 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
 }
 
 inline mlir::arith::ConstantOp
-createConstant(Location loc, mlir::IRRewriter &builder,
-                      TypedAttr attr) {
+createConstant(Location loc, mlir::IRRewriter &builder, TypedAttr attr) {
 
   // arith::ConstantOp with FloatAttr works on both LLVM-16 and LLVM-21
-  return 
-      builder.create<mlir::arith::ConstantOp>(loc, attr);
+  return builder.create<mlir::arith::ConstantOp>(loc, attr);
 }
 
-inline mlir::arith::ConstantOp
-createQuakeConstOp(Location loc, mlir::IRRewriter &builder,
-                      double constantValue, mlir::Type type) {
+inline mlir::arith::ConstantOp createQuakeConstOp(Location loc,
+                                                  mlir::IRRewriter &builder,
+                                                  double constantValue,
+                                                  mlir::Type type) {
 
-  if(isa<FloatType>(type)){
+  if (isa<FloatType>(type)) {
     auto valueAttr = builder.getFloatAttr(type, constantValue);
     return createConstant(loc, builder, valueAttr);
   }
 }
 
-
-inline mlir::Value createQuakeDivF(Location loc, mlir::Value numerator, double denominator,
-                             mlir::IRRewriter &rewriter) {
+inline mlir::Value createQuakeDivF(Location loc, mlir::Value numerator,
+                                   double denominator,
+                                   mlir::IRRewriter &rewriter) {
   auto denominatorValue = rewriter.create<arith::ConstantOp>(
       loc, rewriter.getF64FloatAttr(denominator));
   return rewriter.create<arith::DivFOp>(loc, numerator, denominatorValue);
@@ -212,7 +210,6 @@ createQuakeMeasureOp(Location loc, mlir::IRRewriter &builder,
 
   return results;
 }
-
 
 using namespace mlir;
 using namespace catalyst;
@@ -301,19 +298,20 @@ createCatalystGate(Location loc, llvm::StringRef NewGateTy,
   // OpToReplace->getResult(1).replaceAllUsesWith(NewOp->getResult(1));
 }
 
+inline mlir::arith::ConstantOp createCatalystConstOp(Location loc,
+                                                     mlir::IRRewriter &builder,
+                                                     double constantValue,
+                                                     mlir::Type type) {
 
-inline mlir::arith::ConstantOp
-createCatalystConstOp(Location loc, mlir::IRRewriter &builder,
-                      double constantValue, mlir::Type type) {
-
-  if(isa<FloatType>(type)){
+  if (isa<FloatType>(type)) {
     auto valueAttr = builder.getFloatAttr(type, constantValue);
     return createConstant(loc, builder, valueAttr);
   }
 }
 
-inline mlir::Value createCatalystDivF(Location loc, mlir::Value numerator, double denominator,
-                        mlir::IRRewriter &rewriter) {
+inline mlir::Value createCatalystDivF(Location loc, mlir::Value numerator,
+                                      double denominator,
+                                      mlir::IRRewriter &rewriter) {
   auto denominatorValue = rewriter.create<arith::ConstantOp>(
       loc, rewriter.getF64FloatAttr(denominator));
   return rewriter.create<arith::DivFOp>(loc, numerator, denominatorValue);

@@ -22,11 +22,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
-
+#include "PassIncludes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
 #include "mlir/Transforms/DialectConversion.h"
 
+#include "llvm/Support/Registry.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include <cassert>
@@ -35,13 +36,10 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <llvm/ADT/MapVector.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/StringSet.h>
-#include "llvm/Support/Registry.h"
 #include <llvm/Support/Debug.h>
 #include <mlir/IR/Operation.h>
 #include <mlir/IR/Value.h>
 #include <vector>
-#include "PassIncludes.h"
-
 
 struct GateTy {
   Gate NewGateTy = Gate::UNKNOWN;
@@ -52,8 +50,6 @@ struct DecomposePassInfoTy {
   Gate GateToDecompose = Gate::UNKNOWN;
   std::vector<GateTy> Pattern;
 };
-
-
 
 /**
 PauliX  -> RX(pi)
@@ -98,11 +94,11 @@ static void performDecomposition(MyModuleAnalysis &analysis,
                                  QuantumDialect DialectTy) {
 
   SmallSetVector<Operation *, 8> ToErase;
-  
+
   auto KernelDialectInfo = analysis.getKernelDialectInfo();
   for (auto &[kernel, kernelInfo] : KernelDialectInfo) {
     auto OpQuantumView = kernelInfo.OpQViewMap;
-   
+
     if (kernelInfo.AllocatedQubits == 0)
       continue;
 
@@ -125,22 +121,22 @@ static void performDecomposition(MyModuleAnalysis &analysis,
       auto loc = GateOp->getLoc();
       std::vector<tuple<Operation *, QuantumOpView>> DecomposePattern;
 
-      for (unsigned i=0; i < PassInfo.Pattern.size(); ++i) {
+      for (unsigned i = 0; i < PassInfo.Pattern.size(); ++i) {
         auto [GateToCreate, ConstVals] = PassInfo.Pattern[i];
         auto NewGateTy = parseGateTy(GateToCreate);
         auto GateQubitRoles = getGateOpRoles(NewGateTy);
 
-        if (GateQubitRoles.empty()){
+        if (GateQubitRoles.empty()) {
           report_fatal_error(Twine("Unsupported Gate: ") + Twine(NewGateTy));
         }
-        
+
         SmallVector<mlir::Value, 2> params;
 
         if (!ConstVals.empty()) {
           MQSS_DEBUG("-->Creating Arith Constant Op... \n");
           for (auto val : ConstVals) {
-            auto arithVal = createArithConstantOp(
-                kernel->getLoc(), DialectTy, ConstOpBuilder, val);
+            auto arithVal = createArithConstantOp(kernel->getLoc(), DialectTy,
+                                                  ConstOpBuilder, val);
             params.push_back(arithVal);
           }
         }
@@ -149,21 +145,22 @@ static void performDecomposition(MyModuleAnalysis &analysis,
           NewGate = createNewGate(loc, DialectTy, NewGateTy, ControlInQubitOps,
                                   TargetInQubitOps, params, builder);
         } else {
-          NewGate = createNewGate(loc, DialectTy, NewGateTy, {}, TargetInQubitOps,
-                                  params, builder);
+          NewGate = createNewGate(loc, DialectTy, NewGateTy, {},
+                                  TargetInQubitOps, params, builder);
         }
         MQSS_DEBUG("-->Created: " << *NewGate << "\n");
         analysis.addOperation(NewGate);
         auto NewGateQView = analysis.getOpInfo(NewGate);
         auto NewGateTargetOuts = NewGateQView.getQubits(QubitRole::Target).out;
-        auto NewGateControlOuts = NewGateQView.getQubits(QubitRole::Control).out;
+        auto NewGateControlOuts =
+            NewGateQView.getQubits(QubitRole::Control).out;
 
         // Output Qubits of the current new gate will be the inputs
         // to the next new gate.
-        if(!NewGateControlOuts.empty()){
+        if (!NewGateControlOuts.empty()) {
           ControlInQubitOps = NewGateControlOuts;
         }
-        if(!NewGateTargetOuts.empty()){
+        if (!NewGateTargetOuts.empty()) {
           TargetInQubitOps = NewGateTargetOuts;
         }
 
@@ -171,14 +168,16 @@ static void performDecomposition(MyModuleAnalysis &analysis,
         // replace all uses of the Results of GateOp with the results
         // of the newly created final gate.
         // TODO: The following only fixes the uses of the Target Qubits of
-        //        the results of GateOp. Need to fix the uses of the Control Qubits
-        if(i == PassInfo.Pattern.size()-1){
+        //        the results of GateOp. Need to fix the uses of the Control
+        //        Qubits
+        if (i == PassInfo.Pattern.size() - 1) {
           auto GateOpTargetResults = GateQView.getQubits(QubitRole::Target).out;
-          auto GateOpControlResults = GateQView.getQubits(QubitRole::Control).out;
-          if(!GateOpTargetResults.empty()){
+          auto GateOpControlResults =
+              GateQView.getQubits(QubitRole::Control).out;
+          if (!GateOpTargetResults.empty()) {
             GateOpTargetResults[0].replaceAllUsesWith(NewGateTargetOuts[0]);
           }
-          if(!GateOpControlResults.empty()){
+          if (!GateOpControlResults.empty()) {
             // Replace the uses of the Control Qubits of the Gate to decompose
             // with the Control Qubit of last newly create Controlled Gate.
             // TODO: Is this sound?
@@ -191,9 +190,9 @@ static void performDecomposition(MyModuleAnalysis &analysis,
   }
 
   for (auto *Op : ToErase) {
-    //auto OpQView = analysis.getOpInfo(Op);
+    // auto OpQView = analysis.getOpInfo(Op);
     MQSS_DEBUG("-->To Erase: " << *Op << "\n");
-    //fixSSAForm(DecomposePattern, OpQView);
+    // fixSSAForm(DecomposePattern, OpQView);
     cancel(Op);
   }
 
