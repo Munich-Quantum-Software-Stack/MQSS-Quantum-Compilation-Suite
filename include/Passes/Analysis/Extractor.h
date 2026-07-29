@@ -313,8 +313,8 @@ public:
 
   virtual void addOperation(Operation *NewOp) = 0;
 
-  virtual bool UpdateOperands(Operation *Op, QubitRole Role, mlir::Value OrigValue,
-                              mlir::Value NewValue) = 0;
+  virtual bool UpdateOperands(Operation *Op, QubitRole Role,
+                              mlir::Value OrigValue, mlir::Value NewValue) = 0;
 
   virtual const QuantumOpView getOpInfo(Operation *Op) = 0;
 

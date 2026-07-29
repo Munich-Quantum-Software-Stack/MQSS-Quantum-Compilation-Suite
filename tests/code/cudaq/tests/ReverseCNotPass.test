@@ -7,7 +7,3 @@
 // CHECK: quake.x [%4] %3 : (!quake.ref, !quake.ref) -> ()
 // CHECK-NEXT: quake.h %4 : (!quake.ref) -> ()
 // CHECK: quake.h %3 : (!quake.ref) -> ()
-
-
-
-

@@ -26,7 +26,7 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
     %13 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
     %14 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
     quake.x [%13] %14 : (!quake.ref, !quake.ref) -> ()
-    
+
     %q0 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
     %q1 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
 

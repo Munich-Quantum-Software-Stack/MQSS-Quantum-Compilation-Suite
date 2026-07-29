@@ -46,4 +46,3 @@ module @circuit_HXHToZ {
 // CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
 // CHECK: %out_qubits_0 = quantum.custom "Hadamard"() %2 : !quantum.bit
 // CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0 : !quantum.bit, !quantum.bit
-

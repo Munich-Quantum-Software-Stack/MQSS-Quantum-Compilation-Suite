@@ -24,12 +24,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 
 namespace mqss::opt {
-  
+
 #define GEN_PASS_DEF_COMMONSWITCHPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
 } // namespace mqss::opt
-
 
 using namespace mlir;
 using namespace llvm;
@@ -40,7 +39,8 @@ enum class PassMode { SwitchXYZH, SwitchHXYZ, NA };
 
 struct SharedPassLogic {
 
-  void run(MyModuleAnalysis &analysis, PassMode Mode, QuantumDialect DialectTy) {
+  void run(MyModuleAnalysis &analysis, PassMode Mode,
+           QuantumDialect DialectTy) {
 
     PassInfoty PassInfo;
 
@@ -70,14 +70,16 @@ struct SharedPassLogic {
   }
 };
 
-class CommonSwitch : public mqss_backend::impl::CommonSwitchPassBase<CommonSwitch> {
+class CommonSwitch
+    : public mqss_backend::impl::CommonSwitchPassBase<CommonSwitch> {
 
 public:
   // Default constructor (required for pass registry)
   CommonSwitch() = default;
 
   // Forward the options constructor to the base
-  CommonSwitch(const CommonSwitchPassOptions &options) : CommonSwitchPassBase() {
+  CommonSwitch(const CommonSwitchPassOptions &options)
+      : CommonSwitchPassBase() {
     mode = options.mode;
   }
 
@@ -111,7 +113,7 @@ std::unique_ptr<mlir::Pass> mqss_backend::CommonSwitchPass() {
   return std::make_unique<CommonSwitch>();
 }
 
-std::unique_ptr<mlir::Pass> mqss_backend::createCommonSwitchPass(
-    const CommonSwitchPassOptions &options) {
+std::unique_ptr<mlir::Pass>
+mqss_backend::createCommonSwitchPass(const CommonSwitchPassOptions &options) {
   return std::make_unique<CommonSwitch>(options);
 }

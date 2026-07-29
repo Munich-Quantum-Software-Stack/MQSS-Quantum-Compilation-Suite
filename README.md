@@ -25,14 +25,17 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 # Munich Quantum Software Stack (MQSS)-Quantum Compilation Suite
 
-This repository contains a collection of compiler passes integrated into the MQSS
-to optimize, transform, and lower quantum programs to instructions compliant with target Quantum devices.
-The passes in this suite operate on quantum circuits represented using the state-of-the-art [Multi-Level Intermediate Representation
-(MLIR)](https://mlir.llvm.org) framework.
+This repository contains a collection of compiler passes integrated into the MQSS to optimize,
+transform, and lower quantum programs to instructions compliant with target Quantum devices. The
+passes in this suite operate on quantum circuits represented using the state-of-the-art
+[Multi-Level Intermediate Representation (MLIR)](https://mlir.llvm.org) framework.
 
-The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](https://github.com/NVIDIA/cuda-quantum) or catalyst-quantum dialect by [pennlylane-catalyst](https://github.com/PennyLaneAI/catalyst).
+The passes operate on either the quake MLIR dialect by Nvidia
+[cudaq-quantum](https://github.com/NVIDIA/cuda-quantum) or catalyst-quantum dialect by
+[pennlylane-catalyst](https://github.com/PennyLaneAI/catalyst).
 
- <span style="color: red;">[NOTE] : This Suite is still under active development. You can expect bugs.</span>
+<span style="color: red;">[NOTE] : This Suite is still under active development. You can expect
+bugs.</span>
 
 <div align="center">
   <a href="https://munich-quantum-software-stack.github.io/MQSS-Quantum-Compilation-Suite/">
@@ -42,21 +45,26 @@ The passes operate on either the quake MLIR dialect by Nvidia [cudaq-quantum](ht
 
 ## Key features
 
-1. __Representation-Agnostic Optimizations__: Apply the same passes across multiple MLIR dialects.
+1. **Representation-Agnostic Optimizations**: Apply the same passes across multiple MLIR dialects.
 
-2. __Cross-framework support__: Works with ecosystems like cudaq-quantum and Catalyst.
+2. **Cross-framework support**: Works with ecosystems like cudaq-quantum and Catalyst.
 
-3. __Write once, reuse everywhere__: Shared optimization logic across compiler representations.
+3. **Write once, reuse everywhere**: Shared optimization logic across compiler representations.
 
-4. __Built to extend__: Add new passes without redesigning the framework.
+4. **Built to extend**: Add new passes without redesigning the framework.
 
-5. __Native-IR interoperability__: Connect frameworks without replacing their IRs/dialects.
+5. **Native-IR interoperability**: Connect frameworks without replacing their IRs/dialects.
 
-6. __Qubit Mapping__: A representation-agnostic logical/algorithmic to physical qubit mapping pass that uses [QDMI](https://github.com/Munich-Quantum-Software-Stack/QDMI) and [MQT-QMAP](https://github.com/munich-quantum-toolkit/qmap)
+6. **Qubit Mapping**: A representation-agnostic logical/algorithmic to physical qubit mapping pass
+   that uses [QDMI](https://github.com/Munich-Quantum-Software-Stack/QDMI) and
+   [MQT-QMAP](https://github.com/munich-quantum-toolkit/qmap)
 
-7. __Transpilation__: A transpilation pass to decompose to the native-gate set of target quantum devices (currently only for cudaq-quake).
+7. **Transpilation**: A transpilation pass to decompose to the native-gate set of target quantum
+   devices (currently only for cudaq-quake).
 
-Note: Please refer to the [FAQs](https://github.com/akshay9594/MQSS-Passes-Suite/blob/catalyst-integration/docs/faq.md) section for more details on the passes, MLIR, MQSS and other related questions.
+Note: Please refer to the
+[FAQs](https://github.com/akshay9594/MQSS-Passes-Suite/blob/catalyst-integration/docs/faq.md)
+section for more details on the passes, MLIR, MQSS and other related questions.
 
 ## Getting Started
 
@@ -75,7 +83,7 @@ Note: Please refer to the [FAQs](https://github.com/akshay9594/MQSS-Passes-Suite
 
 Note: These are automatically downloaded and installed by the build scripts
 
-- LLVM  : 22.1.0 toolchain
+- LLVM : 22.1.0 toolchain
 - CMake : 3.29...4.2
 - cudaq-quantum toolchain : 0.15.0
 - pennylane-catalyst toolchain: 0.14.1
@@ -83,7 +91,7 @@ Note: These are automatically downloaded and installed by the build scripts
 - C++ : 17...20
 - Compiler : gcc and g++ 11.4
 
-For a full list of dependencies check ```.devcontainer/Dockerfile```.
+For a full list of dependencies check `.devcontainer/Dockerfile`.
 
 ### Prerequisites
 
@@ -96,8 +104,8 @@ cd /workspaces/MQSS-Passes-Suite
 git checkout <branch-name>
 ```
 
-```branch-name``` could be ```develop``` or any other branch from this repository.
-If using docker, RUN the commands:
+`branch-name` could be `develop` or any other branch from this repository. If using docker, RUN the
+commands:
 
 ```sh
 docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
@@ -108,19 +116,19 @@ docker run --rm -it \
   bash
 ```
 
-Note: The project root is at ```/workspaces/MQSS-Passes-Suite```
+Note: The project root is at `/workspaces/MQSS-Passes-Suite`
 
 ## Building and Installing the project
 
-First, we need to configure the build via ```cmake``` by running the command:
+First, we need to configure the build via `cmake` by running the command:
 
 ```bash
 make build
 ```
 
-This invokes the scripts ```scripts/build.sh``` which downloads and installs all the
-required dependencies for building the target ```mqss-opt```. This script contains the required
-cmake commands to configure the project.
+This invokes the scripts `scripts/build.sh` which downloads and installs all the required
+dependencies for building the target `mqss-opt`. This script contains the required cmake commands to
+configure the project.
 
 Finally, build the targets by running:
 
@@ -128,29 +136,26 @@ Finally, build the targets by running:
 make target
 ```
 
-Next, we need to set paths to the directories where the executables are generated
-i.e. ```~/.local/bin```. RUN command:
+Next, we need to set paths to the directories where the executables are generated i.e.
+`~/.local/bin`. RUN command:
 
 ```bash
 eval "$(make set-target-paths)"
 ```
 
-This builds the targets using the ```ninja``` build system and if the build succeeds,
-generates the executable ```mqss-opt```. You can change the installation directory by
-modifying the ```INSTALL_DIR``` variable within the  MakeFile.
+This builds the targets using the `ninja` build system and if the build succeeds, generates the
+executable `mqss-opt`. You can change the installation directory by modifying the `INSTALL_DIR`
+variable within the MakeFile.
 
-- If you make any changes to the source
-code i.e. to the C++ files within ```lib/*```, then just rerun the ```make target```
-command.
+- If you make any changes to the source code i.e. to the C++ files within `lib/*`, then just rerun
+  the `make target` command.
 
-- If any changes are made to the build script i.e. ```build.sh``` or
-to the CMakeLists or to the files within ```include/``` then do
-```make build``` first and then ```make target```.
+- If any changes are made to the build script i.e. `build.sh` or to the CMakeLists or to the files
+  within `include/` then do `make build` first and then `make target`.
 
 ## Testing the installation
 
-After the build is successful, use the following commands to test
-the installation.
+After the build is successful, use the following commands to test the installation.
 
 For mlir dialect-level testing (faster), RUN:
 
@@ -158,11 +163,13 @@ For mlir dialect-level testing (faster), RUN:
 make test-dialects
 ```
 
-This command will run all the available test cases in the ```tests/dialects```directory.
-There are a total of about 60 test cases currently, with more added regularly.
+This command will run all the available test cases in the `tests/dialects`directory. There are a
+total of about 60 test cases currently, with more added regularly.
 
 ## Contact
 
-The development of this project is led by the QCT department at the LRZ and the QSI department at MQV gGmbH. You can also always reach us at <mqss@munich-quantum-valley.de>.
+The development of this project is led by the QCT department at the LRZ and the QSI department at
+MQV gGmbH. You can also always reach us at <mqss@munich-quantum-valley.de>.
 
-Please try to use the publicly accessible GitHub channels (issues, discussions, pull requests) to allow for a transparent and open discussion as much as possible.
+Please try to use the publicly accessible GitHub channels (issues, discussions, pull requests) to
+allow for a transparent and open discussion as much as possible.

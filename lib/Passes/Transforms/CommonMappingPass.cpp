@@ -112,10 +112,10 @@ struct PipelineConfig {
     MQSS_DEBUG("-->Device conf is: " << device_conf << "\n");
     auto dev = createQDMIDevice(device_conf.c_str());
 
-    auto device_porperties = getDeviceProperties(dev);
+    auto device_properties = getDeviceProperties(dev);
 
-    auto numQubits = device_porperties.numQubits;
-    auto device_coupling_map = device_porperties.cm;
+    auto numQubits = device_properties.numQubits;
+    auto device_coupling_map = device_properties.cm;
     assert(!device_coupling_map.empty() &&
            "Could not fetch the coupling map of QDMI device!");
 
@@ -327,7 +327,7 @@ void loadGatesIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
             qview.params);
 }
 
-struct MeasureMentOpInfoTy {
+struct MeasureMeantOpInfoTy {
   const qc::Operation *MeasOp;
   SmallVector<mlir::Value, 2> Results;
 };
@@ -337,7 +337,7 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
                          QuantumComputation &qcMapped,
                          MapVector<mlir::Operation *, int> MeasureOps) {
 
-  std::vector<MeasureMentOpInfoTy> NewMeasureOps;
+  std::vector<MeasureMeantOpInfoTy> NewMeasureOps;
 
   for (const auto &op : qcMapped) {
     if (op->getType() == qc::Barrier)
@@ -543,8 +543,7 @@ public:
       MQSS_DEBUG("-->Selected QDMI device Mapping...\n");
       config = PipelineConfig::fromQDMI(qdmi);
     } else {
-      MQSS_DEBUG("--> No input file provided, using pass defaults!"
-                 << "\n");
+      MQSS_DEBUG("--> No input file provided, using pass defaults!" << "\n");
       config = PipelineConfig::defaults();
     }
     auto architecture = config.arch;

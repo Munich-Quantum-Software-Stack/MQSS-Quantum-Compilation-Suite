@@ -1,7 +1,7 @@
 
 
 
-# mqss-cc /workspaces/MQSS-Passes-Suite/test-mqss-passes/code/catalyst/DoubleCNOTCancellation.py --function circuit \ 
+# mqss-cc /workspaces/MQSS-Passes-Suite/test-mqss-passes/code/catalyst/DoubleCNOTCancellation.py --function circuit \
 # --stage HLOLoweringStage --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 
 from catalyst import qjit

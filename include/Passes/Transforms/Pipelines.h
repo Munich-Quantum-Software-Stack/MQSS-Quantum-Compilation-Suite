@@ -38,6 +38,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Passes.h"
+
 #include <llvm/ADT/StringRef.h>
 
 namespace mqss::opt {
@@ -65,5 +66,6 @@ void O2(mlir::OpPassManager &pm);
   corresponding to optimization level `O3`.
 */
 void O3(mlir::OpPassManager &pm);
-void QIRConversionPipeline(mlir::OpPassManager &pm, llvm::StringRef qir_version);
+void QIRConversionPipeline(mlir::OpPassManager &pm,
+                           llvm::StringRef qir_version);
 } // namespace mqss::opt

@@ -1,7 +1,7 @@
 // RUN: %mqss-opt %s --CommonCommutePass=mode=CX-RX 2>&1 | FileCheck %s
 module {
   func.func @CommuteCNot_Z_test() {
-   
+
     %cst = arith.constant 5.141600e+00 : f64
     %cst_0 = arith.constant 2.400000e+00 : f64
 

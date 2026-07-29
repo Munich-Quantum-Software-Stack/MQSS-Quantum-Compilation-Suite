@@ -58,7 +58,7 @@ DEPS_DIR=$BUILD_DIR"/_deps"
 mkdir -p "${BUILD_DIR}"
 mkdir -p "${DEPS_DIR}"
 
-#### 2. Fetch the correct cuda_quantum installer and set path to CUDA_QUAKE 
+#### 2. Fetch the correct cuda_quantum installer and set path to CUDA_QUAKE
 
 mkdir -p "${DEPS_DIR}/cudaq"
 CUDAQ_DIR="${DEPS_DIR}/cudaq"
@@ -80,7 +80,7 @@ else
     wget --quiet -P $DEPS_DIR "https://github.com/NVIDIA/cuda-quantum/releases/download/${CUDAQ_VERSION}/install_cuda_quantum_cu13.$(uname -m)"
     bash $DEPS_DIR/install_cuda_quantum*.$(uname -m) --accept -- --installpath "${DEPS_DIR}/cudaq" > /dev/null
   fi
-  
+
 fi
 
 ### 3. Install Catalyst

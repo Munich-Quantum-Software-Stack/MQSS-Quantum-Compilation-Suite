@@ -680,8 +680,8 @@ static void performCNOTReversal(MyModuleAnalysis &analysis,
     auto Gate3TgtOp = Gate3OpInfo.getQubits(QubitRole::Target).in[0];
 
     MQSS_DEBUG("Gate3 Op Info fine\n");
-    auto Gate3ResulCtrl = Gate3OpInfo.getQubits(QubitRole::Control).out[0];
-    auto Gate3ResulTgt = Gate3OpInfo.getQubits(QubitRole::Target).out[0];
+    auto Gate3ResultCtrl = Gate3OpInfo.getQubits(QubitRole::Control).out[0];
+    auto Gate3ResultTgt = Gate3OpInfo.getQubits(QubitRole::Target).out[0];
 
     MQSS_DEBUG("Gate3 Result Info fine\n");
     auto Gate4OpInfo = analysis.getOpInfo(Gate4);
@@ -692,8 +692,8 @@ static void performCNOTReversal(MyModuleAnalysis &analysis,
 
     Gate3->replaceUsesOfWith(Gate3CtrlOp, Gate1Tgt);
     Gate3->replaceUsesOfWith(Gate3TgtOp, Gate2Tgt);
-    Gate4->replaceUsesOfWith(Gate4OpTgt, Gate3ResulCtrl);
-    Gate5->replaceUsesOfWith(Gate5OpTgt, Gate3ResulTgt);
+    Gate4->replaceUsesOfWith(Gate4OpTgt, Gate3ResultCtrl);
+    Gate5->replaceUsesOfWith(Gate5OpTgt, Gate3ResultTgt);
 
     auto OpResultCtrl = OpQview.getQubits(QubitRole::Control).out[0];
     auto OpResultTgt = OpQview.getQubits(QubitRole::Target).out[0];

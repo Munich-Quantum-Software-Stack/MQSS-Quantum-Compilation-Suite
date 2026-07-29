@@ -9,7 +9,3 @@
 // CHECK: %5 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
 // CHECK: %6 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
 // CHECK: quake.rz (%cst) %6 : (f64, !quake.ref) -> ()
-
-
-
-

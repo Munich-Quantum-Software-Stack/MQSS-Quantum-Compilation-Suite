@@ -5,5 +5,3 @@
 // CHECK: quake.h %2 : (!quake.ref) -> ()
 // CHECK: quake.z [%1] %2 : (!quake.ref, !quake.ref) -> ()
 // CHECK: quake.h %2 : (!quake.ref) -> ()
-
-

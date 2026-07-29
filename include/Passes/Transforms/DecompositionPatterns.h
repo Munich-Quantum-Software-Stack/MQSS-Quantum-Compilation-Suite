@@ -687,38 +687,41 @@ void rewriteSToPhasedRx(IRRewriter &rewriter, cudaq::quake::SOp op) {
   rewriter.eraseOp(op);
 }
 
-void rewriteTToPhasedRx(IRRewriter &rewriter, cudaq::quake::TOp op){
-    if (!op.getControls().empty())
-      return;
+void rewriteTToPhasedRx(IRRewriter &rewriter, cudaq::quake::TOp op) {
+  if (!op.getControls().empty())
+    return;
 
-    // Op info
-    Location loc = op->getLoc();
-    mlir::Value target = op.getTarget();
-    mlir::Value angle = createQuakeConstOp(loc, rewriter, -M_PI_4, rewriter.getF64Type());
-    if (op.isAdj())
-      angle = arith::NegFOp::create(rewriter, loc, angle);
+  // Op info
+  Location loc = op->getLoc();
+  mlir::Value target = op.getTarget();
+  mlir::Value angle =
+      createQuakeConstOp(loc, rewriter, -M_PI_4, rewriter.getF64Type());
+  if (op.isAdj())
+    angle = arith::NegFOp::create(rewriter, loc, angle);
 
-    // Necessary/Helpful constants
-    SmallVector<mlir::Value> noControls;
-    mlir::Value zero = createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-    mlir::Value pi_2 = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-    mlir::Value negPi_2 = arith::NegFOp::create(rewriter, loc, pi_2);
+  // Necessary/Helpful constants
+  SmallVector<mlir::Value> noControls;
+  mlir::Value zero =
+      createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
+  mlir::Value pi_2 =
+      createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
+  mlir::Value negPi_2 = arith::NegFOp::create(rewriter, loc, pi_2);
 
-    std::array<mlir::Value, 2> parameters = {pi_2, zero};
-  
-    rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                               target);
-    parameters[0] = angle;
-    parameters[1] = pi_2;
-    rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                               target);
-    parameters[0] = negPi_2;
-    parameters[1] = zero;
-    rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                               target);
+  std::array<mlir::Value, 2> parameters = {pi_2, zero};
 
-    rewriter.eraseOp(op);
-  }
+  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
+                                            target);
+  parameters[0] = angle;
+  parameters[1] = pi_2;
+  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
+                                            target);
+  parameters[0] = negPi_2;
+  parameters[1] = zero;
+  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
+                                            target);
+
+  rewriter.eraseOp(op);
+}
 
 //===----------------------------------------------------------------------===//
 // The rule table: for every recognized "native gate mnemonic", the list of

@@ -29,10 +29,10 @@ def CommonGateCancellationPass : Pass<"CommonGateCancellationPass", "mlir::Modul
   let summary = "Performs cancellation of Gates following a specific pattern";
 
   let description = [{
-          This pass removes the pattern Gate, Gate if both gates operates on the same control and targets. 
+          This pass removes the pattern Gate, Gate if both gates operates on the same control and targets.
           This pass can also remove the gates RX, RZ, RZ having NULL rotation angles.
   }];
-                 
+
   let constructor = "mqss::opt::CommonGateCancellationPass()";
 
   let options = [
@@ -48,7 +48,7 @@ def LLVMDialectToLLVMIRPass : Pass<"mlir-to-llvmIR", "mlir::ModuleOp"> {
   let description = [{
           Transforms LLVM dialect to LLVM IR.
   }];
-                 
+
   let constructor = "mqss::opt::LLVMDialectToLLVMIRPass()";
 
 }
@@ -59,7 +59,7 @@ def QuakeToQASM2Pass : Pass<"quake-to-qasm2", "mlir::ModuleOp"> {
   let description = [{
           Transforms Quake MLIR module to OpenQasm2.
   }];
-                 
+
   let constructor = "mqss::opt::QuakeToQASM2Pass()";
 
 }
@@ -106,12 +106,12 @@ def CommonCommutePass : Pass<"CommonCommutePass", "mlir::ModuleOp"> {
 
 def CommonSwitchPass : Pass<"CommonSwitchPass", "mlir::ModuleOp"> {
   let summary = "Commute and Switch Gates.";
- 
+
   let description = [{
-    Commute and Switch specific gates, Pauli{X,Y,Z}..H -> H...Pauli{X,Y,Z} 
+    Commute and Switch specific gates, Pauli{X,Y,Z}..H -> H...Pauli{X,Y,Z}
     or H...Pauli{X,Y,Z} -> Pauli{X,Y,Z}..H.
   }];
- 
+
  let constructor = "mqss::opt::CommonSwitchPass()";
 
   let options = [
@@ -123,12 +123,12 @@ def CommonSwitchPass : Pass<"CommonSwitchPass", "mlir::ModuleOp"> {
 
 def CommonReductionPass : Pass<"CommonReductionPass", "mlir::ModuleOp"> {
   let summary = "Perform Circuit Reduction, {HZH} -> X, {HXH} -> Z, {SAdjZ} -> S or {SZ} -> SAdj. ";
- 
+
   let description = [{
     Perform Circuit Gate Pattern Reduction.
     Supported modes: {HZH} -> X, {HXH} -> Z, {SAdjZ} -> S or {SZ} -> SAdj.
   }];
- 
+
  let constructor = "mqss::opt::CommonReductionPass()";
 
   let options = [
@@ -139,16 +139,16 @@ def CommonReductionPass : Pass<"CommonReductionPass", "mlir::ModuleOp"> {
 
 def CommonDecompositionPass : Pass<"CommonDecompositionPass", "mlir::ModuleOp"> {
   let summary = "Perform Gate Decomposition, {Cx} -> HCzH or {Cz} -> HCxH. ";
- 
+
   let description = [{
         Perform Gate Decomposition, {Cx} -> HCzH or {Cz} -> HCxH. Also, can
         revers the control and targets of each
         "two-qubits CNot gate in a circuit
   }];
- 
+
  let constructor = "mqss::opt::CommonDecompositionPass()";
   let dependentDialects = ["mlir::arith::ArithDialect"];
-  
+
   let options = [
     Option<"mode", "mode", "std::string",
       /*default=*//*default=*/"\"CxToHCzH\"", "Select PassMode CxToHCzH ,CzToHCxH or ReverseCx.">,
@@ -157,14 +157,14 @@ def CommonDecompositionPass : Pass<"CommonDecompositionPass", "mlir::ModuleOp"> 
 
 def BasisConversionPass : Pass<"BasisConversionPass", "mlir::ModuleOp"> {
   let summary = "Recursively Decomposes to native-gate set of target device. ";
- 
+
   let description = [{
         "Quick-and-dirty legalization pass: repeatedly rewrites any gate "
         "that isn't a member of the given native gate set, using the "
         "same rules as the individual Decomposition passes, until every "
         "gate is native or no further progress can be made"
   }];
- 
+
  let constructor = "mqss::opt::BasisConversionPass()";
  let dependentDialects = ["mlir::arith::ArithDialect"];
  let options = [
@@ -175,21 +175,21 @@ def BasisConversionPass : Pass<"BasisConversionPass", "mlir::ModuleOp"> {
 
 def CommonCNOTReversePass : Pass<"CommonCNOTReversePass", "mlir::ModuleOp"> {
   let summary = "Reverse the control and targets of each CNot gate in a circuit";
- 
+
   let description = [{
        Reverse the control and targets of each CNot gate in a circuit.
   }];
- 
+
  let constructor = "mqss::opt::CommonCNOTReversePass()";
 }
 
 def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::ModuleOp"> {
   let summary = "Normalize Arg angle of RX, RY, RZ gates. ";
- 
+
   let description = [{
     Normalize Arg angle of RX, RY, RZ gates.
   }];
- 
+
  let constructor = "mqss::opt::CommonNormalizeArgAnglePass()";
 }
 

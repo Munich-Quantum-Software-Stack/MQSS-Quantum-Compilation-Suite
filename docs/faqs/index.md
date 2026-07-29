@@ -15,6 +15,7 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ----------------------------------------------------------------------------------------------------->
+
 # FAQs
 
 A guide to Frequently asked questions about MQSS, MLIR and other topics.

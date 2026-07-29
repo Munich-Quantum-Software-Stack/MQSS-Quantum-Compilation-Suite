@@ -122,7 +122,7 @@ static std::tuple<string, string> extractQDMIObj(std::string conf_path) {
   }
 }
 
-void PrintDeviceName(QDMI_Device device){
+void PrintDeviceName(QDMI_Device device) {
   size_t namesSize = 0;
   size_t ret = 0;
   ret = QDMI_device_query_device_property(device, QDMI_DEVICE_PROPERTY_NAME, 0,
@@ -156,7 +156,7 @@ static QDMI_Device createQDMIDevice(const char *device_conf_path) {
   // Empty token = read-only; non-empty token = read/write
   const char *token = "XX12Mayi98"; // read-only
   ret = QDMI_session_set_parameter(session, QDMI_SESSION_PARAMETER_TOKEN,
-                                    strlen(token) + 1, token);
+                                   strlen(token) + 1, token);
   assert(ret == QDMI_SUCCESS);
 
   // Initialize QDMI session
@@ -166,22 +166,22 @@ static QDMI_Device createQDMIDevice(const char *device_conf_path) {
   // Query the number of devices
   size_t size_ret = 0;
   ret = QDMI_session_query_session_property(
-             session, QDMI_SESSION_PROPERTY_DEVICES, 0, nullptr, &size_ret);
+      session, QDMI_SESSION_PROPERTY_DEVICES, 0, nullptr, &size_ret);
 
   assert(ret == QDMI_SUCCESS);
-  
+
   size_t num_devices = size_ret / sizeof(QDMI_Device);
   std::vector<QDMI_Device> devices(num_devices);
   ret = QDMI_session_query_session_property(
-             session, QDMI_SESSION_PROPERTY_DEVICES, size_ret,
-             static_cast<void *>(devices.data()), nullptr);
+      session, QDMI_SESSION_PROPERTY_DEVICES, size_ret,
+      static_cast<void *>(devices.data()), nullptr);
 
   MQSS_DEBUG("--> QDMI Num Devices: " << devices.size() << "\n");
   assert(ret == QDMI_SUCCESS);
 
   assert(num_devices > 0);
 
-  QDMI_Device device = devices.front(); 
+  QDMI_Device device = devices.front();
 
   assert(device != nullptr);
   PrintDeviceName(device);

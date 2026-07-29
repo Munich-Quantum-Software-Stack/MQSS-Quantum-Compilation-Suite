@@ -22,7 +22,10 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
+#include "Passes/CodeGen/Patterns.h"
 #include "Passes/Transforms/Error.h"
+#include "Passes/Transforms/PassIncludes.h"
+#include "Quantum/IR/QuantumOps.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
@@ -31,10 +34,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "Passes/Transforms/PassIncludes.h"
 
-#include "Quantum/IR/QuantumOps.h"
-#include "Passes/CodeGen/Patterns.h"
 #include <mlir/Conversion/ArithToLLVM/ArithToLLVM.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/IR/Types.h>
@@ -51,65 +51,64 @@ namespace quantum {
 
 struct QIRTypeConverter : public LLVMTypeConverter {
 
-    QIRTypeConverter(MLIRContext *ctx) : LLVMTypeConverter(ctx)
-    {
-        addConversion([&](QubitType type) { return convertQubitType(type); });
-        addConversion([&](QuregType type) { return convertQuregType(type); });
-        addConversion([&](ObservableType type) { return convertObservableType(type); });
-        addConversion([&](ResultType type) { return convertResultType(type); });
-    }
+  QIRTypeConverter(MLIRContext *ctx) : LLVMTypeConverter(ctx) {
+    addConversion([&](QubitType type) { return convertQubitType(type); });
+    addConversion([&](QuregType type) { return convertQuregType(type); });
+    addConversion(
+        [&](ObservableType type) { return convertObservableType(type); });
+    addConversion([&](ResultType type) { return convertResultType(type); });
+  }
 
-  private:
-    LLVM::LLVMPointerType convertQubitType(mlir::Type mlirType)
-    {
-        return LLVM::LLVMPointerType::get(
-            &getContext()); // LLVM::LLVMStructType::getOpaque("Qubit", &getContext());
-    }
+private:
+  LLVM::LLVMPointerType convertQubitType(mlir::Type mlirType) {
+    return LLVM::LLVMPointerType::get(
+        &getContext()); // LLVM::LLVMStructType::getOpaque("Qubit",
+                        // &getContext());
+  }
 
-    LLVM::LLVMPointerType convertQuregType(mlir::Type mlirType)
-    {
-        return LLVM::LLVMPointerType::get(
-            &getContext()); // LLVM::LLVMStructType::getOpaque("Array", &getContext());
-    }
+  LLVM::LLVMPointerType convertQuregType(mlir::Type mlirType) {
+    return LLVM::LLVMPointerType::get(
+        &getContext()); // LLVM::LLVMStructType::getOpaque("Array",
+                        // &getContext());
+  }
 
-    mlir::Type convertObservableType(mlir::Type mlirType)
-    {
-        return this->convertType(mlir::IntegerType::get(&getContext(), 64));
-    }
+  mlir::Type convertObservableType(mlir::Type mlirType) {
+    return this->convertType(mlir::IntegerType::get(&getContext(), 64));
+  }
 
-    LLVM::LLVMPointerType convertResultType(mlir::Type mlirType)
-    {
-        return LLVM::LLVMPointerType::get(
-            &getContext()); // LLVM::LLVMStructType::getOpaque("Result", &getContext());
-    }
+  LLVM::LLVMPointerType convertResultType(mlir::Type mlirType) {
+    return LLVM::LLVMPointerType::get(
+        &getContext()); // LLVM::LLVMStructType::getOpaque("Result",
+                        // &getContext());
+  }
 };
 
 struct QuantumConversion : impl::QuantumConversionPassBase<QuantumConversion> {
-    using QuantumConversionPassBase::QuantumConversionPassBase;
+  using QuantumConversionPassBase::QuantumConversionPassBase;
 
-    void runOnOperation() final
-    {
-        MLIRContext *context = &getContext();
-        auto module = getOperation();
-        QIRTypeConverter typeConverter(context);
+  void runOnOperation() final {
+    MLIRContext *context = &getContext();
+    auto module = getOperation();
+    QIRTypeConverter typeConverter(context);
 
-        RewritePatternSet patterns(context);
-        arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
-        cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
-        populateFuncToLLVMConversionPatterns(typeConverter, patterns);
-        cf::populateAssertToLLVMConversionPattern(typeConverter, patterns);
-        
-        populateQIRConversionPatterns(typeConverter, patterns, useArrayBackedRegisters);
+    RewritePatternSet patterns(context);
+    arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
+    cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
+    populateFuncToLLVMConversionPatterns(typeConverter, patterns);
+    cf::populateAssertToLLVMConversionPattern(typeConverter, patterns);
 
-        LLVMConversionTarget target(*context);
-        target.addLegalOp<ModuleOp>();
-        // target.addLegalOp<func::FuncOp>();   // keep func ops as-is
+    populateQIRConversionPatterns(typeConverter, patterns,
+                                  useArrayBackedRegisters);
 
-        if (failed(applyFullConversion(getOperation(), target, std::move(patterns)))) {
-           mqss::opt::MQSSemitFatalError(module->getLoc(), "Failed to emit LLVM IR");
-      
-        }
+    LLVMConversionTarget target(*context);
+    target.addLegalOp<ModuleOp>();
+    // target.addLegalOp<func::FuncOp>();   // keep func ops as-is
+
+    if (failed(
+            applyFullConversion(getOperation(), target, std::move(patterns)))) {
+      mqss::opt::MQSSemitFatalError(module->getLoc(), "Failed to emit LLVM IR");
     }
+  }
 };
 
 } // namespace quantum

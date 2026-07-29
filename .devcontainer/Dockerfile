@@ -23,7 +23,7 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget ca-certificates
-    
+
 ARG TARGETARCH
 
 RUN case "$TARGETARCH" in \

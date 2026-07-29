@@ -20,32 +20,35 @@ using namespace mlir;
 
 namespace catalyst {
 
-LLVM::AllocaOp getStaticAlloca(Location &loc, RewriterBase &rewriter, Type ty, int value)
-{
-    // create an llvm.alloca operation at the beginning of the entry block of the current function.
-    Block *insertionBlock = rewriter.getInsertionBlock();
-    Region *parentRegion = insertionBlock->getParent();
-    Block *entryBlock = &parentRegion->front();
-    PatternRewriter::InsertionGuard insertGuard(rewriter);
-    // Move the value at the beginning
-    rewriter.setInsertionPointAfter(&entryBlock->front());
-    auto valueOp = LLVM::ConstantOp::create(rewriter, loc, rewriter.getI64IntegerAttr(value));
-    return LLVM::AllocaOp::create(rewriter, loc, LLVM::LLVMPointerType::get(rewriter.getContext()),
-                                  ty, valueOp);
+LLVM::AllocaOp getStaticAlloca(Location &loc, RewriterBase &rewriter, Type ty,
+                               int value) {
+  // create an llvm.alloca operation at the beginning of the entry block of the
+  // current function.
+  Block *insertionBlock = rewriter.getInsertionBlock();
+  Region *parentRegion = insertionBlock->getParent();
+  Block *entryBlock = &parentRegion->front();
+  PatternRewriter::InsertionGuard insertGuard(rewriter);
+  // Move the value at the beginning
+  rewriter.setInsertionPointAfter(&entryBlock->front());
+  auto valueOp = LLVM::ConstantOp::create(rewriter, loc,
+                                          rewriter.getI64IntegerAttr(value));
+  return LLVM::AllocaOp::create(
+      rewriter, loc, LLVM::LLVMPointerType::get(rewriter.getContext()), ty,
+      valueOp);
 }
 
-mlir::memref::AllocaOp getStaticMemrefAlloca(Location &loc, RewriterBase &rewriter,
-                                             MemRefType paramCountType)
-{
-    // Same as above but for memref.alloca instead of llvm.alloca
-    Block *insertionBlock = rewriter.getInsertionBlock();
-    Region *parentRegion = insertionBlock->getParent();
-    Block *entryBlock = &parentRegion->front();
-    PatternRewriter::InsertionGuard insertGuard(rewriter);
-    if (insertionBlock != entryBlock) {
-        rewriter.setInsertionPoint(&entryBlock->front());
-    }
-    return memref::AllocaOp::create(rewriter, loc, paramCountType);
+mlir::memref::AllocaOp getStaticMemrefAlloca(Location &loc,
+                                             RewriterBase &rewriter,
+                                             MemRefType paramCountType) {
+  // Same as above but for memref.alloca instead of llvm.alloca
+  Block *insertionBlock = rewriter.getInsertionBlock();
+  Region *parentRegion = insertionBlock->getParent();
+  Block *entryBlock = &parentRegion->front();
+  PatternRewriter::InsertionGuard insertGuard(rewriter);
+  if (insertionBlock != entryBlock) {
+    rewriter.setInsertionPoint(&entryBlock->front());
+  }
+  return memref::AllocaOp::create(rewriter, loc, paramCountType);
 }
 
 } // namespace catalyst

@@ -6,14 +6,14 @@
  * the terms of the Apache License 2.0 which accompanies this distribution.    *
  ******************************************************************************/
 
-
-#include "cudaq/Optimizer/Builder/Intrinsics.h"
 #include "Passes/Transforms/PassIncludes.h"
+#include "cudaq/Optimizer/Builder/Intrinsics.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Dominance.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include "mlir/Transforms/Passes.h"
+
 #include <llvm/IR/Type.h>
 #include <mlir/Pass/Pass.h>
 
@@ -36,7 +36,8 @@ SmallVector<A> conversion(ArrayAttr seq, mlir::Type) {
   return result;
 }
 template <>
-SmallVector<APInt> conversion<APInt, IntegerAttr>(ArrayAttr seq, mlir::Type ty) {
+SmallVector<APInt> conversion<APInt, IntegerAttr>(ArrayAttr seq,
+                                                  mlir::Type ty) {
   SmallVector<APInt> result;
   for (auto v : seq) {
     auto c = cast<IntegerAttr>(v);

@@ -15,6 +15,7 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ----------------------------------------------------------------------------------------------------->
+
 ```{raw} html
 <div style="text-align: center; margin-top: 2rem;">
   <img src="_static/mqss_logo.svg" class="logo-light" style="width: 20%;">
@@ -33,9 +34,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 # Munich Quantum Software Stack (MQSS) Quantum Compilation Suite
 
-Welcome to the MQSS-Quantum Compilation Suite documentation page!
-This documentation provides helpful information to get you started with the Quantum
-Compilation suite of the Munich Quantum Software Stack (MQSS).
+Welcome to the MQSS-Quantum Compilation Suite documentation page! This documentation provides
+helpful information to get you started with the Quantum Compilation suite of the Munich Quantum
+Software Stack (MQSS).
 
 ```{toctree}
 :maxdepth: 2

@@ -29,7 +29,8 @@ using namespace mlir;
 
 namespace catalyst {
 
-LLVM::AllocaOp getStaticAlloca(Location &loc, RewriterBase &rewriter, Type ty, int val);
+LLVM::AllocaOp getStaticAlloca(Location &loc, RewriterBase &rewriter, Type ty,
+                               int val);
 memref::AllocaOp getStaticMemrefAlloca(Location &loc, RewriterBase &rewriter,
                                        MemRefType paramCountType);
 

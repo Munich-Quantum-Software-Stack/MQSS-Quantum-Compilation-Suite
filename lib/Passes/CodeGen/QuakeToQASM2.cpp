@@ -22,8 +22,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
-#include "cudaq/Optimizer/CodeGen/OpenQASMEmitter.h"
 #include "Passes/Transforms/PassIncludes.h"
+#include "cudaq/Optimizer/CodeGen/OpenQASMEmitter.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 
 namespace mqss::opt {
@@ -42,7 +42,6 @@ class QuakeToQASM2
     : public mqss_backend::impl::QuakeToQASM2PassBase<QuakeToQASM2> {
 
 public:
-
   void runOnOperation() override {
 
     MQSS_DEBUG("\n[Applying Pass: QuakeToQASM2]\n");
@@ -53,7 +52,6 @@ public:
 
     translateToOpenQASM(module, llvm::outs());
     // Convert the module to LLVM IR in a new LLVM IR context.
-    
   }
 };
 

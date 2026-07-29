@@ -4,7 +4,3 @@
 
 // CHECK: %1 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
 // CHECK: quake.s %1 : (!quake.ref) -> ()
-
-
-
-

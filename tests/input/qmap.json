@@ -1,27 +1,27 @@
 {
-    "architecture": {
-        "num_qubits": 5,
-        "coupling_map": [
-            [0, 1],
-            [1, 0],
-            [1, 2],
-            [2, 1],
-            [2, 3],
-            [3, 2],
-            [3, 4],
-            [4, 3],
-            [4, 0],
-            [0, 4]
-        ]
-    },
-    "mapper_settings": {
-        "heuristic": "GateCountMaxDistance",
-        "layering": "DisjointQubits",
-        "initial_layout": "Identity",
-        "pre_mapping_optimizations": false,
-        "post_mapping_optimizations": false,
-        "lookahead_heuristic": "None",
-        "debug": false,
-        "add_measurements_to_mapped_circuit": true
-    }
+  "architecture": {
+    "num_qubits": 5,
+    "coupling_map": [
+      [0, 1],
+      [1, 0],
+      [1, 2],
+      [2, 1],
+      [2, 3],
+      [3, 2],
+      [3, 4],
+      [4, 3],
+      [4, 0],
+      [0, 4]
+    ]
+  },
+  "mapper_settings": {
+    "heuristic": "GateCountMaxDistance",
+    "layering": "DisjointQubits",
+    "initial_layout": "Identity",
+    "pre_mapping_optimizations": false,
+    "post_mapping_optimizations": false,
+    "lookahead_heuristic": "None",
+    "debug": false,
+    "add_measurements_to_mapped_circuit": true
+  }
 }

@@ -1,4 +1,3 @@
-
 <!--------------------------------------------------------------------------------------------------
 Copyright 2024 Munich Quantum Software Stack Project
 
@@ -16,6 +15,7 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ----------------------------------------------------------------------------------------------------->
+
 # Development Guide
 
 Ready to contribute to the Quantum Compilation Suite of the MQSS? This guide will help you get
@@ -24,8 +24,8 @@ started.
 ## Development Environment
 
 - It is recommended to use a docker container to ensure consistent, stable development environment.
-- The required ```DockerFile``` and ```devcontainer.json``` are provided in ```.devcontainer```
-  directory. Build and RUN the docker container using the following commands:
+- The required `DockerFile` and `devcontainer.json` are provided in `.devcontainer` directory. Build
+  and RUN the docker container using the following commands:
 
 ```sh
 docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
@@ -38,12 +38,11 @@ docker run --rm -it \
 
 ## Building the tool
 
-- The driver is the ```Makefile``` within the project root.
-- The Makefile invokes build scripts within ```scripts/```.
-   ```build.sh```: Main script for configuring the build for all targets including
-    ```mqss-opt```
+- The driver is the `Makefile` within the project root.
+- The Makefile invokes build scripts within `scripts/`. `build.sh`: Main script for configuring the
+  build for all targets including `mqss-opt`
 
-- The ```make`` commands to build the targets remain the same as in the [README](../../README.md).
+- The ``make` commands to build the targets remain the same as in the [README](../../README.md).
   Ensure the sequence of commands is followed.
 
 ## Project structure (for Current Release)
@@ -178,20 +177,19 @@ MQSS-Quantum-Compilation-Suite/
 └── mqss-cc.cpp
 ```
 
-- The Dialect Agnostic MLIR optimization passes can be found in ```lib/Passes/Transforms```.
+- The Dialect Agnostic MLIR optimization passes can be found in `lib/Passes/Transforms`.
 
-- CUDAQ and Catalyst are included as external dependencies and are downloaded and
-  installed as ```cmake``` modules. Following targets are built for each of these
-  modules:
-  - CUDAQ: ```QuakeDialect CCDialect QECDialect OptimBuilder OptCodeGen```
-  - Catalyst : ```MLIRMBQC MLIRQRef MLIRQuantum```
-  These targets incorporate all dialect related headers and API implementations.
+- CUDAQ and Catalyst are included as external dependencies and are downloaded and installed as
+  `cmake` modules. Following targets are built for each of these modules:
+  - CUDAQ: `QuakeDialect CCDialect QECDialect OptimBuilder OptCodeGen`
+  - Catalyst : `MLIRMBQC MLIRQRef MLIRQuantum` These targets incorporate all dialect related headers
+    and API implementations.
 
 ## CMakeLists.txt
 
-Two CMakeLists.txt are of importance: ```root/CMakeLists.txt``` and ```lib/Passes/CMakeLists.txt```.
-CUDAQ, Catalyst, QDMI, MQT-QMAP etc. are linked as external dependencies in each of
-these CMakeLists as follows: For e.g. in Root/CMakeLists.txt:
+Two CMakeLists.txt are of importance: `root/CMakeLists.txt` and `lib/Passes/CMakeLists.txt`. CUDAQ,
+Catalyst, QDMI, MQT-QMAP etc. are linked as external dependencies in each of these CMakeLists as
+follows: For e.g. in Root/CMakeLists.txt:
 
 ```sh
 target_link_libraries(mqss-opt
@@ -246,33 +244,34 @@ target_link_libraries(mqss-opt
 
 ## Testing
 
-- We use python-lit along-with ninja and FileCheck to perform dialect-level (input: MLIR dialect; output: MLIR dialect)
-and optionally end-to-end (input:c++/python code; output: MLIR dialect) testing. In the end, what is tested
-for correctness is the output optimized/transformed MLIR dialect. In a select few cases, especially the ```CodeGen```
-passes, the backend exchange formats e.g. QIR or OpenQasm2 are tested for correctness.
+- We use python-lit along-with ninja and FileCheck to perform dialect-level (input: MLIR dialect;
+  output: MLIR dialect) and optionally end-to-end (input:c++/python code; output: MLIR dialect)
+  testing. In the end, what is tested for correctness is the output optimized/transformed MLIR
+  dialect. In a select few cases, especially the `CodeGen` passes, the backend exchange formats e.g.
+  QIR or OpenQasm2 are tested for correctness.
 
-- The tests can be found in directories : ```tests/dialects``` and ```tests/code```.
+- The tests can be found in directories : `tests/dialects` and `tests/code`.
 
 - Dialect-level testing
+
   1. The input dialect is annotated with the RUN command, for e.g.:
 
-    ```// RUN: %mqss-opt %s --CommonCommutePass=mode=CX-X 2>&1 | FileCheck %s```
-    which runs the target/executable ```mqss-opt``` along-with the pass ```CommonCommutePass```.
-    FileCheck looks for strings to match, specified using the ```CHECK:``` keyword, for e.g.
+  `// RUN: %mqss-opt %s --CommonCommutePass=mode=CX-X 2>&1 | FileCheck %s` which runs the
+  target/executable `mqss-opt` along-with the pass `CommonCommutePass`. FileCheck looks for strings
+  to match, specified using the `CHECK:` keyword, for e.g.
 
-    ```sh
-    // CHECK: %out_qubits = quantum.custom "PauliX"() %2 : !quantum.bit
-    // CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %1, %2 : !quantum.bit, !quantum.bit
-    ```
+  ```sh
+  // CHECK: %out_qubits = quantum.custom "PauliX"() %2 : !quantum.bit
+  // CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %1, %2 : !quantum.bit, !quantum.bit
+  ```
 
-    If an exact match is found in the output dialect, the test succeeds, otherwise the test fails.
+  If an exact match is found in the output dialect, the test succeeds, otherwise the test fails.
 
-  1. End-to-End testing (Optional)
-     In this testing, the input is a c++/python code, which is then translated to the input
-     MLIR dialect. The testing then proceeds as in (1). The emphasis here is on testing the
-     front-end translation pipeline as well as the transformed dialects. A wrapper script
-     ```mqss-cc``` is used to invoke the necessary tools to translate the c++/python code
-     to the input quake or catalyst-quantum dialect. If the input code to MLIR dialect translation fails,
+  1. End-to-End testing (Optional) In this testing, the input is a c++/python code, which is then
+     translated to the input MLIR dialect. The testing then proceeds as in (1). The emphasis here is
+     on testing the front-end translation pipeline as well as the transformed dialects. A wrapper
+     script `mqss-cc` is used to invoke the necessary tools to translate the c++/python code to the
+     input quake or catalyst-quantum dialect. If the input code to MLIR dialect translation fails,
      then the test itself will fail. An example test file performing such a test is shown below:
 
      ```sh
@@ -282,19 +281,21 @@ passes, the backend exchange formats e.g. QIR or OpenQasm2 are tested for correc
       // CHECK-NEXT: quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
      ```
 
-    The test proceeds as follows:
-    1. mqss-cc parses the command-line arguments ```%S/../CommuteCNotRxPass.cpp --passes=CommonCommutePass=mode=CX-RX```
-    2. Since, a c++ code is the input, it is assumed that the code contains a quantum circuit defined using
-        cudaq (will be updated in the future).
-    3. The c++ to quake dialect translation pipeline is invoked via the tool ```cudaq-quake```
-    4. Once the input dialect is generated, ```mqss-opt``` tool is used to apply MQSS optimization/translation
-       passes defined using the ```--passes``` flag.
-    5. Finally, the optimized/transformed dialect is emitted which is checked by FileCheck.
+  The test proceeds as follows:
 
-    Note: Make sure that the path to ```cudaq-quake``` and ```mqss-opt``` are appended to the ```$PATH```
-    environment variable of your shell via the command : ```eval "$(make set-target-paths)"```.
+  1. mqss-cc parses the command-line arguments
+     `%S/../CommuteCNotRxPass.cpp --passes=CommonCommutePass=mode=CX-RX`
+  2. Since, a c++ code is the input, it is assumed that the code contains a quantum circuit defined
+     using cudaq (will be updated in the future).
+  3. The c++ to quake dialect translation pipeline is invoked via the tool `cudaq-quake`
+  4. Once the input dialect is generated, `mqss-opt` tool is used to apply MQSS
+     optimization/translation passes defined using the `--passes` flag.
+  5. Finally, the optimized/transformed dialect is emitted which is checked by FileCheck.
+
+  Note: Make sure that the path to `cudaq-quake` and `mqss-opt` are appended to the `$PATH`
+  environment variable of your shell via the command : `eval "$(make set-target-paths)"`.
 
 ## Enabling Pass Debug Information
 
-The Pass debug information can be enabled by passing in the flag ```--debug``` to the ```DEBUG_FLAG```
+The Pass debug information can be enabled by passing in the flag `--debug` to the `DEBUG_FLAG`
 variable within the Makefile. Simply remove the flag if no debug information is needed.

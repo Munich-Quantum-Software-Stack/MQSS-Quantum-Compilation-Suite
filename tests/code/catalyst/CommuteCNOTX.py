@@ -1,5 +1,5 @@
 
-# mqss-cc /workspaces/MQSS-Passes-Suite/test-mqss-passes/code/catalyst/CommuteCNOTX.py --function kernel \ 
+# mqss-cc /workspaces/MQSS-Passes-Suite/test-mqss-passes/code/catalyst/CommuteCNOTX.py --function kernel \
 # --stage HLOLoweringStage --out-dir output/ --passes=CommonCommutePass=mode=CX-X
 
 from catalyst import qjit
@@ -7,7 +7,7 @@ import pennylane as qml
 
 dev = qml.device("lightning.qubit", wires=2)
 
-@qjit(keep_intermediate=True) 
+@qjit(keep_intermediate=True)
 @qml.set_shots(1000)
 @qml.qnode(dev)
 def kernel_CommuteCNOTX():

@@ -3,8 +3,7 @@
 #include <iostream>
 
 // Bell-state kernel: H on q0, then CNOT(q0, q1), measure both.
-template <std::size_t N>
-struct bell {
+template <std::size_t N> struct bell {
   void operator()() __qpu__ {
     cudaq::qvector q(N);
     h(q[0]);
@@ -14,9 +13,9 @@ struct bell {
   }
 };
 
-// Rotation kernel: H + rz(pi/4) on q0, X on q1, then CNOT(q0, q1), measure both.
-template <std::size_t N>
-struct rot {
+// Rotation kernel: H + rz(pi/4) on q0, X on q1, then CNOT(q0, q1), measure
+// both.
+template <std::size_t N> struct rot {
   void operator()() __qpu__ {
     cudaq::qvector q(N);
     h(q[0]);

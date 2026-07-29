@@ -28,9 +28,7 @@
       ],
       "settings": {
         "clangd.path": "/usr/bin/clangd",
-        "clangd.arguments": [
-          "--compile-commands-dir=/workspaces/MQSS-Passes-Suite/build"
-        ],
+        "clangd.arguments": ["--compile-commands-dir=/workspaces/MQSS-Passes-Suite/build"],
         "files.associations": {
           "CMakeLists.txt": "cmake",
           "*.cmake.in": "cmake",
@@ -50,15 +48,7 @@
           "editor.formatOnPaste": true,
           "files.trimTrailingWhitespace": true
         },
-        "cSpell.userWords": [
-          "MLIR",
-          "LLVM",
-          "bitcode",
-          "Quake",
-          "catalyst",
-          "qubit",
-          "qubits"
-        ],
+        "cSpell.userWords": ["MLIR", "LLVM", "bitcode", "Quake", "catalyst", "qubit", "qubits"],
         "[python]": {
           "editor.formatOnType": true
         },

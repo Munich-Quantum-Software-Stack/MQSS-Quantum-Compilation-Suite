@@ -25,7 +25,7 @@ RESOLVER_SCRIPT=scripts/resolve_python_input.py
 
 .PHONY: mqss-opt setup-env
 
-setup-env: 
+setup-env:
 	@./scripts/setup-env.sh
 
 front-end-paths:
@@ -38,10 +38,10 @@ frontend: setup-env
 	@./scripts/download_toolchains.sh
 	@ln -sf $(abspath $(RESOLVER_SCRIPT)) $(INSTALL_DIR)/resolve_python_input.py
 	@ln -sf $(abspath $(SRC_SCRIPT)) $(INSTALL_DIR)/mqss-cc
-	@chmod +x $(INSTALL_DIR)/mqss-cc 
+	@chmod +x $(INSTALL_DIR)/mqss-cc
 
 mqss-opt:
-	@./scripts/build.sh ${DEBUG_FLAG} ${INSTALL_PATH} 
+	@./scripts/build.sh ${DEBUG_FLAG} ${INSTALL_PATH}
 
 docs:
 	./scripts/build_docs.sh
@@ -59,7 +59,7 @@ test-dialects:
 
 test-all:
 	@ninja -C $(CURDIR)/build check-mqss-code
-	
+
 build: mqss-opt
 	@echo "	"
 	@echo "Configured Build, PLEASE RUN: make target"
@@ -77,5 +77,3 @@ merge-one:
 	  jq -s 'add' $(MERGED_CCDB) $(SRC) > $(MERGED_CCDB).tmp && \
 	  mv $(MERGED_CCDB).tmp $(MERGED_CCDB); \
 	fi
-
-

@@ -23,8 +23,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
-#include "QuakeExtractor.h"
 #include "CatalystExtractor.h"
+#include "QuakeExtractor.h"
+
 #include <memory>
 #include <string>
 
@@ -45,8 +46,14 @@ static QuantumDialect detectFramework(ModuleOp module) {
   QuantumDialect fw = QuantumDialect::Unknown;
   module.walk([&](Operation *op) {
     auto ns = op->getDialect()->getNamespace();
-    if (ns == "quake") { fw = QuantumDialect::Quake; return WalkResult::interrupt(); }
-    if (ns == "quantum") { fw = QuantumDialect::Catalyst; return WalkResult::interrupt(); }
+    if (ns == "quake") {
+      fw = QuantumDialect::Quake;
+      return WalkResult::interrupt();
+    }
+    if (ns == "quantum") {
+      fw = QuantumDialect::Catalyst;
+      return WalkResult::interrupt();
+    }
     return WalkResult::advance();
   });
   return fw;

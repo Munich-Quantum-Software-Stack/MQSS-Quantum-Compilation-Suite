@@ -2,7 +2,7 @@
 
 module {
   func.func @CommuteCNot_Z_test() {
-   
+
     %cst = arith.constant 5.141600e+00 : f64
     %cst_0 = arith.constant 2.400000e+00 : f64
 
@@ -10,7 +10,7 @@ module {
 
     %q0 = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
     %q1 = quantum.extract %qreg[1] : !quantum.reg -> !quantum.bit
- 
+
     %q0_1, %q1_1 = quantum.custom "CNOT"() %q0, %q1 : !quantum.bit, !quantum.bit
 
     %q2 = quantum.extract %qreg[2] : !quantum.reg -> !quantum.bit
