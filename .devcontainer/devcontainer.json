@@ -7,7 +7,7 @@
     "LANG": "en_US.UTF-8",
     "LC_ALL": "en_US.UTF-8"
   },
-  "workspaceFolder": "/workspaces/MQSS-Passes-Suite",
+  "workspaceFolder": "/workspaces/MQSS-Quantum-Compilation-Suite",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -28,7 +28,7 @@
       ],
       "settings": {
         "clangd.path": "/usr/bin/clangd",
-        "clangd.arguments": ["--compile-commands-dir=/workspaces/MQSS-Passes-Suite/build"],
+        "clangd.arguments": ["--compile-commands-dir=/workspaces/MQSS-Quantum-Compilation-Suite/build"],
         "files.associations": {
           "CMakeLists.txt": "cmake",
           "*.cmake.in": "cmake",
