@@ -197,12 +197,13 @@
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Running test circuits</a></li>
 <li class="toctree-l2"><a class="reference internal" href="passes.html">Passes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../develop-guide/index.html">Development Guide</a><input aria-label="Toggle navigation of Development Guide" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../develop-guide/develop-guide.html">Development Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../develop-guide/templates.html">Writing Passes for the MQSS</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../develop-guide/integrate.html">Integrating the MQSS-QCS within your project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/integrate.html">Integrating the MQSS Quantum Compilation Suite within your project</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../faqs/index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -248,21 +249,80 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="running-test-circuits">
+          <!--------------------------------------------------------------------------------------------------
+Copyright 2024 Munich Quantum Software Stack Project
+
+Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
+"License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+----------------------------------------------------------------------------------------------------->
+<section id="running-test-circuits">
 <h1>Running test circuits<a class="headerlink" href="#running-test-circuits" title="Link to this heading">¶</a></h1>
-<p>The driver script for running example circuits (in c++/python) is <code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code>.
-After the targets are generated this script is installed within the <code class="docutils literal notranslate"><span class="pre">INSTALL_DIR</span></code>
-and should be on the <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> environment variable fo your bash shell.
-Check by running the command:</p>
+<section id="using-mqss-opt">
+<h2>Using mqss-opt<a class="headerlink" href="#using-mqss-opt" title="Link to this heading">¶</a></h2>
+<p>The binary <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> is used to invoke passes on input MLIR dialects. To check the list of
+available passes Run:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mqss-opt<span class="w"> </span>-h
+</pre></div>
+</div>
+<p>Make sure <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> is on the<code class="docutils literal notranslate"><span class="pre">$PATH</span></code> environment variable of your shell. If it isn’t Run:
+<code class="docutils literal notranslate"><span class="pre">eval</span> <span class="pre">&quot;$(make</span> <span class="pre">set-target-paths)&quot;</span></code>.</p>
+<section id="mlir-dialect-input-quake-or-catalyst-quantum">
+<h3>MLIR dialect input (quake or catalyst-quantum)<a class="headerlink" href="#mlir-dialect-input-quake-or-catalyst-quantum" title="Link to this heading">¶</a></h3>
+<p>Here is the Bell-State circuit in the Quake MLIR dialect:</p>
+<div class="highlight-llvm notranslate"><div class="highlight"><pre><span></span><span class="k">module</span><span class="w"> </span><span class="k">attributes</span><span class="w"> </span><span class="p">{</span><span class="k">cc</span><span class="p">.</span><span class="err">sizeof_string</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nl">24 :</span><span class="w"> </span><span class="kt">i64</span><span class="p">,</span><span class="w"> </span><span class="err">llvm</span><span class="p">.</span><span class="err">data_layout</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">llvm</span><span class="p">.</span><span class="k">triple</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;aarch64-unknown-linux-gnu&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">quake</span><span class="p">.</span><span class="err">mangled_name_map</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="err">__nvqpp__mlirgen__bellILm</span><span class="m">2</span><span class="err">EE</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;_ZN4bellILm2EEclEv&quot;</span><span class="p">}}</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="err">fun</span><span class="k">c</span><span class="p">.</span><span class="err">fun</span><span class="k">c</span><span class="w"> </span><span class="vg">@__nvqpp__mlirgen__bellILm2EE</span><span class="p">()</span><span class="w"> </span><span class="k">attributes</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;cudaq-entrypoint&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;cudaq-kernel&quot;</span><span class="p">}</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nv nv-Anonymous">%0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">quake</span><span class="p">.</span><span class="k">alloca</span><span class="w"> </span><span class="nv">!quake.veq</span><span class="p">&lt;</span><span class="m">2</span><span class="p">&gt;</span>
+<span class="w">    </span><span class="nv nv-Anonymous">%1</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">quake</span><span class="p">.</span><span class="err">extract_ref</span><span class="w"> </span><span class="nv nv-Anonymous">%0</span><span class="p">[</span><span class="m">0</span><span class="p">]</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="nv">!quake.veq</span><span class="p">&lt;</span><span class="m">2</span><span class="p">&gt;)</span><span class="w"> </span><span class="err">-</span><span class="p">&gt;</span><span class="w"> </span><span class="nv">!quake.ref</span>
+<span class="w">    </span><span class="err">quake</span><span class="p">.</span><span class="err">h</span><span class="w"> </span><span class="nv nv-Anonymous">%1</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="nv">!quake.ref</span><span class="p">)</span><span class="w"> </span><span class="err">-</span><span class="p">&gt;</span><span class="w"> </span><span class="p">()</span>
+<span class="w">    </span><span class="nv nv-Anonymous">%2</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">quake</span><span class="p">.</span><span class="err">extract_ref</span><span class="w"> </span><span class="nv nv-Anonymous">%0</span><span class="p">[</span><span class="m">0</span><span class="p">]</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="nv">!quake.veq</span><span class="p">&lt;</span><span class="m">2</span><span class="p">&gt;)</span><span class="w"> </span><span class="err">-</span><span class="p">&gt;</span><span class="w"> </span><span class="nv">!quake.ref</span>
+<span class="w">    </span><span class="nv nv-Anonymous">%3</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">quake</span><span class="p">.</span><span class="err">extract_ref</span><span class="w"> </span><span class="nv nv-Anonymous">%0</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="nv">!quake.veq</span><span class="p">&lt;</span><span class="m">2</span><span class="p">&gt;)</span><span class="w"> </span><span class="err">-</span><span class="p">&gt;</span><span class="w"> </span><span class="nv">!quake.ref</span>
+<span class="w">    </span><span class="err">quake</span><span class="p">.</span><span class="k">x</span><span class="w"> </span><span class="p">[</span><span class="nv nv-Anonymous">%2</span><span class="p">]</span><span class="w"> </span><span class="nv nv-Anonymous">%3</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="nv">!quake.ref</span><span class="p">,</span><span class="w"> </span><span class="nv">!quake.ref</span><span class="p">)</span><span class="w"> </span><span class="err">-</span><span class="p">&gt;</span><span class="w"> </span><span class="p">()</span>
+<span class="w">    </span><span class="nv">%q0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">quake</span><span class="p">.</span><span class="err">extract_ref</span><span class="w"> </span><span class="nv nv-Anonymous">%0</span><span class="p">[</span><span class="m">0</span><span class="p">]</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="nv">!quake.veq</span><span class="p">&lt;</span><span class="m">2</span><span class="p">&gt;)</span><span class="w"> </span><span class="err">-</span><span class="p">&gt;</span><span class="w"> </span><span class="nv">!quake.ref</span>
+<span class="w">    </span><span class="nv">%q1</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">quake</span><span class="p">.</span><span class="err">extract_ref</span><span class="w"> </span><span class="nv nv-Anonymous">%0</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="nv">!quake.veq</span><span class="p">&lt;</span><span class="m">2</span><span class="p">&gt;)</span><span class="w"> </span><span class="err">-</span><span class="p">&gt;</span><span class="w"> </span><span class="nv">!quake.ref</span>
+<span class="w">    </span><span class="nv">%m0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">quake</span><span class="p">.</span><span class="err">mz</span><span class="w"> </span><span class="nv">%q0</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="nv">!quake.ref</span><span class="p">)</span><span class="w"> </span><span class="err">-</span><span class="p">&gt;</span><span class="w"> </span><span class="nv">!quake.measure</span>
+<span class="w">    </span><span class="nv">%m1</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="err">quake</span><span class="p">.</span><span class="err">mz</span><span class="w"> </span><span class="nv">%q1</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="nv">!quake.ref</span><span class="p">)</span><span class="w"> </span><span class="err">-</span><span class="p">&gt;</span><span class="w"> </span><span class="nv">!quake.measure</span>
+<span class="w">    </span><span class="err">return</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Following command shows an example of how passes can be invoked on this circuit (assuming the
+dialect is saved as bell_state.qke):</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mqss-opt<span class="w"> </span>bell-state.qke<span class="w"> </span>--cse<span class="w"> </span>--canonicalize<span class="w"> </span>--BasisConversionPass<span class="o">=</span><span class="nv">gates</span><span class="o">=</span>phased_rx,cz
+</pre></div>
+</div>
+<p>The output is the same input <code class="docutils literal notranslate"><span class="pre">bell-state.qke</span></code> dialect but with transformations. In this case, the
+hadamard and CNOT gates in the input dialect <code class="docutils literal notranslate"><span class="pre">quake.h</span></code> and <code class="docutils literal notranslate"><span class="pre">quake.x</span></code> will be decomposed to the
+<code class="docutils literal notranslate"><span class="pre">phased_rx</span></code> and <code class="docutils literal notranslate"><span class="pre">cz</span></code> gates. Similarly, one can invoke passes on the catalyst-quantum mlir dialect by
+just replacing the quake dialect input with the catalyst-quantum input.</p>
+</section>
+</section>
+<section id="using-mqss-cc-script-frontend-test">
+<h2>Using mqss-cc script (Frontend test)<a class="headerlink" href="#using-mqss-cc-script-frontend-test" title="Link to this heading">¶</a></h2>
+<p>Note: Before running a Frontend test, make sure you follow the installation instructions within
+<a class="reference internal" href="build.html"><span class="std std-doc">build</span></a>.</br> The driver script for running example circuits (in c++/python) is <code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code>.
+After the targets are generated this script is installed within the <code class="docutils literal notranslate"><span class="pre">INSTALL_DIR</span></code> and should be on
+the <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> environment variable for your bash shell. Check by running the command:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nv">$mqss</span>-cc<span class="w"> </span>-h
 </pre></div>
 </div>
-<p>If nothing prints, run the command <code class="docutils literal notranslate"><span class="pre">eval</span> <span class="pre">&quot;$(make</span> <span class="pre">set-target-paths)&quot;</span></code> from the <code class="docutils literal notranslate"><span class="pre">root</span></code>
-directory once again.</p>
+<p>If nothing prints, run the command <code class="docutils literal notranslate"><span class="pre">eval</span> <span class="pre">&quot;$(make</span> <span class="pre">set-target-paths)&quot;</span></code> from the <code class="docutils literal notranslate"><span class="pre">root</span></code> directory once
+again.</p>
 <section id="c-test-circuits">
-<h2>C++ test circuits<a class="headerlink" href="#c-test-circuits" title="Link to this heading">¶</a></h2>
-<p>The compilation suite accepts c++ circuits written using <a class="reference external" href="https://github.com/NVIDIA/cuda-quantum">cudaq</a>.
-Following is an example:</p>
+<h3>C++ test circuits<a class="headerlink" href="#c-test-circuits" title="Link to this heading">¶</a></h3>
+<p>The compilation suite accepts c++ circuits written using
+<a class="reference external" href="https://github.com/NVIDIA/cuda-quantum">cudaq</a>. Following is an example:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cudaq.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;fstream&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
@@ -297,18 +357,18 @@ Following is an example:</p>
 </pre></div>
 </div>
 <p>To run the above test circuit using <code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code> use the following command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.cpp<span class="w"> </span>--convert-to<span class="o">=</span>qasm2<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.cpp<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
 </pre></div>
 </div>
-<p>The <code class="docutils literal notranslate"><span class="pre">Commutation</span> <span class="pre">Optimization</span> <span class="pre">pass</span></code> is applied to commute <code class="docutils literal notranslate"><span class="pre">CNOT</span> <span class="pre">and</span> <span class="pre">RX</span></code> gates.
-The output in this case will be QIR since the <code class="docutils literal notranslate"><span class="pre">emit-qir</span></code> flag is enabled.</p>
-<p>Note: One can use cudaq to write quantum circuits in python. But this is not supported
-yet within <code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Commutation</span> <span class="pre">Optimization</span> <span class="pre">pass</span></code> is applied to commute <code class="docutils literal notranslate"><span class="pre">CNOT</span> <span class="pre">and</span> <span class="pre">RX</span></code> gates. The output in this
+case will be QIR since the <code class="docutils literal notranslate"><span class="pre">emit-qir</span></code> flag is enabled.</p>
+<p>Note: One can use cudaq to write quantum circuits in python. But this is not supported yet within
+<code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code>.</p>
 </section>
 <section id="python-test-circuits">
-<h2>Python test circuits<a class="headerlink" href="#python-test-circuits" title="Link to this heading">¶</a></h2>
-<p>The compilation suite accepts python circuits written using <a class="reference external" href="https://github.com/PennyLaneAI/catalyst">catalyst</a>.
-Following is an example:</p>
+<h3>Python test circuits<a class="headerlink" href="#python-test-circuits" title="Link to this heading">¶</a></h3>
+<p>The compilation suite accepts python circuits written using
+<a class="reference external" href="https://github.com/PennyLaneAI/catalyst">catalyst</a>. Following is an example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">catalyst</span><span class="w"> </span><span class="kn">import</span> <span class="n">qjit</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pennylane</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">qml</span>
@@ -334,12 +394,13 @@ Following is an example:</p>
 
 </pre></div>
 </div>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.py<span class="w"> </span>--convert-to<span class="o">=</span>qir<span class="w"> </span>--function<span class="w"> </span>circuit<span class="w"> </span><span class="se">\</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.py<span class="w"> </span>--function<span class="w"> </span>circuit<span class="w"> </span><span class="se">\</span>
 <span class="w">           </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
 </pre></div>
 </div>
-<p>Do Not forget to mention the function to compile afer the <code class="docutils literal notranslate"><span class="pre">--function</span></code> flag.
-Refer to <a class="reference internal" href="passes.html"><span class="std std-doc">Passes</span></a> for a list of all available MLIR passes.</p>
+<p>Do Not forget to mention the function to compile after the <code class="docutils literal notranslate"><span class="pre">--function</span></code> flag. Refer to
+<a class="reference internal" href="passes.html"><span class="std std-doc">Passes</span></a> for a list of all available MLIR passes.</p>
+</section>
 </section>
 </section>
 
@@ -399,8 +460,15 @@ Refer to <a class="reference internal" href="passes.html"><span class="std std-d
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Running test circuits</a><ul>
+<li><a class="reference internal" href="#using-mqss-opt">Using mqss-opt</a><ul>
+<li><a class="reference internal" href="#mlir-dialect-input-quake-or-catalyst-quantum">MLIR dialect input (quake or catalyst-quantum)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-mqss-cc-script-frontend-test">Using mqss-cc script (Frontend test)</a><ul>
 <li><a class="reference internal" href="#c-test-circuits">C++ test circuits</a></li>
 <li><a class="reference internal" href="#python-test-circuits">Python test circuits</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

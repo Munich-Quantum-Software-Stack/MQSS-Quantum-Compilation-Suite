@@ -197,12 +197,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/running.html">Running test circuits</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/passes.html">Passes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Development Guide</a><input aria-label="Toggle navigation of Development Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Development Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="templates.html">Writing Passes for the MQSS</a></li>
-<li class="toctree-l2"><a class="reference internal" href="integrate.html">Integrating the MQSS-QCS within your project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrate.html">Integrating the MQSS Quantum Compilation Suite within your project</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../faqs/index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -248,17 +249,14 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="development-guide">
-<h1>Development Guide<a class="headerlink" href="#development-guide" title="Link to this heading">¶</a></h1>
-<!-- IMPORTANT: Keep the line above as the first line. -->
-<!----------------------------------------------------------------------------
+          <!--------------------------------------------------------------------------------------------------
 Copyright 2024 Munich Quantum Software Stack Project
 
 Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
 "License"); you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -267,16 +265,17 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
--------------------------------------------------------------------------- -->
-<!-- This file is a static page and included in the CMakeLists.txt file. -->
+----------------------------------------------------------------------------------------------------->
+<section id="development-guide">
+<h1>Development Guide<a class="headerlink" href="#development-guide" title="Link to this heading">¶</a></h1>
 <p>Ready to contribute to the Quantum Compilation Suite of the MQSS? This guide will help you get
 started.</p>
 <section id="development-environment">
 <h2>Development Environment<a class="headerlink" href="#development-environment" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>It is recommended to use a docker container to ensure consistent, stable development environment.</p></li>
-<li><p>The required <code class="docutils literal notranslate"><span class="pre">DockerFile</span></code> and <code class="docutils literal notranslate"><span class="pre">devcontainer.json</span></code> are provided in <code class="docutils literal notranslate"><span class="pre">.devcontainer</span></code>
-directory. Build and RUN the docker container using the following commands:</p></li>
+<li><p>The required <code class="docutils literal notranslate"><span class="pre">DockerFile</span></code> and <code class="docutils literal notranslate"><span class="pre">devcontainer.json</span></code> are provided in <code class="docutils literal notranslate"><span class="pre">.devcontainer</span></code> directory. Build
+and RUN the docker container using the following commands:</p></li>
 </ul>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>mqss-pass-dev<span class="w"> </span>-f<span class="w"> </span>.devcontainer/Dockerfile<span class="w"> </span>.
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span><span class="se">\</span>
@@ -290,73 +289,239 @@ docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </
 <section id="building-the-tool">
 <h2>Building the tool<a class="headerlink" href="#building-the-tool" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>The driver script is the <code class="docutils literal notranslate"><span class="pre">MakeFile</span></code> within the project root.</p></li>
-<li><p>The MakeFile invokes build scripts within <code class="docutils literal notranslate"><span class="pre">scripts/</span></code>.
-<code class="docutils literal notranslate"><span class="pre">build_cudaq.sh</span></code>: Downloads and installs dependencies and configures build
-for target <code class="docutils literal notranslate"><span class="pre">mqss-cudaq-opt</span></code>
-<code class="docutils literal notranslate"><span class="pre">build_catalyst.sh</span></code>: Downloads and installs dependencies and configures build
-for target <code class="docutils literal notranslate"><span class="pre">mqss-catalyst-opt</span></code>
-<code class="docutils literal notranslate"><span class="pre">setup-env.sh</span></code>: Sets up a virtual environment and installs python3.11 in it.</p></li>
-<li><p>The ```make`` commands to build the targets remain the same as in the README.
+<li><p>The driver is the <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> within the project root.</p></li>
+<li><p>The Makefile invokes build scripts within <code class="docutils literal notranslate"><span class="pre">scripts/</span></code>. <code class="docutils literal notranslate"><span class="pre">build.sh</span></code>: Main script for configuring the
+build for all targets including <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code></p></li>
+<li><p>The ``make` commands to build the targets remain the same as in the <span class="xref myst">README</span>.
 Ensure the sequence of commands is followed.</p></li>
 </ul>
 </section>
-<section id="project-structure">
-<h2>Project structure<a class="headerlink" href="#project-structure" title="Link to this heading">¶</a></h2>
-<p>The key directory which contains the source code is <code class="docutils literal notranslate"><span class="pre">lib/</span></code>. Its structure is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>lib/
-├── common/
-│   ├── include/
-│   └─ Passes/
-└── mqss-cudaq/
-│   ├── CMakeLists.txt
-│   ├── cudaq.cpp
-│   ├── include/
-│   ├── lib/
-│   └── cmake/
-└── mqss-catalyst/
-    ├── CMakeLists.txt
-    ├── catalyst.cpp
-    ├── include/
-    ├── lib/
-    └── cmake/
+<section id="project-structure-for-current-release">
+<h2>Project structure (for Current Release)<a class="headerlink" href="#project-structure-for-current-release" title="Link to this heading">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>MQSS-Quantum-Compilation-Suite/
+├── .devcontainer/
+│   ├── Dockerfile
+│   └── devcontainer.json
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── docs.yml
+├── cmake/
+│   ├── FindCUDAQ.cmake
+│   ├── FindCatalyst.cmake
+│   ├── FindZ3.cmake
+│   ├── Findboost.cmake
+│   ├── Findmqt-qcec.cmake
+│   ├── Findmqt-qmap.cmake
+│   ├── Findqdmi.cmake
+│   ├── Findqinfo.cmake
+│   └── try_z3.cpp
+├── docs/
+│   ├── _static/
+│   ├── develop-guide/
+│   │   ├── develop-guide.md
+│   │   ├── index.md
+│   │   ├── integrate.md
+│   │   └── templates.md
+│   ├── faqs/
+│   │   ├── index.md
+│   │   ├── mlir-faq.md
+│   │   └── mqss-faq.md
+│   ├── user_guide/
+│   │   ├── build.md
+│   │   ├── index.md
+│   │   ├── passes.md
+│   │   ├── running.md
+│   │   └── transpiler.md
+│   ├── .nojekyll
+│   ├── conf.py
+│   ├── dependencies.md
+│   ├── header.html
+│   ├── index.md
+│   ├── layout.xml
+│   ├── style.css
+│   └── support.md
+├── include/
+│   ├── Passes/
+│   │   ├── CodeGen/
+│   │   │   ├── Patterns.h
+│   │   │   └── StaticAllocas.h
+│   │   ├── analysis/
+│   │   │   ├── CatalystExtractor.h
+│   │   │   ├── DialectAnalysisSelector.h
+│   │   │   ├── Extractor.h
+│   │   │   └── QuakeExtractor.h
+│   │   ├── transforms/
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── Decomposition.h
+│   │   │   ├── DecompositionPatterns.h
+│   │   │   ├── Error.h
+│   │   │   ├── PassIncludes.h
+│   │   │   ├── PassUtils.h
+│   │   │   ├── Pipelines.h
+│   │   │   ├── Transforms.h
+│   │   │   ├── Transforms.td
+│   │   │   └── TranspilationPassUtils.h
+│   │   └── CMakeLists.txt
+│   ├── Utils/
+│   │   └── dialectutils.h
+│   └── CMakeLists.txt
+├── lib/
+│   ├── Passes/
+│   │   ├── CodeGen/
+│   │   │   ├── BasisConversion.cpp
+│   │   │   ├── ConversionPatterns.cpp
+│   │   │   ├── GlobalizeArrayValues.cpp
+│   │   │   ├── LLVMDialectToLLVMIR.cpp
+│   │   │   ├── QuakeToQASM2.cpp
+│   │   │   ├── QuantumToLLVMDialect.cpp
+│   │   │   └── StaticAllocas.cpp
+│   │   ├── Transforms/
+│   │   │   ├── CommonCNOTReversalPass.cpp
+│   │   │   ├── CommonCommuteAndSwitchPass.cpp
+│   │   │   ├── CommonDecompositionPass.cpp
+│   │   │   ├── CommonGateCancellationPass.cpp
+│   │   │   ├── CommonGateCommutationPass.cpp
+│   │   │   ├── CommonMappingPass.cpp
+│   │   │   ├── CommonNormalizeArgAnglePass.cpp
+│   │   │   ├── CommonPatternReductionPass.cpp
+│   │   │   └── pipeline.cpp
+│   │   └── CMakeLists.txt
+│   └── CMakeLists.txt
+├── scripts/
+│   ├── conversion/
+│   │   ├── catalyst-to-qir.sh
+│   │   └── cudaq-to-qir.sh
+│   ├── build.sh*
+│   ├── build_docs.sh*
+│   ├── download_toolchains.sh
+│   ├── mqss-cc*
+│   ├── resolve_python_input.py
+│   └── setup-env.sh*
+├── tests/
+│   ├── code/
+│   │   ├── catalyst/
+│   │   │   ├── tests/          # 19 .test lit files
+│   │   │   └── *.py            # 19 matching Python drivers
+│   │   └── cudaq/
+│   │       ├── tests/          # 24 .test lit files
+│   │       └── *.cpp           # 25 matching C++ pass sources
+│   ├── dialects/
+│   │   ├── catalyst-quantum/   # 29 .mlir files + cxx_qdmi.conf
+│   │   └── quake/              # 30 .qke files + cxx_qdmi.conf
+│   ├── input/
+│   │   ├── cxx_qdmi.conf
+│   │   ├── mqt_qdmi.conf
+│   │   └── qmap.json
+│   └── lit.cfg.py
+├── .clang-format
+├── .clang-tidy
+├── .clangd
+├── .cmake-format.yaml
+├── .gitignore
+├── .pre-commit-config.yaml
+├── CMakeLists.txt
+├── LICENSE
+├── Makefile
+├── README.md
+└── mqss-cc.cpp
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>The Dialect Agnostic MLIR optimization passes can be found in <code class="docutils literal notranslate"><span class="pre">common/Passes</span></code>
-whereas, dialect specific passes can be found in <code class="docutils literal notranslate"><span class="pre">mqss-cudaq/lib/MQSSQuakePasses</span></code>
-and <code class="docutils literal notranslate"><span class="pre">mqss-catalyst/lib/MQSScatalystPasses</span></code>. Currently, passes for either <code class="docutils literal notranslate"><span class="pre">quake</span></code>
-or <code class="docutils literal notranslate"><span class="pre">catalyst-quantum</span></code> dialects are added.</p></li>
-<li><p>All dialect related files can be found in <code class="docutils literal notranslate"><span class="pre">include/IR</span></code> and <code class="docutils literal notranslate"><span class="pre">lib/IR</span></code>. Of these,
-the important ones are the table-gen files (.td) found in <code class="docutils literal notranslate"><span class="pre">include/IR</span></code> , which comprise
-the dialect operation definitions.</p></li>
+<li><p>The Dialect Agnostic MLIR optimization passes can be found in <code class="docutils literal notranslate"><span class="pre">lib/Passes/Transforms</span></code>.</p></li>
+<li><p>CUDAQ and Catalyst are included as external dependencies and are downloaded and installed as
+<code class="docutils literal notranslate"><span class="pre">cmake</span></code> modules. Following targets are built for each of these modules:</p>
+<ul>
+<li><p>CUDAQ: <code class="docutils literal notranslate"><span class="pre">QuakeDialect</span> <span class="pre">CCDialect</span> <span class="pre">QECDialect</span> <span class="pre">OptimBuilder</span> <span class="pre">OptCodeGen</span></code></p></li>
+<li><p>Catalyst : <code class="docutils literal notranslate"><span class="pre">MLIRMBQC</span> <span class="pre">MLIRQRef</span> <span class="pre">MLIRQuantum</span></code> These targets incorporate all dialect related headers
+and API implementations.</p></li>
 </ul>
+</li>
+</ul>
+</section>
+<section id="cmakelists-txt">
+<h2>CMakeLists.txt<a class="headerlink" href="#cmakelists-txt" title="Link to this heading">¶</a></h2>
+<p>Two CMakeLists.txt are of importance: <code class="docutils literal notranslate"><span class="pre">root/CMakeLists.txt</span></code> and <code class="docutils literal notranslate"><span class="pre">lib/Passes/CMakeLists.txt</span></code>. CUDAQ,
+Catalyst, QDMI, MQT-QMAP etc. are linked as external dependencies in each of these CMakeLists as
+follows: For e.g. in Root/CMakeLists.txt:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>target_link_libraries<span class="o">(</span>mqss-opt
+<span class="w">  </span>PUBLIC
+<span class="w">    </span><span class="c1"># QDMI</span>
+<span class="w">    </span>qdmi::qdmi
+<span class="w">    </span>qdmi::example_driver
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span><span class="c1"># CUDAQ</span>
+<span class="w">    </span>CUDAQ::CC
+<span class="w">    </span>CUDAQ::Quake
+<span class="w">    </span>CUDAQ::QEC
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span><span class="c1">#Catalyst</span>
+<span class="w">    </span>CATALYST::MBQC
+<span class="w">    </span>CATALYST::QRef
+<span class="w">    </span>CATALYST::Quantum
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span>MLIRLLVMDialect
+<span class="w">    </span>MLIROptLib
+<span class="w">    </span>MLIRIR
+<span class="w">    </span>MLIRFuncDialect
+<span class="w">    </span>MLIRFuncInlinerExtension
+<span class="w">    </span>MLIRArithDialect
+<span class="w">    </span><span class="c1"># MQSS Passes Library</span>
+<span class="w">    </span>MQSSCIPasses
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span>CUDAQ::CodeGen
+<span class="w">    </span>MLIRTransforms
+<span class="w">    </span><span class="c1"># MQT</span>
+<span class="w">    </span>MQT::CoreIR
+<span class="w">    </span>MQT::CoreNA
+<span class="w">    </span>MQT::QMapSC
+<span class="w">    </span>MQT::QMapSCHeuristic
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span>MLIROptLib<span class="w">              </span><span class="c1"># Provides MlirOptMain engine</span>
+
+<span class="w">    </span><span class="c1"># Conversions</span>
+<span class="w">    </span>MLIRArithToLLVM
+<span class="w">    </span>MLIRComplexToLibm
+<span class="w">    </span>MLIRComplexToLLVM
+<span class="w">    </span>MLIRControlFlowToLLVM
+<span class="w">    </span>MLIRFuncToLLVM
+<span class="w">    </span>MLIRMathToFuncs
+<span class="w">    </span>MLIRMathToLLVM
+
+<span class="w">    </span><span class="c1"># Translation</span>
+<span class="w">    </span>MLIRTargetLLVMIRExport
+
+<span class="o">)</span>
+</pre></div>
+</div>
 </section>
 <section id="testing">
 <h2>Testing<a class="headerlink" href="#testing" title="Link to this heading">¶</a></h2>
 <ul>
-<li><p>We use python-lit along-with ninja and FileCheck to perform dialect-level (input: MLIR dialect; output: MLIR dialect)
-as well as end-to-end (input:c++/python code; output: MLIR dialect) testing. In the end, what is tested
-for correctness is the output optimized/transformed MLIR dialect.</p></li>
+<li><p>We use python-lit along-with ninja and FileCheck to perform dialect-level (input: MLIR dialect;
+output: MLIR dialect) and optionally end-to-end (input:c++/python code; output: MLIR dialect)
+testing. In the end, what is tested for correctness is the output optimized/transformed MLIR
+dialect. In a select few cases, especially the <code class="docutils literal notranslate"><span class="pre">CodeGen</span></code> passes, the backend exchange formats e.g.
+QIR or OpenQasm2 are tested for correctness.</p></li>
 <li><p>The tests can be found in directories : <code class="docutils literal notranslate"><span class="pre">tests/dialects</span></code> and <code class="docutils literal notranslate"><span class="pre">tests/code</span></code>.</p></li>
 <li><p>Dialect-level testing</p>
 <ol class="arabic simple">
 <li><p>The input dialect is annotated with the RUN command, for e.g.:</p></li>
 </ol>
-<p><code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">RUN:</span> <span class="pre">%mqss-catalyst-opt</span> <span class="pre">%s</span> <span class="pre">--CommonCommutePass=mode=CX-X</span> <span class="pre">2&gt;&amp;1</span> <span class="pre">|</span> <span class="pre">FileCheck</span> <span class="pre">%s</span></code>
-which runs the target/executable <code class="docutils literal notranslate"><span class="pre">mqss-catalyst-opt</span></code> along-with the pass <code class="docutils literal notranslate"><span class="pre">CommonCommutePass</span></code>.
-FileCheck looks for strings to match, specified using the <code class="docutils literal notranslate"><span class="pre">CHECK:</span></code> keyword, for e.g.</p>
+<p><code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">RUN:</span> <span class="pre">%mqss-opt</span> <span class="pre">%s</span> <span class="pre">--CommonCommutePass=mode=CX-X</span> <span class="pre">2&gt;&amp;1</span> <span class="pre">|</span> <span class="pre">FileCheck</span> <span class="pre">%s</span></code> which runs the
+target/executable <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> along-with the pass <code class="docutils literal notranslate"><span class="pre">CommonCommutePass</span></code>. FileCheck looks for strings
+to match, specified using the <code class="docutils literal notranslate"><span class="pre">CHECK:</span></code> keyword, for e.g.</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>//<span class="w"> </span>CHECK:<span class="w"> </span>%out_qubits<span class="w"> </span><span class="o">=</span><span class="w"> </span>quantum.custom<span class="w"> </span><span class="s2">&quot;PauliX&quot;</span><span class="o">()</span><span class="w"> </span>%2<span class="w"> </span>:<span class="w"> </span>!quantum.bit
 //<span class="w"> </span>CHECK:<span class="w"> </span>%out_qubits_0:2<span class="w"> </span><span class="o">=</span><span class="w"> </span>quantum.custom<span class="w"> </span><span class="s2">&quot;CNOT&quot;</span><span class="o">()</span><span class="w"> </span>%1,<span class="w"> </span>%2<span class="w"> </span>:<span class="w"> </span>!quantum.bit,<span class="w"> </span>!quantum.bit
 </pre></div>
 </div>
-<p>If an exact match is found in the output dialect, the test succeeds, otherwise the test fails.
-2. End-to-End testing
-In this testing, the input is a c++/python code, which is then translated to the input
-MLIR dialect. The testing then proceeds as in (1). The emphasis here is on testing the
-front-end translation pipeline as well as the transformed dialects. A wrapper script
-<code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code> is used to invoke the necessary tools to translate the c++/python code
-to the input quake or catalyst-quantum dialect. If the input code to MLIR dialect translation fails,
+<p>If an exact match is found in the output dialect, the test succeeds, otherwise the test fails.</p>
+<ol class="arabic">
+<li><p>End-to-End testing (Optional) In this testing, the input is a c++/python code, which is then
+translated to the input MLIR dialect. The testing then proceeds as in (1). The emphasis here is
+on testing the front-end translation pipeline as well as the transformed dialects. A wrapper
+script <code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code> is used to invoke the necessary tools to translate the c++/python code to the
+input quake or catalyst-quantum dialect. If the input code to MLIR dialect translation fails,
 then the test itself will fail. An example test file performing such a test is shown below:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="w"> </span>//<span class="w"> </span>RUN:<span class="w"> </span>%mqss-cc<span class="w"> </span>%S/../CommuteCNotRxPass.cpp<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonCommutePass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CX-RX<span class="w"> </span><span class="p">|</span><span class="w"> </span>FileCheck<span class="w"> </span>%s
 
@@ -364,32 +529,28 @@ then the test itself will fail. An example test file performing such a test is s
 <span class="w"> </span>//<span class="w"> </span>CHECK-NEXT:<span class="w"> </span>quake.x<span class="w"> </span><span class="o">[</span>%1<span class="o">]</span><span class="w"> </span>%2<span class="w"> </span>:<span class="w"> </span><span class="o">(</span>!quake.ref,<span class="w"> </span>!quake.ref<span class="o">)</span><span class="w"> </span>-&gt;<span class="w"> </span><span class="o">()</span>
 </pre></div>
 </div>
+</li>
+</ol>
 <p>The test proceeds as follows:</p>
 <ol class="arabic simple">
-<li><p>mqss-cc parses the command-line arguments <code class="docutils literal notranslate"><span class="pre">%S/../CommuteCNotRxPass.cpp</span> <span class="pre">--passes=CommonCommutePass=mode=CX-RX</span></code></p></li>
-<li><p>Since, a c++ code is the input, it is assumed that the code contains a quantum circuit defined using
-cudaq .</p></li>
+<li><p>mqss-cc parses the command-line arguments
+<code class="docutils literal notranslate"><span class="pre">%S/../CommuteCNotRxPass.cpp</span> <span class="pre">--passes=CommonCommutePass=mode=CX-RX</span></code></p></li>
+<li><p>Since, a c++ code is the input, it is assumed that the code contains a quantum circuit defined
+using cudaq (will be updated in the future).</p></li>
 <li><p>The c++ to quake dialect translation pipeline is invoked via the tool <code class="docutils literal notranslate"><span class="pre">cudaq-quake</span></code></p></li>
-<li><p>Once the input dialect is generated, <code class="docutils literal notranslate"><span class="pre">mqss-cudaq-opt</span></code> tool is used to apply MQSS optimization/translation
-passes defined using the <code class="docutils literal notranslate"><span class="pre">--passes</span></code> flag.</p></li>
+<li><p>Once the input dialect is generated, <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> tool is used to apply MQSS
+optimization/translation passes defined using the <code class="docutils literal notranslate"><span class="pre">--passes</span></code> flag.</p></li>
 <li><p>Finally, the optimized/transformed dialect is emitted which is checked by FileCheck.</p></li>
 </ol>
+<p>Note: Make sure that the path to <code class="docutils literal notranslate"><span class="pre">cudaq-quake</span></code> and <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> are appended to the <code class="docutils literal notranslate"><span class="pre">$PATH</span></code>
+environment variable of your shell via the command : <code class="docutils literal notranslate"><span class="pre">eval</span> <span class="pre">&quot;$(make</span> <span class="pre">set-target-paths)&quot;</span></code>.</p>
 </li>
 </ul>
 </section>
 <section id="enabling-pass-debug-information">
 <h2>Enabling Pass Debug Information<a class="headerlink" href="#enabling-pass-debug-information" title="Link to this heading">¶</a></h2>
 <p>The Pass debug information can be enabled by passing in the flag <code class="docutils literal notranslate"><span class="pre">--debug</span></code> to the <code class="docutils literal notranslate"><span class="pre">DEBUG_FLAG</span></code>
-variable within the MakeFile. Simply remove the flag if no debug information is needed.</p>
-</section>
-<section id="enabling-clangd-for-linting">
-<h2>Enabling clangd for linting<a class="headerlink" href="#enabling-clangd-for-linting" title="Link to this heading">¶</a></h2>
-<p>RUN command : <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">compile_commands</span></code>.</p>
-<ul class="simple">
-<li><p>This creates a symlink from <code class="docutils literal notranslate"><span class="pre">_deps/mqss-cudaq/clang+llvm-16.0.4-aarch64-linux-gnu/bin/clangd</span></code>
-to <code class="docutils literal notranslate"><span class="pre">/usr/local/bin/clangd</span></code></p></li>
-<li><p>It also creates a file <code class="docutils literal notranslate"><span class="pre">compile_commands.json</span></code> within <code class="docutils literal notranslate"><span class="pre">build/</span></code></p></li>
-</ul>
+variable within the Makefile. Simply remove the flag if no debug information is needed.</p>
 </section>
 </section>
 
@@ -451,10 +612,10 @@ to <code class="docutils literal notranslate"><span class="pre">/usr/local/bin/c
 <li><a class="reference internal" href="#">Development Guide</a><ul>
 <li><a class="reference internal" href="#development-environment">Development Environment</a></li>
 <li><a class="reference internal" href="#building-the-tool">Building the tool</a></li>
-<li><a class="reference internal" href="#project-structure">Project structure</a></li>
+<li><a class="reference internal" href="#project-structure-for-current-release">Project structure (for Current Release)</a></li>
+<li><a class="reference internal" href="#cmakelists-txt">CMakeLists.txt</a></li>
 <li><a class="reference internal" href="#testing">Testing</a></li>
 <li><a class="reference internal" href="#enabling-pass-debug-information">Enabling Pass Debug Information</a></li>
-<li><a class="reference internal" href="#enabling-clangd-for-linting">Enabling clangd for linting</a></li>
 </ul>
 </li>
 </ul>

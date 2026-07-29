@@ -197,12 +197,13 @@
 <li class="toctree-l2"><a class="reference internal" href="running.html">Running test circuits</a></li>
 <li class="toctree-l2"><a class="reference internal" href="passes.html">Passes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../develop-guide/index.html">Development Guide</a><input aria-label="Toggle navigation of Development Guide" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../develop-guide/develop-guide.html">Development Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../develop-guide/templates.html">Writing Passes for the MQSS</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../develop-guide/integrate.html">Integrating the MQSS-QCS within your project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/integrate.html">Integrating the MQSS Quantum Compilation Suite within your project</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../faqs/index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -248,14 +249,14 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <!----------------------------------------------------------------------------
+          <!--------------------------------------------------------------------------------------------------
 Copyright 2024 Munich Quantum Software Stack Project
 
 Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
 "License"); you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -264,18 +265,14 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
----------------------------------------------------------------------------->
+----------------------------------------------------------------------------------------------------->
 <section id="getting-started">
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">¶</a></h1>
 <p>Note: It is highly recommended to use docker container to build and install the project.</p>
 <section id="system-requirements">
 <h2>System Requirements<a class="headerlink" href="#system-requirements" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>OS : Linux (tested on Ubuntu 22.04)</p>
-<ul>
-<li><p>Use docker container if on a different OS</p></li>
-</ul>
-</li>
+<li><p>OS : Linux (tested on Ubuntu 22.04)</p></li>
 <li><p>Architecture : aarch64, X86</p></li>
 </ul>
 </section>
@@ -291,8 +288,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 <h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>A list of major packages/toolchains required is mentioned in <a class="reference internal" href="#dependencies.md"><span class="xref myst">dependencies</span></a></p></li>
-<li><p>For packages required for the development environment, please refer to the
-<code class="docutils literal notranslate"><span class="pre">DockerFile</span></code>.</p></li>
+<li><p>For packages required for the development environment, please refer to the <code class="docutils literal notranslate"><span class="pre">DockerFile</span></code>.</p></li>
 </ul>
 </section>
 <section id="prerequisites">
@@ -301,7 +297,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/akshay9594/MQSS-Passes-Suite.git<span class="w"> </span><span class="se">\</span>
 <span class="w">       </span>/workspaces/MQSS-Passes-Suite
 <span class="nb">cd</span><span class="w"> </span>/workspaces/MQSS-Passes-Suite
-git<span class="w"> </span>checkout<span class="w"> </span>bfbc0832ecd23de753b23f749f19bcba683af2e2
+git<span class="w"> </span>checkout<span class="w"> </span>&lt;branch-name<span class="w"> </span>or<span class="w"> </span>commit<span class="w"> </span>hash&gt;
 </pre></div>
 </div>
 <p>If using docker, RUN the commands:</p>
@@ -317,14 +313,13 @@ docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </
 </section>
 <section id="building-and-installing-the-project">
 <h2>Building and Installing the project<a class="headerlink" href="#building-and-installing-the-project" title="Link to this heading">¶</a></h2>
-<p>The first thing to do is to setup a virtual environment and install
-python3.11 into it. We also need to install cmake. RUN:</p>
+<p>The first thing to do is to setup a virtual environment and install python3.11 into it. We also need
+to install cmake. RUN:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>setup-env
 </pre></div>
 </div>
-<p>Next, we need to set paths to the directories where the executables are generated
-i.e. <code class="docutils literal notranslate"><span class="pre">~/.local/bin</span></code> as well as path to <code class="docutils literal notranslate"><span class="pre">cudaq-opt</span></code> (pre-built tool from cudaq-quantum).
-RUN command:</p>
+<p>Next, we need to set paths to the directories where the executables are placed i.e. <code class="docutils literal notranslate"><span class="pre">~/.local/bin</span></code>
+as well as path to <code class="docutils literal notranslate"><span class="pre">cudaq</span> <span class="pre">tools</span></code>. RUN command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">eval</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>make<span class="w"> </span>set-target-paths<span class="k">)</span><span class="s2">&quot;</span>
 </pre></div>
 </div>
@@ -332,44 +327,73 @@ RUN command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>build
 </pre></div>
 </div>
-<p>This invokes two scripts <code class="docutils literal notranslate"><span class="pre">scripts/build_cudaq.sh</span></code> and <code class="docutils literal notranslate"><span class="pre">scripts/build_catalyst.sh</span></code>.
-These scripts download and install all the required dependencies for building the targets
-(<code class="docutils literal notranslate"><span class="pre">mqss-cudaq-opt</span></code> and <code class="docutils literal notranslate"><span class="pre">mqss-catalyst-opt</span></code>). These scripts contain the required
-cmake commands to configure the project.</p>
+<p>This invokes the scripts <code class="docutils literal notranslate"><span class="pre">scripts/build.sh</span></code> which downloads and installs all the required
+dependencies for building the target <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>. This script contains the required cmake commands to
+configure the project.</p>
 <p>Finally, build the targets by running:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>target
 </pre></div>
 </div>
-<p>This builds the targets using <code class="docutils literal notranslate"><span class="pre">ninja</span></code> (build system) and if the build succeeds,
-generates the executables <code class="docutils literal notranslate"><span class="pre">mqss-catalyst-opt</span></code>, <code class="docutils literal notranslate"><span class="pre">mqss-cudaq-opt</span></code>.
-You can change the installation directory by modifying the <code class="docutils literal notranslate"><span class="pre">INSTALL_DIR</span></code>
-variable within the  MakeFile.</p>
+<p>This builds the targets using the <code class="docutils literal notranslate"><span class="pre">ninja</span></code> build system and if the build succeeds, generates the
+executable <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>. You can change the installation directory by modifying the <code class="docutils literal notranslate"><span class="pre">INSTALL_DIR</span></code>
+variable within the MakeFile.</p>
 <ul class="simple">
-<li><p>If you make any changes to the source
-code i.e. to the C++/.h files within <code class="docutils literal notranslate"><span class="pre">MQSS-Passes-Suite/lib/*</span></code>, then just rerun the <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">target</span></code>
-command.</p></li>
-<li><p>If any changes are made to the build scripts i.e. <code class="docutils literal notranslate"><span class="pre">build_catalyst.sh</span></code> or <code class="docutils literal notranslate"><span class="pre">build_cudaq.sh</span></code> or
-to the <code class="docutils literal notranslate"><span class="pre">CMakeLists</span></code> then do <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">build</span></code> first and then <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">target</span></code>.</p></li>
+<li><p>If you make any changes to the source code i.e. to the C++ files within <code class="docutils literal notranslate"><span class="pre">lib/*</span></code>, then just rerun
+the <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">target</span></code> command.</p></li>
+<li><p>If any changes are made to the build script i.e. <code class="docutils literal notranslate"><span class="pre">build.sh</span></code> or to the CMakeLists or to the files
+within <code class="docutils literal notranslate"><span class="pre">include/</span></code> then do <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">build</span></code> first and then <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">target</span></code>.</p></li>
 </ul>
 </section>
 <section id="enabling-pass-debug-information">
 <h2>Enabling Pass Debug Information<a class="headerlink" href="#enabling-pass-debug-information" title="Link to this heading">¶</a></h2>
+<p>To enable pass debug information, set the following flag within <code class="docutils literal notranslate"><span class="pre">Makefile</span></code>:</p>
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">DEBUG_FLAG</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="c1"># --debug (if you want pass debug info)</span>
+</pre></div>
+</div>
+<p>By default the debug information is enabled i.e. <code class="docutils literal notranslate"><span class="pre">DEBUG_FLAG</span> <span class="pre">=</span>&#160; <span class="pre">--debug</span></code>. To disable the debug info,
+just remove the <code class="docutils literal notranslate"><span class="pre">---debug</span></code> value.</p>
 </section>
 <section id="testing-the-installation">
 <h2>Testing the installation<a class="headerlink" href="#testing-the-installation" title="Link to this heading">¶</a></h2>
-<p>After the build is successful, use the following commands to test
-the installation.</p>
+<p>After the build is successful, use the following commands to test the installation.</p>
 <p>For mlir dialect-level testing (faster), RUN:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>test-dialects
 </pre></div>
 </div>
-<p>For slower end-to-end testing (input: c++/python code, output: optimized mlir-dialect), RUN:</p>
+<p>This command will run all the available test cases in the <code class="docutils literal notranslate"><span class="pre">tests/dialects</span></code> directory. There are a
+total of 60 test cases currently, with more added regularly.</p>
+</section>
+<section id="source-level-compilation">
+<h2>Source-level Compilation<a class="headerlink" href="#source-level-compilation" title="Link to this heading">¶</a></h2>
+<p>If C++/Python i.e. Source level compilation and testing is intended follow the following steps:</p>
+<section id="downloading-front-end-dependencies">
+<h3>Downloading front-end dependencies<a class="headerlink" href="#downloading-front-end-dependencies" title="Link to this heading">¶</a></h3>
+<p>Run the following command</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>frontend
+</pre></div>
+</div>
+<p>This will setup a python virtual environment, after which, the script <code class="docutils literal notranslate"><span class="pre">download_toolchains.sh</span></code> is
+executed. This script downloads and installs: <code class="docutils literal notranslate"><span class="pre">CUDA-Q</span></code> and <code class="docutils literal notranslate"><span class="pre">Catalyst</span></code> toolchains. We need
+<code class="docutils literal notranslate"><span class="pre">cudaq-quake</span></code> (translates C++ to Quake) and the <code class="docutils literal notranslate"><span class="pre">Catalyst-qjit</span></code> (translates python to
+catalyst-quantum) tools. After the installation is complete, RUN the COMMAND:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">eval</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>make<span class="w"> </span>front-end-paths<span class="k">)</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<p>This will activate the virtual environment and add <code class="docutils literal notranslate"><span class="pre">cudaq-quake</span></code> to the <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> environment
+variable. Check using:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>which<span class="w"> </span>cudaq-quake
+</pre></div>
+</div>
+</section>
+<section id="testing-the-front-end-compilation-pipeline">
+<h3>Testing the Front-end Compilation pipeline<a class="headerlink" href="#testing-the-front-end-compilation-pipeline" title="Link to this heading">¶</a></h3>
+<p>The testing for the frontend involves the script <code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code>. Check that is also on the <code class="docutils literal notranslate"><span class="pre">$PATH</span></code>
+environment variable. After this, RUN the command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>test-all
 </pre></div>
 </div>
-<p>This command will run all the available test cases in the <code class="docutils literal notranslate"><span class="pre">tests/dialects</span></code> and
-<code class="docutils literal notranslate"><span class="pre">tests/code</span></code> directories. There are a total of 82 test cases currently, with
-more added regularly.</p>
+<p>This runs the test-cases within <code class="docutils literal notranslate"><span class="pre">tests/code</span></code>.</p>
+</section>
 </section>
 </section>
 
@@ -436,6 +460,11 @@ more added regularly.</p>
 <li><a class="reference internal" href="#building-and-installing-the-project">Building and Installing the project</a></li>
 <li><a class="reference internal" href="#enabling-pass-debug-information">Enabling Pass Debug Information</a></li>
 <li><a class="reference internal" href="#testing-the-installation">Testing the installation</a></li>
+<li><a class="reference internal" href="#source-level-compilation">Source-level Compilation</a><ul>
+<li><a class="reference internal" href="#downloading-front-end-dependencies">Downloading front-end dependencies</a></li>
+<li><a class="reference internal" href="#testing-the-front-end-compilation-pipeline">Testing the Front-end Compilation pipeline</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

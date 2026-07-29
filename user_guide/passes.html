@@ -197,12 +197,13 @@
 <li class="toctree-l2"><a class="reference internal" href="running.html">Running test circuits</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Passes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../develop-guide/index.html">Development Guide</a><input aria-label="Toggle navigation of Development Guide" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../develop-guide/develop-guide.html">Development Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../develop-guide/templates.html">Writing Passes for the MQSS</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../develop-guide/integrate.html">Integrating the MQSS-QCS within your project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/integrate.html">Integrating the MQSS Quantum Compilation Suite within your project</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../faqs/index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -248,161 +249,305 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="passes">
+          <!--------------------------------------------------------------------------------------------------
+Copyright 2024 Munich Quantum Software Stack Project
+
+Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
+"License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+----------------------------------------------------------------------------------------------------->
+<section id="passes">
 <h1>Passes<a class="headerlink" href="#passes" title="Link to this heading">¶</a></h1>
-<p>Following are the MLIR passes available within the MQSS Quantum Compilation Suite.</p>
-<p>Notes:</p>
+<p>The MLIR passes available within the MQSS Quantum Compilation Suite are described here. Passes are
+grouped into three categories:</p>
+<ul class="simple">
+<li><p>target-agnostic optimization passes that clean up and simplify a circuit regardless of the
+intended hardware,</p></li>
+<li><p>target-specific transpilation passes that adapt a circuit to a concrete device, and</p></li>
+<li><p>code-generation passes that lower the MLIR dialect down toward an executable representation (QIR,
+OpenQASM etc.).</p></li>
+</ul>
+<p>Before using the passes, please take note of the following:</p>
 <ol class="arabic simple">
-<li><p>The passes Prefixed <code class="docutils literal notranslate"><span class="pre">Common</span></code> operate on both the <code class="docutils literal notranslate"><span class="pre">Quake</span></code> and <code class="docutils literal notranslate"><span class="pre">Catalyst-quantum</span></code>
-MLIR dialects.</p></li>
-<li><p>Transpilation or Native-gate-set mapping is currently only enabled for <code class="docutils literal notranslate"><span class="pre">Quake</span></code>.</p></li>
-<li><p>Please refer to the example usage section below on instructions for how to enable a pass</p></li>
+<li><p>Passes prefixed with <code class="docutils literal notranslate"><span class="pre">Common</span></code> operate on both the <code class="docutils literal notranslate"><span class="pre">Quake</span></code> and <code class="docutils literal notranslate"><span class="pre">Catalyst-quantum</span></code> MLIR dialects.
+This lets a single implementation serve multiple front-end SDKs without duplicating the
+optimization logic per dialect.</p></li>
+<li><p>Transpilation — that is native-gate-set mapping and basis conversion — is currently only enabled
+for the <code class="docutils literal notranslate"><span class="pre">Quake</span></code> dialect.</p></li>
+<li><p>Refer to the <a class="reference internal" href="#example-usage"><span class="xref myst">Example Usage</span></a> section below for instructions on how to enable and
+invoke a pass.</p></li>
 </ol>
 <section id="standard-optimization-passes-target-device-agnostic">
 <h2>Standard Optimization Passes (Target Device Agnostic)<a class="headerlink" href="#standard-optimization-passes-target-device-agnostic" title="Link to this heading">¶</a></h2>
+<p>These passes rewrite the circuit into an equivalent but simpler or more canonical form. Because they
+do not depend on any device characteristics, they can be run at any stage of the pipeline and in any
+combination.</p>
 <section id="commoncommutepass">
 <h3>CommonCommutePass<a class="headerlink" href="#commoncommutepass" title="Link to this heading">¶</a></h3>
-<p>This pass searches commutes gates that match a specific pattern.</p>
+<p>This pass searches for and commutes gates that match a specific pattern. Commuting gates past one
+another does not change the circuit’s semantics, but it can expose further optimization
+opportunities (for example, bringing two cancellable gates adjacent to each other).</p>
+<p>Pass Options:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pattern to commute: <code class="docutils literal notranslate"><span class="pre">CX-RX</span></code>, <code class="docutils literal notranslate"><span class="pre">RX-CX</span></code>, <code class="docutils literal notranslate"><span class="pre">CX-X</span></code>, <code class="docutils literal notranslate"><span class="pre">X-CX</span></code>, <code class="docutils literal notranslate"><span class="pre">CX-Z</span></code>, <code class="docutils literal notranslate"><span class="pre">Z-CX</span></code></p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonCommutePass=mode=CX-RX</span></code></p></li>
 </ul>
 </section>
 <section id="commondecompositionpass">
 <h3>CommonDecompositionPass<a class="headerlink" href="#commondecompositionpass" title="Link to this heading">¶</a></h3>
-<p>Perform gate decomposition: <code class="docutils literal notranslate"><span class="pre">{Cx}</span></code> → <code class="docutils literal notranslate"><span class="pre">HCzH</span></code>, <code class="docutils literal notranslate"><span class="pre">{Cz}</span></code> → <code class="docutils literal notranslate"><span class="pre">HCxH</span></code>, or <code class="docutils literal notranslate"><span class="pre">ReverseCx</span></code>.</p>
+<p>Performs gate decomposition: <code class="docutils literal notranslate"><span class="pre">{Cx}</span></code> → <code class="docutils literal notranslate"><span class="pre">HCzH</span></code>, <code class="docutils literal notranslate"><span class="pre">{Cz}</span></code> → <code class="docutils literal notranslate"><span class="pre">HCxH</span></code>, or <code class="docutils literal notranslate"><span class="pre">ReverseCx</span></code>.</p>
+<p>Pass Options:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pass mode: <code class="docutils literal notranslate"><span class="pre">CxToHCzH</span></code>, <code class="docutils literal notranslate"><span class="pre">CzToHCxH</span></code>, or <code class="docutils literal notranslate"><span class="pre">ReverseCx</span></code></p></li>
 </ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonDecompositionPass=mode=CxToHCzH</span></code></p></li>
+</ul>
+<p>Note: This is a representative dialect-agnostic decomposition pass. It will be superseded by the
+<code class="docutils literal notranslate"><span class="pre">BasisConversionPass</span></code> in the future, which performs recursive, device-aware decomposition rather
+than a fixed set of rewrites.</p>
 </section>
 <section id="commongatecancellationpass">
 <h3>CommonGateCancellationPass<a class="headerlink" href="#commongatecancellationpass" title="Link to this heading">¶</a></h3>
-<p>Performs cancellation of gates following a specific pattern.</p>
+<p>Performs cancellation of gates that follow a specific pattern. The pass looks for gate operations of
+the same type and cancels them when they act on the same qubit operands (for example, two adjacent
+<code class="docutils literal notranslate"><span class="pre">CNOT</span></code>s on the same control and target, which together form the identity). The supported gate
+operation types are: <code class="docutils literal notranslate"><span class="pre">CNOT</span></code>, <code class="docutils literal notranslate"><span class="pre">PauliX</span></code>, <code class="docutils literal notranslate"><span class="pre">PauliZ</span></code>, <code class="docutils literal notranslate"><span class="pre">PauliY</span></code>, <code class="docutils literal notranslate"><span class="pre">Hadamard</span></code>, <code class="docutils literal notranslate"><span class="pre">RX</span></code>, <code class="docutils literal notranslate"><span class="pre">RY</span></code>, and <code class="docutils literal notranslate"><span class="pre">RZ</span></code>.</p>
+<p>Pass Options:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pattern to cancel: <code class="docutils literal notranslate"><span class="pre">CancelGate</span></code> or <code class="docutils literal notranslate"><span class="pre">CancelNullRotation</span></code></p></li>
+</ul>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonGateCancellationPass=mode=CancelGate</span></code></p></li>
 </ul>
 </section>
 <section id="commonnormalizearganglepass">
 <h3>CommonNormalizeArgAnglePass<a class="headerlink" href="#commonnormalizearganglepass" title="Link to this heading">¶</a></h3>
-<p>Normalize arg angle of RX, RY, RZ gates.</p>
+<p>Normalizes the angle argument of the rotation gates <code class="docutils literal notranslate"><span class="pre">RX</span></code>, <code class="docutils literal notranslate"><span class="pre">RY</span></code>, and <code class="docutils literal notranslate"><span class="pre">RZ</span></code> — for instance, wrapping
+angles into a canonical range so that equivalent rotations are represented identically. This makes
+downstream cancellation and folding more effective.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonNormalizeArgAnglePass</span></code></p></li>
+</ul>
 </section>
 <section id="commonreductionpass">
 <h3>CommonReductionPass<a class="headerlink" href="#commonreductionpass" title="Link to this heading">¶</a></h3>
-<p>Perform circuit reduction: <code class="docutils literal notranslate"><span class="pre">{HZH}</span></code> → <code class="docutils literal notranslate"><span class="pre">X</span></code>, <code class="docutils literal notranslate"><span class="pre">{HXH}</span></code> → <code class="docutils literal notranslate"><span class="pre">Z</span></code>, <code class="docutils literal notranslate"><span class="pre">{SAdjZ}</span></code> → <code class="docutils literal notranslate"><span class="pre">S</span></code>, or <code class="docutils literal notranslate"><span class="pre">{SZ}</span></code> → <code class="docutils literal notranslate"><span class="pre">SAdj</span></code>.</p>
+<p>Performs circuit reduction: <code class="docutils literal notranslate"><span class="pre">H-Z-H</span></code> → <code class="docutils literal notranslate"><span class="pre">X</span></code>, <code class="docutils literal notranslate"><span class="pre">H-X-H</span></code> → <code class="docutils literal notranslate"><span class="pre">Z</span></code>, <code class="docutils literal notranslate"><span class="pre">SAdj-Z</span></code> → <code class="docutils literal notranslate"><span class="pre">S</span></code>, or <code class="docutils literal notranslate"><span class="pre">S-Z</span></code> → <code class="docutils literal notranslate"><span class="pre">SAdj</span></code>.</p>
+<p>Pass Options:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pass mode: <code class="docutils literal notranslate"><span class="pre">HXHToZ</span></code>, <code class="docutils literal notranslate"><span class="pre">HZHToX</span></code>, <code class="docutils literal notranslate"><span class="pre">SAdjZToS</span></code>, or <code class="docutils literal notranslate"><span class="pre">SZToSAdj</span></code></p></li>
 </ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonReductionPass=mode=HXHToZ</span></code></p></li>
+</ul>
+<p>Note: Here <code class="docutils literal notranslate"><span class="pre">H</span></code> (or <code class="docutils literal notranslate"><span class="pre">Hadamard</span></code>) refers to the Hadamard gate operation, <code class="docutils literal notranslate"><span class="pre">S</span></code> to the phase gate, and
+<code class="docutils literal notranslate"><span class="pre">SAdj</span></code> to its adjoint.</p>
 </section>
 <section id="commonswitchpass">
 <h3>CommonSwitchPass<a class="headerlink" href="#commonswitchpass" title="Link to this heading">¶</a></h3>
-<p>Commute and switch gates.</p>
+<p>Commutes and switches gates. The pass first runs the <code class="docutils literal notranslate"><span class="pre">CommonCommutePass</span></code> and then replaces a
+specified gate operation, effectively reordering a gate sequence into a preferred canonical form.</p>
+<p>Pass Options:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pattern to switch: <code class="docutils literal notranslate"><span class="pre">XYZHtoHXYZ</span></code> or <code class="docutils literal notranslate"><span class="pre">HXYZtoXYZH</span></code></p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonSwitchPass=mode=HXYZtoXYZH</span></code></p></li>
+</ul>
+</section>
+<section id="commoncnotreversepass">
+<h3>CommonCNOTReversePass<a class="headerlink" href="#commoncnotreversepass" title="Link to this heading">¶</a></h3>
+<p>Reverse the control and targets of each CNot gate in a circuit.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonCNOTReversePass</span></code></p></li>
 </ul>
 </section>
 <section id="canonicalize">
 <h3>canonicalize<a class="headerlink" href="#canonicalize" title="Link to this heading">¶</a></h3>
-<p>Canonicalize operations.</p>
+<p>Canonicalizes dialect operations. This is the standard MLIR canonicalization pass, which applies the
+canonicalization patterns registered by each operation to fold constants and normalize the IR.</p>
+<p>Invocation:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">--disable-patterns=&lt;string&gt;</span></code> — Labels of patterns to filter out</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--enable-patterns=&lt;string&gt;</span></code> — Labels of patterns to use (all others filtered out)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--max-iterations=&lt;long&gt;</span></code> — Max iterations between applying patterns / simplifying regions</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--max-num-rewrites=&lt;long&gt;</span></code> — Max number of pattern rewrites within an iteration</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--region-simplify</span></code> — Perform control flow optimizations on the region tree</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--test-convergence</span></code> — Fail pass on non-convergence to detect cyclic patterns</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--top-down</span></code> — Seed the worklist in top-down order</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--canonicalize</span></code></p></li>
 </ul>
 </section>
 <section id="cse">
 <h3>cse<a class="headerlink" href="#cse" title="Link to this heading">¶</a></h3>
-<p>Eliminate common sub-expressions.</p>
+<p>Eliminates common sub-expressions, removing redundant computations that produce the same value.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--cse</span></code></p></li>
+</ul>
 </section>
 </section>
 <section id="transpilation-passes-target-device-specific">
-<h2>Transpilation passes (Target Device Specific)<a class="headerlink" href="#transpilation-passes-target-device-specific" title="Link to this heading">¶</a></h2>
+<h2>Transpilation Passes (Target Device Specific)<a class="headerlink" href="#transpilation-passes-target-device-specific" title="Link to this heading">¶</a></h2>
+<p>These passes adapt a circuit to a specific quantum device by respecting its connectivity and native
+gate set. Unlike the optimization passes above, their output depends on the target hardware
+description supplied to the pass.</p>
 <section id="commonmappingpass">
 <h3>CommonMappingPass<a class="headerlink" href="#commonmappingpass" title="Link to this heading">¶</a></h3>
-<p>A dialect-agnostic Qubit mapping pass. Maps logical qubits to physical qubits.</p>
+<p>A dialect-agnostic qubit mapping pass. It maps logical (algorithmic) qubits to physical (device)
+qubits, inserting the operations needed to satisfy the target device’s connectivity constraints. The
+target’s coupling map can be supplied either as a JSON file or queried directly from a QDMI device.</p>
+<p>Pass Options:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">--input=&lt;string&gt;</span></code> — Path to JSON input (Coupling Map)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--input=&lt;string&gt;</span></code> — Path to JSON input (Coupling Map of target device)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--qdmi=&lt;QDMI</span> <span class="pre">Device</span> <span class="pre">Name&gt;</span></code> - Query QDMI Device for Coupling Map (Needs Device .so file).</p></li>
 </ul>
+<p>Example invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonMappingPass=qdmi=cxx_qdmi.conf</span></code></br> where <code class="docutils literal notranslate"><span class="pre">cxx_qdmi.conf</span></code> contains the path to the qdmi
+device shared object file and the device name prefix. See <code class="docutils literal notranslate"><span class="pre">tests/dialects/quake/cxx_qdmi.conf</span></code> for
+more details.</p></li>
+</ul>
 </section>
-<section id="fermioniq-gate-set-mapping">
-<h3>fermioniq-gate-set-mapping<a class="headerlink" href="#fermioniq-gate-set-mapping" title="Link to this heading">¶</a></h3>
-<p>Convert Quake kernels to Fermioniq gate set.</br>
-The fermioniq backend supports the following gates:</br>
-<code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span>&#160; <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span>&#160; <span class="pre">&quot;x(1)&quot;</span></code>.</p>
+<section id="basisconversionpass">
+<h3>BasisConversionPass<a class="headerlink" href="#basisconversionpass" title="Link to this heading">¶</a></h3>
+<p>This pass decomposes all gate operations in the input MLIR dialect into the native gate set of the
+target quantum device. It incorporates numerous decomposition patterns and operates recursively,
+repeatedly rewriting non-native gates until every operation belongs to the requested native set (or
+no further decomposition rule applies).</p>
+<p>Note: Currently only available for the <code class="docutils literal notranslate"><span class="pre">Quake</span></code> MLIR dialect.</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gates=&lt;comma-separated</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">gates&gt;</span></code></p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--BasisConversionPass=gates=rx,cz,rz</span></code></p></li>
+</ul>
 </section>
-<section id="ionq-gate-set-mapping">
-<h3>ionq-gate-set-mapping<a class="headerlink" href="#ionq-gate-set-mapping" title="Link to this heading">¶</a></h3>
-<p>Convert Quake kernels to IONQ gate set.</br>
-The IONQ backend supports the following gates:</br>
-<code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span>&#160; <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span>&#160; <span class="pre">&quot;x(1)&quot;</span></code>.</p>
 </section>
-<section id="iqm-gate-set-mapping">
-<h3>iqm-gate-set-mapping<a class="headerlink" href="#iqm-gate-set-mapping" title="Link to this heading">¶</a></h3>
-<p>Convert Quake kernels to IQM gate set.</br>
-The IQM backend supports the following gates:</br>
-<code class="docutils literal notranslate"><span class="pre">&quot;phased_rx&quot;,</span> <span class="pre">&quot;z(1)&quot;</span></code>.</p>
+<section id="codegen-passes">
+<h2>CodeGen Passes<a class="headerlink" href="#codegen-passes" title="Link to this heading">¶</a></h2>
+<p>These passes lower the optimized and transpiled MLIR down toward a target transport format,
+ultimately producing QIR or OpenQASM.</p>
+<section id="lower-quake-to-qir">
+<h3>lower-quake-to-qir<a class="headerlink" href="#lower-quake-to-qir" title="Link to this heading">¶</a></h3>
+<p>The MQSS Quake-to-QIR conversion pass pipeline.</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">profile=&lt;string&gt;</span></code> - Target transport layer format or QIR-Profile, &lt;name[:version[:suboptions]]&gt;.
+Valid names: “qir”, “base”, “adaptive”, “full”. version: “2.0”, “2.1”, [Default: “qir:2.0”]</p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--lower-quake-to-qir=profile=base:2.0</span></code></p></li>
+</ul>
 </section>
-<section id="oqc-gate-set-mapping">
-<h3>oqc-gate-set-mapping<a class="headerlink" href="#oqc-gate-set-mapping" title="Link to this heading">¶</a></h3>
-<p>Convert Quake kernels to OQC gate set.</br>
-The OQC backend supports the following gates:</br>
-<code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span> <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;r1&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span> <span class="pre">&quot;x(1)&quot;</span></code></p>
+<section id="quake-to-qasm2">
+<h3>quake-to-qasm2<a class="headerlink" href="#quake-to-qasm2" title="Link to this heading">¶</a></h3>
+<p>Transforms a Quake MLIR module into OpenQASM 2. Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--quake-to-qasm2</span></code></p></li>
+</ul>
 </section>
-<section id="qci-gate-set-mapping">
-<h3>qci-gate-set-mapping<a class="headerlink" href="#qci-gate-set-mapping" title="Link to this heading">¶</a></h3>
-<p>Convert Quake kernels to QCI gate set.</br>
-The QCI backend supports the following gates:</br>
-<code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span> <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span> <span class="pre">&quot;x(1)&quot;</span></code></p>
+<section id="convert-quantum-to-llvm">
+<h3>convert-quantum-to-llvm<a class="headerlink" href="#convert-quantum-to-llvm" title="Link to this heading">¶</a></h3>
+<p>Performs a dialect conversion from the Catalyst-quantum dialect to the LLVM dialect.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--convert-quantum-to-llvm</span></code></br></p></li>
+</ul>
+<p>Note: This pass emits the LLVM MLIR dialect and <strong>not</strong> LLVM IR. To emit LLVM IR, this pass should
+be followed by the <code class="docutils literal notranslate"><span class="pre">mlir-to-llvmIR</span></code> pass.</p>
 </section>
-<section id="quantinuum-gate-set-mapping">
-<h3>quantinuum-gate-set-mapping<a class="headerlink" href="#quantinuum-gate-set-mapping" title="Link to this heading">¶</a></h3>
-<p>Convert Quake kernels to Quantinuum gate set.</br>
-The Quantinuum backend supports the following gates:</br>
-<code class="docutils literal notranslate"><span class="pre">&quot;h&quot;,</span> <span class="pre">&quot;s&quot;,</span> <span class="pre">&quot;t&quot;,</span> <span class="pre">&quot;rx&quot;,</span> <span class="pre">&quot;ry&quot;,</span> <span class="pre">&quot;rz&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span> <span class="pre">&quot;x(1)&quot;,</span></code>.</p>
-</section>
-<section id="print-quake-gates-pass">
-<h3>print-quake-gates-pass<a class="headerlink" href="#print-quake-gates-pass" title="Link to this heading">¶</a></h3>
-<p>Traverses a given MLIR module, prints its gates and a description of the operands of each gate.</p>
-</section>
-<section id="print-catalyst-gates-pass">
-<h3>print-catalyst-gates-pass<a class="headerlink" href="#print-catalyst-gates-pass" title="Link to this heading">¶</a></h3>
-<p>Traverses a given MLIR module, prints its gates and a description of the operands of each gate.</p>
+<section id="mlir-to-llvmir">
+<h3>mlir-to-llvmIR<a class="headerlink" href="#mlir-to-llvmir" title="Link to this heading">¶</a></h3>
+<p>Transforms the LLVM dialect into LLVM IR.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mlir-to-llvmIR</span></code></p></li>
+</ul>
 </section>
 </section>
 <section id="pass-pipelines">
 <h2>Pass Pipelines<a class="headerlink" href="#pass-pipelines" title="Link to this heading">¶</a></h2>
+<p>Pass pipelines bundle several passes together under a single flag, providing preset optimization
+levels analogous to a compiler’s <code class="docutils literal notranslate"><span class="pre">-O</span></code> flags.</p>
+<p>Note: The pass pipelines are under active development and their exact composition may change.</p>
 <section id="o1">
-<h3>O1<a class="headerlink" href="#o1" title="Link to this heading">¶</a></h3>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>The MQSS-O1 optimization pipeline
-</pre></div>
-</div>
+<h3>–O1<a class="headerlink" href="#o1" title="Link to this heading">¶</a></h3>
+<p>The MQSS-O1 optimization pipeline.</br> Passes enabled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cse</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">canonicalize</span></code></p></li>
+</ul>
 </section>
 <section id="o2">
-<h3>O2<a class="headerlink" href="#o2" title="Link to this heading">¶</a></h3>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>MQSS-O2 optimization pipeline
-</pre></div>
-</div>
+<h3>–O2<a class="headerlink" href="#o2" title="Link to this heading">¶</a></h3>
+<p>MQSS-O2 optimization pipeline</br> Passes enabled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CommonGateCancellationPass</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CommonCNOTReversePass</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cse</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">canonicalize</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CommonCommutePass</span></code></p></li>
+</ul>
 </section>
 <section id="o3">
-<h3>O3<a class="headerlink" href="#o3" title="Link to this heading">¶</a></h3>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>MQSS-O3 optimization pipeline
-</pre></div>
-</div>
+<h3>–O3<a class="headerlink" href="#o3" title="Link to this heading">¶</a></h3>
+<p>MQSS-O3 optimization pipeline</br> Passes enabled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cse</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">canonicalize</span></code></p></li>
+</ul>
 </section>
 </section>
 <section id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading">¶</a></h2>
+<section id="using-mqss-opt">
+<h3>Using mqss-opt<a class="headerlink" href="#using-mqss-opt" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> operates directly on an MLIR file, applying the passes specified on the command-line in
+order.</p>
+<p><strong>1. Quake</strong></p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mqss-opt<span class="w"> </span>test.qke<span class="w"> </span>--cse<span class="w"> </span>--canonicalize<span class="w"> </span>--BasisConversionPass<span class="o">=</span><span class="nv">gates</span><span class="o">=</span>rx,cz,rz
+</pre></div>
+</div>
+<p><strong>2. Catalyst-quantum</strong></p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mqss-opt<span class="w"> </span>test.mlir<span class="w"> </span>--CommonMappingPass<span class="o">=</span><span class="nv">input</span><span class="o">=</span>/workspaces/MQSS-Passes-Suite/tests/input/qmap.json
+</pre></div>
+</div>
+<p>Note: Check the directory <code class="docutils literal notranslate"><span class="pre">tests/dialects</span></code> for more test cases using <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> and example pass
+invocations.</p>
+</section>
+<section id="using-mqss-cc">
+<h3>Using mqss-cc<a class="headerlink" href="#using-mqss-cc" title="Link to this heading">¶</a></h3>
+<p>``mqss-cc<code class="docutils literal notranslate"><span class="pre">is</span> <span class="pre">a</span> <span class="pre">wrapper</span> <span class="pre">script</span> <span class="pre">that</span> <span class="pre">takes</span></code>C++<code class="docutils literal notranslate"><span class="pre">/</span></code>Python<code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">code</span> <span class="pre">as</span> <span class="pre">input,</span> <span class="pre">converts</span> <span class="pre">the</span> <span class="pre">source</span> <span class="pre">to</span> <span class="pre">the</span> <span class="pre">appropriate</span> <span class="pre">MLIR</span> <span class="pre">dialect,</span> <span class="pre">and</span> <span class="pre">then</span> <span class="pre">runs</span></code>mqss-opt` on that dialect. It is the convenient
+entry point when you want to start from kernel source rather than from an existing MLIR file.</p>
+<p>Note: Currently, the script checks the extension of the source <code class="docutils literal notranslate"><span class="pre">.cpp</span></code> or <code class="docutils literal notranslate"><span class="pre">.py</span></code> and then performs the
+appropriate translation. If a <code class="docutils literal notranslate"><span class="pre">.cpp</span></code> is detected, it is assumed that the source is a cudaq kernel.
+If the source is a <code class="docutils literal notranslate"><span class="pre">.py</span></code> then it is assumed to be a <code class="docutils literal notranslate"><span class="pre">catalyst</span></code> kernel.</p>
 <p><strong>1. For cudaq-quake</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.cpp<span class="w"> </span>--emit-qir<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.cpp<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
 </pre></div>
 </div>
 <p><strong>2. For catalyst-quantum</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.py<span class="w"> </span>--function<span class="w"> </span>circuit<span class="w"> </span>--stage<span class="w"> </span>QuantumCompilationStage<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.py<span class="w"> </span>--function<span class="w"> </span>circuit<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
 </pre></div>
 </div>
+<p>Note: Check the directory <code class="docutils literal notranslate"><span class="pre">tests/code</span></code> for more test cases using <code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code> and example pass
+invocations.</p>
+</section>
 </section>
 </section>
 
@@ -469,29 +614,34 @@ The Quantinuum backend supports the following gates:</br>
 <li><a class="reference internal" href="#commonnormalizearganglepass">CommonNormalizeArgAnglePass</a></li>
 <li><a class="reference internal" href="#commonreductionpass">CommonReductionPass</a></li>
 <li><a class="reference internal" href="#commonswitchpass">CommonSwitchPass</a></li>
+<li><a class="reference internal" href="#commoncnotreversepass">CommonCNOTReversePass</a></li>
 <li><a class="reference internal" href="#canonicalize">canonicalize</a></li>
 <li><a class="reference internal" href="#cse">cse</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#transpilation-passes-target-device-specific">Transpilation passes (Target Device Specific)</a><ul>
+<li><a class="reference internal" href="#transpilation-passes-target-device-specific">Transpilation Passes (Target Device Specific)</a><ul>
 <li><a class="reference internal" href="#commonmappingpass">CommonMappingPass</a></li>
-<li><a class="reference internal" href="#fermioniq-gate-set-mapping">fermioniq-gate-set-mapping</a></li>
-<li><a class="reference internal" href="#ionq-gate-set-mapping">ionq-gate-set-mapping</a></li>
-<li><a class="reference internal" href="#iqm-gate-set-mapping">iqm-gate-set-mapping</a></li>
-<li><a class="reference internal" href="#oqc-gate-set-mapping">oqc-gate-set-mapping</a></li>
-<li><a class="reference internal" href="#qci-gate-set-mapping">qci-gate-set-mapping</a></li>
-<li><a class="reference internal" href="#quantinuum-gate-set-mapping">quantinuum-gate-set-mapping</a></li>
-<li><a class="reference internal" href="#print-quake-gates-pass">print-quake-gates-pass</a></li>
-<li><a class="reference internal" href="#print-catalyst-gates-pass">print-catalyst-gates-pass</a></li>
+<li><a class="reference internal" href="#basisconversionpass">BasisConversionPass</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#codegen-passes">CodeGen Passes</a><ul>
+<li><a class="reference internal" href="#lower-quake-to-qir">lower-quake-to-qir</a></li>
+<li><a class="reference internal" href="#quake-to-qasm2">quake-to-qasm2</a></li>
+<li><a class="reference internal" href="#convert-quantum-to-llvm">convert-quantum-to-llvm</a></li>
+<li><a class="reference internal" href="#mlir-to-llvmir">mlir-to-llvmIR</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#pass-pipelines">Pass Pipelines</a><ul>
-<li><a class="reference internal" href="#o1">O1</a></li>
-<li><a class="reference internal" href="#o2">O2</a></li>
-<li><a class="reference internal" href="#o3">O3</a></li>
+<li><a class="reference internal" href="#o1">–O1</a></li>
+<li><a class="reference internal" href="#o2">–O2</a></li>
+<li><a class="reference internal" href="#o3">–O3</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#example-usage">Example Usage</a></li>
+<li><a class="reference internal" href="#example-usage">Example Usage</a><ul>
+<li><a class="reference internal" href="#using-mqss-opt">Using mqss-opt</a></li>
+<li><a class="reference internal" href="#using-mqss-cc">Using mqss-cc</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
