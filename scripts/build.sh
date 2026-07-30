@@ -2,39 +2,16 @@
 
 ############# Pretty-print variables#################
 
-msg() {
-  printf '%s\n' "$1"
-}
-
 blank() {
   printf '\n'
-}
-
-section() {
-  blank
-  printf '====== %s ======\n' "$1"
-  blank
 }
 
 info() {
   printf '🔧 %s\n' "$1"
 }
 
-fail() {
-  printf '❌ %s\n' "$1"
-}
-
-
 ok() {
   printf '✅ %s\n' "$1"
-}
-
-warn() {
-  printf '⚠️ %s\n' "$1"
-}
-
-step() {
-  printf '-> %s\n' "$1"
 }
 
 ########################## Create build and deps directories #############################
@@ -77,7 +54,7 @@ done
 
 ################################## Configure the project ###################################
 
-section "Configuring the MQSS-Quantum-Compilation Suite"
+info "Configuring the MQSS-Quantum-Compilation Suite"
 
 cmake -G Ninja \
   -B "${BUILD_DIR}" \

@@ -23,7 +23,7 @@ endif()
 # Find MLIR. (MLIR is usually installed as part of an LLVM distribution.)
 
 # Append MLIR's CMake modules.
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(FetchLLVM)
 find_package(MLIR REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
