@@ -8,33 +8,26 @@ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 set(CMAKE_CXX_FLAGS "-w -fPIC")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-error")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions")
-set(MLIR_DIR "${MLIR_DIR}")
-set(LLVM_DIR "${LLVM_DIR}")
 
 include_directories(${MLIR_INCLUDE_DIRS})
 
-# Set default build type to Debug if none is specified
+# Set default build type to Release if none is specified
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE
-      Debug
+      Release
       CACHE STRING "Build type (Debug, Release)" FORCE)
-endif()
-
-# Define macros for Debug builds
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  message("Configuring for Debug mode")
-  add_compile_definitions(DEBUG)
 endif()
 
 # ################ LLVM/MLIR Settings
 # ##############################################################################
 # Find MLIR. (MLIR is usually installed as part of an LLVM distribution.)
-find_package(MLIR REQUIRED CONFIG)
+
 # Append MLIR's CMake modules.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+include(FetchLLVM)
+find_package(MLIR REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-# list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
-
 # Include the MLIR helper macros.
 include(TableGen)
 include(AddMLIR)

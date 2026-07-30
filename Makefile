@@ -61,8 +61,6 @@ test-all:
 	@ninja -C $(CURDIR)/build check-mqss-code
 
 build: mqss-opt
-	@echo "	"
-	@echo "Configured Build, PLEASE RUN: make target"
 
 ccdb-clean:
 	rm -f $(MERGED_CCDB)

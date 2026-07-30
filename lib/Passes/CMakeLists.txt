@@ -67,7 +67,7 @@ set_target_properties(
 target_compile_definitions(MQSSCIPasses PRIVATE ${MLIR_DEFINITIONS}
                                                 ${LLVM_DEFINITIONS})
 
-if(MQSS_ENABLE_DEBUG)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_definitions(MQSSCIPasses PRIVATE MQSS_ENABLE_DEBUG)
 endif()
 target_compile_options(MQSSCIPasses PRIVATE -fexceptions)
