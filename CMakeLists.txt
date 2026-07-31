@@ -42,7 +42,7 @@ add_definitions(${LLVM_DEFINITIONS} ${MLIR_DEFINITIONS})
 
 # Tell where to search for Find<package>.cmake files
 set(FETCHCONTENT_BASE_DIR
-    ${BUILD_DIR}/_deps
+    ${CMAKE_CURRENT_BINARY_DIR}/_deps
     CACHE PATH "FetchContent cache dir")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
