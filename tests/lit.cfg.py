@@ -30,3 +30,7 @@ config.substitutions.append(
 config.substitutions.append(
     ('FileCheck', os.path.join(repo_root, 'build/_deps/LLVM-22.1.0-toolchain/bin/FileCheck'))
 )
+
+config.substitutions.append(
+    ('%qdmi-cxx-device-so', os.path.join(repo_root, 'build/_deps/qdmi-build/examples/device/src/libcxx-qdmi-device.so'))
+)
