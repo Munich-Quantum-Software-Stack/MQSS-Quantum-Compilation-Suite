@@ -34,6 +34,9 @@ BUILD_TYPE="Release"  # Default: Release mode
 INSTALL_DIR="${BUILD_DIR}/bin"
 
 # Parse command-line arguments
+# TODO: Worth adding a BUILD_TESTS variable to enable/disable
+#       building tests. Not needed now since test cases do not
+#       need to be built.
 while [[ $# -gt 0 ]]; do
   case $1 in
     --install-dir)
@@ -64,7 +67,6 @@ cmake -G Ninja \
   -DCMAKE_CXX_COMPILER="${CXX}" \
   -DINSTALL_DIR="${INSTALL_DIR}" \
 	-DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-  -DLLVM_EXTERNAL_LIT=$(which lit) \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 ok "Configured Build, PLEASE RUN: make target"
