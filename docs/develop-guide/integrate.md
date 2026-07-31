@@ -23,23 +23,16 @@ following entry:
 
 ```cmake
 
-include(ExternalProject)
+set(CUDAQ_AUTO_FETCH ON CACHE BOOL "" FORCE)
+set(CATALYST_AUTO_FETCH ON CACHE BOOL "" FORCE)
 
-set(MQSSCI_INSTALL_DIR ${CMAKE_BINARY_DIR}/_deps/mqssci-build)
-
-ExternalProject_Add(mqssci
-  GIT_REPOSITORY   https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git
-  GIT_TAG           <commit-has/release tag>
-  PREFIX            ${CMAKE_BINARY_DIR}/_deps/mqssci-build
-  SOURCE_DIR        ${CMAKE_BINARY_DIR}/_deps/mqssci-src
-  BINARY_DIR        ${CMAKE_BINARY_DIR}/_deps/mqssci-src   # in-source make, adjust if out-of-source supported
-  CONFIGURE_COMMAND ""   # no configure step needed for plain make
-  BUILD_COMMAND bash -c "make build"
-  INSTALL_COMMAND   make target
-  # BUILD_IN_SOURCE   TRUE  # set if module-Y's Makefile expects to run from its source root
+include(FetchContent)
+FetchContent_Declare(mqssci
+  GIT_REPOSITORY https://github.com/akshay9594/MQSS-Passes-Suite.git
+  GIT_TAG        8aa079e27d50cd90abc0e2322b5362b0138d7b79
 )
 
-set(MQSSCI_SRC_DIR ${CMAKE_BINARY_DIR}/_deps/mqssci-src)
+FetchContent_MakeAvailable(mqssci)
 ```
 
 Then within the appropriate `CMakeLists.txt`:

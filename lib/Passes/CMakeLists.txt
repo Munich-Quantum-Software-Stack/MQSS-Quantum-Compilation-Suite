@@ -74,6 +74,8 @@ target_compile_options(MQSSCIPasses PRIVATE -fexceptions)
 
 target_include_directories(
   MQSSCIPasses
-  PUBLIC ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/include
-         ${nlohmann_json_SOURCE_DIR}/include ${QDMI_INCLUDE_DIR}
+  PUBLIC $<BUILD_INTERFACE:${MQSSCI_ROOT_DIR}/include>
+         $<BUILD_INTERFACE:${MQSSCI_ROOT_DIR_BINARY}/include>
+         ${nlohmann_json_SOURCE_DIR}/include
+         ${QDMI_INCLUDE_DIR}
          ${MQT_QMAP_INCLUDE_DIR})

@@ -22,8 +22,11 @@ endif()
 # ##############################################################################
 # Find MLIR. (MLIR is usually installed as part of an LLVM distribution.)
 
+set(MQSSCI_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(MQSSCI_ROOT_DIR_BINARY "${CMAKE_CURRENT_SOURCE_DIR}/build")
+
 # Append MLIR's CMake modules.
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${MQSSCI_ROOT_DIR}/cmake")
 include(FetchLLVM)
 find_package(MLIR REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
@@ -45,7 +48,7 @@ add_definitions(${LLVM_DEFINITIONS} ${MLIR_DEFINITIONS})
 # set(FETCHCONTENT_BASE_DIR ${CMAKE_CURRENT_BINARY_DIR}/_deps CACHE PATH
 # "FetchContent cache dir")
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${MQSSCI_ROOT_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # set(CMAKE_CXX_STANDARD 11) Find QDMI package find_package(qdmi REQUIRED) Find
 # QInfo package find_package(qinfo REQUIRED) find_package(Z3 REQUIRED)
@@ -74,8 +77,8 @@ include_directories(
   ${MQT_QMAP_INCLUDE_DIR}
   ${CUDAQ_INCLUDE_DIRS}
   ${CATALYST_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_BINARY_DIR}/include)
+  ${MQSSCI_ROOT_DIR}/include
+  ${MQSSCI_ROOT_DIR_BINARY}/include)
 
 include(FetchContent)
 
@@ -91,14 +94,14 @@ endif()
 
 add_custom_target(
   check-mqss
-  COMMAND ${EXTERNAL_LIT} ${CMAKE_CURRENT_SOURCE_DIR}/tests/dialects/quake
-          ${CMAKE_CURRENT_SOURCE_DIR}/tests/dialects/catalyst-quantum
+  COMMAND ${EXTERNAL_LIT} ${MQSSCI_ROOT_DIR}/tests/dialects/quake
+          ${MQSSCI_ROOT_DIR}/tests/dialects/catalyst-quantum
   USES_TERMINAL)
 
 add_custom_target(
   check-mqss-code
-  COMMAND ${EXTERNAL_LIT} ${CMAKE_CURRENT_SOURCE_DIR}/tests/code/cudaq/tests
-          ${CMAKE_CURRENT_SOURCE_DIR}/tests/code/catalyst/tests
+  COMMAND ${EXTERNAL_LIT} ${MQSSCI_ROOT_DIR}/tests/code/cudaq/tests
+          ${MQSSCI_ROOT_DIR}/tests/code/catalyst/tests
   USES_TERMINAL)
 
 # ###############################-MQSS Settings-###############################
@@ -122,8 +125,8 @@ target_compile_definitions(
 target_compile_options(mqss-opt PRIVATE -fexceptions)
 
 # Set include directories so the compiler finds the headers
-target_include_directories(mqss-opt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
-                                            ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(mqss-opt PRIVATE ${MQSSCI_ROOT_DIR}/include
+                                            ${MQSSCI_ROOT_DIR_BINARY}/include)
 
 # Link the dialect implementations and other dependencies
 target_link_libraries(
