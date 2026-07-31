@@ -18,7 +18,7 @@ set(MQSS_LLVM_VERSION
 
 if(MQSS_LLVM_AUTO_FETCH AND (NOT LLVM_DIR OR NOT MLIR_DIR))
   set(_mqss_llvm_root
-      "${CMAKE_BINARY_DIR}/_deps/LLVM-${MQSS_LLVM_VERSION}-toolchain")
+      "${CMAKE_CURRENT_BINARY_DIR}/_deps/LLVM-${MQSS_LLVM_VERSION}-toolchain")
 
   if(NOT EXISTS "${_mqss_llvm_root}")
     message(

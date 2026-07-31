@@ -26,9 +26,9 @@ set(CATALYST_BUILD_PARALLELISM
 )
 
 if(CATALYST_AUTO_FETCH AND NOT CATALYST_ROOT)
-  set(_catalyst_src "${CMAKE_BINARY_DIR}/_deps/catalyst-src")
-  set(_catalyst_build "${CMAKE_BINARY_DIR}/_deps/catalyst-build")
-  set(_catalyst_install "${CMAKE_BINARY_DIR}/_deps/catalyst-install")
+  set(_catalyst_src "${CMAKE_CURRENT_BINARY_DIR}/_deps/catalyst-src")
+  set(_catalyst_build "${CMAKE_CURRENT_BINARY_DIR}/_deps/catalyst-build")
+  set(_catalyst_install "${CMAKE_CURRENT_BINARY_DIR}/_deps/catalyst-install")
 
   if(NOT LLVM_DIR OR NOT MLIR_DIR)
     message(
@@ -76,10 +76,9 @@ if(CATALYST_AUTO_FETCH AND NOT CATALYST_ROOT)
     # root.
     execute_process(
       COMMAND
-        ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} -S ${_catalyst_src}/mlir -B
-        ${_catalyst_build} -DCMAKE_INSTALL_PREFIX=${_catalyst_install}
-        -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR=${LLVM_DIR} -DMLIR_DIR=${MLIR_DIR}
-        -DCATALYST_DOCS_ONLY=ON
+        ${CMAKE_COMMAND} -G Ninja -S ${_catalyst_src}/mlir -B ${_catalyst_build}
+        -DCMAKE_INSTALL_PREFIX=${_catalyst_install} -DCMAKE_BUILD_TYPE=Release
+        -DLLVM_DIR=${LLVM_DIR} -DMLIR_DIR=${MLIR_DIR} -DCATALYST_DOCS_ONLY=ON
       RESULT_VARIABLE _catalyst_rc
       ERROR_VARIABLE _catalyst_err)
     if(NOT _catalyst_rc EQUAL 0)

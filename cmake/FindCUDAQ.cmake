@@ -12,9 +12,9 @@ set(CUDAQ_GIT_TAG
 if(CUDAQ_AUTO_FETCH
    AND NOT CUDAQ_ROOT
    AND NOT DEFINED ENV{CUDAQ_INSTALL_PREFIX})
-  set(_cudaq_src "${CMAKE_BINARY_DIR}/_deps/cudaq-src")
-  set(_cudaq_build "${CMAKE_BINARY_DIR}/_deps/cudaq-build")
-  set(_cudaq_install "${CMAKE_BINARY_DIR}/_deps/cudaq-install")
+  set(_cudaq_src "${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-src")
+  set(_cudaq_build "${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-build")
+  set(_cudaq_install "${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-install")
 
   # CUDA-Q must be built against the same LLVM this project uses, so require
   # that find_package(MLIR CONFIG) already ran.
@@ -53,9 +53,9 @@ if(CUDAQ_AUTO_FETCH
 
     execute_process(
       COMMAND
-        ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} -S ${_cudaq_src} -B
-        ${_cudaq_build} -DCMAKE_INSTALL_PREFIX=${_cudaq_install}
-        -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR=${LLVM_DIR} -DMLIR_DIR=${MLIR_DIR}
+        ${CMAKE_COMMAND} -G Ninja -S ${_cudaq_src} -B ${_cudaq_build}
+        -DCMAKE_INSTALL_PREFIX=${_cudaq_install} -DCMAKE_BUILD_TYPE=Release
+        -DLLVM_DIR=${LLVM_DIR} -DMLIR_DIR=${MLIR_DIR}
         -DCMAKE_CXX_FLAGS_RELEASE=-O1 -DCUDAQ_ENABLE_PYTHON=OFF
         -DCUDAQ_BUILD_TESTS=OFF -DCUDAQ_DISABLE_RUNTIME=ON
       RESULT_VARIABLE _cudaq_rc)
@@ -120,14 +120,14 @@ endif()
 find_path(
   CUDAQ_INCLUDE_DIR
   NAMES cudaq/Optimizer/Dialect/Quake/QuakeOps.h
-  HINTS ${CMAKE_BINARY_DIR}/_deps/cudaq-src/cudaq
+  HINTS ${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-src/cudaq
   PATH_SUFFIXES include
   NO_DEFAULT_PATH)
 
 find_path(
   CUDAQ_GENERATED_INCLUDE_DIR
   NAMES cudaq/Optimizer/Dialect/Quake/QuakeOps.h.inc
-  HINTS ${CMAKE_BINARY_DIR}/_deps/cudaq-build/cudaq
+  HINTS ${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-build/cudaq
   PATH_SUFFIXES include
   NO_DEFAULT_PATH)
 
