@@ -23,7 +23,7 @@ endif()
 # Find MLIR. (MLIR is usually installed as part of an LLVM distribution.)
 
 set(MQSSCI_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-set(MQSSCI_ROOT_DIR_BINARY "${CMAKE_CURRENT_SOURCE_DIR}/build")
+set(MQSSCI_ROOT_DIR_BINARY "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Append MLIR's CMake modules.
 list(APPEND CMAKE_MODULE_PATH "${MQSSCI_ROOT_DIR}/cmake")

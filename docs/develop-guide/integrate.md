@@ -29,7 +29,7 @@ set(CATALYST_AUTO_FETCH ON CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(mqssci
   GIT_REPOSITORY https://github.com/akshay9594/MQSS-Passes-Suite.git
-  GIT_TAG        8aa079e27d50cd90abc0e2322b5362b0138d7b79
+  GIT_TAG        <commit-hash or Release-tag>
 )
 
 FetchContent_MakeAvailable(mqssci)
