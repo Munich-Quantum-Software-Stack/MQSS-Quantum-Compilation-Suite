@@ -1,6 +1,7 @@
 build/
 tests/code/catalyst/__pycache__/
 tests/.lit_test_times.txt
+tests/**/Output/
 .vscode
 .cache
 _build/
