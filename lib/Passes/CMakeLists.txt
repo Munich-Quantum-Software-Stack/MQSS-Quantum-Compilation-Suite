@@ -78,4 +78,6 @@ target_include_directories(
          $<BUILD_INTERFACE:${MQSSCI_ROOT_DIR_BINARY}/include>
          ${nlohmann_json_SOURCE_DIR}/include
          ${QDMI_INCLUDE_DIR}
-         ${MQT_QMAP_INCLUDE_DIR})
+         ${MQT_QMAP_INCLUDE_DIR}
+         ${LLVM_INCLUDE_DIRS}
+         ${MLIR_INCLUDE_DIRS})
