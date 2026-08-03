@@ -1,6 +1,7 @@
 add_mlir_library(
   MQSSCIPasses
   SHARED
+  Transforms/Dialects.cpp
   Transforms/CommonCNOTReversalPass.cpp
   Transforms/CommonGateCancellationPass.cpp
   Transforms/CommonGateCommutationPass.cpp

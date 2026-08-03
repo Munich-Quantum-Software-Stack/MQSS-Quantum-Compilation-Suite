@@ -21,12 +21,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   date   August 2026
   version 2.0.0
 *************************************************************************/
-
+#include "Passes/Transforms/Dialects.h"
 #include "Passes/Transforms/Pipelines.h"
 #include "Passes/Transforms/Transforms.h"
-#include "Quantum/IR/QuantumDialect.h"
-#include "cudaq/Optimizer/Dialect/CC/CCDialect.h"
-#include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
@@ -36,21 +33,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/raw_ostream.h>
-#include <mlir/Dialect/Arith/IR/Arith.h>
-#include <mlir/Dialect/ControlFlow/IR/ControlFlow.h>
-#include <mlir/Dialect/Func/IR/FuncOps.h>
-#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
-#include <mlir/Dialect/Linalg/IR/Linalg.h>
-#include <mlir/Dialect/SCF/IR/SCF.h>
-#include <mlir/Dialect/Tensor/IR/Tensor.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Location.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Parser/Parser.h>
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Pass/PassRegistry.h>
-#include <mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h>
-#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Transforms/Passes.h>
 
 using namespace llvm;
@@ -69,20 +57,10 @@ struct ToQirPipelineOptions
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
 
-  // Explicitly register the standard dialects
-  registry.insert<mlir::func::FuncDialect, mlir::arith::ArithDialect,
-                  mlir::cf::ControlFlowDialect, mlir::linalg::LinalgDialect,
-                  mlir::scf::SCFDialect, mlir::LLVM::LLVMDialect>();
-
-  registry.insert<mlir::tensor::TensorDialect>();
-  // Register all supported quantum dialects
-  registry.insert<cudaq::cc::CCDialect, cudaq::quake::QuakeDialect>();
-  registry.insert<catalyst::quantum::QuantumDialect>();
+  mqss::opt::registerMQSSDialects(registry);
 
   // Register Dialect Agnostic Passes
   registerMQSSTransformsPasses();
-  mlir::registerBuiltinDialectTranslation(registry);
-  mlir::registerLLVMDialectTranslation(registry);
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::createCanonicalizerPass();
