@@ -28,12 +28,12 @@ void registerMQSSDialects(mlir::DialectRegistry &registry) {
   mlir::registerLLVMDialectTranslation(registry);
 }
 
-mlir::MLIRContext &createMQSSContext() {
+std::unique_ptr<mlir::MLIRContext> createMQSSContext() {
   mlir::DialectRegistry registry;
   registerMQSSDialects(registry);
-  mlir::MLIRContext context(registry);
-  context.loadAllAvailableDialects();
-  return context;
+  auto context = std::make_unique<mlir::MLIRContext>(registry);
+  context->loadAllAvailableDialects();
+  return context; // unique_ptr is movable; the MLIRContext itself never moves
 }
 
 } // namespace mqss::opt

@@ -110,6 +110,8 @@ createCommonMappingPass(const CommonMappingPassOptions &options);
 std::unique_ptr<mlir::Pass>
 createBasisConversionPass(const BasisConversionPassOptions &options);
 
+std::unique_ptr<mlir::Pass>
+QuakeToQASM2Pass(llvm::raw_ostream &os); // new overload
 } // namespace mqss::opt
 
 // namespace mq_cudaq::opt{

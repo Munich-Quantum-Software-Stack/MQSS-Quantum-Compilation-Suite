@@ -18,13 +18,15 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 # Integrating the MQSS Quantum Compilation Suite within your project
 
-One can integrate MQSS-Quantum Compilation Suite into their project as a cmake module using the
-following guide.
+MQSSCI (MQSS-Quantum-Compilation-Suite) is a library of [MLIR](https://mlir.llvm.org/) compiler
+passes for transforming and optimizing quantum programs. This guide walks through adding MQSSCI to
+your own CMake project, linking against it, and building a pass pipeline — no prior compiler
+background required.
 
 ## Using MQSSCI as a CMake Dependency
 
 MQSSCI (MQSS-Quantum-Compilation-Suite) can be integrated into any C++ project as an external CMake
-module using `FetchContent`:
+module using `FetchContent`. E.g. within `FindMQSSCI.cmake`:
 
 ```cmake
 set(CUDAQ_AUTO_FETCH ON CACHE BOOL "" FORCE)
@@ -67,19 +69,65 @@ so no manual include-path bookkeeping is required in the consuming project.
 
 ### Including the Headers
 
-Two headers are relevant to consumers:
+Three headers are relevant to consumers, all declared in namespace `mqss::opt`:
 
+- `Passes/Transforms/Dialects.h` — registers the MLIR dialects (Quake, Catalyst's quantum dialect,
+  and the standard MLIR dialects the passes lower into) that the passes need to understand your
+  program. Include this before parsing or building any MLIR module.
 - `Passes/Transforms/Transforms.h` — declares every individual pass factory function, for building a
   custom pass pipeline pass-by-pass.
 - `Passes/Transforms/Pipelines.h` — declares the three preset optimization levels `O1`, `O2` and
   `O3`, for appending a whole preset stage to an `mlir::OpPassManager` in one call.
 
-Both are declared in namespace `mqss::opt`.
-
 ## Declaring and Using a Pass Pipeline
 
-A pipeline is simply a sequence of passes appended to an `mlir::OpPassManager`. Which factory
+A pipeline is simply a sequence of passes appended to an `mlir::OpPassManager`. Which pass factory
 function you call depends on whether the pass takes options.
+
+### Using a Preset Pipeline Directly
+
+Call one of the preset optimization pipelines — `O1`, `O2`, or `O3` — directly:
+
+```cpp
+#include "Passes/Transforms/Dialects.h"
+#include "Passes/Transforms/Pipelines.h"
+
+mlir::DialectRegistry registry;
+mqss::opt::registerMQSSDialects(registry);
+mlir::MLIRContext context(registry);
+context.loadAllAvailableDialects();
+
+auto module = mlir::parseSourceFile<mlir::ModuleOp>(src_path, &context);
+if (!module) {
+  llvm::errs() << "failed to parse MLIR file\n";
+}
+
+mlir::PassManager pm(&context);
+mqss::opt::O1(pm);
+if (mlir::failed(pm.run(*module))) {
+  llvm::errs() << "Compiler: Pipeline failed\n";
+}
+
+pm.addPass(mqss::opt::QuakeToQASM2Pass());
+if (mlir::failed(pm.run(*module))) {
+  llvm::errs() << "Compiler: Conversion of Quake to QASM2 failed\n";
+}
+```
+
+`registerMQSSDialects` fills a `DialectRegistry` with everything MQSSCI's passes need to understand
+your program (Quake, Catalyst's quantum dialect, and the standard MLIR dialects the passes lower
+into). Construct the `MLIRContext` once, locally — it can't be copied or moved — and keep it alive
+for as long as you're parsing MLIR or running passes.
+
+Please refer to `Passes/Transforms/Pipelines.h` for details on which specific passes the pipelines
+include.
+
+## Declaring a custom Pass Pipeline
+
+If the presets don't fit your use case, assemble your own pipeline by adding individual passes to an
+`mlir::OpPassManager` one at a time, in whatever order you need. Every pass factory lives in
+`Passes/Transforms/Transforms.h`, and falls into one of two shapes depending on whether the pass
+takes options.
 
 ### Passes Without Options
 
@@ -87,8 +135,7 @@ Passes with no configurable options are constructed by calling their factory fun
 
 ```cpp
 #include "Passes/Transforms/Transforms.h"
-...;
-...;
+
 mlir::OpPassManager pm;
 pm.addPass(mqss::opt::CommonCNOTReversePass());
 pm.addPass(mqss::opt::CommonNormalizeArgAnglePass());
@@ -139,15 +186,4 @@ void mqss::opt::O2(mlir::OpPassManager &pm) {
   pm.addPass(createCSEPass());
   pm.addPass(createCanonicalizerPass());
 }
-```
-
-### Using a Preset Pipeline Directly
-
-Rather than building a pipeline pass-by-pass, a consumer can just invoke one of the preset levels:
-
-```cpp
-#include "Passes/Transforms/Pipelines.h"
-
-mlir::OpPassManager pm;
-mqss::opt::O2(pm);   // appends the whole O2 preset in one call
 ```

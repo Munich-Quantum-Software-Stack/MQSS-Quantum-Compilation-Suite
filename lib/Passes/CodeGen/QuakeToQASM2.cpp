@@ -42,21 +42,28 @@ class QuakeToQASM2
     : public mqss_backend::impl::QuakeToQASM2PassBase<QuakeToQASM2> {
 
 public:
+  QuakeToQASM2() = default;
+
+  explicit QuakeToQASM2(llvm::raw_ostream &os) : os(os) {}
+
   void runOnOperation() override {
-
     MQSS_DEBUG("\n[Applying Pass: QuakeToQASM2]\n");
-    auto context = &getContext();
     mlir::ModuleOp module = getOperation();
-
     MQSS_DEBUG("\nTranslated output:\n");
-
-    translateToOpenQASM(module, llvm::outs());
-    // Convert the module to LLVM IR in a new LLVM IR context.
+    translateToOpenQASM(module, os);
   }
+
+private:
+  llvm::raw_ostream &os = llvm::outs();
 };
 
 } // namespace
 
 std::unique_ptr<mlir::Pass> mqss_backend::QuakeToQASM2Pass() {
   return std::make_unique<QuakeToQASM2>();
+}
+
+std::unique_ptr<mlir::Pass>
+mqss_backend::QuakeToQASM2Pass(llvm::raw_ostream &os) {
+  return std::make_unique<QuakeToQASM2>(os);
 }

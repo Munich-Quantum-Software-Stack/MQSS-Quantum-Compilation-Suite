@@ -12,6 +12,6 @@ void registerMQSSDialects(mlir::DialectRegistry &registry);
 
 // Convenience: builds a DialectRegistry via registerMQSSDialects() and
 // returns a ready-to-use MLIRContext with all dialects loaded.
-mlir::MLIRContext &createMQSSContext();
+std::unique_ptr<mlir::MLIRContext> createMQSSContext();
 
 } // namespace mqss::opt
