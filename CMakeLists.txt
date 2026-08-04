@@ -129,40 +129,7 @@ target_include_directories(mqss-opt PRIVATE ${MQSSCI_ROOT_DIR}/include
                                             ${MQSSCI_ROOT_DIR_BINARY}/include)
 
 # Link the dialect implementations and other dependencies
-target_link_libraries(
-  mqss-opt
-  PUBLIC qdmi::qdmi
-         qdmi::example_driver
-         CUDAQ::CC
-         CUDAQ::Quake
-         CUDAQ::QEC
-         CATALYST::MBQC
-         CATALYST::QRef
-         CATALYST::Quantum
-         MLIRLLVMDialect
-         MLIROptLib
-         MLIRIR
-         MLIRFuncDialect
-         MLIRFuncInlinerExtension
-         MLIRArithDialect
-         MQSSCIPasses
-         CUDAQ::CodeGen
-         MLIRTransforms
-         MQT::CoreIR
-         MQT::CoreNA
-         MQT::QMapSC
-         MQT::QMapSCHeuristic
-         MLIROptLib # Provides MlirOptMain engine
-         # Conversions
-         MLIRArithToLLVM
-         MLIRComplexToLibm
-         MLIRComplexToLLVM
-         MLIRControlFlowToLLVM
-         MLIRFuncToLLVM
-         MLIRMathToFuncs
-         MLIRMathToLLVM
-         # Translation
-         MLIRTargetLLVMIRExport)
+target_link_libraries(mqss-opt PUBLIC MLIROptLib MQSSCIPasses)
 
 # Ensure it outputs to INSTALL_DIR
 set_target_properties(mqss-opt PROPERTIES RUNTIME_OUTPUT_DIRECTORY

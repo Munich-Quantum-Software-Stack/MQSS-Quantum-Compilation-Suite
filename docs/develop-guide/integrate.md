@@ -84,7 +84,7 @@ Three headers are relevant to consumers, all declared in namespace `mqss::opt`:
 A pipeline is simply a sequence of passes appended to an `mlir::OpPassManager`. Which pass factory
 function you call depends on whether the pass takes options.
 
-### Using a Preset Pipeline Directly
+### Using a Preset Pipeline Directly in Your Project
 
 Call one of the preset optimization pipelines — `O1`, `O2`, or `O3` — directly:
 
@@ -93,21 +93,30 @@ Call one of the preset optimization pipelines — `O1`, `O2`, or `O3` — direct
 #include "Passes/Transforms/Pipelines.h"
 
 mlir::DialectRegistry registry;
+
+// 1. Register all dialects and declare a MLIR context
 mqss::opt::registerMQSSDialects(registry);
 mlir::MLIRContext context(registry);
 context.loadAllAvailableDialects();
 
+//  2. Parse the source dialect and create MLIR module
 auto module = mlir::parseSourceFile<mlir::ModuleOp>(src_path, &context);
 if (!module) {
   llvm::errs() << "failed to parse MLIR file\n";
 }
 
+// 3. Declare the MLIR Pass Manager
 mlir::PassManager pm(&context);
+
+// 4. Add passes from the O1 pass pipeline
 mqss::opt::O1(pm);
+
+// Run the passes
 if (mlir::failed(pm.run(*module))) {
   llvm::errs() << "Compiler: Pipeline failed\n";
 }
 
+// 5. Add a CodeGen Pass and RUN the pass
 pm.addPass(mqss::opt::QuakeToQASM2Pass());
 if (mlir::failed(pm.run(*module))) {
   llvm::errs() << "Compiler: Conversion of Quake to QASM2 failed\n";

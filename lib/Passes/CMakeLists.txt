@@ -45,9 +45,7 @@ add_mlir_library(
   MLIRLLVMIRTransforms
   CUDAQ::CodeGen
   CUDAQ::Builder
-  MQT::CoreIR
   MQT::CoreNA
-  MQT::QMapSC
   MQT::QMapSCHeuristic
   # Conversions
   MLIRArithToLLVM
