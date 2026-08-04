@@ -1,7 +1,5 @@
-# Locates (or builds) PennyLane-Catalyst's MLIRQuantum dialect library.
-#
-# Output: CATALYST_FOUND CATALYST_INCLUDE_DIRS Imported target:
-# CATALYST::Quantum
+# ---- Fetch and build CATALYST from source if not found -----------
+# Targets Built: MLIRQuantum, MLIRQRef, MLIRMBQC
 
 option(
   CATALYST_AUTO_FETCH
@@ -10,10 +8,6 @@ option(
 set(CATALYST_GIT_REPOSITORY
     "https://github.com/PennyLaneAI/catalyst.git"
     CACHE STRING "Catalyst git repository")
-# NOTE: unlike CUDA-Q's numbered releases, I have not confirmed Catalyst's
-# actual release tag naming scheme. Defaulting to `main` deliberately rather
-# than guessing a tag string -- verify real tags yourself before pinning: git
-# ls-remote --tags https://github.com/PennyLaneAI/catalyst.git
 set(CATALYST_GIT_TAG
     "v0.15.0"
     CACHE STRING "Catalyst git ref: tag, branch, or commit SHA")
@@ -25,7 +19,38 @@ set(CATALYST_BUILD_PARALLELISM
       "Parallel build jobs for the Catalyst auto-fetch build (lower this if cc1plus gets OOM-killed)"
 )
 
-if(CATALYST_AUTO_FETCH AND NOT CATALYST_ROOT)
+# ---- Check for an existing Catalyst installation first ---------------------
+# Building Catalyst from source is a lengthy operation, so only do it as a last
+# resort: first check whether MLIRQuantum is already available via
+# CATALYST_ROOT, CATALYST_DIR, CATALYST_INSTALL_PREFIX, or the default CMake
+# search paths (a system package, a previous manual build, etc).
+find_path(
+  CATALYST_INCLUDE_DIR
+  NAMES Quantum/IR/QuantumDialect.h
+  HINTS ${CATALYST_ROOT} ${CATALYST_DIR} ENV CATALYST_INSTALL_PREFIX
+  PATH_SUFFIXES include)
+
+function(_catalyst_find_lib _var)
+  find_library(
+    ${_var}
+    NAMES ${ARGN}
+    HINTS ${CATALYST_ROOT} ${CATALYST_DIR} ENV CATALYST_INSTALL_PREFIX
+    PATH_SUFFIXES lib lib64)
+  mark_as_advanced(${_var})
+endfunction()
+
+_catalyst_find_lib(CATALYST_DIALECT_LIBRARY MLIRQuantum)
+_catalyst_find_lib(CATALYST_QREF_LIBRARY MLIRQRef)
+_catalyst_find_lib(CATALYST_MBQC_LIBRARY MLIRMBQC)
+
+if(CATALYST_INCLUDE_DIR
+   AND CATALYST_DIALECT_LIBRARY
+   AND CATALYST_QREF_LIBRARY
+   AND CATALYST_MBQC_LIBRARY)
+  message(
+    STATUS "FindCatalyst: found existing installation (${CATALYST_INCLUDE_DIR})"
+  )
+elseif(CATALYST_AUTO_FETCH)
   set(_catalyst_src "${CMAKE_CURRENT_BINARY_DIR}/_deps/catalyst-src")
   set(_catalyst_build "${CMAKE_CURRENT_BINARY_DIR}/_deps/catalyst-build")
   set(_catalyst_install "${CMAKE_CURRENT_BINARY_DIR}/_deps/catalyst-install")
@@ -114,42 +139,36 @@ if(CATALYST_AUTO_FETCH AND NOT CATALYST_ROOT)
       STATUS "FindCatalyst: reusing cached auto-build at ${_catalyst_install}")
   endif()
 
+  # Only the headers were installed above -- the static libs stay in the build
+  # tree, so collect them into the install prefix too.
+  foreach(_lib MLIRMBQC MLIRQRef MLIRQuantum)
+    execute_process(
+      COMMAND find ${_catalyst_build} -name "lib${_lib}.a"
+      OUTPUT_VARIABLE _catalyst_lib_path
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(NOT _catalyst_lib_path)
+      message(
+        FATAL_ERROR
+          "FindCatalyst: built target '${_lib}' but couldn't locate lib${_lib}.a under ${_catalyst_build}"
+      )
+    endif()
+    file(COPY ${_catalyst_lib_path} DESTINATION ${_catalyst_install}/lib)
+  endforeach()
+
   set(CATALYST_ROOT "${_catalyst_install}")
+
+  # Re-run the searches from the pre-check above now that Catalyst has just been
+  # built+installed into CATALYST_ROOT. Both retry automatically since the
+  # pre-check left these cache variables as NOTFOUND.
+  find_path(
+    CATALYST_INCLUDE_DIR
+    NAMES Quantum/IR/QuantumDialect.h
+    HINTS ${CATALYST_ROOT}
+    PATH_SUFFIXES include)
+  _catalyst_find_lib(CATALYST_DIALECT_LIBRARY MLIRQuantum)
+  _catalyst_find_lib(CATALYST_QREF_LIBRARY MLIRQRef)
+  _catalyst_find_lib(CATALYST_MBQC_LIBRARY MLIRMBQC)
 endif()
-
-foreach(_lib MLIRMBQC MLIRQRef MLIRQuantum)
-  execute_process(
-    COMMAND find ${_catalyst_build} -name "lib${_lib}.a"
-    OUTPUT_VARIABLE _catalyst_lib_path
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(NOT _catalyst_lib_path)
-    message(
-      FATAL_ERROR
-        "FindCatalyst: built target '${_lib}' but couldn't locate lib${_lib}.a under ${_catalyst_build}"
-    )
-  endif()
-  file(COPY ${_catalyst_lib_path} DESTINATION ${_catalyst_install}/lib)
-endforeach()
-
-# ---- Locate headers and library, whether auto-fetched or pre-built -------
-find_path(
-  CATALYST_INCLUDE_DIR
-  NAMES Quantum/IR/QuantumDialect.h
-  HINTS ${CATALYST_ROOT} ${CATALYST_DIR} ENV CATALYST_INSTALL_PREFIX
-  PATH_SUFFIXES include)
-
-function(_catalyst_find_lib _var)
-  find_library(
-    ${_var}
-    NAMES ${ARGN}
-    HINTS ${CATALYST_ROOT} ${CATALYST_DIR} ENV CATALYST_INSTALL_PREFIX
-    PATH_SUFFIXES lib lib64)
-  mark_as_advanced(${_var})
-endfunction()
-
-_catalyst_find_lib(CATALYST_DIALECT_LIBRARY MLIRQuantum)
-_catalyst_find_lib(CATALYST_QREF_LIBRARY MLIRQRef)
-_catalyst_find_lib(CATALYST_MBQC_LIBRARY MLIRMBQC)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(

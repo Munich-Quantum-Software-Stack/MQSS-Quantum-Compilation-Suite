@@ -1,11 +1,9 @@
-# cmake/modules/MQSSFetchLLVM.cmake
-#
-# Fetches the prebuilt LLVM/MLIR toolchain via munich-quantum-software's
-# setup-mlir.sh, mirroring build.sh's existing behavior, and sets
-# LLVM_DIR/MLIR_DIR so the rest of the project's find_package(MLIR CONFIG) picks
-# it up. Must be include()'d BEFORE find_package(MLIR CONFIG) in the top-level
-# CMakeLists.txt, and before FindCUDAQ.cmake/FindCatalyst.cmake's auto-fetch
-# logic runs (both require LLVM_DIR/MLIR_DIR already set).
+# Fetches the prebuilt LLVM/MLIR toolchain via MQT's setup-mlir.sh, mirroring
+# build.sh's existing behavior, and sets LLVM_DIR/MLIR_DIR so the rest of the
+# project's find_package(MLIR CONFIG) picks it up. Must be include()'d BEFORE
+# find_package(MLIR CONFIG) in the top-level CMakeLists.txt, and before
+# FindCUDAQ.cmake/FindCatalyst.cmake's auto-fetch logic runs (both require
+# LLVM_DIR/MLIR_DIR already set).
 
 option(
   MQSS_LLVM_AUTO_FETCH
@@ -17,6 +15,16 @@ set(MQSS_LLVM_VERSION
     CACHE STRING "LLVM/MLIR toolchain version to fetch")
 
 if(MQSS_LLVM_AUTO_FETCH AND (NOT LLVM_DIR OR NOT MLIR_DIR))
+  # Before downloading LLVM, check whether a matching LLVM/MLIR is already
+  # available through the normal CMake package search (a system package, a
+  # previous manual build, CMAKE_PREFIX_PATH, etc.).
+  find_package(LLVM ${MQSS_LLVM_VERSION} QUIET CONFIG)
+  find_package(MLIR ${MQSS_LLVM_VERSION} QUIET CONFIG)
+endif()
+
+if(MQSS_LLVM_AUTO_FETCH AND (NOT LLVM_DIR OR NOT MLIR_DIR))
+  message(
+    STATUS "MQSSFetchLLVM: no existing LLVM/MLIR ${MQSS_LLVM_VERSION} found")
   set(_mqss_llvm_root
       "${CMAKE_CURRENT_BINARY_DIR}/_deps/LLVM-${MQSS_LLVM_VERSION}-toolchain")
 
