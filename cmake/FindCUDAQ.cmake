@@ -1,6 +1,5 @@
-# ---- Optional: fetch and build CUDA-Q from source if not found -----------
-# Off by default: cloning + building CUDA-Q is a multi-minute-to-hour operation
-# and shouldn't happen silently on every fresh configure.
+# ---- Fetch and build CUDA-Q from source if not found -----------
+# Targets Built: QuakeDialect, CCDialect, QECDialect, OptimBuilder, OptCodeGen
 option(CUDAQ_AUTO_FETCH "Clone and build CUDA-Q from source if not found" OFF)
 set(CUDAQ_GIT_REPOSITORY
     "https://github.com/NVIDIA/cuda-quantum.git"
@@ -9,12 +8,48 @@ set(CUDAQ_GIT_TAG
     "0.15.0"
     CACHE STRING "CUDA-Q v0.15.0 build")
 
-if(CUDAQ_AUTO_FETCH
-   AND NOT CUDAQ_ROOT
-   AND NOT DEFINED ENV{CUDAQ_INSTALL_PREFIX})
-  set(_cudaq_src "${CMAKE_BINARY_DIR}/_deps/cudaq-src")
-  set(_cudaq_build "${CMAKE_BINARY_DIR}/_deps/cudaq-build")
-  set(_cudaq_install "${CMAKE_BINARY_DIR}/_deps/cudaq-install")
+# ---- Check for an existing CUDA-Q installation first -----------------------
+# Building CUDA-Q from source is a multi-minute-to-hour operation, so only do it
+# as a last resort: first check whether it's already available via CUDAQ_ROOT,
+# CUDAQ_DIR, CUDAQ_INSTALL_PREFIX, or the default CMake search paths (a system
+# package, a previous manual build, etc).
+find_path(
+  CUDAQ_INCLUDE_DIR
+  NAMES cudaq/Optimizer/Dialect/Quake/QuakeOps.h
+  HINTS ${CUDAQ_ROOT} ${CUDAQ_DIR} ENV CUDAQ_INSTALL_PREFIX
+  PATH_SUFFIXES include)
+find_path(
+  CUDAQ_GENERATED_INCLUDE_DIR
+  NAMES cudaq/Optimizer/Dialect/Quake/QuakeOps.h.inc
+  HINTS ${CUDAQ_ROOT} ${CUDAQ_DIR} ENV CUDAQ_INSTALL_PREFIX
+  PATH_SUFFIXES include)
+
+function(_cudaq_find_lib _var)
+  find_library(
+    ${_var}
+    NAMES ${ARGN}
+    HINTS ${CUDAQ_ROOT} ${CUDAQ_DIR} ENV CUDAQ_INSTALL_PREFIX
+    PATH_SUFFIXES lib lib64)
+  mark_as_advanced(${_var})
+endfunction()
+
+_cudaq_find_lib(CUDAQ_QUAKE_LIBRARY QuakeDialect)
+_cudaq_find_lib(CUDAQ_CC_LIBRARY CCDialect)
+_cudaq_find_lib(CUDAQ_QEC_LIBRARY QECDialect)
+_cudaq_find_lib(CUDAQ_BUILDER_LIBRARY OptimBuilder)
+_cudaq_find_lib(CUDAQ_CODEGEN_LIBRARY OptCodeGen)
+
+if(CUDAQ_INCLUDE_DIR
+   AND CUDAQ_GENERATED_INCLUDE_DIR
+   AND CUDAQ_QUAKE_LIBRARY
+   AND CUDAQ_CC_LIBRARY
+   AND CUDAQ_QEC_LIBRARY)
+  message(
+    STATUS "FindCUDAQ: found existing installation (${CUDAQ_INCLUDE_DIR})")
+elseif(CUDAQ_AUTO_FETCH AND NOT DEFINED ENV{CUDAQ_INSTALL_PREFIX})
+  set(_cudaq_src "${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-src")
+  set(_cudaq_build "${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-build")
+  set(_cudaq_install "${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-install")
 
   # CUDA-Q must be built against the same LLVM this project uses, so require
   # that find_package(MLIR CONFIG) already ran.
@@ -53,9 +88,9 @@ if(CUDAQ_AUTO_FETCH
 
     execute_process(
       COMMAND
-        ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} -S ${_cudaq_src} -B
-        ${_cudaq_build} -DCMAKE_INSTALL_PREFIX=${_cudaq_install}
-        -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR=${LLVM_DIR} -DMLIR_DIR=${MLIR_DIR}
+        ${CMAKE_COMMAND} -G Ninja -S ${_cudaq_src} -B ${_cudaq_build}
+        -DCMAKE_INSTALL_PREFIX=${_cudaq_install} -DCMAKE_BUILD_TYPE=Release
+        -DLLVM_DIR=${LLVM_DIR} -DMLIR_DIR=${MLIR_DIR}
         -DCMAKE_CXX_FLAGS_RELEASE=-O1 -DCUDAQ_ENABLE_PYTHON=OFF
         -DCUDAQ_BUILD_TESTS=OFF -DCUDAQ_DISABLE_RUNTIME=ON
       RESULT_VARIABLE _cudaq_rc)
@@ -114,37 +149,30 @@ if(CUDAQ_AUTO_FETCH
   endif()
 
   set(CUDAQ_ROOT "${_cudaq_install}")
+
+  # The scratch build's headers live in the clone/build tree, not the install
+  # prefix (only the libraries above get installed) -- re-run the searches from
+  # the pre-check above now that CUDA-Q has just been built. find_path and
+  # find_library both retry automatically since the pre-check left these cache
+  # variables as NOTFOUND.
+  find_path(
+    CUDAQ_INCLUDE_DIR
+    NAMES cudaq/Optimizer/Dialect/Quake/QuakeOps.h
+    HINTS ${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-src/cudaq
+    PATH_SUFFIXES include
+    NO_DEFAULT_PATH)
+  find_path(
+    CUDAQ_GENERATED_INCLUDE_DIR
+    NAMES cudaq/Optimizer/Dialect/Quake/QuakeOps.h.inc
+    HINTS ${CMAKE_CURRENT_BINARY_DIR}/_deps/cudaq-build/cudaq
+    PATH_SUFFIXES include
+    NO_DEFAULT_PATH)
+  _cudaq_find_lib(CUDAQ_QUAKE_LIBRARY QuakeDialect)
+  _cudaq_find_lib(CUDAQ_CC_LIBRARY CCDialect)
+  _cudaq_find_lib(CUDAQ_QEC_LIBRARY QECDialect)
+  _cudaq_find_lib(CUDAQ_BUILDER_LIBRARY OptimBuilder)
+  _cudaq_find_lib(CUDAQ_CODEGEN_LIBRARY OptCodeGen)
 endif()
-
-# ---- Locate headers and libraries under CUDAQ_ROOT ------------------------
-find_path(
-  CUDAQ_INCLUDE_DIR
-  NAMES cudaq/Optimizer/Dialect/Quake/QuakeOps.h
-  HINTS ${CMAKE_BINARY_DIR}/_deps/cudaq-src/cudaq
-  PATH_SUFFIXES include
-  NO_DEFAULT_PATH)
-
-find_path(
-  CUDAQ_GENERATED_INCLUDE_DIR
-  NAMES cudaq/Optimizer/Dialect/Quake/QuakeOps.h.inc
-  HINTS ${CMAKE_BINARY_DIR}/_deps/cudaq-build/cudaq
-  PATH_SUFFIXES include
-  NO_DEFAULT_PATH)
-
-function(_cudaq_find_lib _var)
-  find_library(
-    ${_var}
-    NAMES ${ARGN}
-    HINTS ${CUDAQ_ROOT} ${CUDAQ_DIR} ENV CUDAQ_INSTALL_PREFIX
-    PATH_SUFFIXES lib lib64)
-  mark_as_advanced(${_var})
-endfunction()
-
-_cudaq_find_lib(CUDAQ_QUAKE_LIBRARY QuakeDialect)
-_cudaq_find_lib(CUDAQ_CC_LIBRARY CCDialect)
-_cudaq_find_lib(CUDAQ_QEC_LIBRARY QECDialect)
-_cudaq_find_lib(CUDAQ_BUILDER_LIBRARY OptimBuilder)
-_cudaq_find_lib(CUDAQ_CODEGEN_LIBRARY OptCodeGen)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(

@@ -31,6 +31,7 @@ root is the one that invokes these scripts. Please check the following pages for
 build
 running
 passes
+library
 transpiler
 qdmi
 ```

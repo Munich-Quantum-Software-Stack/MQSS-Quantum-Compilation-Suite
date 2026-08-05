@@ -1,6 +1,7 @@
 add_mlir_library(
   MQSSCIPasses
   SHARED
+  Transforms/Dialects.cpp
   Transforms/CommonCNOTReversalPass.cpp
   Transforms/CommonGateCancellationPass.cpp
   Transforms/CommonGateCommutationPass.cpp
@@ -44,9 +45,7 @@ add_mlir_library(
   MLIRLLVMIRTransforms
   CUDAQ::CodeGen
   CUDAQ::Builder
-  MQT::CoreIR
   MQT::CoreNA
-  MQT::QMapSC
   MQT::QMapSCHeuristic
   # Conversions
   MLIRArithToLLVM
@@ -67,13 +66,17 @@ set_target_properties(
 target_compile_definitions(MQSSCIPasses PRIVATE ${MLIR_DEFINITIONS}
                                                 ${LLVM_DEFINITIONS})
 
-if(MQSS_ENABLE_DEBUG)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_definitions(MQSSCIPasses PRIVATE MQSS_ENABLE_DEBUG)
 endif()
 target_compile_options(MQSSCIPasses PRIVATE -fexceptions)
 
 target_include_directories(
   MQSSCIPasses
-  PUBLIC ${CMAKE_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/include
-         ${nlohmann_json_SOURCE_DIR}/include ${QDMI_INCLUDE_DIR}
-         ${MQT_QMAP_INCLUDE_DIR})
+  PUBLIC $<BUILD_INTERFACE:${MQSSCI_ROOT_DIR}/include>
+         $<BUILD_INTERFACE:${MQSSCI_ROOT_DIR_BINARY}/include>
+         ${nlohmann_json_SOURCE_DIR}/include
+         ${QDMI_INCLUDE_DIR}
+         ${MQT_QMAP_INCLUDE_DIR}
+         ${LLVM_INCLUDE_DIRS}
+         ${MLIR_INCLUDE_DIRS})
