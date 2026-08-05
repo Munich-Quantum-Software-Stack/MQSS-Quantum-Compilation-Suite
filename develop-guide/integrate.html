@@ -172,7 +172,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -196,6 +196,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/build.html">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/running.html">Running test circuits</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/passes.html">Passes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/library.html">Using MQSSCI as a Library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../user_guide/qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
 </ul>
@@ -244,7 +245,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
@@ -268,31 +269,170 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ----------------------------------------------------------------------------------------------------->
 <section id="integrating-the-mqss-quantum-compilation-suite-within-your-project">
 <h1>Integrating the MQSS Quantum Compilation Suite within your project<a class="headerlink" href="#integrating-the-mqss-quantum-compilation-suite-within-your-project" title="Link to this heading">¶</a></h1>
-<p>One can integrate MQSS-Quantum Compilation Suite into their project as a cmake module using the
-following entry:</p>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">include</span><span class="p">(</span><span class="s">ExternalProject</span><span class="p">)</span>
+<p>MQSSCI (MQSS-Quantum-Compilation-Suite) is a library of <a class="reference external" href="https://mlir.llvm.org/">MLIR</a> compiler
+passes for transforming and optimizing quantum programs. This guide walks through adding MQSSCI to
+your own CMake project, linking against it, and building a pass pipeline — no prior compiler
+background required.</p>
+<section id="using-mqssci-as-a-cmake-dependency">
+<h2>Using MQSSCI as a CMake Dependency<a class="headerlink" href="#using-mqssci-as-a-cmake-dependency" title="Link to this heading">¶</a></h2>
+<p>MQSSCI (MQSS-Quantum-Compilation-Suite) can be integrated into any C++ project as an external CMake
+module using <code class="docutils literal notranslate"><span class="pre">FetchContent</span></code>. E.g. within <code class="docutils literal notranslate"><span class="pre">FindMQSSCI.cmake</span></code>:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span><span class="p">(</span><span class="s">CUDAQ_AUTO_FETCH</span><span class="w"> </span><span class="s">ON</span><span class="w"> </span><span class="s">CACHE</span><span class="w"> </span><span class="s">BOOL</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w"> </span><span class="s">FORCE</span><span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">CATALYST_AUTO_FETCH</span><span class="w"> </span><span class="s">ON</span><span class="w"> </span><span class="s">CACHE</span><span class="w"> </span><span class="s">BOOL</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w"> </span><span class="s">FORCE</span><span class="p">)</span>
 
-<span class="nb">set</span><span class="p">(</span><span class="s">MQSSCI_INSTALL_DIR</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_BINARY_DIR</span><span class="o">}</span><span class="s">/_deps/mqssci-build</span><span class="p">)</span>
-
-<span class="nb">ExternalProject_Add</span><span class="p">(</span><span class="s">mqssci</span>
-<span class="w">  </span><span class="s">GIT_REPOSITORY</span><span class="w">   </span><span class="s">https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git</span>
-<span class="w">  </span><span class="s">GIT_TAG</span><span class="w">           </span><span class="s">&lt;commit-has/release</span><span class="w"> </span><span class="s">tag&gt;</span>
-<span class="w">  </span><span class="s">PREFIX</span><span class="w">            </span><span class="o">${</span><span class="nv">CMAKE_BINARY_DIR</span><span class="o">}</span><span class="s">/_deps/mqssci-build</span>
-<span class="w">  </span><span class="s">SOURCE_DIR</span><span class="w">        </span><span class="o">${</span><span class="nv">CMAKE_BINARY_DIR</span><span class="o">}</span><span class="s">/_deps/mqssci-src</span>
-<span class="w">  </span><span class="s">BINARY_DIR</span><span class="w">        </span><span class="o">${</span><span class="nv">CMAKE_BINARY_DIR</span><span class="o">}</span><span class="s">/_deps/mqssci-src</span><span class="w">   </span><span class="c"># in-source make, adjust if out-of-source supported</span>
-<span class="w">  </span><span class="s">CONFIGURE_COMMAND</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w">   </span><span class="c"># no configure step needed for plain make</span>
-<span class="w">  </span><span class="s">BUILD_COMMAND</span><span class="w"> </span><span class="s">bash</span><span class="w"> </span><span class="s">-c</span><span class="w"> </span><span class="s2">&quot;make build&quot;</span>
-<span class="w">  </span><span class="s">INSTALL_COMMAND</span><span class="w">   </span><span class="s">make</span><span class="w"> </span><span class="s">target</span>
-<span class="w">  </span><span class="c"># BUILD_IN_SOURCE   TRUE  # set if module-Y&#39;s Makefile expects to run from its source root</span>
+<span class="nb">FetchContent_Declare</span><span class="p">(</span><span class="s">mqssci</span>
+<span class="w">  </span><span class="s">GIT_REPOSITORY</span><span class="w"> </span><span class="s">https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git</span>
+<span class="w">  </span><span class="s">GIT_TAG</span><span class="w">        </span><span class="s">&lt;commit-hash</span><span class="w"> </span><span class="s">or</span><span class="w"> </span><span class="s">Release-tag&gt;.</span><span class="w">  </span><span class="c"># e.g. v2.0.0</span>
 <span class="p">)</span>
+<span class="nb">FetchContent_MakeAvailable</span><span class="p">(</span><span class="s">mqssci</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then, within the appropriate <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code>:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">find_package</span><span class="p">(</span><span class="s">MQSSCI</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span><span class="w">   </span><span class="c"># if the file above is named FindMQSSCI.cmake</span>
+</pre></div>
+</div>
+<p>Note: <code class="docutils literal notranslate"><span class="pre">find_package(MQSSCI</span> <span class="pre">REQUIRED)</span></code> only resolves if <code class="docutils literal notranslate"><span class="pre">CMAKE_MODULE_PATH</span></code> includes the directory
+containing <code class="docutils literal notranslate"><span class="pre">FindMQSSCI.cmake</span></code>, e.g.:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_MODULE_PATH</span><span class="w"> </span><span class="s2">&quot;${CMAKE_CURRENT_SOURCE_DIR}/cmake&quot;</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_MODULE_PATH</span><span class="o">}</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="linking-against-the-pass-library">
+<h3>Linking Against the Pass Library<a class="headerlink" href="#linking-against-the-pass-library" title="Link to this heading">¶</a></h3>
+<p>Link your target against the <code class="docutils literal notranslate"><span class="pre">mqss-ci::mqss-ci</span></code> alias target:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">&lt;your-target&gt;</span>
+<span class="w">  </span><span class="s">PRIVATE</span>
+<span class="w">    </span><span class="s">mqss-ci::mqss-ci</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>This single target is sufficient — <code class="docutils literal notranslate"><span class="pre">mqss-ci::mqss-ci</span></code> publicly exports every include directory it
+needs (its own <code class="docutils literal notranslate"><span class="pre">include/</span></code>, generated TableGen headers, QDMI, MQT-QMAP, and the MLIR/LLVM headers),
+so no manual include-path bookkeeping is required in the consuming project.</p>
+</section>
+<section id="including-the-headers">
+<h3>Including the Headers<a class="headerlink" href="#including-the-headers" title="Link to this heading">¶</a></h3>
+<p>Three headers are relevant to consumers, all declared in namespace <code class="docutils literal notranslate"><span class="pre">mqss::opt</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Passes/Transforms/Dialects.h</span></code> — registers the MLIR dialects (Quake, Catalyst’s quantum dialect,
+and the standard MLIR dialects the passes lower into) that the passes need to understand your
+program. Include this before parsing or building any MLIR module.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Passes/Transforms/Transforms.h</span></code> — declares every individual pass factory function, for building a
+custom pass pipeline pass-by-pass.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Passes/Transforms/Pipelines.h</span></code> — declares the three preset optimization levels <code class="docutils literal notranslate"><span class="pre">O1</span></code>, <code class="docutils literal notranslate"><span class="pre">O2</span></code> and
+<code class="docutils literal notranslate"><span class="pre">O3</span></code>, for appending a whole preset stage to an <code class="docutils literal notranslate"><span class="pre">mlir::OpPassManager</span></code> in one call.</p></li>
+</ul>
+</section>
+</section>
+<section id="declaring-and-using-a-pass-pipeline">
+<h2>Declaring and Using a Pass Pipeline<a class="headerlink" href="#declaring-and-using-a-pass-pipeline" title="Link to this heading">¶</a></h2>
+<p>A pipeline is simply a sequence of passes appended to an <code class="docutils literal notranslate"><span class="pre">mlir::OpPassManager</span></code>. Which pass factory
+function you call depends on whether the pass takes options.</p>
+<section id="using-a-preset-pipeline-directly-in-your-project">
+<h3>Using a Preset Pipeline Directly in Your Project<a class="headerlink" href="#using-a-preset-pipeline-directly-in-your-project" title="Link to this heading">¶</a></h3>
+<p>Call one of the preset optimization pipelines — <code class="docutils literal notranslate"><span class="pre">O1</span></code>, <code class="docutils literal notranslate"><span class="pre">O2</span></code>, or <code class="docutils literal notranslate"><span class="pre">O3</span></code> — directly:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Passes/Transforms/Dialects.h&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Passes/Transforms/Pipelines.h&quot;</span>
 
-<span class="nb">set</span><span class="p">(</span><span class="s">MQSSCI_SRC_DIR</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_BINARY_DIR</span><span class="o">}</span><span class="s">/_deps/mqssci-src</span><span class="p">)</span>
+<span class="n">mlir</span><span class="o">::</span><span class="n">DialectRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">;</span>
+
+<span class="c1">// 1. Register all dialects and declare a MLIR context</span>
+<span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">registerMQSSDialects</span><span class="p">(</span><span class="n">registry</span><span class="p">);</span>
+<span class="n">mlir</span><span class="o">::</span><span class="n">MLIRContext</span><span class="w"> </span><span class="nf">context</span><span class="p">(</span><span class="n">registry</span><span class="p">);</span>
+<span class="n">context</span><span class="p">.</span><span class="n">loadAllAvailableDialects</span><span class="p">();</span>
+
+<span class="c1">//  2. Parse the source dialect and create MLIR module</span>
+<span class="k">auto</span><span class="w"> </span><span class="k">module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mlir</span><span class="o">::</span><span class="n">parseSourceFile</span><span class="o">&lt;</span><span class="n">mlir</span><span class="o">::</span><span class="n">ModuleOp</span><span class="o">&gt;</span><span class="p">(</span><span class="n">src_path</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">context</span><span class="p">);</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="k">module</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">errs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;failed to parse MLIR file</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// 3. Declare the MLIR Pass Manager</span>
+<span class="n">mlir</span><span class="o">::</span><span class="n">PassManager</span><span class="w"> </span><span class="n">pm</span><span class="p">(</span><span class="o">&amp;</span><span class="n">context</span><span class="p">);</span>
+
+<span class="c1">// 4. Add passes from the O1 pass pipeline</span>
+<span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">O1</span><span class="p">(</span><span class="n">pm</span><span class="p">);</span>
+
+<span class="c1">// Run the passes</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mlir</span><span class="o">::</span><span class="n">failed</span><span class="p">(</span><span class="n">pm</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="o">*</span><span class="k">module</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">errs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Compiler: Pipeline failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// 5. Add a CodeGen Pass and RUN the pass</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">QuakeToQASM2Pass</span><span class="p">());</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mlir</span><span class="o">::</span><span class="n">failed</span><span class="p">(</span><span class="n">pm</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="o">*</span><span class="k">module</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">errs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Compiler: Conversion of Quake to QASM2 failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="p">}</span>
 </pre></div>
 </div>
-<p>Then within the appropriate <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code>:</p>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">find_package</span><span class="p">(</span><span class="s">MQSSCI</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span><span class="err">.</span><span class="w">   </span><span class="c"># If the name of file is FindMQSSCI.cmake</span>
+<p><code class="docutils literal notranslate"><span class="pre">registerMQSSDialects</span></code> fills a <code class="docutils literal notranslate"><span class="pre">DialectRegistry</span></code> with everything MQSSCI’s passes need to understand
+your program (Quake, Catalyst’s quantum dialect, and the standard MLIR dialects the passes lower
+into). Construct the <code class="docutils literal notranslate"><span class="pre">MLIRContext</span></code> once, locally — it can’t be copied or moved — and keep it alive
+for as long as you’re parsing MLIR or running passes.</p>
+<p>Please refer to <code class="docutils literal notranslate"><span class="pre">Passes/Transforms/Pipelines.h</span></code> for details on which specific passes the pipelines
+include.</p>
+</section>
+</section>
+<section id="declaring-a-custom-pass-pipeline">
+<h2>Declaring a custom Pass Pipeline<a class="headerlink" href="#declaring-a-custom-pass-pipeline" title="Link to this heading">¶</a></h2>
+<p>If the presets don’t fit your use case, assemble your own pipeline by adding individual passes to an
+<code class="docutils literal notranslate"><span class="pre">mlir::OpPassManager</span></code> one at a time, in whatever order you need. Every pass factory lives in
+<code class="docutils literal notranslate"><span class="pre">Passes/Transforms/Transforms.h</span></code>, and falls into one of two shapes depending on whether the pass
+takes options.</p>
+<section id="passes-without-options">
+<h3>Passes Without Options<a class="headerlink" href="#passes-without-options" title="Link to this heading">¶</a></h3>
+<p>Passes with no configurable options are constructed by calling their factory function directly:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Passes/Transforms/Transforms.h&quot;</span>
+
+<span class="n">mlir</span><span class="o">::</span><span class="n">OpPassManager</span><span class="w"> </span><span class="n">pm</span><span class="p">;</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">CommonCNOTReversePass</span><span class="p">());</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">CommonNormalizeArgAnglePass</span><span class="p">());</span>
 </pre></div>
 </div>
+<p>Check <code class="docutils literal notranslate"><span class="pre">Transforms.h</span></code> for other option-free passes.</p>
+</section>
+<section id="passes-with-options">
+<h3>Passes With Options<a class="headerlink" href="#passes-with-options" title="Link to this heading">¶</a></h3>
+<p>Passes that expose options have a companion <code class="docutils literal notranslate"><span class="pre">&lt;PassName&gt;Options</span></code> struct. Populate it and pass it to
+the corresponding <code class="docutils literal notranslate"><span class="pre">create&lt;PassName&gt;</span></code> factory. For example:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Passes/Transforms/Transforms.h&quot;</span>
+
+<span class="n">mlir</span><span class="o">::</span><span class="n">OpPassManager</span><span class="w"> </span><span class="n">pm</span><span class="p">;</span>
+
+<span class="n">CommonGateCancellationPassOptions</span><span class="w"> </span><span class="n">cancelOpts</span><span class="p">;</span>
+<span class="n">cancelOpts</span><span class="p">.</span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;CancelGate&quot;</span><span class="p">;</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">createCommonGateCancellationPass</span><span class="p">(</span><span class="n">cancelOpts</span><span class="p">));</span>
+
+<span class="n">CommonCommutePassOptions</span><span class="w"> </span><span class="n">commuteOpts</span><span class="p">;</span>
+<span class="n">commuteOpts</span><span class="p">.</span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;CX-RX&quot;</span><span class="p">;</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">createCommonCommutePass</span><span class="p">(</span><span class="n">commuteOpts</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>Other option-bearing passes: <code class="docutils literal notranslate"><span class="pre">CommonSwitchPass</span></code>, <code class="docutils literal notranslate"><span class="pre">CommonReductionPass</span></code>, <code class="docutils literal notranslate"><span class="pre">CommonDecompositionPass</span></code>,
+<code class="docutils literal notranslate"><span class="pre">CommonMappingPass</span></code>, <code class="docutils literal notranslate"><span class="pre">BasisConversionPass</span></code>. See <a class="reference internal" href="#passes.md"><span class="xref myst">Passes</span></a> for the full list of valid
+option values for each.</p>
+</section>
+<section id="example-the-o2-pipeline">
+<h3>Example: The O2 Pipeline<a class="headerlink" href="#example-the-o2-pipeline" title="Link to this heading">¶</a></h3>
+<p>The built-in <code class="docutils literal notranslate"><span class="pre">O2</span></code> optimization level combines both styles above into a single reusable pipeline
+(<code class="docutils literal notranslate"><span class="pre">lib/Passes/Transforms/pipeline.cpp</span></code>):</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">mqss::opt::O2</span><span class="p">(</span><span class="n">mlir</span><span class="o">::</span><span class="n">OpPassManager</span><span class="w"> </span><span class="o">&amp;</span><span class="n">pm</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">CommonGateCancellationPassOptions</span><span class="w"> </span><span class="n">CancelOpts</span><span class="p">;</span>
+<span class="w">  </span><span class="n">CommonCommutePassOptions</span><span class="w"> </span><span class="n">CommuteOpts</span><span class="p">;</span>
+<span class="w">  </span><span class="n">CancelOpts</span><span class="p">.</span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;CancelGate&quot;</span><span class="p">;</span>
+<span class="w">  </span><span class="n">CommuteOpts</span><span class="p">.</span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;CX-RX&quot;</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">createCommonGateCancellationPass</span><span class="p">(</span><span class="n">CancelOpts</span><span class="p">));</span>
+<span class="w">  </span><span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">CommonCNOTReversePass</span><span class="p">());</span>
+<span class="w">  </span><span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">createCommonCommutePass</span><span class="p">(</span><span class="n">CommuteOpts</span><span class="p">));</span>
+
+<span class="w">  </span><span class="c1">// Standard MLIR passes</span>
+<span class="w">  </span><span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">createCSEPass</span><span class="p">());</span>
+<span class="w">  </span><span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">createCanonicalizerPass</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
 </section>
 
         </article>
@@ -338,8 +478,41 @@ following entry:</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Integrating the MQSS Quantum Compilation Suite within your project</a><ul>
+<li><a class="reference internal" href="#using-mqssci-as-a-cmake-dependency">Using MQSSCI as a CMake Dependency</a><ul>
+<li><a class="reference internal" href="#linking-against-the-pass-library">Linking Against the Pass Library</a></li>
+<li><a class="reference internal" href="#including-the-headers">Including the Headers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#declaring-and-using-a-pass-pipeline">Declaring and Using a Pass Pipeline</a><ul>
+<li><a class="reference internal" href="#using-a-preset-pipeline-directly-in-your-project">Using a Preset Pipeline Directly in Your Project</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#declaring-a-custom-pass-pipeline">Declaring a custom Pass Pipeline</a><ul>
+<li><a class="reference internal" href="#passes-without-options">Passes Without Options</a></li>
+<li><a class="reference internal" href="#passes-with-options">Passes With Options</a></li>
+<li><a class="reference internal" href="#example-the-o2-pipeline">Example: The O2 Pipeline</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

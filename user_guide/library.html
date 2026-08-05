@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="MLIR FAQs" href="mlir-faq.html"><link rel="prev" title="FAQs" href="index.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="MQSS-Quantum Compilation Suite Transpiler" href="transpiler.html"><link rel="prev" title="Passes" href="passes.html">
 
     <!-- Generated with Sphinx 9.0.4 and Furo 2025.12.19 -->
-        <title>MQSS FAQs - MQSS Quantum Compilation Suite documentation</title>
+        <title>Using MQSSCI as a Library - MQSS Quantum Compilation Suite documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -192,13 +192,13 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
-<li class="toctree-l1 has-children"><a class="reference internal" href="../user_guide/index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/build.html">Getting Started</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/running.html">Running test circuits</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/passes.html">Passes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/library.html">Using MQSSCI as a Library</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../user_guide/qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="build.html">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Running test circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="passes.html">Passes</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Using MQSSCI as a Library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../develop-guide/index.html">Development Guide</a><input aria-label="Toggle navigation of Development Guide" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -207,9 +207,9 @@
 <li class="toctree-l2"><a class="reference internal" href="../develop-guide/integrate.html">Integrating the MQSS Quantum Compilation Suite within your project</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">MQSS FAQs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mlir-faq.html">MLIR FAQs</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../faqs/index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../faqs/mqss-faq.html">MQSS FAQs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../faqs/mlir-faq.html">MLIR FAQs</a></li>
 </ul>
 </li>
 </ul>
@@ -232,7 +232,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../_sources/faqs/mqss-faq.md.txt" title="View this page">
+  <a class="muted-link" href="../_sources/user_guide/library.md.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -267,30 +267,89 @@ the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ----------------------------------------------------------------------------------------------------->
-<section id="mqss-faqs">
-<h1>MQSS FAQs<a class="headerlink" href="#mqss-faqs" title="Link to this heading">¶</a></h1>
-<section id="what-is-mqss">
-<h2>What is MQSS?<a class="headerlink" href="#what-is-mqss" title="Link to this heading">¶</a></h2>
-<p><strong>MQSS</strong> stands for <em>Munich Quantum Software Stack</em>, which is a project of the <em>Munich Quantum
-Valley (MQV)</em> initiative and is jointly developed by the <em>Leibniz Supercomputing Centre (LRZ)</em> and
-the Chairs for <em>Design Automation (CDA)</em> and for <em>Computer Architecture and Parallel Systems (CAPS)</em>
-at TUM. It provides a comprehensive compilation and runtime infrastructure for on-premise and remote
-quantum devices, supports modern compilation and optimization techniques, and enables current and
-future high-level abstractions for quantum programming.</p>
-<p>This stack is designed to deploy in various scenarios via flexible configuration options, including
-stand-alone scenarios for individual systems, cloud access to multiple devices, and tight
-integration into HPC environments supporting quantum acceleration.</p>
-<p>A concrete instance of the MQSS is deployed at the LRZ for the MQV, serving as a single access point
-to all of its quantum devices via multiple compatible access paths, including a web portal, command
-line access via web credentials as well as the option for hybrid access with tight integration with
-LRZ’s HPC systems. It facilitates the connection between end-users and quantum computing platforms
-by its integration within HPC infrastructures, such as those found at the LRZ.</p>
+<section id="using-mqssci-as-a-library">
+<h1>Using MQSSCI as a Library<a class="headerlink" href="#using-mqssci-as-a-library" title="Link to this heading">¶</a></h1>
+<p>The <a class="reference internal" href="passes.html"><span class="std std-doc">Passes</span></a> page shows how to run passes through the <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>/<code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code> command-line
+tools. This page is for the case where you don’t want a separate command-line step at all — you want
+your own C++ program to load an MLIR module and run MQSSCI passes on it directly.</p>
+<p>The two are not different features: <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> itself is just a small C++ program that does exactly
+what’s shown below. Calling it from your own code gives you the same passes, without shelling out to
+a separate binary.</p>
+<section id="before-you-start">
+<h2>Before You Start<a class="headerlink" href="#before-you-start" title="Link to this heading">¶</a></h2>
+<p>Your project needs to link against the MQSSCI library first. That’s a one-time CMake setup step —
+see
+<a class="reference internal" href="../develop-guide/integrate.html"><span class="std std-doc">Integrating the MQSS Quantum Compilation Suite within your project</span></a>
+for how to fetch MQSSCI with <code class="docutils literal notranslate"><span class="pre">FetchContent</span></code> and link your target against <code class="docutils literal notranslate"><span class="pre">mqss-ci::mqss-ci</span></code>. The
+rest of this page assumes that step is done and focuses purely on the C++ side.</p>
 </section>
-<section id="under-which-license-is-this-collection-of-passes-released">
-<h2>Under which license is this collection of passes released?<a class="headerlink" href="#under-which-license-is-this-collection-of-passes-released" title="Link to this heading">¶</a></h2>
-<p>This collection of MLIR passes is released under the Apache License v2.0 with LLVM Exceptions. See
-<a class="reference external" href="https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE">LICENSE</a> for more
-information. Any contribution to the project is assumed to be under the same license.</p>
+<section id="a-minimal-example">
+<h2>A Minimal Example<a class="headerlink" href="#a-minimal-example" title="Link to this heading">¶</a></h2>
+<p>Here’s the smallest useful program: load an MLIR file, run the <code class="docutils literal notranslate"><span class="pre">O1</span></code> preset pipeline on it, then
+lower the result to OpenQASM 2.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Passes/Transforms/Dialects.h&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Passes/Transforms/Pipelines.h&quot;</span>
+
+<span class="c1">// 1. Tell MLIR about the dialects MQSSCI&#39;s passes need (Quake, Catalyst-quantum, etc.)</span>
+<span class="n">mlir</span><span class="o">::</span><span class="n">DialectRegistry</span><span class="w"> </span><span class="n">registry</span><span class="p">;</span>
+<span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">registerMQSSDialects</span><span class="p">(</span><span class="n">registry</span><span class="p">);</span>
+<span class="n">mlir</span><span class="o">::</span><span class="n">MLIRContext</span><span class="w"> </span><span class="nf">context</span><span class="p">(</span><span class="n">registry</span><span class="p">);</span>
+<span class="n">context</span><span class="p">.</span><span class="n">loadAllAvailableDialects</span><span class="p">();</span>
+
+<span class="c1">// 2. Parse your MLIR file into a module</span>
+<span class="k">auto</span><span class="w"> </span><span class="k">module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mlir</span><span class="o">::</span><span class="n">parseSourceFile</span><span class="o">&lt;</span><span class="n">mlir</span><span class="o">::</span><span class="n">ModuleOp</span><span class="o">&gt;</span><span class="p">(</span><span class="n">src_path</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">context</span><span class="p">);</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="k">module</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">errs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;failed to parse MLIR file</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// 3. Build a pass manager and add a preset optimization pipeline</span>
+<span class="n">mlir</span><span class="o">::</span><span class="n">PassManager</span><span class="w"> </span><span class="n">pm</span><span class="p">(</span><span class="o">&amp;</span><span class="n">context</span><span class="p">);</span>
+<span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">O1</span><span class="p">(</span><span class="n">pm</span><span class="p">);</span>
+
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mlir</span><span class="o">::</span><span class="n">failed</span><span class="p">(</span><span class="n">pm</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="o">*</span><span class="k">module</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">errs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Compiler: Pipeline failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// 4. Lower the optimized module to OpenQASM 2</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">QuakeToQASM2Pass</span><span class="p">());</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mlir</span><span class="o">::</span><span class="n">failed</span><span class="p">(</span><span class="n">pm</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="o">*</span><span class="k">module</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">errs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Compiler: Conversion of Quake to QASM2 failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Walking through it:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">registerMQSSDialects</span></code> fills in a <code class="docutils literal notranslate"><span class="pre">DialectRegistry</span></code> with every MLIR dialect the passes operate on
+or lower into. Do this before parsing anything — the parser needs to recognize the dialect
+operations in your input.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mlir::parseSourceFile</span></code> reads your MLIR/Quake/Catalyst-quantum source file into an in-memory
+module.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mqss::opt::O1(pm)</span></code> appends the whole <code class="docutils literal notranslate"><span class="pre">O1</span></code> preset pipeline to the pass manager in one call. <code class="docutils literal notranslate"><span class="pre">O2</span></code>
+and <code class="docutils literal notranslate"><span class="pre">O3</span></code> work the same way. See <a class="reference internal" href="passes.html#pass-pipelines"><span class="std std-ref">Pass Pipelines</span></a> for what each preset
+includes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mqss::opt::QuakeToQASM2Pass()</span></code> is a code-generation pass — it’s added and run separately from
+the optimization pipeline, same as chaining <code class="docutils literal notranslate"><span class="pre">--O1</span> <span class="pre">--quake-to-qasm2</span></code> on the <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> command
+line.</p></li>
+</ol>
+<p>If you’d rather capture the OpenQASM output in a string instead of printing it, <code class="docutils literal notranslate"><span class="pre">QuakeToQASM2Pass</span></code>
+also accepts an <code class="docutils literal notranslate"><span class="pre">llvm::raw_ostream&amp;</span></code>:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">qasm</span><span class="p">;</span>
+<span class="n">llvm</span><span class="o">::</span><span class="n">raw_string_ostream</span><span class="w"> </span><span class="nf">os</span><span class="p">(</span><span class="n">qasm</span><span class="p">);</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">mqss</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">QuakeToQASM2Pass</span><span class="p">(</span><span class="n">os</span><span class="p">));</span>
+</pre></div>
+</div>
+</section>
+<section id="invoking-passes-same-rules-as-the-developer-guide">
+<h2>Invoking Passes: Same Rules as the Developer Guide<a class="headerlink" href="#invoking-passes-same-rules-as-the-developer-guide" title="Link to this heading">¶</a></h2>
+<p>Everything beyond this minimal example — running individual passes instead of a preset, passing
+options to a pass (e.g. <code class="docutils literal notranslate"><span class="pre">CommonGateCancellationPassOptions</span></code>), or assembling a fully custom pipeline
+— works exactly as described in
+<a class="reference internal" href="../develop-guide/integrate.html#declaring-a-custom-pass-pipeline"><span class="std std-ref">Integrating the MQSS Quantum Compilation Suite within your project</span></a>.
+There’s no separate API for library users: whether you’re writing a pass yourself or just consuming
+the library, you build the same <code class="docutils literal notranslate"><span class="pre">mlir::OpPassManager</span></code> and call the same factory functions from
+<code class="docutils literal notranslate"><span class="pre">Passes/Transforms/Transforms.h</span></code>.</p>
+<p>For the full list of available passes, their options, and valid option values, see
+<a class="reference internal" href="passes.html"><span class="std std-doc">Passes</span></a>.</p>
 </section>
 </section>
 
@@ -299,23 +358,23 @@ information. Any contribution to the project is assumed to be under the same lic
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="mlir-faq.html">
+          <a class="next-page" href="transpiler.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">MLIR FAQs</div>
+                <div class="title">MQSS-Quantum Compilation Suite Transpiler</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="index.html">
+          <a class="prev-page" href="passes.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">FAQs</div>
+                <div class="title">Passes</div>
                 
               </div>
             </a>
@@ -349,9 +408,10 @@ information. Any contribution to the project is assumed to be under the same lic
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">MQSS FAQs</a><ul>
-<li><a class="reference internal" href="#what-is-mqss">What is MQSS?</a></li>
-<li><a class="reference internal" href="#under-which-license-is-this-collection-of-passes-released">Under which license is this collection of passes released?</a></li>
+<li><a class="reference internal" href="#">Using MQSSCI as a Library</a><ul>
+<li><a class="reference internal" href="#before-you-start">Before You Start</a></li>
+<li><a class="reference internal" href="#a-minimal-example">A Minimal Example</a></li>
+<li><a class="reference internal" href="#invoking-passes-same-rules-as-the-developer-guide">Invoking Passes: Same Rules as the Developer Guide</a></li>
 </ul>
 </li>
 </ul>
