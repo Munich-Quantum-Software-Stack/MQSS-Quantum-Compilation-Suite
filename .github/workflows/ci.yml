@@ -34,8 +34,8 @@ jobs:
       - name: Build
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
-            -w /workspaces/MQSS-Passes-Suite \
+            -v "${{ github.workspace }}:/workspaces/MQSS-Quantum-Compilation-Suite" \
+            -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
               make build
@@ -45,10 +45,10 @@ jobs:
       - name: Run Tests
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/workspaces/MQSS-Passes-Suite \
-            -w /workspaces/MQSS-Passes-Suite \
+            -v ${{ github.workspace }}:/workspaces/MQSS-Quantum-Compilation-Suite \
+            -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
-            export PATH="/workspaces/MQSS-Passes-Suite/build/bin:$PATH"
+            export PATH="/workspaces/MQSS-Quantum-Compilation-Suite/build/bin:$PATH"
             which mqss-opt
             make test-dialects '

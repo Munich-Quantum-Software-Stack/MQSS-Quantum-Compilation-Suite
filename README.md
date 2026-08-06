@@ -63,7 +63,7 @@ bugs.</span>
    devices (currently only for cudaq-quake).
 
 Note: Please refer to the
-[FAQs](https://github.com/akshay9594/MQSS-Passes-Suite/blob/catalyst-integration/docs/faq.md)
+[FAQs](https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/docs/faqs/index.md)
 section for more details on the passes, MLIR, MQSS and other related questions.
 
 ## Getting Started
@@ -84,7 +84,7 @@ section for more details on the passes, MLIR, MQSS and other related questions.
 Note: These are automatically downloaded and installed by the build scripts
 
 - LLVM : 22.1.0 toolchain
-- CMake : 3.29...4.2
+- CMake : 3.19...3.30
 - cudaq-quantum toolchain : 0.15.0
 - pennylane-catalyst toolchain: 0.14.1
 - python : 3.11
@@ -99,8 +99,8 @@ Clone the project:
 
 ```bash
 git clone https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git \
-       /workspaces/MQSS-Passes-Suite
-cd /workspaces/MQSS-Passes-Suite
+       /workspaces/MQSS-Quantum-Compilation-Suite
+cd /workspaces/MQSS-Quantum-Compilation-Suite
 git checkout <branch-name>
 ```
 
@@ -110,13 +110,13 @@ commands:
 ```sh
 docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
 docker run --rm -it \
-  -v "$PWD":/workspaces/MQSS-Passes-Suite \
-  -w /workspaces/MQSS-Passes-Suite \
+  -v "$PWD":/workspaces/MQSS-Quantum-Compilation-Suite \
+  -w /workspaces/MQSS-Quantum-Compilation-Suite \
   mqss-pass-dev \
   bash
 ```
 
-Note: The project root is at `/workspaces/MQSS-Passes-Suite`
+Note: The project root is at `/workspaces/MQSS-Quantum-Compilation-Suite`
 
 ## Building and Installing the project
 
@@ -136,16 +136,16 @@ Finally, build the targets by running:
 make target
 ```
 
-Next, we need to set paths to the directories where the executables are generated i.e.
-`~/.local/bin`. RUN command:
+This builds the targets using the `ninja` build system and if the build succeeds, generates the
+executable `mqss-opt`. You can change the installation directory by modifying the `INSTALL_DIR`
+variable within the MakeFile.
+
+Next, we need to set paths to the directories where the executables are generated i.e. `build/bin`.
+RUN command:
 
 ```bash
 eval "$(make set-target-paths)"
 ```
-
-This builds the targets using the `ninja` build system and if the build succeeds, generates the
-executable `mqss-opt`. You can change the installation directory by modifying the `INSTALL_DIR`
-variable within the MakeFile.
 
 - If you make any changes to the source code i.e. to the C++ files within `lib/*`, then just rerun
   the `make target` command.
@@ -163,8 +163,8 @@ For mlir dialect-level testing (faster), RUN:
 make test-dialects
 ```
 
-This command will run all the available test cases in the `tests/dialects`directory. There are a
-total of about 60 test cases currently, with more added regularly.
+This command will run all the available test cases in the `tests/dialects` directory. There are a
+total of about 30 test cases currently, with more added regularly.
 
 ## Contact
 

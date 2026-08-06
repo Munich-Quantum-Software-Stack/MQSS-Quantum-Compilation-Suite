@@ -43,9 +43,6 @@ frontend: setup-env
 mqss-opt:
 	@./scripts/build.sh ${DEBUG_FLAG} ${INSTALL_PATH}
 
-docs:
-	./scripts/build_docs.sh
-
 set-target-paths:
 	echo 'export PATH="$(INSTALL_DIR):$$PATH"'
 	echo 'export PATH="/usr/local/bin:$$PATH"'

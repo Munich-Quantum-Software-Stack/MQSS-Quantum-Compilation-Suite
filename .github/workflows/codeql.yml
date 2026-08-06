@@ -45,11 +45,11 @@ jobs:
       - name: Build + CodeQL scan
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
-            -w /workspaces/MQSS-Passes-Suite \
+            -v "${{ github.workspace }}:/workspaces/MQSS-Quantum-Compilation-Suite" \
+            -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
-              export PATH="/workspaces/MQSS-Passes-Suite/codeql-home/codeql:$PATH"
+              export PATH="/workspaces/MQSS-Quantum-Compilation-Suite/codeql-home/codeql:$PATH"
               codeql database create /tmp/codeql-db \
                 --language=cpp \
                 --source-root=. \
