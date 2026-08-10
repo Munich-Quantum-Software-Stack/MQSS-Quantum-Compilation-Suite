@@ -295,55 +295,27 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
 <p>Clone the project:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/akshay9594/MQSS-Passes-Suite.git<span class="w"> </span><span class="se">\</span>
-<span class="w">       </span>/workspaces/MQSS-Passes-Suite
-<span class="nb">cd</span><span class="w"> </span>/workspaces/MQSS-Passes-Suite
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git<span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>/workspaces/MQSS-Quantum-Compilation-Suite
+<span class="nb">cd</span><span class="w"> </span>/workspaces/MQSS-Quantum-Compilation-Suite
 git<span class="w"> </span>checkout<span class="w"> </span>&lt;branch-name<span class="w"> </span>or<span class="w"> </span>commit<span class="w"> </span>hash&gt;
 </pre></div>
 </div>
 <p>If using docker, RUN the commands:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>mqss-pass-dev<span class="w"> </span>-f<span class="w"> </span>.devcontainer/Dockerfile<span class="w"> </span>.
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-v<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">&quot;</span>:/workspaces/MQSS-Passes-Suite<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-w<span class="w"> </span>/workspaces/MQSS-Passes-Suite<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">&quot;</span>:/workspaces/MQSS-Quantum-Compilation-Suite<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-w<span class="w"> </span>/workspaces/MQSS-Quantum-Compilation-Suite<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>mqss-pass-dev<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>bash
 </pre></div>
 </div>
-<p>Note: The project root is at <code class="docutils literal notranslate"><span class="pre">/workspaces/MQSS-Passes-Suite</span></code></p>
+<p>Note: The project root is at <code class="docutils literal notranslate"><span class="pre">/workspaces/MQSS-Quantum-Compilation-Suite</span></code></p>
 </section>
 <section id="building-and-installing-the-project">
 <h2>Building and Installing the project<a class="headerlink" href="#building-and-installing-the-project" title="Link to this heading">¶</a></h2>
-<p>The first thing to do is to setup a virtual environment and install python3.11 into it. We also need
-to install cmake. RUN:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>setup-env
-</pre></div>
-</div>
-<p>Next, we need to set paths to the directories where the executables are placed i.e. <code class="docutils literal notranslate"><span class="pre">~/.local/bin</span></code>
-as well as path to <code class="docutils literal notranslate"><span class="pre">cudaq</span> <span class="pre">tools</span></code>. RUN command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">eval</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>make<span class="w"> </span>set-target-paths<span class="k">)</span><span class="s2">&quot;</span>
-</pre></div>
-</div>
-<p>Then, configure the build by running the command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>build
-</pre></div>
-</div>
-<p>This invokes the scripts <code class="docutils literal notranslate"><span class="pre">scripts/build.sh</span></code> which downloads and installs all the required
-dependencies for building the target <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>. This script contains the required cmake commands to
-configure the project.</p>
-<p>Finally, build the targets by running:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>target
-</pre></div>
-</div>
-<p>This builds the targets using the <code class="docutils literal notranslate"><span class="pre">ninja</span></code> build system and if the build succeeds, generates the
-executable <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>. You can change the installation directory by modifying the <code class="docutils literal notranslate"><span class="pre">INSTALL_DIR</span></code>
-variable within the MakeFile.</p>
-<ul class="simple">
-<li><p>If you make any changes to the source code i.e. to the C++ files within <code class="docutils literal notranslate"><span class="pre">lib/*</span></code>, then just rerun
-the <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">target</span></code> command.</p></li>
-<li><p>If any changes are made to the build script i.e. <code class="docutils literal notranslate"><span class="pre">build.sh</span></code> or to the CMakeLists or to the files
-within <code class="docutils literal notranslate"><span class="pre">include/</span></code> then do <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">build</span></code> first and then <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">target</span></code>.</p></li>
-</ul>
+<p>The steps to configure the project and build the targets remain the same as in the
+<span class="xref myst">README</span>.</p>
 </section>
 <section id="enabling-pass-debug-information">
 <h2>Enabling Pass Debug Information<a class="headerlink" href="#enabling-pass-debug-information" title="Link to this heading">¶</a></h2>
@@ -362,7 +334,7 @@ just remove the <code class="docutils literal notranslate"><span class="pre">---
 </pre></div>
 </div>
 <p>This command will run all the available test cases in the <code class="docutils literal notranslate"><span class="pre">tests/dialects</span></code> directory. There are a
-total of 60 test cases currently, with more added regularly.</p>
+total of about 30 test cases currently, with more added regularly.</p>
 </section>
 <section id="source-level-compilation">
 <h2>Source-level Compilation<a class="headerlink" href="#source-level-compilation" title="Link to this heading">¶</a></h2>

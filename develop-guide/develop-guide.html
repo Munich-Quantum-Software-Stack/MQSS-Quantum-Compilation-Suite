@@ -280,8 +280,8 @@ and RUN the docker container using the following commands:</p></li>
 </ul>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>mqss-pass-dev<span class="w"> </span>-f<span class="w"> </span>.devcontainer/Dockerfile<span class="w"> </span>.
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-v<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">&quot;</span>:/workspaces/MQSS-Passes-Suite<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-w<span class="w"> </span>/workspaces/MQSS-Passes-Suite<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">&quot;</span>:/workspaces/MQSS-Quantum-Compilation-Suite<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-w<span class="w"> </span>/workspaces/MQSS-Quantum-Compilation-Suite<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>mqss-pass-dev<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>bash
 </pre></div>
@@ -443,8 +443,7 @@ and API implementations.</p></li>
 <section id="cmakelists-txt">
 <h2>CMakeLists.txt<a class="headerlink" href="#cmakelists-txt" title="Link to this heading">¶</a></h2>
 <p>Two CMakeLists.txt are of importance: <code class="docutils literal notranslate"><span class="pre">root/CMakeLists.txt</span></code> and <code class="docutils literal notranslate"><span class="pre">lib/Passes/CMakeLists.txt</span></code>. CUDAQ,
-Catalyst, QDMI, MQT-QMAP etc. are linked as external dependencies in each of these CMakeLists as
-follows: For e.g. in Root/CMakeLists.txt:</p>
+Catalyst, QDMI, MQT-QMAP etc. are linked as external dependencies in<code class="docutils literal notranslate"><span class="pre">lib/Passes/CMakeLists.txt</span></code>:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>target_link_libraries<span class="o">(</span>mqss-opt
 <span class="w">  </span>PUBLIC
 <span class="w">    </span><span class="c1"># QDMI</span>

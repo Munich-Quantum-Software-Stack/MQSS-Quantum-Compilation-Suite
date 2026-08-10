@@ -279,7 +279,7 @@ mqss-opt test.qke --cse --canonicalize --BasisConversionPass=gates=rx,cz,rz
 **2. Catalyst-quantum**
 
 ```sh
-mqss-opt test.mlir --CommonMappingPass=input=/workspaces/MQSS-Passes-Suite/tests/input/qmap.json
+mqss-opt test.mlir --CommonMappingPass=input=/workspaces/MQSS-Quantum-Compilation-Suite/tests/input/qmap.json
 ```
 
 Note: Check the directory `tests/dialects` for more test cases using `mqss-opt` and example pass
