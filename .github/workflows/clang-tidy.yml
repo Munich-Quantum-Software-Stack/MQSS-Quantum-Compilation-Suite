@@ -30,8 +30,8 @@ jobs:
       - name: Configure build (generate compile_commands.json)
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
-            -w /workspaces/MQSS-Passes-Suite \
+            -v "${{ github.workspace }}:/workspaces/MQSS-Quantum-Compilation-Suite" \
+            -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
               make build
@@ -40,8 +40,8 @@ jobs:
       - name: Run clang-tidy on changed lines
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}:/workspaces/MQSS-Passes-Suite" \
-            -w /workspaces/MQSS-Passes-Suite \
+            -v "${{ github.workspace }}:/workspaces/MQSS-Quantum-Compilation-Suite" \
+            -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
               git fetch origin ${{ github.base_ref }} --depth=1

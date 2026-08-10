@@ -30,8 +30,8 @@ started.
 ```sh
 docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
 docker run --rm -it \
-  -v "$PWD":/workspaces/MQSS-Passes-Suite \
-  -w /workspaces/MQSS-Passes-Suite \
+  -v "$PWD":/workspaces/MQSS-Quantum-Compilation-Suite \
+  -w /workspaces/MQSS-Quantum-Compilation-Suite \
   mqss-pass-dev \
   bash
 ```
@@ -188,8 +188,7 @@ MQSS-Quantum-Compilation-Suite/
 ## CMakeLists.txt
 
 Two CMakeLists.txt are of importance: `root/CMakeLists.txt` and `lib/Passes/CMakeLists.txt`. CUDAQ,
-Catalyst, QDMI, MQT-QMAP etc. are linked as external dependencies in each of these CMakeLists as
-follows: For e.g. in Root/CMakeLists.txt:
+Catalyst, QDMI, MQT-QMAP etc. are linked as external dependencies in`lib/Passes/CMakeLists.txt`:
 
 ```sh
 target_link_libraries(mqss-opt

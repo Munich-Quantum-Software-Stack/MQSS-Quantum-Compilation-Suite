@@ -41,9 +41,9 @@ Note: It is highly recommended to use docker container to build and install the 
 Clone the project:
 
 ```bash
-git clone https://github.com/akshay9594/MQSS-Passes-Suite.git \
-       /workspaces/MQSS-Passes-Suite
-cd /workspaces/MQSS-Passes-Suite
+git clone https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git \
+       /workspaces/MQSS-Quantum-Compilation-Suite
+cd /workspaces/MQSS-Quantum-Compilation-Suite
 git checkout <branch-name or commit hash>
 ```
 
@@ -52,55 +52,18 @@ If using docker, RUN the commands:
 ```sh
 docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
 docker run --rm -it \
-  -v "$PWD":/workspaces/MQSS-Passes-Suite \
-  -w /workspaces/MQSS-Passes-Suite \
+  -v "$PWD":/workspaces/MQSS-Quantum-Compilation-Suite \
+  -w /workspaces/MQSS-Quantum-Compilation-Suite \
   mqss-pass-dev \
   bash
 ```
 
-Note: The project root is at `/workspaces/MQSS-Passes-Suite`
+Note: The project root is at `/workspaces/MQSS-Quantum-Compilation-Suite`
 
 ## Building and Installing the project
 
-The first thing to do is to setup a virtual environment and install python3.11 into it. We also need
-to install cmake. RUN:
-
-```bash
-make setup-env
-```
-
-Next, we need to set paths to the directories where the executables are placed i.e. `~/.local/bin`
-as well as path to `cudaq tools`. RUN command:
-
-```bash
-eval "$(make set-target-paths)"
-```
-
-Then, configure the build by running the command:
-
-```bash
-make build
-```
-
-This invokes the scripts `scripts/build.sh` which downloads and installs all the required
-dependencies for building the target `mqss-opt`. This script contains the required cmake commands to
-configure the project.
-
-Finally, build the targets by running:
-
-```bash
-make target
-```
-
-This builds the targets using the `ninja` build system and if the build succeeds, generates the
-executable `mqss-opt`. You can change the installation directory by modifying the `INSTALL_DIR`
-variable within the MakeFile.
-
-- If you make any changes to the source code i.e. to the C++ files within `lib/*`, then just rerun
-  the `make target` command.
-
-- If any changes are made to the build script i.e. `build.sh` or to the CMakeLists or to the files
-  within `include/` then do `make build` first and then `make target`.
+The steps to configure the project and build the targets remain the same as in the
+[README](../../README.md).
 
 ## Enabling Pass Debug Information
 
@@ -124,7 +87,7 @@ make test-dialects
 ```
 
 This command will run all the available test cases in the `tests/dialects` directory. There are a
-total of 60 test cases currently, with more added regularly.
+total of about 30 test cases currently, with more added regularly.
 
 ## Source-level Compilation
 
