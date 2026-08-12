@@ -1,0 +1,35 @@
+
+// RUN: %mqss-opt %s --CommonCommutePass=mode=RX-CX --CommonGateCancellationPass=mode=CancelGate 2>&1 | FileCheck %s
+
+// CommonCommutePass moves the CNOT ahead of the RX that used to precede it, while
+// CommonGateCancellationPass independently removes the redundant back-to-back CNOT
+// on a separate pair of qubits in the same kernel.
+module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__testILm4EE = "_ZN4testILm4EEclEv"}} {
+  func.func @__nvqpp__mlirgen__testILm4EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %cst = arith.constant 2.400000e+00 : f64
+    %0 = quake.alloca !quake.veq<4>
+    %1 = quake.extract_ref %0[1] : (!quake.veq<4>) -> !quake.ref
+    quake.rx (%cst) %1 : (f64, !quake.ref) -> ()
+    %2 = quake.extract_ref %0[0] : (!quake.veq<4>) -> !quake.ref
+    %3 = quake.extract_ref %0[1] : (!quake.veq<4>) -> !quake.ref
+    quake.x [%2] %3 : (!quake.ref, !quake.ref) -> ()
+    %4 = quake.extract_ref %0[2] : (!quake.veq<4>) -> !quake.ref
+    %5 = quake.extract_ref %0[3] : (!quake.veq<4>) -> !quake.ref
+    quake.x [%4] %5 : (!quake.ref, !quake.ref) -> ()
+    quake.x [%4] %5 : (!quake.ref, !quake.ref) -> ()
+    %measOut = quake.mz %0 : (!quake.veq<4>) -> !cc.stdvec<!quake.measure>
+    return
+  }
+  func.func @_ZN4testILm4EEclEv(%arg0: !cc.ptr<i8>) {
+    return
+  }
+}
+
+// CHECK: %1 = quake.extract_ref %0[1] : (!quake.veq<4>) -> !quake.ref
+// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<4>) -> !quake.ref
+// CHECK: %3 = quake.extract_ref %0[1] : (!quake.veq<4>) -> !quake.ref
+// CHECK: quake.x [%2] %3 : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.rx (%cst) %1 : (f64, !quake.ref) -> ()
+// CHECK: %4 = quake.extract_ref %0[2] : (!quake.veq<4>) -> !quake.ref
+// CHECK: %5 = quake.extract_ref %0[3] : (!quake.veq<4>) -> !quake.ref
+// CHECK: %measOut = quake.mz %0 : (!quake.veq<4>) -> !cc.stdvec<!quake.measure>

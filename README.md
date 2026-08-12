@@ -63,7 +63,7 @@ bugs.</span>
    devices (currently only for cudaq-quake).
 
 Note: Please refer to the
-[FAQs](https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/docs/faqs/index.md)
+[FAQs](https://munich-quantum-software-stack.github.io/MQSS-Quantum-Compilation-Suite/faqs/index.html)
 section for more details on the passes, MLIR, MQSS and other related questions.
 
 ## Getting Started
