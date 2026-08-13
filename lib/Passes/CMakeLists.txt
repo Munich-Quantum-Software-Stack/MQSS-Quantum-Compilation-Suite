@@ -1,7 +1,6 @@
 add_mlir_library(
   MQSSCIPasses
   SHARED
-  Transforms/Dialects.cpp
   Transforms/CommonCNOTReversalPass.cpp
   Transforms/CommonGateCancellationPass.cpp
   Transforms/CommonGateCommutationPass.cpp
@@ -10,7 +9,7 @@ add_mlir_library(
   Transforms/CommonPatternReductionPass.cpp
   Transforms/CommonMappingPass.cpp
   Transforms/CommonNormalizeArgAnglePass.cpp
-  Transforms/pipeline.cpp
+  Transforms/Pipeline.cpp
   CodeGen/LLVMDialectToLLVMIR.cpp
   CodeGen/QuakeToQASM2.cpp
   CodeGen/ConversionPatterns.cpp
@@ -18,45 +17,22 @@ add_mlir_library(
   CodeGen/BasisConversion.cpp
   CodeGen/GlobalizeArrayValues.cpp
   CodeGen/StaticAllocas.cpp
+
   DEPENDS
   MQSSTransformsPassIncGen
+  
   LINK_LIBS
   PUBLIC
+  MQSSSupportedDialects
   qdmi::qdmi
   qdmi::example_driver
-  CUDAQ::CC
-  CUDAQ::Quake
-  CUDAQ::QEC
-  CATALYST::MBQC
-  CATALYST::QRef
-  CATALYST::Quantum
-  MLIRFuncDialect # <--- Fixes the func.func error
-  MLIRArithDialect # <--- For constants and math
-  MLIRControlFlowDialect # <--- For branching/returns
-  MLIRLLVMDialect
-  MLIRLinalgDialect
-  MLIRIR
   MLIRPass
   MLIRTransforms
-  MLIRLLVMCommonConversion
-  MLIRBuiltinToLLVMIRTranslation
-  MLIRLLVMToLLVMIRTranslation
-  MLIRFuncInlinerExtension
-  MLIRLLVMIRTransforms
   CUDAQ::CodeGen
   CUDAQ::Builder
   MQT::CoreNA
   MQT::QMapSCHeuristic
-  # Conversions
-  MLIRArithToLLVM
-  MLIRComplexToLibm
-  MLIRComplexToLLVM
-  MLIRControlFlowToLLVM
-  MLIRFuncToLLVM
-  MLIRMathToFuncs
-  MLIRMathToLLVM
-  # Translation
-  MLIRTargetLLVMIRExport)
+ )
 
 set_target_properties(
   MQSSCIPasses
