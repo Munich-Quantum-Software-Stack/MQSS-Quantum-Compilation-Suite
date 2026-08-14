@@ -42,6 +42,7 @@ lower the result to OpenQASM 2.
 ```cpp
 #include "Passes/Transforms/Dialects.h"
 #include "Passes/Transforms/Pipelines.h"
+#include "Passes/CodeGen/CodeGenPasses.h"
 
 // 1. Tell MLIR about the dialects MQSSCI's passes need (Quake, Catalyst-quantum, etc.)
 mlir::DialectRegistry registry;
@@ -64,7 +65,7 @@ if (mlir::failed(pm.run(*module))) {
 }
 
 // 4. Lower the optimized module to OpenQASM 2
-pm.addPass(mqss::opt::QuakeToQASM2Pass());
+pm.addPass(mqss::codegen::QuakeToQASM2Pass());
 if (mlir::failed(pm.run(*module))) {
   llvm::errs() << "Compiler: Conversion of Quake to QASM2 failed\n";
 }
@@ -80,9 +81,9 @@ Walking through it:
 3. `mqss::opt::O1(pm)` appends the whole `O1` preset pipeline to the pass manager in one call. `O2`
    and `O3` work the same way. See [Pass Pipelines](passes.md#pass-pipelines) for what each preset
    includes.
-4. `mqss::opt::QuakeToQASM2Pass()` is a code-generation pass — it's added and run separately from
-   the optimization pipeline, same as chaining `--O1 --quake-to-qasm2` on the `mqss-opt` command
-   line.
+4. `mqss::codegen::QuakeToQASM2Pass()` is a code-generation pass — it's added and run separately
+   from the optimization pipeline, same as chaining `--O1 --quake-to-qasm2` on the `mqss-opt`
+   command line.
 
 If you'd rather capture the OpenQASM output in a string instead of printing it, `QuakeToQASM2Pass`
 also accepts an `llvm::raw_ostream&`:
@@ -90,7 +91,7 @@ also accepts an `llvm::raw_ostream&`:
 ```cpp
 std::string qasm;
 llvm::raw_string_ostream os(qasm);
-pm.addPass(mqss::opt::QuakeToQASM2Pass(os));
+pm.addPass(mqss::codegen::QuakeToQASM2Pass(os));
 ```
 
 ## Invoking Passes: Same Rules as the Developer Guide
@@ -101,7 +102,7 @@ options to a pass (e.g. `CommonGateCancellationPassOptions`), or assembling a fu
 [Integrating the MQSS Quantum Compilation Suite within your project](../develop-guide/integrate.md#declaring-a-custom-pass-pipeline).
 There's no separate API for library users: whether you're writing a pass yourself or just consuming
 the library, you build the same `mlir::OpPassManager` and call the same factory functions from
-`Passes/Transforms/Transforms.h`.
+`Passes/Transforms/Transforms.h` and `Passes/CodeGen/CodeGenPasses.h`.
 
 For the full list of available passes, their options, and valid option values, see
 [Passes](passes.md).

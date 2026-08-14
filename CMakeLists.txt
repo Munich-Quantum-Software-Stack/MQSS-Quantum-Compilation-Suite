@@ -118,11 +118,6 @@ add_library(mqss-ci::mqss-ci ALIAS MQSSCIPasses)
 
 # Define the executable and its source file
 add_executable(mqss-opt mqss-cc.cpp)
-target_compile_definitions(
-  mqss-opt PRIVATE ${MLIR_DEFINITIONS} ${LLVM_DEFINITIONS}
-                   QDMI_DEVICE_PATH="$<TARGET_FILE:cxx-qdmi-device>")
-
-target_compile_options(mqss-opt PRIVATE -fexceptions)
 
 # Set include directories so the compiler finds the headers
 target_include_directories(mqss-opt PRIVATE ${MQSSCI_ROOT_DIR}/include

@@ -49,63 +49,27 @@ docker run --rm -it \
 
 ```
 MQSS-Quantum-Compilation-Suite/
-├── .devcontainer/
-│   ├── Dockerfile
-│   └── devcontainer.json
-├── .github/
-│   └── workflows/
-│       ├── ci.yml
-│       └── docs.yml
-├── cmake/
-│   ├── FindCUDAQ.cmake
-│   ├── FindCatalyst.cmake
-│   ├── FindZ3.cmake
-│   ├── Findboost.cmake
-│   ├── Findmqt-qcec.cmake
-│   ├── Findmqt-qmap.cmake
-│   ├── Findqdmi.cmake
-│   ├── Findqinfo.cmake
-│   └── try_z3.cpp
-├── docs/
-│   ├── _static/
-│   ├── develop-guide/
-│   │   ├── develop-guide.md
-│   │   ├── index.md
-│   │   ├── integrate.md
-│   │   └── templates.md
-│   ├── faqs/
-│   │   ├── index.md
-│   │   ├── mlir-faq.md
-│   │   └── mqss-faq.md
-│   ├── user_guide/
-│   │   ├── build.md
-│   │   ├── index.md
-│   │   ├── passes.md
-│   │   ├── running.md
-│   │   └── transpiler.md
-│   ├── .nojekyll
-│   ├── conf.py
-│   ├── dependencies.md
-│   ├── header.html
-│   ├── index.md
-│   ├── layout.xml
-│   ├── style.css
-│   └── support.md
+├── cmake/                      # Find*.cmake modules: CUDAQ, Catalyst, QDMI, MQT-QMAP, MQT-QCEC, etc.
+├── docs/                       # Sphinx documentation source (this page included)
 ├── include/
 │   ├── Passes/
-│   │   ├── CodeGen/
-│   │   │   ├── Patterns.h
-│   │   │   └── StaticAllocas.h
-│   │   ├── analysis/
+│   │   ├── Analysis/
 │   │   │   ├── CatalystExtractor.h
 │   │   │   ├── DialectAnalysisSelector.h
 │   │   │   ├── Extractor.h
 │   │   │   └── QuakeExtractor.h
-│   │   ├── transforms/
+│   │   ├── CodeGen/
+│   │   │   ├── BasisConversionPatterns.h
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── CodeGenPasses.h
+│   │   │   ├── CodeGenPasses.td
+│   │   │   ├── Patterns.h
+│   │   │   └── StaticAllocas.h
+│   │   ├── Transforms/
 │   │   │   ├── CMakeLists.txt
 │   │   │   ├── Decomposition.h
-│   │   │   ├── DecompositionPatterns.h
-│   │   │   ├── Error.h
+│   │   │   ├── Dialects.h
+│   │   │   ├── MappingPassUtils.h
 │   │   │   ├── PassIncludes.h
 │   │   │   ├── PassUtils.h
 │   │   │   ├── Pipelines.h
@@ -114,19 +78,26 @@ MQSS-Quantum-Compilation-Suite/
 │   │   │   └── TranspilationPassUtils.h
 │   │   └── CMakeLists.txt
 │   ├── Utils/
-│   │   └── dialectutils.h
+│   │   ├── debug_utils.h
+│   │   ├── dialectutils.h
+│   │   └── Error.h
 │   └── CMakeLists.txt
 ├── lib/
+│   ├── Dialects/
+│   │   ├── CMakeLists.txt
+│   │   └── Dialects.cpp
 │   ├── Passes/
 │   │   ├── CodeGen/
-│   │   │   ├── BasisConversion.cpp
+│   │   │   ├── BasisConversionPass.cpp
+│   │   │   ├── CMakeLists.txt
 │   │   │   ├── ConversionPatterns.cpp
-│   │   │   ├── GlobalizeArrayValues.cpp
-│   │   │   ├── LLVMDialectToLLVMIR.cpp
-│   │   │   ├── QuakeToQASM2.cpp
-│   │   │   ├── QuantumToLLVMDialect.cpp
+│   │   │   ├── GlobalizeArrayValuesPass.cpp
+│   │   │   ├── LLVMDialectToLLVMIRPass.cpp
+│   │   │   ├── QuakeToQASM2Pass.cpp
+│   │   │   ├── QuantumToLLVMDialectPass.cpp
 │   │   │   └── StaticAllocas.cpp
 │   │   ├── Transforms/
+│   │   │   ├── CMakeLists.txt
 │   │   │   ├── CommonCNOTReversalPass.cpp
 │   │   │   ├── CommonCommuteAndSwitchPass.cpp
 │   │   │   ├── CommonDecompositionPass.cpp
@@ -135,49 +106,18 @@ MQSS-Quantum-Compilation-Suite/
 │   │   │   ├── CommonMappingPass.cpp
 │   │   │   ├── CommonNormalizeArgAnglePass.cpp
 │   │   │   ├── CommonPatternReductionPass.cpp
-│   │   │   └── pipeline.cpp
+│   │   │   └── Pipeline.cpp
 │   │   └── CMakeLists.txt
 │   └── CMakeLists.txt
-├── scripts/
-│   ├── conversion/
-│   │   ├── catalyst-to-qir.sh
-│   │   └── cudaq-to-qir.sh
-│   ├── build.sh*
-│   ├── build_docs.sh*
-│   ├── download_toolchains.sh
-│   ├── mqss-cc*
-│   ├── resolve_python_input.py
-│   └── setup-env.sh*
-├── tests/
-│   ├── code/
-│   │   ├── catalyst/
-│   │   │   ├── tests/          # 19 .test lit files
-│   │   │   └── *.py            # 19 matching Python drivers
-│   │   └── cudaq/
-│   │       ├── tests/          # 24 .test lit files
-│   │       └── *.cpp           # 25 matching C++ pass sources
-│   ├── dialects/
-│   │   ├── catalyst-quantum/   # 29 .mlir files + cxx_qdmi.conf
-│   │   └── quake/              # 30 .qke files + cxx_qdmi.conf
-│   ├── input/
-│   │   ├── cxx_qdmi.conf
-│   │   ├── mqt_qdmi.conf
-│   │   └── qmap.json
-│   └── lit.cfg.py
-├── .clang-format
-├── .clang-tidy
-├── .clangd
-├── .cmake-format.yaml
-├── .gitignore
-├── .pre-commit-config.yaml
+├── scripts/                    # build.sh, mqss-cc wrapper, front-end toolchain download scripts
+├── tests/                      # tests/dialects (lit + FileCheck) and tests/code (end-to-end)
 ├── CMakeLists.txt
-├── LICENSE
-├── Makefile
-├── README.md
 └── mqss-cc.cpp
 ```
 
-- The Dialect Agnostic MLIR optimization passes can be found in `lib/Passes/Transforms`.
+- Dialect registration lives in `lib/Dialects`. Dialect-agnostic MLIR optimization passes (namespace
+  `mqss::opt`) live in `lib/Passes/Transforms`. Code-generation/lowering passes (namespace
+  `mqss::codegen`) live in `lib/Passes/CodeGen`.
 
 - CUDAQ and Catalyst are included as external dependencies and are downloaded and installed as
   `cmake` modules. Following targets are built for each of these modules:
@@ -187,59 +127,29 @@ MQSS-Quantum-Compilation-Suite/
 
 ## CMakeLists.txt
 
-Two CMakeLists.txt are of importance: `root/CMakeLists.txt` and `lib/Passes/CMakeLists.txt`. CUDAQ,
-Catalyst, QDMI, MQT-QMAP etc. are linked as external dependencies in`lib/Passes/CMakeLists.txt`:
+The pass library is built as three separate CMake targets, one per directory under `lib/`, each with
+its own `CMakeLists.txt` declaring exactly the external dependencies (CUDAQ, Catalyst, QDMI,
+MQT-QMAP, MLIR conversion libraries, etc.) that its own sources actually need:
 
-```sh
-target_link_libraries(mqss-opt
-  PUBLIC
-    # QDMI
-    qdmi::qdmi
-    qdmi::example_driver
-    #
-    # CUDAQ
-    CUDAQ::CC
-    CUDAQ::Quake
-    CUDAQ::QEC
-    #
-    #Catalyst
-    CATALYST::MBQC
-    CATALYST::QRef
-    CATALYST::Quantum
-    #
-    MLIRLLVMDialect
-    MLIROptLib
-    MLIRIR
-    MLIRFuncDialect
-    MLIRFuncInlinerExtension
-    MLIRArithDialect
-    # MQSS Passes Library
-    MQSSCIPasses
-    #
-    CUDAQ::CodeGen
-    MLIRTransforms
-    # MQT
-    MQT::CoreIR
-    MQT::CoreNA
-    MQT::QMapSC
-    MQT::QMapSCHeuristic
-    #
-    MLIROptLib              # Provides MlirOptMain engine
+- `lib/Dialects/CMakeLists.txt` — builds `MQSSSupportedDialects` (dialect registration).
+- `lib/Passes/CodeGen/CMakeLists.txt` — builds `MQSSCICodeGenPasses` (code-generation/lowering
+  passes), linking `MQSSSupportedDialects` `PUBLIC`.
+- `lib/Passes/Transforms/CMakeLists.txt` — builds `MQSSCIPasses` (dialect-agnostic optimization
+  passes), linking `MQSSCICodeGenPasses` `PUBLIC`.
 
-    # Conversions
-    MLIRArithToLLVM
-    MLIRComplexToLibm
-    MLIRComplexToLLVM
-    MLIRControlFlowToLLVM
-    MLIRFuncToLLVM
-    MLIRMathToFuncs
-    MLIRMathToLLVM
+Because each dependency is declared `PUBLIC` at the target that actually needs it, everything
+propagates transitively up the chain. `root/CMakeLists.txt` only has to link the final executable
+against the top of that chain plus MLIR's own driver library:
 
-    # Translation
-    MLIRTargetLLVMIRExport
-
-)
+```cmake
+target_link_libraries(mqss-opt PUBLIC MLIROptLib MQSSCIPasses)
 ```
+
+Note: this transitive propagation is convenient, but it isn't a substitute for checking what a given
+`.cpp` file's callees actually require. If a source file (or a library it calls into, such as
+`CUDAQ::CodeGen`) needs a specific MLIR conversion library, link it explicitly at the target that
+contains that source file — don't assume it will arrive transitively from another target further
+down the chain.
 
 ## Testing
 

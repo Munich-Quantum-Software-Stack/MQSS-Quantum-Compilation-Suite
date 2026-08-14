@@ -25,6 +25,13 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 # Munich Quantum Software Stack (MQSS)-Quantum Compilation Suite
 
+ <a href="https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/actions/workflows/ci.yml">
+  <img src="https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/actions/workflows/ci.yml/badge.svg?branch=develop" alt="CI" />
+  </a>
+  <a href="https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/actions/workflows/docs.yml">
+  <img src="https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/actions/workflows/docs.yml/badge.svg?branch=develop" alt="Deploy Docs" />
+  </a>
+
 This repository contains a collection of compiler passes integrated into the MQSS to optimize,
 transform, and lower quantum programs to instructions compliant with target Quantum devices. The
 passes in this suite operate on quantum circuits represented using the state-of-the-art
@@ -68,103 +75,27 @@ section for more details on the passes, MLIR, MQSS and other related questions.
 
 ## Getting Started
 
-### System Requirements
+To learn more about how to work with the MQSS Quantum Compilation Suite, please take a look at the
+[Suite Documentation](https://munich-quantum-software-stack.github.io/MQSS-Quantum-Compilation-Suite/).
+The page also contains
+[installation instructions](https://munich-quantum-software-stack.github.io/MQSS-Quantum-Compilation-Suite/user_guide/build.html)
+for officially released packages.
 
-- OS : Linux (tested on Ubuntu 22.04)
-- Architecture : aarch64, X86
+If you would like to write passes for the MQSS Quantum Compilation Suite or would like to integrate
+the suite into your project follow the instructions in the
+[Development Guide](https://munich-quantum-software-stack.github.io/MQSS-Quantum-Compilation-Suite/develop-guide/index.html).
 
-### Development Environment
+## Contributing
 
-- Docker
-- VSCode
-- VSCode Dev Containers extension
+There are many ways in which you can get involved with the MQSS Quantum Compilation Suite. If you
+are interested in developing Passes, fixing bugs or adding additional features, this repository is a
+great place to get started! For more information about contributing to the Suite, please take a look
+at [CONTRIBUTING.md](CONTRIBUTING.md).
 
-### Major Dependencies
+## License
 
-Note: These are automatically downloaded and installed by the build scripts
-
-- LLVM : 22.1.0 toolchain
-- CMake : 3.19...3.30
-- cudaq-quantum toolchain : 0.15.0
-- pennylane-catalyst toolchain: 0.14.1
-- python : 3.11
-- C++ : 17...20
-- Compiler : gcc and g++ 11.4
-
-For a full list of dependencies check `.devcontainer/Dockerfile`.
-
-### Prerequisites
-
-Clone the project:
-
-```bash
-git clone https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite.git \
-       /workspaces/MQSS-Quantum-Compilation-Suite
-cd /workspaces/MQSS-Quantum-Compilation-Suite
-git checkout <branch-name>
-```
-
-`branch-name` could be `develop` or any other branch from this repository. If using docker, RUN the
-commands:
-
-```sh
-docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
-docker run --rm -it \
-  -v "$PWD":/workspaces/MQSS-Quantum-Compilation-Suite \
-  -w /workspaces/MQSS-Quantum-Compilation-Suite \
-  mqss-pass-dev \
-  bash
-```
-
-Note: The project root is at `/workspaces/MQSS-Quantum-Compilation-Suite`
-
-## Building and Installing the project
-
-First, we need to configure the build via `cmake` by running the command:
-
-```bash
-make build
-```
-
-This invokes the scripts `scripts/build.sh` which downloads and installs all the required
-dependencies for building the target `mqss-opt`. This script contains the required cmake commands to
-configure the project.
-
-Finally, build the targets by running:
-
-```bash
-make target
-```
-
-This builds the targets using the `ninja` build system and if the build succeeds, generates the
-executable `mqss-opt`. You can change the installation directory by modifying the `INSTALL_DIR`
-variable within the MakeFile.
-
-Next, we need to set paths to the directories where the executables are generated i.e. `build/bin`.
-RUN command:
-
-```bash
-eval "$(make set-target-paths)"
-```
-
-- If you make any changes to the source code i.e. to the C++ files within `lib/*`, then just rerun
-  the `make target` command.
-
-- If any changes are made to the build script i.e. `build.sh` or to the CMakeLists or to the files
-  within `include/` then do `make build` first and then `make target`.
-
-## Testing the installation
-
-After the build is successful, use the following commands to test the installation.
-
-For mlir dialect-level testing (faster), RUN:
-
-```bash
-make test-dialects
-```
-
-This command will run all the available test cases in the `tests/dialects` directory. There are a
-total of about 30 test cases currently, with more added regularly.
+MQSS Quantum Compilation Suite is free and open source, released under the Apache License, Version
+2.0. Refer to [LICENSE](LICENSE) for more information.
 
 ## Contact
 

@@ -21,14 +21,17 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   date   August 2026
   version 2.0.0
 *************************************************************************/
-#include "Passes/Transforms/DecompositionPatterns.h"
+#include "Passes/CodeGen/BasisConversionPatterns.h"
+#include "Passes/CodeGen/CodeGenPasses.h"
 
-namespace mqss::opt {
+#include <llvm/ADT/StringSet.h>
+
+namespace mqss::codegen {
 
 #define GEN_PASS_DEF_BASISCONVERSIONPASS
-#include "Passes/Transforms/Transforms.h.inc"
+#include "Passes/CodeGen/CodeGen.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqss::codegen
 
 using namespace mlir;
 
@@ -270,7 +273,7 @@ std::unordered_map<std::string, const DecompositionRule *> computeWitnesses(
 }
 
 class BasisConversion
-    : public mqss_backend::impl::BasisConversionPassBase<BasisConversion> {
+    : public mqss::codegen::impl::BasisConversionPassBase<BasisConversion> {
 public:
   BasisConversion() = default;
 
@@ -341,11 +344,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::BasisConversionPass() {
+std::unique_ptr<mlir::Pass> mqss::codegen::BasisConversionPass() {
   return std::make_unique<BasisConversion>();
 }
 
-std::unique_ptr<Pass> mqss_backend::createBasisConversionPass(
+std::unique_ptr<Pass> mqss::codegen::createBasisConversionPass(
     const BasisConversionPassOptions &options) {
   return std::make_unique<BasisConversion>(options);
 }

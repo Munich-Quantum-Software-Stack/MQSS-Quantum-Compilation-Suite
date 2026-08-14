@@ -22,16 +22,17 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
-#include "Passes/Transforms/PassIncludes.h"
+#include "Passes/CodeGen/CodeGenPasses.h"
+#include "Utils/debug_utils.h"
 #include "cudaq/Optimizer/CodeGen/OpenQASMEmitter.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 
-namespace mqss::opt {
+namespace mqss::codegen {
 
 #define GEN_PASS_DEF_QUAKETOQASM2PASS
-#include "Passes/Transforms/Transforms.h.inc"
+#include "Passes/CodeGen/CodeGen.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqss::codegen
 
 using namespace mlir;
 using namespace llvm;
@@ -39,7 +40,7 @@ using namespace llvm;
 namespace {
 
 class QuakeToQASM2
-    : public mqss_backend::impl::QuakeToQASM2PassBase<QuakeToQASM2> {
+    : public mqss::codegen::impl::QuakeToQASM2PassBase<QuakeToQASM2> {
 
 public:
   QuakeToQASM2() = default;
@@ -50,7 +51,7 @@ public:
     MQSS_DEBUG("\n[Applying Pass: QuakeToQASM2]\n");
     mlir::ModuleOp module = getOperation();
     MQSS_DEBUG("\nTranslated output:\n");
-    translateToOpenQASM(module, os);
+    cudaq::translateToOpenQASM(module, os);
   }
 
 private:
@@ -59,11 +60,11 @@ private:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::QuakeToQASM2Pass() {
+std::unique_ptr<mlir::Pass> mqss::codegen::QuakeToQASM2Pass() {
   return std::make_unique<QuakeToQASM2>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqss_backend::QuakeToQASM2Pass(llvm::raw_ostream &os) {
+mqss::codegen::QuakeToQASM2Pass(llvm::raw_ostream &os) {
   return std::make_unique<QuakeToQASM2>(os);
 }
