@@ -40,5 +40,5 @@ by its integration within HPC infrastructures, such as those found at the LRZ.
 ## Under which license is this collection of passes released?
 
 This collection of MLIR passes is released under the Apache License v2.0 with LLVM Exceptions. See
-[LICENSE](https://github.com/Munich-Quantum-Software-Stack/passes/blob/develop/LICENSE) for more
-information. Any contribution to the project is assumed to be under the same license.
+[LICENSE](../../LICENSE) for more information. Any contribution to the project is assumed to be
+under the same license.
