@@ -1,9 +1,8 @@
-add_mlir_dialect_library(MQSSSupportedDialects
+add_mlir_dialect_library(
+  MQSSSupportedDialects
   Dialects.cpp
-
   LINK_LIBS
   PUBLIC
-  
   CUDAQ::CC
   CUDAQ::Quake
   CUDAQ::QEC
