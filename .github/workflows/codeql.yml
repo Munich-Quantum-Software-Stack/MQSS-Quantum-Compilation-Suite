@@ -77,6 +77,7 @@ jobs:
                 --format=sarif-latest \
                 --output=codeql-results.sarif
             '
+          sudo chown "$(id -u):$(id -g)" codeql-results.sarif
 
       # Belt-and-suspenders on top of the build cache above: strip any findings still
       # reported under build/ (e.g. vendored dependency source extracted on a cache-miss
