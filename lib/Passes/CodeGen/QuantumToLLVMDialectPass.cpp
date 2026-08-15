@@ -22,10 +22,10 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
+#include "Passes/CodeGen/CodeGenPasses.h"
 #include "Passes/CodeGen/Patterns.h"
-#include "Passes/Transforms/Error.h"
-#include "Passes/Transforms/PassIncludes.h"
 #include "Quantum/IR/QuantumOps.h"
+#include "Utils/Error.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
@@ -47,7 +47,7 @@ namespace quantum {
 
 #define GEN_PASS_DECL_QUANTUMCONVERSIONPASS
 #define GEN_PASS_DEF_QUANTUMCONVERSIONPASS
-#include "Passes/Transforms/Transforms.h.inc"
+#include "Passes/CodeGen/CodeGen.h.inc"
 
 struct QIRTypeConverter : public LLVMTypeConverter {
 
@@ -106,7 +106,7 @@ struct QuantumConversion : impl::QuantumConversionPassBase<QuantumConversion> {
 
     if (failed(
             applyFullConversion(getOperation(), target, std::move(patterns)))) {
-      mqss::opt::MQSSemitFatalError(module->getLoc(), "Failed to emit LLVM IR");
+      MQSSemitFatalError(module->getLoc(), "Failed to emit LLVM IR");
     }
   }
 };
@@ -114,6 +114,6 @@ struct QuantumConversion : impl::QuantumConversionPassBase<QuantumConversion> {
 } // namespace quantum
 } // namespace catalyst
 
-std::unique_ptr<mlir::Pass> mqss_backend::QuantumConversionPass() {
+std::unique_ptr<mlir::Pass> mqss::codegen::QuantumConversionPass() {
   return std::make_unique<QuantumConversion>();
 }

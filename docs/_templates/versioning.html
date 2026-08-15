@@ -1,0 +1,16 @@
+<div class="sidebar-versions">
+  <p class="caption">Documentation version: {{ current_version.name }}</p>
+  {%- if versions.tags %}
+  <ul>
+    {%- for item in versions.tags %}
+    <li><a href="{{ item.url }}">{{ item.name }}</a></li>
+    {%- endfor %}
+  </ul>
+  {%- endif %} {%- if versions.branches %}
+  <ul>
+    {%- for item in versions.branches %}
+    <li><a href="{{ item.url }}">{{ item.name }} (dev)</a></li>
+    {%- endfor %}
+  </ul>
+  {%- endif %}
+</div>

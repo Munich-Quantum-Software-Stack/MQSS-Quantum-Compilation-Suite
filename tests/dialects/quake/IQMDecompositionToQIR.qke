@@ -1,4 +1,4 @@
-// RUN: %mqss-opt %s --cse --canonicalize --BasisConversionPass=gates=phased_rx,cz --lower-quake-to-qir=profile=base:2.0 -o /dev/null 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --BasisConversionPass=gates=phased_rx,cz --cse --canonicalize --lower-quake-to-qir=profile=base:2.0 -o /dev/null 2>&1 | FileCheck %s
 
 module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__rotILm2EE = "_ZN3rotILm2EEclEv"}} {
   func.func @__nvqpp__mlirgen__rotILm2EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {

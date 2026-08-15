@@ -22,6 +22,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 #include "Passes/Transforms/PassUtils.h"
+#include "Utils/debug_utils.h"
 
 namespace mqss::opt {
 

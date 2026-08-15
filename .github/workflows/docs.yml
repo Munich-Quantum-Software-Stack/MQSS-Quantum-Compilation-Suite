@@ -2,7 +2,8 @@ name: Deploy Docs
 
 on:
   push:
-    branches: [develop]
+    tags: ["v*"]
+  workflow_dispatch: # manual re-run from the Actions tab, e.g. for testing
 
 jobs:
   deploy:
@@ -12,6 +13,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # sphinx-multiversion needs full history/tags
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -19,10 +22,32 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install sphinx myst-parser furo
+        run: pip install sphinx myst-parser furo sphinx-multiversion
 
-      - name: Build docs
-        run: sphinx-build docs _build/html
+      - name: Build versioned docs
+        run: sphinx-multiversion docs _build/html
+
+      - name: Set default (stable) version and landing-page redirect
+        run: |
+          LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$LATEST_TAG" ] || [ ! -d "_build/html/$LATEST_TAG" ]; then
+            echo "::error::No built version tag found to use as the 'stable' default." >&2
+            exit 1
+          fi
+          cp -r "_build/html/$LATEST_TAG" "_build/html/stable"
+          printf '%s\n' \
+            '<!DOCTYPE html>' \
+            '<html>' \
+            '<head>' \
+            '  <meta charset="utf-8">' \
+            '  <meta http-equiv="refresh" content="0; url=stable/index.html">' \
+            '  <link rel="canonical" href="stable/index.html">' \
+            '</head>' \
+            '<body>' \
+            '  <p>Redirecting to the <a href="stable/index.html">stable</a> documentation...</p>' \
+            '</body>' \
+            '</html>' \
+            > _build/html/index.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

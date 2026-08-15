@@ -42,46 +42,6 @@ def CommonGateCancellationPass : Pass<"CommonGateCancellationPass", "mlir::Modul
 
 }
 
-def LLVMDialectToLLVMIRPass : Pass<"mlir-to-llvmIR", "mlir::ModuleOp"> {
-  let summary = "Transforms LLVM dialect to LLVM IR";
-
-  let description = [{
-          Transforms LLVM dialect to LLVM IR.
-  }];
-
-  let constructor = "mqss::opt::LLVMDialectToLLVMIRPass()";
-
-}
-
-def QuakeToQASM2Pass : Pass<"quake-to-qasm2", "mlir::ModuleOp"> {
-  let summary = "Transforms Quake MLIR module to OpenQasm2";
-
-  let description = [{
-          Transforms Quake MLIR module to OpenQasm2.
-  }];
-
-  let constructor = "mqss::opt::QuakeToQASM2Pass()";
-
-}
-
-def QuantumConversionPass : Pass<"convert-quantum-to-llvm"> {
-    let summary = "Perform a dialect conversion from Quantum dialect to LLVM dialect.";
-
-    let options = [
-        Option<
-            "useArrayBackedRegisters",
-            "use-array-backed-registers",
-            "bool",
-            default="false",
-            desc="Use the array-backed-registers conversion pattern for quantum.insert ops."
-        >
-    ];
-
-   let constructor = "mqss::opt::QuantumConversionPass()";
-   let dependentDialects = ["LLVM::LLVMDialect"];
-}
-
-
 def CommonCommutePass : Pass<"CommonCommutePass", "mlir::ModuleOp"> {
   let summary = "This pass searches commutes gates that match a specific pattern.";
   let constructor = "mqss::opt::CommonCommutePass()";
@@ -155,23 +115,6 @@ def CommonDecompositionPass : Pass<"CommonDecompositionPass", "mlir::ModuleOp"> 
   ];
 }
 
-def BasisConversionPass : Pass<"BasisConversionPass", "mlir::ModuleOp"> {
-  let summary = "Recursively Decomposes to native-gate set of target device. ";
-
-  let description = [{
-        "Quick-and-dirty legalization pass: repeatedly rewrites any gate "
-        "that isn't a member of the given native gate set, using the "
-        "same rules as the individual Decomposition passes, until every "
-        "gate is native or no further progress can be made"
-  }];
-
- let constructor = "mqss::opt::BasisConversionPass()";
- let dependentDialects = ["mlir::arith::ArithDialect"];
- let options = [
-    Option<"gates", "gates", "std::string",
-      /*default=*//*default=*/"\"h,cx,rz\"", "Mnemonics of the gates considered native (e.g. h,cx,rz);.">,
-  ];
-}
 
 def CommonCNOTReversePass : Pass<"CommonCNOTReversePass", "mlir::ModuleOp"> {
   let summary = "Reverse the control and targets of each CNot gate in a circuit";

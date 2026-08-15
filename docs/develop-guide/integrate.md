@@ -69,15 +69,19 @@ so no manual include-path bookkeeping is required in the consuming project.
 
 ### Including the Headers
 
-Three headers are relevant to consumers, all declared in namespace `mqss::opt`:
+Four headers are relevant to consumers, split across two namespaces — `mqss::opt` for
+dialect-agnostic optimization and `mqss::codegen` for lowering to exchange formats:
 
-- `Passes/Transforms/Dialects.h` — registers the MLIR dialects (Quake, Catalyst's quantum dialect,
-  and the standard MLIR dialects the passes lower into) that the passes need to understand your
-  program. Include this before parsing or building any MLIR module.
-- `Passes/Transforms/Transforms.h` — declares every individual pass factory function, for building a
+- `Passes/Transforms/Dialects.h` (`mqss::opt`) — registers the MLIR dialects (Quake, Catalyst's
+  quantum dialect, and the standard MLIR dialects the passes lower into) that the passes need to
+  understand your program. Include this before parsing or building any MLIR module.
+- `Passes/Transforms/Transforms.h` (`mqss::opt`) — declares every individual transformation pass
+  factory function, for building a custom pass pipeline pass-by-pass.
+- `Passes/Transforms/Pipelines.h` (`mqss::opt`) — declares the three preset optimization levels
+  `O1`, `O2` and `O3`, for appending a whole preset stage to an `mlir::OpPassManager` in one call.
+- `Passes/CodeGen/CodeGenPasses.h` (`mqss::codegen`) — declares every individual code-generation
+  pass factory function (lowering to exchange formats such as `QIR` or `OpenQASM`), for building a
   custom pass pipeline pass-by-pass.
-- `Passes/Transforms/Pipelines.h` — declares the three preset optimization levels `O1`, `O2` and
-  `O3`, for appending a whole preset stage to an `mlir::OpPassManager` in one call.
 
 ## Declaring and Using a Pass Pipeline
 
@@ -91,6 +95,7 @@ Call one of the preset optimization pipelines — `O1`, `O2`, or `O3` — direct
 ```cpp
 #include "Passes/Transforms/Dialects.h"
 #include "Passes/Transforms/Pipelines.h"
+#include "Passes/CodeGen/CodeGenPasses.h"
 
 mlir::DialectRegistry registry;
 
@@ -117,7 +122,7 @@ if (mlir::failed(pm.run(*module))) {
 }
 
 // 5. Add a CodeGen Pass and RUN the pass
-pm.addPass(mqss::opt::QuakeToQASM2Pass());
+pm.addPass(mqss::codegen::QuakeToQASM2Pass());
 if (mlir::failed(pm.run(*module))) {
   llvm::errs() << "Compiler: Conversion of Quake to QASM2 failed\n";
 }
@@ -135,8 +140,8 @@ include.
 
 If the presets don't fit your use case, assemble your own pipeline by adding individual passes to an
 `mlir::OpPassManager` one at a time, in whatever order you need. Every pass factory lives in
-`Passes/Transforms/Transforms.h`, and falls into one of two shapes depending on whether the pass
-takes options.
+`Passes/Transforms/Transforms.h` and `Passes/CodeGen/CodeGenPasses.h`, and falls into one of two
+shapes depending on whether the pass takes options.
 
 ### Passes Without Options
 
@@ -178,7 +183,7 @@ option values for each.
 ### Example: The O2 Pipeline
 
 The built-in `O2` optimization level combines both styles above into a single reusable pipeline
-(`lib/Passes/Transforms/pipeline.cpp`):
+(`lib/Passes/Transforms/Pipeline.cpp`):
 
 ```cpp
 void mqss::opt::O2(mlir::OpPassManager &pm) {

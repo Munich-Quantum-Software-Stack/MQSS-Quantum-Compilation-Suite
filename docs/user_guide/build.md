@@ -33,8 +33,19 @@ Note: It is highly recommended to use docker container to build and install the 
 
 ## Dependencies
 
-- A list of major packages/toolchains required is mentioned in [dependencies](dependencies.md)
-- For packages required for the development environment, please refer to the `DockerFile`.
+Note: These are automatically downloaded and installed by the build scripts
+
+- LLVM : 22.1.0 toolchain
+- CMake : 3.19...3.30
+- cudaq-quantum toolchain : 0.15.0
+- pennylane-catalyst toolchain: 0.15.0
+- python : 3.11
+- C++ : 17...20
+- Compiler : gcc and g++ 11.4
+
+A list of major packages/toolchains required is also mentioned in [dependencies](dependencies.md).
+For a full list of dependencies, including those required for the development environment, refer to
+the `.devcontainer/Dockerfile`.
 
 ## Prerequisites
 
@@ -62,8 +73,38 @@ Note: The project root is at `/workspaces/MQSS-Quantum-Compilation-Suite`
 
 ## Building and Installing the project
 
-The steps to configure the project and build the targets remain the same as in the
-[README](../../README.md).
+First, we need to configure the build via `cmake` by running the command:
+
+```bash
+make build
+```
+
+This invokes the scripts `scripts/build.sh` which downloads and installs all the required
+dependencies for building the target `mqss-opt`. This script contains the required cmake commands to
+configure the project.
+
+Finally, build the targets by running:
+
+```bash
+make target
+```
+
+This builds the targets using the `ninja` build system and if the build succeeds, generates the
+executable `mqss-opt`. You can change the installation directory by modifying the `INSTALL_DIR`
+variable within the MakeFile.
+
+Next, we need to set paths to the directories where the executables are generated i.e. `build/bin`.
+RUN command:
+
+```bash
+eval "$(make set-target-paths)"
+```
+
+- If you make any changes to the source code i.e. to the C++ files within `lib/*`, then just rerun
+  the `make target` command.
+
+- If any changes are made to the build script i.e. `build.sh` or to the CMakeLists or to the files
+  within `include/` then do `make build` first and then `make target`.
 
 ## Enabling Pass Debug Information
 
@@ -89,7 +130,7 @@ make test-dialects
 This command will run all the available test cases in the `tests/dialects` directory. There are a
 total of about 30 test cases currently, with more added regularly.
 
-## Source-level Compilation
+## Source-level Compilation (Optional)
 
 If C++/Python i.e. Source level compilation and testing is intended follow the following steps:
 

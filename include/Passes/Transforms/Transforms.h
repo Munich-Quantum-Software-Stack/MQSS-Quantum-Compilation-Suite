@@ -40,20 +40,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "llvm/Support/raw_ostream.h"
 
 #include <stdexcept>
-// #include "qdmi.h"
-#include "sc/exact/ExactMapper.hpp"
-#include "sc/heuristic/HeuristicMapper.hpp"
-
-#ifdef MQSS_ENABLE_DEBUG
-#define MQSS_DEBUG(X)                                                          \
-  do {                                                                         \
-    llvm::errs() << X;                                                         \
-  } while (false)
-#else
-#define MQSS_DEBUG(X)                                                          \
-  do {                                                                         \
-  } while (false)
-#endif
 
 /**
  * @def GEN_PASS_REGISTRATION
@@ -83,11 +69,6 @@ std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();
 std::unique_ptr<mlir::Pass> CommonCNOTReversePass();
 std::unique_ptr<mlir::Pass> CommonMappingPass();
-std::unique_ptr<mlir::Pass> LLVMDialectToLLVMIRPass();
-std::unique_ptr<mlir::Pass> QuakeToQASM2Pass();
-std::unique_ptr<mlir::Pass> QuantumConversionPass();
-std::unique_ptr<mlir::Pass> BasisConversionPass();
-
 // Programmatic Pass Registration
 std::unique_ptr<mlir::Pass>
 createCommonCommutePass(const CommonCommutePassOptions &options);
@@ -107,11 +88,6 @@ createCommonReductionPass(const CommonReductionPassOptions &options);
 std::unique_ptr<mlir::Pass>
 createCommonMappingPass(const CommonMappingPassOptions &options);
 
-std::unique_ptr<mlir::Pass>
-createBasisConversionPass(const BasisConversionPassOptions &options);
-
-std::unique_ptr<mlir::Pass>
-QuakeToQASM2Pass(llvm::raw_ostream &os); // new overload
 } // namespace mqss::opt
 
 // namespace mq_cudaq::opt{

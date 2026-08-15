@@ -22,14 +22,16 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   date   August 2026
   version 2.0.0
 *************************************************************************/
-#include "Passes/Transforms/Error.h"
-#include "Passes/Transforms/PassIncludes.h"
+
+#include "Passes/CodeGen/CodeGenPasses.h"
+#include "Utils/Error.h"
+#include "Utils/debug_utils.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 
-namespace mqss::opt {
+namespace mqss::codegen {
 #define GEN_PASS_DEF_LLVMDIALECTTOLLVMIRPASS
-#include "Passes/Transforms/Transforms.h.inc"
-} // namespace mqss::opt
+#include "Passes/CodeGen/CodeGen.h.inc"
+} // namespace mqss::codegen
 
 using namespace mlir;
 using namespace llvm;
@@ -37,7 +39,7 @@ using namespace llvm;
 namespace {
 
 class LLVMDialectToLLVMIR
-    : public mqss_backend::impl::LLVMDialectToLLVMIRPassBase<
+    : public mqss::codegen::impl::LLVMDialectToLLVMIRPassBase<
           LLVMDialectToLLVMIR> {
 
 public:
@@ -54,7 +56,7 @@ public:
     auto llvmModule = translateModuleToLLVMIR(module, llvmContext);
 
     if (!llvmModule)
-      mqss::opt::MQSSemitFatalError(module->getLoc(), "Failed to emit LLVM IR");
+      MQSSemitFatalError(module->getLoc(), "Failed to emit LLVM IR");
 
     llvmModule->dump();
   }
@@ -62,6 +64,6 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::LLVMDialectToLLVMIRPass() {
+std::unique_ptr<mlir::Pass> mqss::codegen::LLVMDialectToLLVMIRPass() {
   return std::make_unique<LLVMDialectToLLVMIR>();
 }

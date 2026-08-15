@@ -138,8 +138,7 @@ output and input, respectively.
 ## Where do MLIR passes fit into the MQSS?
 
 The collection of MLIR passes stored in this repository is part of the Munich Quantum Software Stack
-(MQSS). The passes are utilized inside the Quantum Resource Manager
-([QRM](https://github.com/Munich-Quantum-Software-Stack/QRM)).
+(MQSS). The passes are utilized inside the Quantum Resource Manager.
 
 <div align="center">
     <img src="../_static/mlir-fit.png" width="60%">

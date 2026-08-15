@@ -22,6 +22,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   version 2.0.0
 *************************************************************************/
 
+#include "Passes/CodeGen/CodeGenPasses.h"
 #include "Passes/Transforms/PassUtils.h"
 #include "Passes/Transforms/Transforms.h"
 #include "cudaq/Optimizer/CodeGen/Passes.h"
@@ -87,5 +88,5 @@ void mqss_backend::QIRConversionPipeline(mlir::OpPassManager &pm,
   //  pm.addPass(createConvertMathToFuncs());
   pm.addPass(createSymbolDCEPass());
   pm.addPass(cudaq::opt::createCCToLLVM());
-  pm.addPass(LLVMDialectToLLVMIRPass());
+  pm.addPass(mqss::codegen::LLVMDialectToLLVMIRPass());
 }

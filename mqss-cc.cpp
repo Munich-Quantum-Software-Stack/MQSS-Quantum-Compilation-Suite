@@ -21,6 +21,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   date   August 2026
   version 2.0.0
 *************************************************************************/
+#include "Passes/CodeGen/CodeGenPasses.h"
 #include "Passes/Transforms/Dialects.h"
 #include "Passes/Transforms/Pipelines.h"
 #include "Passes/Transforms/Transforms.h"
@@ -61,6 +62,9 @@ int main(int argc, char **argv) {
 
   // Register Dialect Agnostic Passes
   registerMQSSTransformsPasses();
+
+  // Register CodeGen Passes
+  registerMQSSCodeGenPasses();
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::createCanonicalizerPass();
