@@ -21,6 +21,22 @@ jobs:
         with:
           submodules: recursive
 
+      # Cache the CMake build dir (build/_deps and friends) so unchanged dependencies
+      # (LLVM toolchain fetch, CUDA-Q, Catalyst, MQT-Core, MQT-QMAP, QDMI) aren't rebuilt
+      # from scratch every run. This also shrinks what CodeQL actually extracts: ninja
+      # skips recompiling up-to-date files, so CodeQL's compiler-tracer never sees (and
+      # never indexes) dependency source that hasn't changed -- only invalidated when the
+      # Dockerfile or the CMake files that pin dependency versions change.
+      - name: Cache CMake build directory
+        uses: actions/cache@v4
+        with:
+          path: build
+          key:
+            build-${{ runner.os }}-${{ hashFiles('.devcontainer/Dockerfile', 'CMakeLists.txt',
+            'cmake/**') }}
+          restore-keys: |
+            build-${{ runner.os }}-
+
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -49,15 +65,31 @@ jobs:
             -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
+              # Configure/fetch dependencies outside the CodeQL trace -- no compiler runs
+              # during this step, so tracing it would add overhead for no benefit.
+              make build
               export PATH="/workspaces/MQSS-Quantum-Compilation-Suite/codeql-home/codeql:$PATH"
               codeql database create /tmp/codeql-db \
                 --language=cpp \
                 --source-root=. \
-                --command="bash -lc \"make build && make target\""
+                --command="make target"
               codeql database analyze /tmp/codeql-db \
                 --format=sarif-latest \
                 --output=codeql-results.sarif
             '
+          sudo chown "$(id -u):$(id -g)" codeql-results.sarif
+
+      # Belt-and-suspenders on top of the build cache above: strip any findings still
+      # reported under build/ (e.g. vendored dependency source extracted on a cache-miss
+      # run) before upload, since MQSS doesn't own that code and can't act on alerts in it.
+      - name: Filter out vendored dependency findings
+        uses: advanced-security/filter-sarif@v1.1
+        with:
+          patterns: |
+            +**/*
+            -build/**
+          input: codeql-results.sarif
+          output: codeql-results.sarif
 
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v4

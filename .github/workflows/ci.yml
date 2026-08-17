@@ -17,6 +17,20 @@ jobs:
         with:
           submodules: recursive
 
+      # Cache the CMake build dir (build/_deps and friends) so unchanged dependencies
+      # (LLVM toolchain fetch, CUDA-Q, Catalyst, MQT-Core, MQT-QMAP, QDMI) aren't rebuilt
+      # from scratch every run -- only invalidated when the Dockerfile or the CMake files
+      # that pin dependency versions change, not by changes to our own source.
+      - name: Cache CMake build directory
+        uses: actions/cache@v4
+        with:
+          path: build
+          key:
+            build-${{ runner.os }}-${{ hashFiles('.devcontainer/Dockerfile', 'CMakeLists.txt',
+            'cmake/**') }}
+          restore-keys: |
+            build-${{ runner.os }}-
+
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet

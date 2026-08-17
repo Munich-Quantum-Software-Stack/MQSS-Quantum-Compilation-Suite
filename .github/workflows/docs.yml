@@ -22,7 +22,11 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install sphinx myst-parser furo sphinx-multiversion
+        # sphinx pinned: sphinx-multiversion (last released 2020, unmaintained, no upper
+        # sphinx bound) breaks against newer Sphinx internals (e.g. Config.read()'s
+        # signature changing) -- 8.1.3 is verified compatible and within furo's/
+        # myst-parser's own supported ranges.
+        run: pip install "sphinx==8.1.3" myst-parser furo sphinx-multiversion
 
       - name: Build versioned docs
         run: sphinx-multiversion docs _build/html
