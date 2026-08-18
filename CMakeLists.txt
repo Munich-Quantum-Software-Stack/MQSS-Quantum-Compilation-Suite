@@ -60,6 +60,7 @@ find_package(CUDAQ REQUIRED)
 find_package(Catalyst REQUIRED)
 find_package(qdmi REQUIRED)
 find_package(mqt-qmap REQUIRED)
+find_package(GTest REQUIRED)
 # Restore the original CXX flags and compiler
 set(CMAKE_CXX_STANDARD 20)
 
@@ -134,3 +135,11 @@ set_target_properties(mqss-opt PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 
 # (Optional) Verify links
 mlir_check_all_link_libraries(mqss-opt)
+
+# add Interface Tests
+if(BUILD_INTERFACES_TESTS)
+  include(GoogleTest)
+  enable_testing()
+  # include the tests itself
+  add_subdirectory(tests)
+endif()

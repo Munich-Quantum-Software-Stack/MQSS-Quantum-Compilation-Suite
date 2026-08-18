@@ -45,9 +45,9 @@ void mqss_backend::O2(mlir::OpPassManager &pm) {
   CancelOpts.mode = "CancelGate";
   CommuteOpts.mode = "CX-RX";
 
-  pm.addPass(createCommonGateCancellationPass(CancelOpts));
+  pm.addPass(CommonGateCancellationPass(CancelOpts));
   pm.addPass(CommonCNOTReversePass());
-  pm.addPass(createCommonCommutePass(CommuteOpts));
+  pm.addPass(CommonCommutePass(CommuteOpts));
 
   // Standard MLIR Passes
   pm.addPass(createCSEPass());

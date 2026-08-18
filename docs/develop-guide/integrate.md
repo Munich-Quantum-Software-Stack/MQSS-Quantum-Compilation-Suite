@@ -65,7 +65,16 @@ target_link_libraries(<your-target>
 
 This single target is sufficient — `mqss-ci::mqss-ci` publicly exports every include directory it
 needs (its own `include/`, generated TableGen headers, QDMI, MQT-QMAP, and the MLIR/LLVM headers),
-so no manual include-path bookkeeping is required in the consuming project.
+so no manual include-path bookkeeping is required in the consuming project. It also gives you
+`MQSSCIInterfaces/MQSSCompiler.h` (see below) for free — no separate target to link.
+
+### Prefer a Simpler API?
+
+Everything below this point is the lower-level, `mlir::OpPassManager`-based API — full control over
+dialect registration, individual passes, and pass options. If you just want to compile a circuit
+with a preset optimization level and a known output format, `mqss::MQSSCompiler` wraps all of this
+behind a single `compile()` call. See [Using MQSSCI as a Library](../user_guide/library.md) for that
+path; come back here if you need something it doesn't cover.
 
 ### Including the Headers
 
@@ -97,21 +106,17 @@ Call one of the preset optimization pipelines — `O1`, `O2`, or `O3` — direct
 #include "Passes/Transforms/Pipelines.h"
 #include "Passes/CodeGen/CodeGenPasses.h"
 
-mlir::DialectRegistry registry;
-
-// 1. Register all dialects and declare a MLIR context
-mqss::opt::registerMQSSDialects(registry);
-mlir::MLIRContext context(registry);
-context.loadAllAvailableDialects();
+// 1. Get an MLIRContext with every dialect MQSSCI's passes need already loaded.
+std::unique_ptr<mlir::MLIRContext> context = mqss::opt::createMQSSContext();
 
 //  2. Parse the source dialect and create MLIR module
-auto module = mlir::parseSourceFile<mlir::ModuleOp>(src_path, &context);
+auto module = mlir::parseSourceFile<mlir::ModuleOp>(src_path, context.get());
 if (!module) {
   llvm::errs() << "failed to parse MLIR file\n";
 }
 
 // 3. Declare the MLIR Pass Manager
-mlir::PassManager pm(&context);
+mlir::PassManager pm(context.get());
 
 // 4. Add passes from the O1 pass pipeline
 mqss::opt::O1(pm);
@@ -128,10 +133,12 @@ if (mlir::failed(pm.run(*module))) {
 }
 ```
 
-`registerMQSSDialects` fills a `DialectRegistry` with everything MQSSCI's passes need to understand
-your program (Quake, Catalyst's quantum dialect, and the standard MLIR dialects the passes lower
-into). Construct the `MLIRContext` once, locally — it can't be copied or moved — and keep it alive
-for as long as you're parsing MLIR or running passes.
+`mqss::opt::createMQSSContext()` registers everything MQSSCI's passes need to understand your
+program (Quake, Catalyst's quantum dialect, and the standard MLIR dialects the passes lower into)
+and returns a ready-to-use `MLIRContext` in one call — equivalent to building a `DialectRegistry`
+with `registerMQSSDialects`, constructing an `MLIRContext` from it, and calling
+`loadAllAvailableDialects()` yourself. Keep the returned context alive for as long as you're parsing
+MLIR or running passes.
 
 Please refer to `Passes/Transforms/Pipelines.h` for details on which specific passes the pipelines
 include.

@@ -69,24 +69,27 @@ std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();
 std::unique_ptr<mlir::Pass> CommonCNOTReversePass();
 std::unique_ptr<mlir::Pass> CommonMappingPass();
+
 // Programmatic Pass Registration
 std::unique_ptr<mlir::Pass>
-createCommonCommutePass(const CommonCommutePassOptions &options);
-
-std::unique_ptr<mlir::Pass> createCommonGateCancellationPass(
-    const CommonGateCancellationPassOptions &options);
+CommonCommutePass(const CommonCommutePassOptions &options);
 
 std::unique_ptr<mlir::Pass>
-createCommonSwitchPass(const CommonSwitchPassOptions &options);
+CommonGateCancellationPass(const CommonGateCancellationPassOptions &options);
 
 std::unique_ptr<mlir::Pass>
-createCommonDecompositionPass(const CommonDecompositionPassOptions &options);
+CommonSwitchPass(const CommonSwitchPassOptions &options);
 
 std::unique_ptr<mlir::Pass>
-createCommonReductionPass(const CommonReductionPassOptions &options);
+CommonDecompositionPass(const CommonDecompositionPassOptions &options);
 
 std::unique_ptr<mlir::Pass>
-createCommonMappingPass(const CommonMappingPassOptions &options);
+CommonReductionPass(const CommonReductionPassOptions &options);
+
+std::unique_ptr<mlir::Pass>
+CommonMappingPass(const std::unordered_map<int, int> &coupling_map);
+std::unique_ptr<mlir::Pass>
+CommonMappingPass(const CommonMappingPassOptions &options);
 
 } // namespace mqss::opt
 

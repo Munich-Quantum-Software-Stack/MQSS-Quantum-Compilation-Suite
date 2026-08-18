@@ -54,6 +54,10 @@ target:
 test-dialects:
 	@ninja -C $(CURDIR)/build check-mqss
 
+test-interfaces:
+	@ctest --test-dir $(CURDIR)/build --output-on-failure
+
+
 test-all:
 	@ninja -C $(CURDIR)/build check-mqss-code
 

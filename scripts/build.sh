@@ -29,7 +29,6 @@ CXX="g++"
 
 # Default values
 NUM_JOBS=4  # Default number of jobs
-BUILD_DOCS=OFF  # Default: Do not build documentation
 BUILD_TYPE="Release"  # Default: Release mode
 INSTALL_DIR="${BUILD_DIR}/bin"
 
@@ -67,6 +66,7 @@ cmake -G Ninja \
   -DCMAKE_CXX_COMPILER="${CXX}" \
   -DINSTALL_DIR="${INSTALL_DIR}" \
 	-DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+  -DBUILD_INTERFACES_TESTS=ON \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 ok "Configured Build, PLEASE RUN: make target"

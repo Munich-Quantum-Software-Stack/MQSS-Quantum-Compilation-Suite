@@ -142,6 +142,6 @@ std::unique_ptr<mlir::Pass> mqss_backend::CommonCommutePass() {
 }
 
 std::unique_ptr<mlir::Pass>
-mqss_backend::createCommonCommutePass(const CommonCommutePassOptions &options) {
+mqss_backend::CommonCommutePass(const CommonCommutePassOptions &options) {
   return std::make_unique<CommonCommute>(options);
 }

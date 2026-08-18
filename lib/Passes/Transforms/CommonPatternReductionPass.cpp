@@ -123,7 +123,7 @@ std::unique_ptr<mlir::Pass> mqss_backend::CommonReductionPass() {
   return std::make_unique<CommonReduction>();
 }
 
-std::unique_ptr<mlir::Pass> mqss_backend::createCommonReductionPass(
-    const CommonReductionPassOptions &options) {
+std::unique_ptr<mlir::Pass>
+mqss_backend::CommonReductionPass(const CommonReductionPassOptions &options) {
   return std::make_unique<CommonReduction>(options);
 }

@@ -146,7 +146,7 @@ std::unique_ptr<mlir::Pass> mqss_backend::CommonDecompositionPass() {
   return std::make_unique<CommonDecomposition>();
 }
 
-std::unique_ptr<mlir::Pass> mqss_backend::createCommonDecompositionPass(
+std::unique_ptr<mlir::Pass> mqss_backend::CommonDecompositionPass(
     const CommonDecompositionPassOptions &options) {
   return std::make_unique<CommonDecomposition>(options);
 }

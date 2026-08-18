@@ -39,6 +39,7 @@ const mlir::DialectRegistry &mqssDialectRegistry() {
 } // namespace
 
 // Implementation of the main "compile" interface.
+// Note: Currently only cudaq-quake dialect is supported
 std::optional<std::string> mqss::MQSSCompiler::compile(
     const std::string &input_circuit_path, const std::string &backend_name,
     const std::vector<std::string> &native_gates,
@@ -81,11 +82,19 @@ std::optional<std::string> mqss::MQSSCompiler::compile(
   }
 
   if (mlir::failed(pm.run(*module))) {
-    mlir::emitError(module->getLoc(), "Compiler: Pipeline failed");
+    mlir::emitError(module->getLoc(), "Compiler: Optimization Pipeline failed");
     return std::nullopt;
   }
 
-  // 4. Perform native gate decomposition
+  // 4. Perform Qubit Mapping
+  pm.addPass(mqss::opt::CommonMappingPass(qubit_connectivity));
+  if (mlir::failed(pm.run(*module))) {
+    mlir::emitError(mlir::UnknownLoc::get(&context),
+                    "Compiler: Qubit Mapping failed!");
+    return std::nullopt;
+  }
+
+  // 5. Perform native gate decomposition
   // If a supported/known back-end is provided, perform
   // decomposition using the known native-gate set. Else,
   // use the user provided native-gate set.
@@ -119,7 +128,7 @@ std::optional<std::string> mqss::MQSSCompiler::compile(
                "BasisConversion!");
   }
 
-  // 5. Lower the optimized module to OpenQASM 2 or QIR
+  // 6. Lower the optimized module to OpenQASM 2 or QIR
   std::string result;
   llvm::raw_string_ostream os(result);
   if (opts.result_type == "OpenQASM2")

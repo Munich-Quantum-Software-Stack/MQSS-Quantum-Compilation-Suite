@@ -115,6 +115,6 @@ std::unique_ptr<mlir::Pass> mqss_backend::CommonSwitchPass() {
 }
 
 std::unique_ptr<mlir::Pass>
-mqss_backend::createCommonSwitchPass(const CommonSwitchPassOptions &options) {
+mqss_backend::CommonSwitchPass(const CommonSwitchPassOptions &options) {
   return std::make_unique<CommonSwitch>(options);
 }

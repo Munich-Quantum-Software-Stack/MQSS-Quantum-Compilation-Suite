@@ -112,7 +112,7 @@ std::unique_ptr<mlir::Pass> mqss_backend::CommonGateCancellationPass() {
   return std::make_unique<CommonGateCancellation>();
 }
 
-std::unique_ptr<mlir::Pass> mqss_backend::createCommonGateCancellationPass(
+std::unique_ptr<mlir::Pass> mqss_backend::CommonGateCancellationPass(
     const CommonGateCancellationPassOptions &options) {
   return std::make_unique<CommonGateCancellation>(options);
 }

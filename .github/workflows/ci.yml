@@ -65,4 +65,5 @@ jobs:
             bash -lc '
             export PATH="/workspaces/MQSS-Quantum-Compilation-Suite/build/bin:$PATH"
             which mqss-opt
-            make test-dialects '
+            make test-dialects
+            make test-interfaces '
