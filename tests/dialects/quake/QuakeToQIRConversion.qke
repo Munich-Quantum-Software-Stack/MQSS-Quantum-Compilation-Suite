@@ -70,16 +70,16 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
 // CHECK:  ret void
 // CHECK: }
 
-// CHECK: declare ptr @__quantum__rt__qubit_allocate_array(i64 %0)
+// CHECK: declare ptr @__quantum__rt__qubit_allocate_array(i64)
 
-// CHECK: declare ptr @__quantum__rt__array_get_element_ptr_1d(ptr %0, i64 %1)
+// CHECK: declare ptr @__quantum__rt__array_get_element_ptr_1d(ptr, i64)
 
-// CHECK: declare void @__quantum__qis__x__ctl(ptr %0, ptr %1)
+// CHECK: declare void @__quantum__qis__x__ctl(ptr, ptr)
 
-// CHECK: declare void @generalizedInvokeWithRotationsControlsTargets(i64 %0, i64 %1, i64 %2, i64 %3, ptr %4, ...)
+// CHECK: declare void @generalizedInvokeWithRotationsControlsTargets(i64, i64, i64, i64, ptr, ...)
 
-// CHECK: declare void @__quantum__qis__x(ptr %0)
+// CHECK: declare void @__quantum__qis__x(ptr)
 
-// CHECK: declare ptr @__quantum__qis__mz(ptr %0)
+// CHECK: declare ptr @__quantum__qis__mz(ptr)
 
-// CHECK: declare void @__quantum__qis__rx(double %0, ptr %1)
+// CHECK: declare void @__quantum__qis__rx(double, ptr)

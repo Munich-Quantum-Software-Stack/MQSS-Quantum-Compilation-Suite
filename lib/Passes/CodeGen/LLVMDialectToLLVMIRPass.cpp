@@ -24,8 +24,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************/
 
 #include "Passes/CodeGen/CodeGenPasses.h"
+#include "Utils/DebugUtils.h"
 #include "Utils/Error.h"
-#include "Utils/debug_utils.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 
 namespace mqss::codegen {
@@ -43,6 +43,10 @@ class LLVMDialectToLLVMIR
           LLVMDialectToLLVMIR> {
 
 public:
+  LLVMDialectToLLVMIR() = default;
+
+  explicit LLVMDialectToLLVMIR(llvm::raw_ostream &os) : os(os) {}
+
   void runOnOperation() override {
 
     MQSS_DEBUG("\n[Applying Pass: LLVMDialectToLLVMIR]\n");
@@ -58,12 +62,20 @@ public:
     if (!llvmModule)
       MQSSemitFatalError(module->getLoc(), "Failed to emit LLVM IR");
 
-    llvmModule->dump();
+    llvmModule->print(os, nullptr);
   }
+
+private:
+  llvm::raw_ostream &os = llvm::outs();
 };
 
 } // namespace
 
 std::unique_ptr<mlir::Pass> mqss::codegen::LLVMDialectToLLVMIRPass() {
   return std::make_unique<LLVMDialectToLLVMIR>();
+}
+
+std::unique_ptr<mlir::Pass>
+mqss::codegen::LLVMDialectToLLVMIRPass(llvm::raw_ostream &os) {
+  return std::make_unique<LLVMDialectToLLVMIR>(os);
 }

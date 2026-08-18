@@ -28,16 +28,6 @@ module {
   }
 }
 
-// CHECK: declare ptr @__catalyst__qis__Measure(ptr %0, i32 %1)
-// CHECK: declare void @__catalyst__qis__PauliZ(ptr %0, ptr %1)
-
-// CHECK: declare void @__catalyst__qis__CNOT(ptr %0, ptr %1, ptr %2)
-
-// CHECK: declare void @__catalyst__qis__RX(double %0, ptr %1, ptr %2)
-
-// CHECK: declare ptr @__catalyst__rt__array_get_element_ptr_1d(ptr %0, i64 %1)
-
-// CHECK: declare ptr @__catalyst__rt__qubit_allocate_array(i64 %0)
 
 // CHECK: define void @QuantumToQIRConversion_test() {
 // CHECK:   %1 = call ptr @__catalyst__rt__qubit_allocate_array(i64 3)

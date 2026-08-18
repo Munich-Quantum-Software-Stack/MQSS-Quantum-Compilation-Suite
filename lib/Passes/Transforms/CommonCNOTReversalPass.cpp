@@ -23,7 +23,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************/
 
 #include "Passes/Transforms/PassUtils.h"
-#include "Utils/debug_utils.h"
+#include "Utils/DebugUtils.h"
 
 using namespace mlir;
 using namespace llvm;

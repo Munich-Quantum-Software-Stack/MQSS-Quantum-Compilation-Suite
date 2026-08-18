@@ -1,5 +1,5 @@
 
-// RUN: %mqss-opt %s --BasisConversionPass=gates=h,cz --CommonGateCancellationPass=mode=CancelGate --lower-quake-to-qir=profile=base:2.0 -o /dev/null 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --BasisConversionPass=gates=h,cz --CommonGateCancellationPass=mode=CancelGate --lower-quake-to-qir=profile=qir-base:2.0 -o /dev/null 2>&1 | FileCheck %s
 
 // A three-stage pipeline mirroring the catalyst-quantum version: legalize the CX into
 // the {h,cz} native gate set via BasisConversionPass (recursively rewriting it to

@@ -43,6 +43,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #define GEN_PASS_DECL
 #include "Passes/CodeGen/CodeGen.h.inc"
+#include "Utils/CodegenUtils.h"
 
 namespace mqss::codegen {
 
@@ -52,6 +53,7 @@ std::unique_ptr<mlir::Pass> QuantumConversionPass();
 std::unique_ptr<mlir::Pass> BasisConversionPass();
 std::unique_ptr<mlir::Pass>
 createBasisConversionPass(const BasisConversionPassOptions &options);
+std::unique_ptr<mlir::Pass> LLVMDialectToLLVMIRPass(llvm::raw_ostream &os);
 
 std::unique_ptr<mlir::Pass> QuakeToQASM2Pass(llvm::raw_ostream &os);
 

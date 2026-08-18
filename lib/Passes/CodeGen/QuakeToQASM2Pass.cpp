@@ -23,7 +23,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************/
 
 #include "Passes/CodeGen/CodeGenPasses.h"
-#include "Utils/debug_utils.h"
+#include "Utils/DebugUtils.h"
 #include "cudaq/Optimizer/CodeGen/OpenQASMEmitter.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 

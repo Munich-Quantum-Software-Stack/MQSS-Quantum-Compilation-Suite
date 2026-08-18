@@ -23,7 +23,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 *************************************************************************/
 
 #include "Extractor.h"
-#include "Utils/dialectutils.h"
+#include "Utils/DialectUtils.h"
 
 #include <llvm/Support/raw_ostream.h>
 

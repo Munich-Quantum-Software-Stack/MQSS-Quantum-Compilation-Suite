@@ -25,29 +25,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/CodeGen/CodeGenPasses.h"
 #include "Passes/Transforms/PassUtils.h"
 #include "Passes/Transforms/Transforms.h"
-#include "cudaq/Optimizer/CodeGen/Passes.h"
 
 #include <llvm/ADT/StringRef.h>
+#include <llvm/Support/raw_ostream.h>
 #include <string>
 
 using namespace mlir;
-
-static void addQIRConversionPipeline(mlir::OpPassManager &pm,
-                                     llvm::StringRef convertTo) {
-  auto convertFields = convertTo.split(':');
-  if (convertFields.first == "qir" || convertFields.first == "qir-full") {
-    cudaq::opt::addConvertToQIRAPIPipeline(pm, "full:" +
-                                                   convertFields.second.str());
-  } else if (convertFields.first == "qir-base") {
-    pm.addNestedPass<mlir::func::FuncOp>(cudaq::opt::createDelayMeasurements());
-    cudaq::opt::addConvertToQIRAPIPipeline(pm, "base-profile:" +
-                                                   convertFields.second.str());
-  } else if (convertFields.first == "qir-adaptive") {
-    cudaq::opt::addConvertToQIRAPIPipeline(pm, "adaptive-profile:" +
-                                                   convertFields.second.str());
-  } else {
-  }
-}
 
 void mqss_backend::O1(mlir::OpPassManager &pm) {
   pm.addPass(createCSEPass());
@@ -78,15 +61,13 @@ void mqss_backend::O3(mlir::OpPassManager &pm) {
 }
 
 void mqss_backend::QIRConversionPipeline(mlir::OpPassManager &pm,
-                                         StringRef convertTo) {
+                                         const std::string &convertTo,
+                                         llvm::raw_ostream &os) {
 
-  // cudaq::opt::ReturnToOutputLogOptions opts;
-  //  auto tgt = StringRef(convertTo).split(':').first;
-  //  opts.allowDynamicResult = tgt == "qir" || tgt == "qir-full";
   addQIRConversionPipeline(pm, convertTo);
   // pm.addPass(cudaq::opt::createReturnToOutputLog(opts));
   //  pm.addPass(createConvertMathToFuncs());
   pm.addPass(createSymbolDCEPass());
   pm.addPass(cudaq::opt::createCCToLLVM());
-  pm.addPass(mqss::codegen::LLVMDialectToLLVMIRPass());
+  pm.addPass(mqss::codegen::LLVMDialectToLLVMIRPass(os));
 }

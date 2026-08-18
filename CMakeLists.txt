@@ -113,8 +113,10 @@ set_target_properties(mqss-cudaq-headers PROPERTIES FOLDER "Misc")
 add_subdirectory(include)
 add_subdirectory(lib)
 
-# Adding the Passes as an external library
-add_library(mqss-ci::mqss-ci ALIAS MQSSCIPasses)
+# Adding the Passes and MQSSCIInterfaces as an external library.
+# MQSSCIInterfaces publicly links MQSSCIPasses, so aliasing it alone still
+# exposes everything MQSSCIPasses provides, plus the MQSSCompiler API.
+add_library(mqss-ci::mqss-ci ALIAS MQSSCIInterfaces)
 
 # Define the executable and its source file
 add_executable(mqss-opt mqss-cc.cpp)

@@ -282,11 +282,6 @@ public:
     gates = options.gates;
   }
 
-  // BasisConversion(const BasisConversion &other)
-  //     : BaseMQSSPass(other), AppliedCheckPass(other) {
-  //   nativeGateSet = other.nativeGateSet;
-  // }
-
   void runOnOperation() override {
     bool wasApplied = false;
 

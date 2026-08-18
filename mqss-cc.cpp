@@ -110,33 +110,7 @@ int main(int argc, char **argv) {
   mlir::PassPipelineRegistration<ToQirPipelineOptions>(
       "lower-quake-to-qir", "MQSS Quake to QIR Conversion pipeline",
       [](mlir::OpPassManager &pm, const ToQirPipelineOptions &opts) {
-        // Split "name[:version[:suboptions]]" on ':'
-        llvm::SmallVector<llvm::StringRef, 3> parts;
-        llvm::StringRef(opts.profile).split(parts, ':', /*MaxSplit=*/2);
-
-        llvm::StringRef name = parts.size() > 0 ? parts[0] : "qir";
-        llvm::StringRef version = parts.size() > 1 ? parts[1] : "2.0";
-        llvm::StringRef suboptions = parts.size() > 2 ? parts[2] : "";
-
-        // Validate name
-        if (name != "qir" && name != "base" && name != "adaptive" &&
-            name != "full") {
-          llvm::report_fatal_error("invalid QIR profile name '" + Twine(name) +
-                                   "'; expected 'base', 'adaptive', or 'full'");
-        }
-        // Validate version
-        if (version != "2.0" && version != "2.1") {
-          llvm::report_fatal_error("invalid QIR version '" + Twine(version) +
-                                   "'; expected '2.0' or '2.1'");
-        }
-
-        std::string separator = "-";
-        if (name == "qir") {
-          separator = "";
-          name = "";
-        }
-        std::string convertto =
-            ("qir" + separator + name + ":" + version).str();
+        auto convertto = processQIRLoweringOpts(opts.profile);
         mqss::opt::QIRConversionPipeline(pm, convertto);
       });
 
