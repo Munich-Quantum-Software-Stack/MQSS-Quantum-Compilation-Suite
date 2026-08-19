@@ -52,6 +52,7 @@ jobs:
             -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
+              git config --global --add safe.directory "*"
               make build
               make target
             '
