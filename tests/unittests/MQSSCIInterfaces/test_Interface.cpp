@@ -37,7 +37,7 @@ TEST(MQSSCIInterfacesTest, CompilesToOpenQASM2ForPlanqcBackend) {
 
   mqss::CompilerOptions opts;
   opts.optimization_level = mqss::OptLevel::O1;
-  opts.result_type = mqss::ResultType::OPENQASM2;
+  opts.result_format = mqss::ResultFormat::OPENQASM2;
 
   std::optional<std::string> qasm =
       compiler.compile(kBellStateCircuit, "planqc", opts);
@@ -92,7 +92,7 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForSameCircuit) {
 
   mqss::CompilerOptions opts;
   opts.optimization_level = mqss::OptLevel::O1;
-  opts.result_type = mqss::ResultType::OPENQASM2;
+  opts.result_format = mqss::ResultFormat::OPENQASM2;
 
   std::ifstream fixture(kBellStateCircuit);
   ASSERT_TRUE(fixture.is_open());
@@ -120,7 +120,7 @@ TEST(MQSSCIInterfacesTest, CompileReturnsNulloptForUnsupportedBackend) {
 
   mqss::CompilerOptions opts;
   opts.optimization_level = mqss::OptLevel::O1;
-  opts.result_type = mqss::ResultType::OPENQASM2;
+  opts.result_format = mqss::ResultFormat::OPENQASM2;
 
   std::optional<std::string> qasm =
       compiler.compile(kBellStateCircuit, "not-a-real-backend", opts);
@@ -135,7 +135,7 @@ TEST(MQSSCIInterfacesTest, CompilesToQIRBaseForWmiBackend) {
 
   mqss::CompilerOptions opts;
   opts.optimization_level = mqss::OptLevel::O1;
-  opts.result_type = mqss::ResultType::QIRBASE;
+  opts.result_format = mqss::ResultFormat::QIRBASE;
 
   std::optional<std::string> qir =
       compiler.compile(kBellStateCircuit, "wmi", opts);
@@ -185,7 +185,7 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForQIRBase) {
 
   mqss::CompilerOptions opts;
   opts.optimization_level = mqss::OptLevel::O1;
-  opts.result_type = mqss::ResultType::QIRBASE;
+  opts.result_format = mqss::ResultFormat::QIRBASE;
 
   std::ifstream fixture(kBellStateCircuit);
   ASSERT_TRUE(fixture.is_open());

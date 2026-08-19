@@ -36,27 +36,27 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss {
 
 // Enum of supported input formats.
-enum InputType { QUAKE, CATALYSTQUANTUM };
+enum InputFormat { QUAKE, CATALYSTQUANTUM };
 
-struct InputTypeInfo {
-  InputType type;
+struct InputFormatInfo {
+  InputFormat input_format;
   std::string_view name;
 };
 
 // Pairs each InputType with its display name; iterated by
 // getSupportedInputFormats() so the two can't drift apart.
-inline constexpr std::array<InputTypeInfo, 2> kInputTypes = {{
+inline constexpr std::array<InputFormatInfo, 2> kInputFormats = {{
     {QUAKE, "cudaq-quake"},
     {CATALYSTQUANTUM, "catalyst-quantum"},
 }};
 
-enum ResultType { OPENQASM2, QIR, QIRBASE, QIRADAPTIVE, QIRFULL };
+enum ResultFormat { OPENQASM2, QIR, QIRBASE, QIRADAPTIVE, QIRFULL };
 
 enum OptLevel { O1, O2, O3 };
 
-inline std::string resulttype_tostring(ResultType result_type) {
+inline std::string resulttype_tostring(ResultFormat result_format) {
 
-  switch (result_type) {
+  switch (result_format) {
   case OPENQASM2:
     return "OpenQASM2";
   case QIR:
@@ -74,7 +74,7 @@ inline std::string resulttype_tostring(ResultType result_type) {
 
 struct CompilerOptions {
   OptLevel optimization_level;
-  ResultType result_type;
+  ResultFormat result_format;
 };
 
 class MQSSCompiler {
@@ -189,9 +189,15 @@ public:
     return compileSource(input_circuit, "", {}, {}, opts);
   }
 
-  static void getSupportedInputFormats() {
-    for (const auto &input_type : kInputTypes)
-      std::cout << input_type.name << "\n";
+  // Return a vector of the names of supported input formats
+  static std::vector<std::string_view> getSupportedInputFormats() {
+
+    std::vector<std::string_view> input_type_names;
+    input_type_names.reserve(kInputFormats.size());
+    for (const auto &input_type : kInputFormats) {
+      input_type_names.push_back(input_type.name);
+    }
+    return input_type_names;
   }
 
 private:

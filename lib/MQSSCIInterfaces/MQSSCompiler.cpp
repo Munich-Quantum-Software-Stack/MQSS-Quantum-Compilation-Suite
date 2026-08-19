@@ -151,7 +151,7 @@ std::optional<std::string> mqss::MQSSCompiler::compileImpl(
   std::string result;
   llvm::raw_string_ostream os(result);
 
-  switch (opts.result_type) {
+  switch (opts.result_format) {
   // cudaq::translateToOpenQASM walks the module's full call graph and emits
   // every non-entrypoint func::FuncOp as a "gate name(...) { ... }" block,
   // whether or not anything in the final circuit still calls it. Strip these
@@ -169,11 +169,11 @@ std::optional<std::string> mqss::MQSSCompiler::compileImpl(
   case QIRBASE:
   case QIRADAPTIVE:
   case QIRFULL: {
-    auto result_type_string = resulttype_tostring(opts.result_type);
+    auto result_type_string = resulttype_tostring(opts.result_format);
     auto convertto = tryProcessQIRLoweringOpts(result_type_string);
     if (!convertto) {
       mlir::emitError(module->getLoc(),
-                      "invalid QIR lowering options: " + opts.result_type);
+                      "invalid QIR lowering options: " + opts.result_format);
       return std::nullopt;
     }
     mqss::opt::QIRConversionPipeline(pm, *convertto, os);
