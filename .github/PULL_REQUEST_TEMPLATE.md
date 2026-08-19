@@ -15,7 +15,7 @@ Closes #
 ## Testing
 
 - [ ] Added or updated tests in `tests/dialects` and/or `tests/code`
-- [ ] `make test-dialects` passes locally
+- [ ] `make test-dialects` and `make test-interfaces` passes locally
 - [ ] `make test-all` passes locally (if this touches `cudaq-quake`/`mqss-cc`)
 - [ ] `pre-commit run --all-files` passes locally
 

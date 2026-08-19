@@ -208,3 +208,26 @@ void mqss::opt::O2(mlir::OpPassManager &pm) {
   pm.addPass(createCanonicalizerPass());
 }
 ```
+
+## Testing the Interface
+
+`mqss::MQSSCompiler` has its own GoogleTest suite, separate from the lit/FileCheck tests that cover
+the passes themselves (see [Testing](develop-guide.md#testing)). It lives in
+`tests/unittests/MQSSCIInterfaces/test_Interface.cpp` and exercises the library end to end: it
+compiles a real fixture circuit (`tests/unittests/input/two_qubit_bell.qke`) through both `compile`
+and `compileSource` APIs, and checks properties of the emitted output.
+
+`BUILD_INTERFACES_TESTS` is `ON` by default in `scripts/build.sh`, so `make build && make target`
+(or an equivalent manual `cmake`/`ninja` build) builds `MQSSCIInterface_test` automatically — no
+extra flag needed. Test the suite with:
+
+```sh
+make test-interfaces      # wraps: ctest --test-dir build --output-on-failure
+```
+
+or scope it to just this suite with `ctest --test-dir build -R MQSSCIInterface --output-on-failure`.
+
+If you add a new `compile`/`compileSource` overload or change how `MQSSCompiler` handles a
+particular option, extend this suite rather than relying solely on the pass-level lit tests — lit
+tests catch regressions in individual passes, but only this suite exercises the library's public C++
+API as a consumer would actually call it.

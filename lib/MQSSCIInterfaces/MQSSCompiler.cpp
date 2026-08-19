@@ -1,3 +1,21 @@
+/* This code and any associated documentation is provided "as is"
+
+Copyright 2024 Munich Quantum Software Stack Project
+
+Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
+"License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+*/
 
 #include "MQSSCIInterfaces/MQSSCompiler.h"
 
@@ -12,7 +30,6 @@
 #include <llvm/ADT/StringRef.h>
 #include <llvm/ADT/Twine.h>
 #include <llvm/Support/raw_ostream.h>
-#include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Diagnostics.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Parser/Parser.h>
@@ -36,44 +53,45 @@ const mlir::DialectRegistry &mqssDialectRegistry() {
   static const auto &registry = buildDialectRegistry();
   return registry;
 }
+
 } // namespace
 
-// Implementation of the main "compile" interface.
+// Parses the MLIR file at `path` into a module.
+mlir::OwningOpRef<mlir::ModuleOp>
+mqss::MQSSCompiler::parseModuleFromFile(const std::filesystem::path &path,
+                                        mlir::MLIRContext &context) {
+  return mlir::parseSourceFile<mlir::ModuleOp>(path.string(), &context);
+}
+
+// Parses `source` (raw MLIR text already in memory) into a module.
+mlir::OwningOpRef<mlir::ModuleOp>
+mqss::MQSSCompiler::parseModuleFromSource(llvm::StringRef source,
+                                          mlir::MLIRContext &context) {
+  return mlir::parseSourceString<mlir::ModuleOp>(source, &context);
+}
+
+// Shared pipeline core used by both compile() and compileSource(): runs
+// optimization, qubit mapping, basis conversion, and lowering on an
+// already-parsed module.
 // Note: Currently only cudaq-quake dialect is supported
-std::optional<std::string> mqss::MQSSCompiler::compile(
-    const std::string &input_circuit_path, const std::string &backend_name,
+std::optional<std::string> mqss::MQSSCompiler::compileImpl(
+    mlir::OwningOpRef<mlir::ModuleOp> module, mlir::MLIRContext &context,
+    const std::string &backend_name,
     const std::vector<std::string> &native_gates,
     const std::unordered_map<int, int> &qubit_connectivity,
     const CompilerOptions &opts) {
-
-  // 1. Get the shared dialect registry and use it to create a fresh
-  // MLIRContext for this compilation. The context is deliberately not
-  // cached/reused across calls, so each compilation is isolated and one
-  // call's state can't leak into or bloat another's.
-  auto &registry = mqssDialectRegistry();
-  mlir::MLIRContext context(registry);
-  context.loadAllAvailableDialects();
-
-  // 2. Parse the MLIR file into a module
-  auto module =
-      mlir::parseSourceFile<mlir::ModuleOp>(input_circuit_path, &context);
-  if (!module) {
-    mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "failed to parse MLIR file");
-    return std::nullopt;
-  }
 
   // 3. Build a pass manager and add a preset optimization pipeline
   // Default pipeline is set to -O1.
   mlir::PassManager pm(&context);
   switch (opts.optimization_level) {
-  case 1:
+  case OptLevel::O1:
     mqss::opt::O1(pm);
     break;
-  case 2:
+  case OptLevel::O2:
     mqss::opt::O2(pm);
     break;
-  case 3:
+  case OptLevel::O3:
     mqss::opt::O3(pm);
     break;
   default:
@@ -131,43 +149,113 @@ std::optional<std::string> mqss::MQSSCompiler::compile(
   // 6. Lower the optimized module to OpenQASM 2 or QIR
   std::string result;
   llvm::raw_string_ostream os(result);
-  if (opts.result_type == "OpenQASM2")
+
+  switch (opts.result_type) {
+  // cudaq::translateToOpenQASM walks the module's full call graph and emits
+  // every non-entrypoint func::FuncOp as a "gate name(...) { ... }" block,
+  // whether or not anything in the final circuit still calls it. Strip these
+  // out so the returned OpenQASM2 is just the entry point's circuit body.
+  case OPENQASM2:
     pm.addPass(mqss::codegen::QuakeToQASM2Pass(os));
-  else if (opts.result_type.find("qir") != std::string::npos) {
-    auto convertto = tryProcessQIRLoweringOpts(opts.result_type);
+    if (mlir::failed(pm.run(*module))) {
+      mlir::emitError(mlir::UnknownLoc::get(&context),
+                      "Compiler: Conversion of Quake to QASM2 failed");
+      return std::nullopt;
+    }
+    result = stripSpuriousGateDefs(result);
+    break;
+  case QIR:
+  case QIRBASE:
+  case QIRADAPTIVE:
+  case QIRFULL: {
+    auto result_type_string = resulttype_tostring(opts.result_type);
+    auto convertto = tryProcessQIRLoweringOpts(result_type_string);
     if (!convertto) {
       mlir::emitError(module->getLoc(),
                       "invalid QIR lowering options: " + opts.result_type);
       return std::nullopt;
     }
     mqss::opt::QIRConversionPipeline(pm, *convertto, os);
-  } else {
+    if (mlir::failed(pm.run(*module))) {
+      mlir::emitError(mlir::UnknownLoc::get(&context),
+                      "Compiler: Conversion of Quake to " + result_type_string +
+                          " failed");
+      return std::nullopt;
+    }
+    break;
+  }
+  default:
     mlir::emitError(
         module->getLoc(),
         "Unsupported exchange format! Only OpenQASM2 and QIR supported!");
     return std::nullopt;
   }
 
-  if (mlir::failed(pm.run(*module))) {
+  return result;
+}
+
+// Parses the input circuit from a file on disk, then runs it through the
+// shared compileImpl() pipeline.
+// Note: Currently only cudaq-quake dialect is supported
+std::optional<std::string> mqss::MQSSCompiler::compile(
+    const std::filesystem::path &input_circuit_path,
+    const std::string &backend_name,
+    const std::vector<std::string> &native_gates,
+    const std::unordered_map<int, int> &qubit_connectivity,
+    const CompilerOptions &opts) {
+
+  // 1. Get the shared dialect registry and use it to create a fresh
+  // MLIRContext for this compilation. The context is deliberately not
+  // cached/reused across calls, so each compilation is isolated and one
+  // call's state can't leak into or bloat another's.
+  auto &registry = mqssDialectRegistry();
+  mlir::MLIRContext context(registry);
+  context.loadAllAvailableDialects();
+
+  // 2. Parse the MLIR file into a module.
+  auto module = parseModuleFromFile(input_circuit_path, context);
+  if (!module) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "Compiler: Conversion of Quake to " + opts.result_type +
-                        " failed");
+                    "failed to parse MLIR file");
     return std::nullopt;
   }
 
-  // cudaq::translateToOpenQASM walks the module's full call graph and emits
-  // every non-entrypoint func::FuncOp as a "gate name(...) { ... }" block,
-  // whether or not anything in the final circuit still calls it. Strip these
-  // out so the returned OpenQASM2 is just the entry point's circuit body.
-  if (opts.result_type == "OpenQASM2")
-    result = stripSpuriousGateDefs(result);
+  return compileImpl(std::move(module), context, backend_name, native_gates,
+                     qubit_connectivity, opts);
+}
 
-  return result;
+// Parses the input circuit from raw MLIR source text already in memory,
+// then runs it through the shared compileImpl() pipeline.
+// Note: Currently only cudaq-quake dialect is supported
+std::optional<std::string> mqss::MQSSCompiler::compileSource(
+    const std::string &input_circuit, const std::string &backend_name,
+    const std::vector<std::string> &native_gates,
+    const std::unordered_map<int, int> &qubit_connectivity,
+    const CompilerOptions &opts) {
+
+  // 1. Get the shared dialect registry and use it to create a fresh
+  // MLIRContext for this compilation. The context is deliberately not
+  // cached/reused across calls, so each compilation is isolated and one
+  // call's state can't leak into or bloat another's.
+  auto &registry = mqssDialectRegistry();
+  mlir::MLIRContext context(registry);
+  context.loadAllAvailableDialects();
+
+  // 2. Parse the MLIR source text into a module.
+  auto module = parseModuleFromSource(input_circuit, context);
+  if (!module) {
+    mlir::emitError(mlir::UnknownLoc::get(&context),
+                    "failed to parse MLIR source");
+    return std::nullopt;
+  }
+
+  return compileImpl(std::move(module), context, backend_name, native_gates,
+                     qubit_connectivity, opts);
 }
 
 // Removes any "gate ... { ... }" block from OpenQASM2 text emitted by
 // cudaq::translateToOpenQASM (see TranslateToOpenQASM.cpp) — see the comment
-// at the call site in compile() for why these blocks can be present.
+// at the call site in compileImpl() for why these blocks can be present.
 std::string mqss::MQSSCompiler::stripSpuriousGateDefs(const std::string &qasm) {
   std::istringstream stream(qasm);
   std::ostringstream result;

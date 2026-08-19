@@ -15,12 +15,8 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
+
 #include "Passes/CodeGen/CodeGenPasses.h"
 #include "Passes/Transforms/Dialects.h"
 #include "Passes/Transforms/Pipelines.h"

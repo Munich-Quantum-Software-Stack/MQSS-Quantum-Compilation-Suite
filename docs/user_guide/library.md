@@ -156,3 +156,16 @@ the library, you build the same `mlir::OpPassManager` and call the same factory 
 
 For the full list of available passes, their options, and valid option values, see
 [Passes](passes.md).
+
+## Testing the Interface
+
+`MQSSCompiler` has its own testing framework at
+`tests/unittests/MQSSCIInterfaces/test_Interface.cpp`. It builds automatically as part of the normal
+build (`scripts/build.sh` / `make target`) — run it with:
+
+```sh
+make test-interfaces
+```
+
+For what the interfaces testing framework covers and how to extend it, see
+[Testing the Interface](../develop-guide/integrate.md#testing-the-interface) in the developer guide.
