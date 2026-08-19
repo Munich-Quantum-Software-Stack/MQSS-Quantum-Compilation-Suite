@@ -82,8 +82,8 @@ CommonDecompositionPass(const CommonDecompositionPassOptions &options);
 std::unique_ptr<mlir::Pass>
 CommonReductionPass(const CommonReductionPassOptions &options);
 
-std::unique_ptr<mlir::Pass>
-CommonMappingPass(const std::unordered_map<int, int> &coupling_map);
+std::unique_ptr<mlir::Pass> CommonMappingPass(
+    const std::vector<std::pair<std::uint32_t, std::uint32_t>> &coupling_map);
 std::unique_ptr<mlir::Pass>
 CommonMappingPass(const CommonMappingPassOptions &options);
 

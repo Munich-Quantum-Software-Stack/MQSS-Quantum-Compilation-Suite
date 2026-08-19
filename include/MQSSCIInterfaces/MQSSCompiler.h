@@ -94,7 +94,8 @@ public:
   compile(const std::filesystem::path &input_circuit_path,
           const std::string &backend_name,
           const std::vector<std::string> &native_gates,
-          const std::unordered_map<int, int> &qubit_connectivity,
+          const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+              &qubit_connectivity,
           const CompilerOptions &opts);
 
   // Overloaded compile method for cases where only the backend name is
@@ -148,7 +149,8 @@ public:
   compileSource(const std::string &input_circuit,
                 const std::string &backend_name,
                 const std::vector<std::string> &native_gates,
-                const std::unordered_map<int, int> &qubit_connectivity,
+                const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+                    &qubit_connectivity,
                 const CompilerOptions &opts);
 
   // Overloaded compileSource method for cases where only the backend name is
@@ -203,7 +205,8 @@ private:
   compileImpl(mlir::OwningOpRef<mlir::ModuleOp> module,
               mlir::MLIRContext &context, const std::string &backend_name,
               const std::vector<std::string> &native_gates,
-              const std::unordered_map<int, int> &qubit_connectivity,
+              const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+                  &qubit_connectivity,
               const CompilerOptions &opts);
 
   static mlir::OwningOpRef<mlir::ModuleOp>

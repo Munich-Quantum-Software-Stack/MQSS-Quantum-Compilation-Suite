@@ -71,8 +71,9 @@ struct PipelineConfig {
     return config;
   };
 
-  static PipelineConfig
-  fromCustomCouplingMap(const std::unordered_map<int, int> &coupling_map) {
+  static PipelineConfig fromCustomCouplingMap(
+      const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+          &coupling_map) {
     PipelineConfig config;
     // Defining test architecture
     /*
@@ -160,7 +161,8 @@ private:
   }
 
   static CouplingMap
-  getCouplingMap(const std::unordered_map<int, int> &qubit_connectivity) {
+  getCouplingMap(const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+                     &qubit_connectivity) {
     CouplingMap cm;
     for (const auto &[src_id, dest_id] : qubit_connectivity) {
       cm.insert({src_id, dest_id});
@@ -402,7 +404,8 @@ public:
   // Default constructor (required for pass registry)
   CommonMapping() = default;
 
-  explicit CommonMapping(std::unordered_map<int, int> coupling_map)
+  explicit CommonMapping(
+      std::vector<std::pair<std::uint32_t, std::uint32_t>> coupling_map)
       : coupling_map(std::move(coupling_map)) {}
 
   // Forward the options constructor to the base
@@ -449,7 +452,7 @@ public:
   }
 
 private:
-  std::unordered_map<int, int> coupling_map;
+  std::vector<std::pair<std::uint32_t, std::uint32_t>> coupling_map;
 };
 
 } // namespace
@@ -464,6 +467,6 @@ mqss_backend::CommonMappingPass(const CommonMappingPassOptions &options) {
 }
 
 std::unique_ptr<mlir::Pass> mqss_backend::CommonMappingPass(
-    const std::unordered_map<int, int> &coupling_map) {
+    const std::vector<std::pair<std::uint32_t, std::uint32_t>> &coupling_map) {
   return std::make_unique<CommonMapping>(coupling_map);
 }

@@ -78,7 +78,8 @@ std::optional<std::string> mqss::MQSSCompiler::compileImpl(
     mlir::OwningOpRef<mlir::ModuleOp> module, mlir::MLIRContext &context,
     const std::string &backend_name,
     const std::vector<std::string> &native_gates,
-    const std::unordered_map<int, int> &qubit_connectivity,
+    const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+        &qubit_connectivity,
     const CompilerOptions &opts) {
 
   // 3. Build a pass manager and add a preset optimization pipeline
@@ -201,7 +202,8 @@ std::optional<std::string> mqss::MQSSCompiler::compile(
     const std::filesystem::path &input_circuit_path,
     const std::string &backend_name,
     const std::vector<std::string> &native_gates,
-    const std::unordered_map<int, int> &qubit_connectivity,
+    const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+        &qubit_connectivity,
     const CompilerOptions &opts) {
 
   // 1. Get the shared dialect registry and use it to create a fresh
@@ -230,7 +232,8 @@ std::optional<std::string> mqss::MQSSCompiler::compile(
 std::optional<std::string> mqss::MQSSCompiler::compileSource(
     const std::string &input_circuit, const std::string &backend_name,
     const std::vector<std::string> &native_gates,
-    const std::unordered_map<int, int> &qubit_connectivity,
+    const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+        &qubit_connectivity,
     const CompilerOptions &opts) {
 
   // 1. Get the shared dialect registry and use it to create a fresh
