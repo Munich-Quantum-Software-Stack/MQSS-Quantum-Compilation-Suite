@@ -20,12 +20,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 #include "Utils/DebugUtils.h"
 
-namespace mqssci::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONNORMALIZEARGANGLEPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqssci::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -33,7 +33,7 @@ using namespace llvm;
 namespace {
 
 struct CommonNormalizeArgAngle
-    : public mqssci::opt::impl::CommonNormalizeArgAnglePassBase<
+    : public mqss::mqssci::opt::impl::CommonNormalizeArgAnglePassBase<
           CommonNormalizeArgAngle> {
 
 public:
@@ -57,6 +57,6 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqssci::opt::CommonNormalizeArgAnglePass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonNormalizeArgAnglePass() {
   return std::make_unique<CommonNormalizeArgAngle>();
 }

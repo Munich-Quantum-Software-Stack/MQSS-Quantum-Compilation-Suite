@@ -33,11 +33,11 @@ std::filesystem::path kBellStateCircuit =
     MQSSCI_TEST_FIXTURE_DIR "/two_qubit_bell.qke";
 
 TEST(MQSSCIInterfacesTest, CompilesToOpenQASM2ForPlanqcBackend) {
-  mqssci::MQSSCompiler compiler;
+  mqss::mqssci::MQSSCompiler compiler;
 
-  mqssci::CompilerOptions opts;
-  opts.optimization_level = mqssci::OptLevel::O1;
-  opts.result_format = mqssci::ResultFormat::OPENQASM2;
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
 
   std::optional<std::string> qasm =
       compiler.compile(kBellStateCircuit, "planqc", opts);
@@ -88,11 +88,11 @@ TEST(MQSSCIInterfacesTest, CompilesToOpenQASM2ForPlanqcBackend) {
 }
 
 TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForSameCircuit) {
-  mqssci::MQSSCompiler compiler;
+  mqss::mqssci::MQSSCompiler compiler;
 
-  mqssci::CompilerOptions opts;
-  opts.optimization_level = mqssci::OptLevel::O1;
-  opts.result_format = mqssci::ResultFormat::OPENQASM2;
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
 
   std::ifstream fixture(kBellStateCircuit);
   ASSERT_TRUE(fixture.is_open());
@@ -116,11 +116,11 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForSameCircuit) {
 }
 
 TEST(MQSSCIInterfacesTest, CompileReturnsNulloptForUnsupportedBackend) {
-  mqssci::MQSSCompiler compiler;
+  mqss::mqssci::MQSSCompiler compiler;
 
-  mqssci::CompilerOptions opts;
-  opts.optimization_level = mqssci::OptLevel::O1;
-  opts.result_format = mqssci::ResultFormat::OPENQASM2;
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
 
   std::optional<std::string> qasm =
       compiler.compile(kBellStateCircuit, "not-a-real-backend", opts);
@@ -131,11 +131,11 @@ TEST(MQSSCIInterfacesTest, CompileReturnsNulloptForUnsupportedBackend) {
 }
 
 TEST(MQSSCIInterfacesTest, CompilesToQIRBaseForWmiBackend) {
-  mqssci::MQSSCompiler compiler;
+  mqss::mqssci::MQSSCompiler compiler;
 
-  mqssci::CompilerOptions opts;
-  opts.optimization_level = mqssci::OptLevel::O1;
-  opts.result_format = mqssci::ResultFormat::QIRBASE;
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::QIRBASE;
 
   std::optional<std::string> qir =
       compiler.compile(kBellStateCircuit, "wmi", opts);
@@ -181,11 +181,11 @@ TEST(MQSSCIInterfacesTest, CompilesToQIRBaseForWmiBackend) {
 }
 
 TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForQIRBase) {
-  mqssci::MQSSCompiler compiler;
+  mqss::mqssci::MQSSCompiler compiler;
 
-  mqssci::CompilerOptions opts;
-  opts.optimization_level = mqssci::OptLevel::O1;
-  opts.result_format = mqssci::ResultFormat::QIRBASE;
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::QIRBASE;
 
   std::ifstream fixture(kBellStateCircuit);
   ASSERT_TRUE(fixture.is_open());

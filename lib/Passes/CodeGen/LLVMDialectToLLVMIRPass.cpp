@@ -23,10 +23,10 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Utils/Error.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 
-namespace mqssci::codegen {
+namespace mqss::mqssci::codegen {
 #define GEN_PASS_DEF_LLVMDIALECTTOLLVMIRPASS
 #include "Passes/CodeGen/CodeGen.h.inc"
-} // namespace mqssci::codegen
+} // namespace mqss::mqssci::codegen
 
 using namespace mlir;
 using namespace llvm;
@@ -34,7 +34,7 @@ using namespace llvm;
 namespace {
 
 struct LLVMDialectToLLVMIR
-    : public mqssci::codegen::impl::LLVMDialectToLLVMIRPassBase<
+    : public mqss::mqssci::codegen::impl::LLVMDialectToLLVMIRPassBase<
           LLVMDialectToLLVMIR> {
 
 public:
@@ -66,11 +66,11 @@ private:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqssci::codegen::LLVMDialectToLLVMIRPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::codegen::LLVMDialectToLLVMIRPass() {
   return std::make_unique<LLVMDialectToLLVMIR>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqssci::codegen::LLVMDialectToLLVMIRPass(llvm::raw_ostream &os) {
+mqss::mqssci::codegen::LLVMDialectToLLVMIRPass(llvm::raw_ostream &os) {
   return std::make_unique<LLVMDialectToLLVMIR>(os);
 }

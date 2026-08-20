@@ -20,12 +20,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 #include "Utils/DebugUtils.h"
 
-namespace mqssci::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONGATECANCELLATIONPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqssci::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -33,7 +33,7 @@ using namespace llvm;
 namespace {
 
 struct CommonGateCancellation
-    : public mqssci::opt::impl::CommonGateCancellationPassBase<
+    : public mqss::mqssci::opt::impl::CommonGateCancellationPassBase<
           CommonGateCancellation> {
 
 public:
@@ -103,11 +103,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqssci::opt::CommonGateCancellationPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonGateCancellationPass() {
   return std::make_unique<CommonGateCancellation>();
 }
 
-std::unique_ptr<mlir::Pass> mqssci::opt::CommonGateCancellationPass(
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonGateCancellationPass(
     const CommonGateCancellationPassOptions &options) {
   return std::make_unique<CommonGateCancellation>(options);
 }

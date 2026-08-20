@@ -22,12 +22,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <llvm/ADT/StringSet.h>
 
-namespace mqssci::codegen {
+namespace mqss::mqssci::codegen {
 
 #define GEN_PASS_DEF_BASISCONVERSIONPASS
 #include "Passes/CodeGen/CodeGen.h.inc"
 
-} // namespace mqssci::codegen
+} // namespace mqss::mqssci::codegen
 
 using namespace mlir;
 
@@ -269,7 +269,8 @@ std::unordered_map<std::string, const DecompositionRule *> computeWitnesses(
 }
 
 struct BasisConversion
-    : public mqssci::codegen::impl::BasisConversionPassBase<BasisConversion> {
+    : public mqss::mqssci::codegen::impl::BasisConversionPassBase<
+          BasisConversion> {
 public:
   BasisConversion() = default;
 
@@ -335,11 +336,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqssci::codegen::BasisConversionPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::codegen::BasisConversionPass() {
   return std::make_unique<BasisConversion>();
 }
 
-std::unique_ptr<Pass> mqssci::codegen::createBasisConversionPass(
+std::unique_ptr<Pass> mqss::mqssci::codegen::createBasisConversionPass(
     const BasisConversionPassOptions &options) {
   return std::make_unique<BasisConversion>(options);
 }

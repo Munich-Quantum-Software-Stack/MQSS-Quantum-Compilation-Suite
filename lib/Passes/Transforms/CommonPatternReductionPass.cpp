@@ -20,12 +20,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 #include "Utils/DebugUtils.h"
 
-namespace mqssci::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONREDUCTIONPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqssci::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -70,7 +70,7 @@ struct SharedPassLogic {
 };
 
 struct CommonReduction
-    : public mqssci::opt::impl::CommonReductionPassBase<CommonReduction> {
+    : public mqss::mqssci::opt::impl::CommonReductionPassBase<CommonReduction> {
 
 public:
   // Default constructor (required for pass registry)
@@ -114,11 +114,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqssci::opt::CommonReductionPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonReductionPass() {
   return std::make_unique<CommonReduction>();
 }
 
-std::unique_ptr<mlir::Pass>
-mqssci::opt::CommonReductionPass(const CommonReductionPassOptions &options) {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonReductionPass(
+    const CommonReductionPassOptions &options) {
   return std::make_unique<CommonReduction>(options);
 }

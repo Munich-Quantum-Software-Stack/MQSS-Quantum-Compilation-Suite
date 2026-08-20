@@ -25,12 +25,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <llvm/Support/raw_ostream.h>
 #include <utility>
 
-namespace mqssci::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONMAPPINGPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqssci::opt
+} // namespace mqss::mqssci::opt
 
 using namespace llvm;
 using namespace qc;
@@ -398,7 +398,7 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
 }
 
 struct CommonMapping
-    : public mqssci::opt::impl::CommonMappingPassBase<CommonMapping> {
+    : public mqss::mqssci::opt::impl::CommonMappingPassBase<CommonMapping> {
 
 public:
   // Default constructor (required for pass registry)
@@ -457,16 +457,16 @@ private:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqssci::opt::CommonMappingPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonMappingPass() {
   return std::make_unique<CommonMapping>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqssci::opt::CommonMappingPass(const CommonMappingPassOptions &options) {
+mqss::mqssci::opt::CommonMappingPass(const CommonMappingPassOptions &options) {
   return std::make_unique<CommonMapping>(options);
 }
 
-std::unique_ptr<mlir::Pass> mqssci::opt::CommonMappingPass(
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonMappingPass(
     const std::vector<std::pair<std::uint32_t, std::uint32_t>> &coupling_map) {
   return std::make_unique<CommonMapping>(coupling_map);
 }

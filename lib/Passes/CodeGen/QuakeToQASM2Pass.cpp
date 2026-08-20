@@ -22,12 +22,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "cudaq/Optimizer/CodeGen/OpenQASMEmitter.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 
-namespace mqssci::codegen {
+namespace mqss::mqssci::codegen {
 
 #define GEN_PASS_DEF_QUAKETOQASM2PASS
 #include "Passes/CodeGen/CodeGen.h.inc"
 
-} // namespace mqssci::codegen
+} // namespace mqss::mqssci::codegen
 
 using namespace mlir;
 using namespace llvm;
@@ -35,7 +35,7 @@ using namespace llvm;
 namespace {
 
 struct QuakeToQASM2
-    : public mqssci::codegen::impl::QuakeToQASM2PassBase<QuakeToQASM2> {
+    : public mqss::mqssci::codegen::impl::QuakeToQASM2PassBase<QuakeToQASM2> {
 
 public:
   QuakeToQASM2() = default;
@@ -55,11 +55,11 @@ private:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqssci::codegen::QuakeToQASM2Pass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::codegen::QuakeToQASM2Pass() {
   return std::make_unique<QuakeToQASM2>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqssci::codegen::QuakeToQASM2Pass(llvm::raw_ostream &os) {
+mqss::mqssci::codegen::QuakeToQASM2Pass(llvm::raw_ostream &os) {
   return std::make_unique<QuakeToQASM2>(os);
 }

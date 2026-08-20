@@ -52,7 +52,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 #define CUDAQ_PREFIX_FUNCTION "__nvqpp__mlirgen__"
 
-namespace mqssci::opt {
+namespace mqss::mqssci::opt {
 
 // Gate Pattern Cancellation passes
 std::unique_ptr<mlir::Pass> CommonGateCancellationPass();
@@ -87,7 +87,7 @@ std::unique_ptr<mlir::Pass> CommonMappingPass(
 std::unique_ptr<mlir::Pass>
 CommonMappingPass(const CommonMappingPassOptions &options);
 
-} // namespace mqssci::opt
+} // namespace mqss::mqssci::opt
 
 #define GEN_PASS_REGISTRATION
 #include "Passes/Transforms/Transforms.h.inc"

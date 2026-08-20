@@ -20,12 +20,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 #include "Utils/DebugUtils.h"
 
-namespace mqssci::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONCOMMUTEPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqssci::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -86,7 +86,7 @@ struct SharedPassLogic {
  **/
 
 struct CommonCommute
-    : public mqssci::opt::impl::CommonCommutePassBase<CommonCommute> {
+    : public mqss::mqssci::opt::impl::CommonCommutePassBase<CommonCommute> {
 
 public:
   // Default constructor (required for pass registry)
@@ -132,11 +132,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqssci::opt::CommonCommutePass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonCommutePass() {
   return std::make_unique<CommonCommute>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqssci::opt::CommonCommutePass(const CommonCommutePassOptions &options) {
+mqss::mqssci::opt::CommonCommutePass(const CommonCommutePassOptions &options) {
   return std::make_unique<CommonCommute>(options);
 }

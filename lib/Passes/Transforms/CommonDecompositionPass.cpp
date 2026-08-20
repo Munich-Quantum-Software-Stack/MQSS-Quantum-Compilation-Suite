@@ -22,12 +22,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cmath>
 
-namespace mqssci::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONDECOMPOSITIONPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqssci::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -83,7 +83,7 @@ struct SharedPassLogic {
 };
 
 struct CommonDecomposition
-    : public mqssci::opt::impl::CommonDecompositionPassBase<
+    : public mqss::mqssci::opt::impl::CommonDecompositionPassBase<
           CommonDecomposition> {
 
 public:
@@ -138,11 +138,11 @@ private:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqssci::opt::CommonDecompositionPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonDecompositionPass() {
   return std::make_unique<CommonDecomposition>();
 }
 
-std::unique_ptr<mlir::Pass> mqssci::opt::CommonDecompositionPass(
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonDecompositionPass(
     const CommonDecompositionPassOptions &options) {
   return std::make_unique<CommonDecomposition>(options);
 }

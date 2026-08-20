@@ -32,18 +32,18 @@ rest of this page assumes that step is done and focuses purely on the C++ side.
 
 ## A Minimal Example
 
-`mqssci::MQSSCompiler` is the simplest way to compile a circuit: one header, one class, one call. It
-hides dialect registration, MLIR context setup, and pipeline assembly behind a single `compile`
-call.
+`mqss::mqssci::MQSSCompiler` is the simplest way to compile a circuit: one header, one class, one
+call. It hides dialect registration, MLIR context setup, and pipeline assembly behind a single
+`compile` call.
 
 ```cpp
 #include "MQSSCIInterfaces/MQSSCompiler.h"
 
-mqssci::MQSSCompiler compiler;
+mqss::mqssci::MQSSCompiler compiler;
 
-mqssci::CompilerOptions opts;
-opts.optimization_level = mqssci::OptLevel::O1;        // O1, O2, or O3 — selects the preset pipeline
-opts.result_format = mqssci::ResultFormat::OPENQASM2;  // or QIR, QIRBASE, QIRADAPTIVE, QIRFULL
+mqss::mqssci::CompilerOptions opts;
+opts.optimization_level = mqss::mqssci::OptLevel::O1;        // O1, O2, or O3 — selects the preset pipeline
+opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;  // or QIR, QIRBASE, QIRADAPTIVE, QIRFULL
 
 std::optional<std::string> qasm = compiler.compile("path/to/circuit.qke", "planqc", opts); // Use compileSource() to parse source string
 if (!qasm) {
@@ -58,10 +58,11 @@ llvm::outs() << *qasm;
 Walking through it:
 
 1. `#include "MQSSCIInterfaces/MQSSCompiler.h"` is the only header you need for this path.
-2. `mqssci::CompilerOptions` configures the run: `optimization_level` selects the `O1`/`O2`/`O3`
-   preset pipeline (see [Pass Pipelines](passes.md#pass-pipelines) for what each includes), and
-   `result_format` selects the output format — one of the `mqssci::ResultFormat` enumerators:
-   `OPENQASM2`, `QIR`, `QIRBASE`, `QIRADAPTIVE`, or `QIRFULL`.
+2. `mqss::mqssci::CompilerOptions` configures the run: `optimization_level` selects the
+   `O1`/`O2`/`O3` preset pipeline (see [Pass Pipelines](passes.md#pass-pipelines) for what each
+   includes), and `result_format` selects the output format — one of the
+   `mqss::mqssci::ResultFormat` enumerators: `OPENQASM2`, `QIR`, `QIRBASE`, `QIRADAPTIVE`, or
+   `QIRFULL`.
 3. The second argument to `compile` (`"planqc"` above) is a known backend name that selects a
    built-in native-gate set for decomposition. See [Choosing a Backend](#choosing-a-backend) below
    for the alternatives.
@@ -99,10 +100,10 @@ connectivity. See `MQSSCIInterfaces/MQSSCompiler.h` for all four `compile` overl
 ## Discovering Supported Input Formats
 
 `MQSSCompiler::getSupportedInputFormats()` is a static method that returns the display name of every
-input format MQSSCI's `mqssci::InputFormat` enum defines:
+input format MQSSCI's `mqss::mqssci::InputFormat` enum defines:
 
 ```cpp
-for (std::string_view name : mqssci::MQSSCompiler::getSupportedInputFormats()) {
+for (std::string_view name : mqss::mqssci::MQSSCompiler::getSupportedInputFormats()) {
   llvm::outs() << name << "\n";
 }
 ```
@@ -125,7 +126,7 @@ down to the same `mlir::OpPassManager`-based API `MQSSCompiler` itself is built 
 #include "Passes/CodeGen/CodeGenPasses.h"
 
 // 1. Get an MLIRContext with every dialect MQSSCI's passes need already loaded.
-std::unique_ptr<mlir::MLIRContext> context = mqssci::opt::createMQSSContext();
+std::unique_ptr<mlir::MLIRContext> context = mqss::mqssci::opt::createMQSSContext();
 
 // 2. Parse your MLIR file into a module
 auto module = mlir::parseSourceFile<mlir::ModuleOp>("path/to/file", context.get());
@@ -149,14 +150,14 @@ if (mlir::failed(pm.run(*module))) {
 }
 
 // 4. Lower the optimized module to OpenQASM 2
-pm.addPass(mqssci::codegen::QuakeToQASM2Pass());
+pm.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass());
 if (mlir::failed(pm.run(*module))) {
   llvm::errs() << "Compiler: Conversion of Quake to QASM2 failed\n";
 }
 ```
 
-`mqssci::opt::createMQSSContext()` is a convenience that registers every MQSSCI dialect and returns
-a ready-to-use `MLIRContext` in one call — equivalent to building a `DialectRegistry` with
+`mqss::mqssci::opt::createMQSSContext()` is a convenience that registers every MQSSCI dialect and
+returns a ready-to-use `MLIRContext` in one call — equivalent to building a `DialectRegistry` with
 `registerMQSSDialects`, constructing an `MLIRContext` from it, and calling
 `loadAllAvailableDialects()` yourself.
 
@@ -166,7 +167,7 @@ also accepts an `llvm::raw_ostream&`:
 ```cpp
 std::string qasm;
 llvm::raw_string_ostream os(qasm);
-pm.addPass(mqssci::codegen::QuakeToQASM2Pass(os));
+pm.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
 ```
 
 For the full list of available passes, their options, and valid option values, see

@@ -27,12 +27,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 using namespace mlir;
 
-void mqssci::opt::O1(mlir::OpPassManager &pm) {
+void mqss::mqssci::opt::O1(mlir::OpPassManager &pm) {
   pm.addPass(createCSEPass());
   pm.addPass(createCanonicalizerPass());
 }
 
-void mqssci::opt::O2(mlir::OpPassManager &pm) {
+void mqss::mqssci::opt::O2(mlir::OpPassManager &pm) {
 
   // MQSS MLIR Passes
   CommonGateCancellationPassOptions CancelOpts;
@@ -49,20 +49,20 @@ void mqssci::opt::O2(mlir::OpPassManager &pm) {
   pm.addPass(createCanonicalizerPass());
 }
 
-void mqssci::opt::O3(mlir::OpPassManager &pm) {
+void mqss::mqssci::opt::O3(mlir::OpPassManager &pm) {
 
   pm.addPass(createCSEPass());
   pm.addPass(createCanonicalizerPass());
 }
 
-void mqssci::opt::QIRConversionPipeline(mlir::OpPassManager &pm,
-                                        const std::string &convertTo,
-                                        llvm::raw_ostream &os) {
+void mqss::mqssci::opt::QIRConversionPipeline(mlir::OpPassManager &pm,
+                                              const std::string &convertTo,
+                                              llvm::raw_ostream &os) {
 
   addQIRConversionPipeline(pm, convertTo);
   // pm.addPass(cudaq::opt::createReturnToOutputLog(opts));
   //  pm.addPass(createConvertMathToFuncs());
   pm.addPass(createSymbolDCEPass());
   pm.addPass(cudaq::opt::createCCToLLVM());
-  pm.addPass(mqssci::codegen::LLVMDialectToLLVMIRPass(os));
+  pm.addPass(mqss::mqssci::codegen::LLVMDialectToLLVMIRPass(os));
 }

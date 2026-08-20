@@ -22,7 +22,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
 
-namespace mqssci::opt {
+namespace mqss::mqssci::opt {
 
 // Registers every dialect and dialect-translation the MQSS passes operate on
 // or lower into (Quake, Catalyst-quantum, standard MLIR dialects, LLVM
@@ -33,4 +33,4 @@ void registerMQSSDialects(mlir::DialectRegistry &registry);
 // returns a ready-to-use MLIRContext with all dialects loaded.
 std::unique_ptr<mlir::MLIRContext> createMQSSContext();
 
-} // namespace mqssci::opt
+} // namespace mqss::mqssci::opt

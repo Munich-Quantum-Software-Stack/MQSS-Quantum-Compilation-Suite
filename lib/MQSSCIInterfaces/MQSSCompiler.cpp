@@ -42,7 +42,7 @@ namespace {
 // mqssDialectRegistry() so the latter can lazily construct it exactly once.
 mlir::DialectRegistry buildDialectRegistry() {
   mlir::DialectRegistry registry;
-  mqssci::opt::registerMQSSDialects(registry);
+  mqss::mqssci::opt::registerMQSSDialects(registry);
   return registry;
 };
 
@@ -58,15 +58,15 @@ const mlir::DialectRegistry &mqssDialectRegistry() {
 
 // Parses the MLIR file at `path` into a module.
 mlir::OwningOpRef<mlir::ModuleOp>
-mqssci::MQSSCompiler::parseModuleFromFile(const std::filesystem::path &path,
-                                          mlir::MLIRContext &context) {
+mqss::mqssci::MQSSCompiler::parseModuleFromFile(
+    const std::filesystem::path &path, mlir::MLIRContext &context) {
   return mlir::parseSourceFile<mlir::ModuleOp>(path.string(), &context);
 }
 
 // Parses `source` (raw MLIR text already in memory) into a module.
 mlir::OwningOpRef<mlir::ModuleOp>
-mqssci::MQSSCompiler::parseModuleFromSource(llvm::StringRef source,
-                                            mlir::MLIRContext &context) {
+mqss::mqssci::MQSSCompiler::parseModuleFromSource(llvm::StringRef source,
+                                                  mlir::MLIRContext &context) {
   return mlir::parseSourceString<mlir::ModuleOp>(source, &context);
 }
 
@@ -74,7 +74,7 @@ mqssci::MQSSCompiler::parseModuleFromSource(llvm::StringRef source,
 // optimization, qubit mapping, basis conversion, and lowering on an
 // already-parsed module.
 // Note: Currently only cudaq-quake dialect is supported
-std::optional<std::string> mqssci::MQSSCompiler::compileImpl(
+std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     mlir::OwningOpRef<mlir::ModuleOp> module, mlir::MLIRContext &context,
     const std::string &backend_name,
     const std::vector<std::string> &native_gates,
@@ -87,16 +87,16 @@ std::optional<std::string> mqssci::MQSSCompiler::compileImpl(
   mlir::PassManager pm(&context);
   switch (opts.optimization_level) {
   case OptLevel::O1:
-    mqssci::opt::O1(pm);
+    mqss::mqssci::opt::O1(pm);
     break;
   case OptLevel::O2:
-    mqssci::opt::O2(pm);
+    mqss::mqssci::opt::O2(pm);
     break;
   case OptLevel::O3:
-    mqssci::opt::O3(pm);
+    mqss::mqssci::opt::O3(pm);
     break;
   default:
-    mqssci::opt::O1(pm);
+    mqss::mqssci::opt::O1(pm);
     break;
   }
 
@@ -106,7 +106,7 @@ std::optional<std::string> mqssci::MQSSCompiler::compileImpl(
   }
 
   // 4. Perform Qubit Mapping
-  pm.addPass(mqssci::opt::CommonMappingPass(qubit_connectivity));
+  pm.addPass(mqss::mqssci::opt::CommonMappingPass(qubit_connectivity));
   if (mlir::failed(pm.run(*module))) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
                     "Compiler: Qubit Mapping failed!");
@@ -133,7 +133,7 @@ std::optional<std::string> mqssci::MQSSCompiler::compileImpl(
       return std::nullopt;
     }
 
-    pm.addPass(mqssci::codegen::createBasisConversionPass(conv_opts));
+    pm.addPass(mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
 
   } else if (!native_gates.empty()) {
     for (unsigned i = 0; i < native_gates.size(); i++) {
@@ -141,7 +141,7 @@ std::optional<std::string> mqssci::MQSSCompiler::compileImpl(
       if (i != native_gates.size() - 1)
         conv_opts.gates += ",";
     }
-    pm.addPass(mqssci::codegen::createBasisConversionPass(conv_opts));
+    pm.addPass(mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
   } else {
     MQSS_DEBUG("No back-end name or native gate-set provided! Skipping "
                "BasisConversion!");
@@ -157,7 +157,7 @@ std::optional<std::string> mqssci::MQSSCompiler::compileImpl(
   // whether or not anything in the final circuit still calls it. Strip these
   // out so the returned OpenQASM2 is just the entry point's circuit body.
   case OPENQASM2:
-    pm.addPass(mqssci::codegen::QuakeToQASM2Pass(os));
+    pm.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pm.run(*module))) {
       mlir::emitError(mlir::UnknownLoc::get(&context),
                       "Compiler: Conversion of Quake to QASM2 failed");
@@ -176,7 +176,7 @@ std::optional<std::string> mqssci::MQSSCompiler::compileImpl(
                       "invalid QIR lowering options: " + opts.result_format);
       return std::nullopt;
     }
-    mqssci::opt::QIRConversionPipeline(pm, *convertto, os);
+    mqss::mqssci::opt::QIRConversionPipeline(pm, *convertto, os);
     if (mlir::failed(pm.run(*module))) {
       mlir::emitError(mlir::UnknownLoc::get(&context),
                       "Compiler: Conversion of Quake to " + result_type_string +
@@ -198,7 +198,7 @@ std::optional<std::string> mqssci::MQSSCompiler::compileImpl(
 // Parses the input circuit from a file on disk, then runs it through the
 // shared compileImpl() pipeline.
 // Note: Currently only cudaq-quake dialect is supported
-std::optional<std::string> mqssci::MQSSCompiler::compile(
+std::optional<std::string> mqss::mqssci::MQSSCompiler::compile(
     const std::filesystem::path &input_circuit_path,
     const std::string &backend_name,
     const std::vector<std::string> &native_gates,
@@ -229,7 +229,7 @@ std::optional<std::string> mqssci::MQSSCompiler::compile(
 // Parses the input circuit from raw MLIR source text already in memory,
 // then runs it through the shared compileImpl() pipeline.
 // Note: Currently only cudaq-quake dialect is supported
-std::optional<std::string> mqssci::MQSSCompiler::compileSource(
+std::optional<std::string> mqss::mqssci::MQSSCompiler::compileSource(
     const std::string &input_circuit, const std::string &backend_name,
     const std::vector<std::string> &native_gates,
     const std::vector<std::pair<std::uint32_t, std::uint32_t>>
@@ -260,7 +260,7 @@ std::optional<std::string> mqssci::MQSSCompiler::compileSource(
 // cudaq::translateToOpenQASM (see TranslateToOpenQASM.cpp) — see the comment
 // at the call site in compileImpl() for why these blocks can be present.
 std::string
-mqssci::MQSSCompiler::stripSpuriousGateDefs(const std::string &qasm) {
+mqss::mqssci::MQSSCompiler::stripSpuriousGateDefs(const std::string &qasm) {
   std::istringstream stream(qasm);
   std::ostringstream result;
   std::string line;
