@@ -24,7 +24,7 @@ jobs:
       - name: Cache CMake build directory
         uses: actions/cache@v4
         with:
-          path: build
+          path: build/_deps
           key:
             build-${{ runner.os }}-${{ hashFiles('.devcontainer/Dockerfile', 'CMakeLists.txt',
             'cmake/**') }}
@@ -52,6 +52,7 @@ jobs:
             -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
+              git config --global --add safe.directory "*"
               make build
               make target
             '
@@ -65,4 +66,5 @@ jobs:
             bash -lc '
             export PATH="/workspaces/MQSS-Quantum-Compilation-Suite/build/bin:$PATH"
             which mqss-opt
-            make test-dialects '
+            make test-dialects
+            make test-interfaces '

@@ -50,7 +50,7 @@ dialect to the MQSS Quantum Compilation Suite
         Normalize Arg angle of RX, RY, RZ gates.
       }];
 
-      let constructor = "mqss::opt::CommonNormalizeArgAnglePass()";
+      let constructor = "mqss::mqssci::opt::CommonNormalizeArgAnglePass()";
     }
 
   ```
@@ -66,7 +66,7 @@ dialect to the MQSS Quantum Compilation Suite
     ];
     ```
 
-  - In `Transforms.h` within the `mqss::opt` namespace, the following should be added:
+  - In `Transforms.h` within the `mqss::mqssci::opt` namespace, the following should be added:
 
     ```sh
        std::unique_ptr<mlir::Pass> CommonNormalizeArgAnglePass();
@@ -86,12 +86,12 @@ A basic pass structure is as shown:
       using namespace mlir;
       using namespace llvm;
 
-      namespace mqss::opt {
+      namespace mqss::mqssci::opt {
 
       #define GEN_PASS_DEF_COMMONCNOTREVERSEPASS
       #include "Passes/Transforms/Transforms.h.inc"
 
-      } // namespace mqss::opt
+      } // namespace mqss::mqssci::opt
 
      namespace {
 

@@ -33,7 +33,7 @@ def CommonGateCancellationPass : Pass<"CommonGateCancellationPass", "mlir::Modul
           This pass can also remove the gates RX, RZ, RZ having NULL rotation angles.
   }];
 
-  let constructor = "mqss::opt::CommonGateCancellationPass()";
+  let constructor = "mqss::mqssci::opt::CommonGateCancellationPass()";
 
   let options = [
     Option<"mode", "mode", "std::string",
@@ -44,7 +44,7 @@ def CommonGateCancellationPass : Pass<"CommonGateCancellationPass", "mlir::Modul
 
 def CommonCommutePass : Pass<"CommonCommutePass", "mlir::ModuleOp"> {
   let summary = "This pass searches commutes gates that match a specific pattern.";
-  let constructor = "mqss::opt::CommonCommutePass()";
+  let constructor = "mqss::mqssci::opt::CommonCommutePass()";
 
   let description = [{
           This pass searches for the gate Op pattern GATE1 followed by GATE2 and commutes them i.e
@@ -72,7 +72,7 @@ def CommonSwitchPass : Pass<"CommonSwitchPass", "mlir::ModuleOp"> {
     or H...Pauli{X,Y,Z} -> Pauli{X,Y,Z}..H.
   }];
 
- let constructor = "mqss::opt::CommonSwitchPass()";
+ let constructor = "mqss::mqssci::opt::CommonSwitchPass()";
 
   let options = [
     Option<"mode", "mode", "std::string",
@@ -89,7 +89,7 @@ def CommonReductionPass : Pass<"CommonReductionPass", "mlir::ModuleOp"> {
     Supported modes: {HZH} -> X, {HXH} -> Z, {SAdjZ} -> S or {SZ} -> SAdj.
   }];
 
- let constructor = "mqss::opt::CommonReductionPass()";
+ let constructor = "mqss::mqssci::opt::CommonReductionPass()";
 
   let options = [
     Option<"mode", "mode", "std::string",
@@ -106,12 +106,12 @@ def CommonDecompositionPass : Pass<"CommonDecompositionPass", "mlir::ModuleOp"> 
         "two-qubits CNot gate in a circuit
   }];
 
- let constructor = "mqss::opt::CommonDecompositionPass()";
+ let constructor = "mqss::mqssci::opt::CommonDecompositionPass()";
   let dependentDialects = ["mlir::arith::ArithDialect"];
 
   let options = [
     Option<"mode", "mode", "std::string",
-      /*default=*//*default=*/"\"CxToHCzH\"", "Select PassMode CxToHCzH ,CzToHCxH or ReverseCx.">,
+      /*default=*//*default=*/"\"CxToHCzH\"", "Select PassMode CxToHCzH, CzToHCxH, HToRzXRz, CHToCX.">,
   ];
 }
 
@@ -123,7 +123,7 @@ def CommonCNOTReversePass : Pass<"CommonCNOTReversePass", "mlir::ModuleOp"> {
        Reverse the control and targets of each CNot gate in a circuit.
   }];
 
- let constructor = "mqss::opt::CommonCNOTReversePass()";
+ let constructor = "mqss::mqssci::opt::CommonCNOTReversePass()";
 }
 
 def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::ModuleOp"> {
@@ -133,7 +133,7 @@ def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::Mod
     Normalize Arg angle of RX, RY, RZ gates.
   }];
 
- let constructor = "mqss::opt::CommonNormalizeArgAnglePass()";
+ let constructor = "mqss::mqssci::opt::CommonNormalizeArgAnglePass()";
 }
 
 
@@ -152,5 +152,5 @@ def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
            "QDMI device name.">,
   ];
 
- let constructor = "mqss::opt::CommonMappingPass()";
+ let constructor = "mqss::mqssci::opt::CommonMappingPass()";
 }

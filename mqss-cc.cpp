@@ -15,12 +15,8 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
+
 #include "Passes/CodeGen/CodeGenPasses.h"
 #include "Passes/Transforms/Dialects.h"
 #include "Passes/Transforms/Pipelines.h"
@@ -48,17 +44,17 @@ struct ToQirPipelineOptions
     : public mlir::PassPipelineOptions<ToQirPipelineOptions> {
   Option<std::string> profile{
       *this, "profile",
-      llvm::cl::desc(
-          "Target transport layer format, <name[:version[:suboptions]]>. Valid "
-          "names: \"qir\", \"base\", \"adaptive\", \"full\". version: \"2.0\", "
-          "\"2.1\", [Default: \"qir:2.0\"]"),
-      llvm::cl::init("base:2.0")};
+      llvm::cl::desc("Target transport layer format, <name:version>. Valid "
+                     "names: \"qir\", \"qir-base\", \"qir-adaptive\", "
+                     "\"qir-full\". version: \"2.0\", "
+                     "\"2.1\", [Default: \"qir-base:2.0\"]"),
+      llvm::cl::init("qir-base:2.0")};
 };
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
 
-  mqss::opt::registerMQSSDialects(registry);
+  mqss::mqssci::opt::registerMQSSDialects(registry);
 
   // Register Dialect Agnostic Passes
   registerMQSSTransformsPasses();
@@ -78,7 +74,7 @@ int main(int argc, char **argv) {
       "MQSS-O1 optimization pipeline", // description
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::opt::O1(pm);
+        mqss::mqssci::opt::O1(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
@@ -89,7 +85,7 @@ int main(int argc, char **argv) {
       "MQSS-O2 optimization pipeline", // description
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::opt::O2(pm);
+        mqss::mqssci::opt::O2(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
@@ -100,7 +96,7 @@ int main(int argc, char **argv) {
       "MQSS-O3 optimization pipeline", // description
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::opt::O3(pm);
+        mqss::mqssci::opt::O3(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
@@ -110,34 +106,8 @@ int main(int argc, char **argv) {
   mlir::PassPipelineRegistration<ToQirPipelineOptions>(
       "lower-quake-to-qir", "MQSS Quake to QIR Conversion pipeline",
       [](mlir::OpPassManager &pm, const ToQirPipelineOptions &opts) {
-        // Split "name[:version[:suboptions]]" on ':'
-        llvm::SmallVector<llvm::StringRef, 3> parts;
-        llvm::StringRef(opts.profile).split(parts, ':', /*MaxSplit=*/2);
-
-        llvm::StringRef name = parts.size() > 0 ? parts[0] : "qir";
-        llvm::StringRef version = parts.size() > 1 ? parts[1] : "2.0";
-        llvm::StringRef suboptions = parts.size() > 2 ? parts[2] : "";
-
-        // Validate name
-        if (name != "qir" && name != "base" && name != "adaptive" &&
-            name != "full") {
-          llvm::report_fatal_error("invalid QIR profile name '" + Twine(name) +
-                                   "'; expected 'base', 'adaptive', or 'full'");
-        }
-        // Validate version
-        if (version != "2.0" && version != "2.1") {
-          llvm::report_fatal_error("invalid QIR version '" + Twine(version) +
-                                   "'; expected '2.0' or '2.1'");
-        }
-
-        std::string separator = "-";
-        if (name == "qir") {
-          separator = "";
-          name = "";
-        }
-        std::string convertto =
-            ("qir" + separator + name + ":" + version).str();
-        mqss::opt::QIRConversionPipeline(pm, convertto);
+        auto convertto = processQIRLoweringOpts(opts.profile);
+        mqss::mqssci::opt::QIRConversionPipeline(pm, convertto);
       });
 
   return mlir::asMainReturnCode(

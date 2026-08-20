@@ -15,30 +15,25 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
 
 #include "Passes/Transforms/PassUtils.h"
-#include "Utils/debug_utils.h"
+#include "Utils/DebugUtils.h"
 
-namespace mqss::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONGATECANCELLATIONPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
 
 namespace {
 
-class CommonGateCancellation
-    : public mqss_backend::impl::CommonGateCancellationPassBase<
+struct CommonGateCancellation
+    : public mqss::mqssci::opt::impl::CommonGateCancellationPassBase<
           CommonGateCancellation> {
 
 public:
@@ -108,11 +103,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::CommonGateCancellationPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonGateCancellationPass() {
   return std::make_unique<CommonGateCancellation>();
 }
 
-std::unique_ptr<mlir::Pass> mqss_backend::createCommonGateCancellationPass(
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonGateCancellationPass(
     const CommonGateCancellationPassOptions &options) {
   return std::make_unique<CommonGateCancellation>(options);
 }

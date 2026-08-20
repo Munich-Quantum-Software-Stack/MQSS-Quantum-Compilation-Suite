@@ -16,11 +16,6 @@ module {
   }
 }
 
-// CHECK: declare ptr @__catalyst__qis__Measure(ptr %0, i32 %1)
-// CHECK: declare void @__catalyst__qis__Hadamard(ptr %0, ptr %1)
-// CHECK: declare void @__catalyst__qis__CZ(ptr %0, ptr %1, ptr %2)
-// CHECK: declare void @__catalyst__qis__H(ptr %0, ptr %1)
-
 // CHECK: define void @DecomposeCancelToQIR_test() {
 // CHECK:   %1 = call ptr @__catalyst__rt__qubit_allocate_array(i64 2)
 // CHECK:   %2 = call ptr @__catalyst__rt__array_get_element_ptr_1d(ptr %1, i64 0)

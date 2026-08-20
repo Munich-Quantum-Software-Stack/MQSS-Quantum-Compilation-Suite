@@ -15,12 +15,8 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
+
 /** @file
  * @brief
  * @details This header defines the three optimization levels supported by the
@@ -40,8 +36,10 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/Transforms/Passes.h"
 
 #include <llvm/ADT/StringRef.h>
+#include <llvm/Support/raw_ostream.h>
+#include <string>
 
-namespace mqss::opt {
+namespace mqss::mqssci::opt {
 /**
   @brief Function defining the optimization level `O1`.
   @details This functions appends to a `mlir::PassManager` the list of passes
@@ -67,5 +65,6 @@ void O2(mlir::OpPassManager &pm);
 */
 void O3(mlir::OpPassManager &pm);
 void QIRConversionPipeline(mlir::OpPassManager &pm,
-                           llvm::StringRef qir_version);
-} // namespace mqss::opt
+                           const std::string &qir_version,
+                           llvm::raw_ostream &os = llvm::outs());
+} // namespace mqss::mqssci::opt

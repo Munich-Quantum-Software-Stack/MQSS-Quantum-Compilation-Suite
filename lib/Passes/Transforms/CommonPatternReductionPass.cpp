@@ -15,22 +15,17 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
 
 #include "Passes/Transforms/PassUtils.h"
-#include "Utils/debug_utils.h"
+#include "Utils/DebugUtils.h"
 
-namespace mqss::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONREDUCTIONPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -74,8 +69,8 @@ struct SharedPassLogic {
   }
 };
 
-class CommonReduction
-    : public mqss_backend::impl::CommonReductionPassBase<CommonReduction> {
+struct CommonReduction
+    : public mqss::mqssci::opt::impl::CommonReductionPassBase<CommonReduction> {
 
 public:
   // Default constructor (required for pass registry)
@@ -119,11 +114,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::CommonReductionPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonReductionPass() {
   return std::make_unique<CommonReduction>();
 }
 
-std::unique_ptr<mlir::Pass> mqss_backend::createCommonReductionPass(
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonReductionPass(
     const CommonReductionPassOptions &options) {
   return std::make_unique<CommonReduction>(options);
 }

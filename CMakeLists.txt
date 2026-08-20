@@ -60,6 +60,7 @@ find_package(CUDAQ REQUIRED)
 find_package(Catalyst REQUIRED)
 find_package(qdmi REQUIRED)
 find_package(mqt-qmap REQUIRED)
+find_package(GTest REQUIRED)
 # Restore the original CXX flags and compiler
 set(CMAKE_CXX_STANDARD 20)
 
@@ -113,8 +114,10 @@ set_target_properties(mqss-cudaq-headers PROPERTIES FOLDER "Misc")
 add_subdirectory(include)
 add_subdirectory(lib)
 
-# Adding the Passes as an external library
-add_library(mqss-ci::mqss-ci ALIAS MQSSCIPasses)
+# Adding the Passes and MQSSCIInterfaces as an external library.
+# MQSSCIInterfaces publicly links MQSSCIPasses, so aliasing it alone still
+# exposes everything MQSSCIPasses provides, plus the MQSSCompiler API.
+add_library(mqss-ci::mqss-ci ALIAS MQSSCIInterfaces)
 
 # Define the executable and its source file
 add_executable(mqss-opt mqss-cc.cpp)
@@ -132,3 +135,11 @@ set_target_properties(mqss-opt PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 
 # (Optional) Verify links
 mlir_check_all_link_libraries(mqss-opt)
+
+# add Interface Tests
+if(BUILD_INTERFACES_TESTS)
+  include(GoogleTest)
+  enable_testing()
+  # include the tests itself
+  add_subdirectory(tests)
+endif()

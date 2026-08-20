@@ -1,4 +1,3 @@
-
 /* This code and any associated documentation is provided "as is"
 
 Copyright 2024 Munich Quantum Software Stack Project
@@ -16,12 +15,7 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
 
 #include "CatalystExtractor.h"
 #include "QuakeExtractor.h"

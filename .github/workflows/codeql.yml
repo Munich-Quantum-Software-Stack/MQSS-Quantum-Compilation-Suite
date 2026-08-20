@@ -30,7 +30,7 @@ jobs:
       - name: Cache CMake build directory
         uses: actions/cache@v4
         with:
-          path: build
+          path: build/_deps
           key:
             build-${{ runner.os }}-${{ hashFiles('.devcontainer/Dockerfile', 'CMakeLists.txt',
             'cmake/**') }}
@@ -65,6 +65,7 @@ jobs:
             -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
+              git config --global --add safe.directory "*"
               # Configure/fetch dependencies outside the CodeQL trace -- no compiler runs
               # during this step, so tracing it would add overhead for no benefit.
               make build

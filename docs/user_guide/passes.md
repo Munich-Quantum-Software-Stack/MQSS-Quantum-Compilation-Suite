@@ -59,11 +59,12 @@ Example Invocation:
 
 ### CommonDecompositionPass
 
-Performs gate decomposition: `{Cx}` → `HCzH`, `{Cz}` → `HCxH`, or `ReverseCx`.
+Performs gate decomposition: `{Cx}` → `HCzH`, `{Cz}` → `HCxH`, `{H}` → `Rz-X-Rz`, or `{CH}` →
+`S-H-T-CNOT-TAdj-H-SAdj`.
 
 Pass Options:
 
-- `--mode=<string>` — Select pass mode: `CxToHCzH`, `CzToHCxH`, or `ReverseCx`
+- `--mode=<string>` — Select pass mode: `CxToHCzH`, `CzToHCxH`, `HToRzXRz`, or `CHToCX`
 
 Example Invocation:
 
@@ -75,10 +76,13 @@ than a fixed set of rewrites.
 
 ### CommonGateCancellationPass
 
-Performs cancellation of gates that follow a specific pattern. The pass looks for gate operations of
-the same type and cancels them when they act on the same qubit operands (for example, two adjacent
-`CNOT`s on the same control and target, which together form the identity). The supported gate
-operation types are: `CNOT`, `PauliX`, `PauliZ`, `PauliY`, `Hadamard`, `RX`, `RY`, and `RZ`.
+Performs cancellation of gates that follow a specific pattern. The behavior depends on `mode`:
+
+- `CancelGate` looks for gate operations of the same type and cancels them when they act on the same
+  qubit operands (for example, two adjacent `CNOT`s on the same control and target, which together
+  form the identity). Supported gate types: `CNOT`, `PauliX`, `PauliZ`, `PauliY`, and `Hadamard`.
+- `CancelNullRotation` removes `RX`, `RY`, or `RZ` gates whose rotation angle is a constant multiple
+  of 2π (i.e. an effective no-op rotation), regardless of adjacency to another gate.
 
 Pass Options:
 
@@ -202,12 +206,12 @@ The MQSS Quake-to-QIR conversion pass pipeline.
 
 Pass Options:
 
-- `profile=<string>` - Target transport layer format or QIR-Profile, <name[:version[:suboptions]]>.
-  Valid names: "qir", "base", "adaptive", "full". version: "2.0", "2.1", [Default: "qir:2.0"]
+- `profile=<string>` - Target transport layer format or QIR-Profile, <name[:version]>. Valid names:
+  `qir`, `qir-base`, `qir-adaptive`, `qir-full`. version: `2.0`, `2.1`. [Default: `qir-base:2.0`]
 
 Example Invocation:
 
-- `--lower-quake-to-qir=profile=base:2.0`
+- `--lower-quake-to-qir=profile=qir-base:2.0`
 
 ### quake-to-qasm2
 
@@ -218,6 +222,11 @@ Transforms a Quake MLIR module into OpenQASM 2. Invocation:
 ### convert-quantum-to-llvm
 
 Performs a dialect conversion from the Catalyst-quantum dialect to the LLVM dialect.
+
+Pass Options:
+
+- `--use-array-backed-registers=<bool>` — Use the array-backed-registers conversion pattern for
+  `quantum.insert` ops. [Default: `false`]
 
 Invocation:
 
@@ -252,9 +261,9 @@ MQSS-O2 optimization pipeline</br> Passes enabled:
 
 - `CommonGateCancellationPass`
 - `CommonCNOTReversePass`
+- `CommonCommutePass`
 - `cse`
 - `canonicalize`
-- `CommonCommutePass`
 
 ### --O3
 

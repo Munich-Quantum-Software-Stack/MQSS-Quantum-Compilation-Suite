@@ -15,32 +15,27 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
 
 #include "Passes/CodeGen/CodeGenPasses.h"
-#include "Utils/debug_utils.h"
+#include "Utils/DebugUtils.h"
 #include "cudaq/Optimizer/CodeGen/OpenQASMEmitter.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
 
-namespace mqss::codegen {
+namespace mqss::mqssci::codegen {
 
 #define GEN_PASS_DEF_QUAKETOQASM2PASS
 #include "Passes/CodeGen/CodeGen.h.inc"
 
-} // namespace mqss::codegen
+} // namespace mqss::mqssci::codegen
 
 using namespace mlir;
 using namespace llvm;
 
 namespace {
 
-class QuakeToQASM2
-    : public mqss::codegen::impl::QuakeToQASM2PassBase<QuakeToQASM2> {
+struct QuakeToQASM2
+    : public mqss::mqssci::codegen::impl::QuakeToQASM2PassBase<QuakeToQASM2> {
 
 public:
   QuakeToQASM2() = default;
@@ -60,11 +55,11 @@ private:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss::codegen::QuakeToQASM2Pass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::codegen::QuakeToQASM2Pass() {
   return std::make_unique<QuakeToQASM2>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqss::codegen::QuakeToQASM2Pass(llvm::raw_ostream &os) {
+mqss::mqssci::codegen::QuakeToQASM2Pass(llvm::raw_ostream &os) {
   return std::make_unique<QuakeToQASM2>(os);
 }

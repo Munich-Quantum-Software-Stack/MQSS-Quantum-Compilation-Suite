@@ -17,21 +17,13 @@ the License.
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
-#pragma once
-
-#include "mlir/Conversion/LLVMCommon/TypeConverter.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/PatternMatch.h"
-#include "mlir/Transforms/DialectConversion.h"
-
-#include "llvm/ADT/StringMap.h"
-#include "llvm/ADT/StringSet.h"
-#include "llvm/Support/AllocatorBase.h"
-
-namespace catalyst {
-namespace quantum {
-void populateQIRConversionPatterns(mlir::TypeConverter &,
-                                   mlir::RewritePatternSet &, bool);
-} // namespace quantum
-} // namespace catalyst
+#ifdef MQSS_ENABLE_DEBUG
+#define MQSS_DEBUG(X)                                                          \
+  do {                                                                         \
+    llvm::errs() << X;                                                         \
+  } while (false)
+#else
+#define MQSS_DEBUG(X)                                                          \
+  do {                                                                         \
+  } while (false)
+#endif

@@ -16,24 +16,21 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
 
 #include "Passes/Transforms/MappingPassUtils.h"
-#include "Utils/debug_utils.h"
+#include "Utils/DebugUtils.h"
+#include "sc/configuration/Configuration.hpp"
 
 #include <llvm/Support/raw_ostream.h>
+#include <utility>
 
-namespace mqss::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONMAPPINGPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqss::mqssci::opt
 
 using namespace llvm;
 using namespace qc;
@@ -43,6 +40,19 @@ namespace {
 struct PipelineConfig {
   Architecture arch;
   Configuration settings;
+
+  static Configuration getDefaultSettings() {
+    Configuration DefaultSettings;
+    DefaultSettings.heuristic = Heuristic::GateCountMaxDistance;
+    DefaultSettings.layering = Layering::DisjointQubits;
+    DefaultSettings.initialLayout = InitialLayout::Identity;
+    DefaultSettings.preMappingOptimizations = false;
+    DefaultSettings.postMappingOptimizations = false;
+    DefaultSettings.lookaheadHeuristic = LookaheadHeuristic::None;
+    DefaultSettings.debug = false;
+    DefaultSettings.addMeasurementsToMappedCircuit = true;
+    return DefaultSettings;
+  }
 
   static PipelineConfig defaults() {
     PipelineConfig config;
@@ -54,22 +64,33 @@ struct PipelineConfig {
       |   |
       0---1
     */
-    const CouplingMap cm = {{0, 1}, {1, 0}, {1, 2}, {2, 1}, {2, 3},
-                            {3, 2}, {3, 4}, {4, 3}, {4, 0}, {0, 4}};
+    const CouplingMap cm = getCouplingMap();
     config.arch.loadCouplingMap(5, cm);
     // Defining the settings of the mqt-mapper
-    config.settings.heuristic = Heuristic::GateCountMaxDistance;
-    config.settings.layering = Layering::DisjointQubits;
-    config.settings.initialLayout = InitialLayout::Identity;
-    config.settings.preMappingOptimizations = false;
-    config.settings.postMappingOptimizations = false;
-    config.settings.lookaheadHeuristic = LookaheadHeuristic::None;
-    config.settings.debug = false;
-    config.settings.addMeasurementsToMappedCircuit = true;
+    config.settings = getDefaultSettings();
     return config;
   };
 
-  static PipelineConfig fromFile(const std::string &path) {
+  static PipelineConfig fromCustomCouplingMap(
+      const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+          &coupling_map) {
+    PipelineConfig config;
+    // Defining test architecture
+    /*
+        3
+       / \
+      4   2
+      |   |
+      0---1
+    */
+    const CouplingMap cm = getCouplingMap(coupling_map);
+    config.arch.loadCouplingMap(5, cm);
+    // Defining the settings of the mqt-mapper
+    config.settings = getDefaultSettings();
+    return config;
+  };
+
+  static PipelineConfig fromJSON(const std::string &path) {
     std::ifstream file(path);
     if (!file.is_open())
       throw std::runtime_error("Could not open config file: " + path);
@@ -81,9 +102,7 @@ struct PipelineConfig {
 
     // --- Architecture ---
     const auto &arch = j.at("architecture");
-    CouplingMap cm;
-    for (const auto &pair : arch.at("coupling_map"))
-      cm.insert({pair[0].get<int>(), pair[1].get<int>()});
+    auto cm = getCouplingMap(j);
     config.arch.loadCouplingMap(arch.at("num_qubits").get<int>(), cm);
 
     // --- Mapper Settings ---
@@ -122,19 +141,36 @@ struct PipelineConfig {
     config.arch.loadCouplingMap(numQubits, device_coupling_map);
     MQSS_DEBUG("Device Coupling Map loaded!!");
     // Defining the settings of the mqt-mapper
-    config.settings.heuristic = Heuristic::GateCountMaxDistance;
-    config.settings.layering = Layering::DisjointQubits;
-    config.settings.initialLayout = InitialLayout::Identity;
-    config.settings.preMappingOptimizations = false;
-    config.settings.postMappingOptimizations = false;
-    config.settings.lookaheadHeuristic = LookaheadHeuristic::None;
-    config.settings.debug = false;
-    config.settings.addMeasurementsToMappedCircuit = true;
-
+    config.settings = getDefaultSettings();
     return config;
   }
 
 private:
+  static CouplingMap getCouplingMap() {
+
+    return {{0, 1}, {1, 0}, {1, 2}, {2, 1}, {2, 3},
+            {3, 2}, {3, 4}, {4, 3}, {4, 0}, {0, 4}};
+  }
+
+  static CouplingMap getCouplingMap(nlohmann::json json_input) {
+    const auto &arch = json_input.at("architecture");
+    CouplingMap cm;
+    for (const auto &pair : arch.at("coupling_map"))
+      cm.insert({pair[0].get<int>(), pair[1].get<int>()});
+    return cm;
+  }
+
+  static CouplingMap
+  getCouplingMap(const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+                     &qubit_connectivity) {
+    CouplingMap cm;
+    for (const auto &[src_id, dest_id] : qubit_connectivity) {
+      cm.insert({src_id, dest_id});
+    }
+
+    return cm;
+  }
+
   // -- String -> Enum helpers --
   static Heuristic heuristicFromString(const std::string &s) {
     if (s == "GateCountMaxDistance")
@@ -361,16 +397,19 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
   }
 }
 
-class CommonMapping
-    : public mqss_backend::impl::CommonMappingPassBase<CommonMapping> {
+struct CommonMapping
+    : public mqss::mqssci::opt::impl::CommonMappingPassBase<CommonMapping> {
 
 public:
   // Default constructor (required for pass registry)
   CommonMapping() = default;
 
+  explicit CommonMapping(
+      std::vector<std::pair<std::uint32_t, std::uint32_t>> coupling_map)
+      : coupling_map(std::move(coupling_map)) {}
+
   // Forward the options constructor to the base
-  CommonMapping(const CommonMappingPassOptions &options)
-      : CommonMappingPassBase() {
+  explicit CommonMapping(const CommonMappingPassOptions &options) {
     input = options.input;
     qdmi = options.qdmi;
   }
@@ -386,12 +425,16 @@ public:
 
     PipelineConfig config;
     if (!input.empty()) {
-      config = PipelineConfig::fromFile(input);
+      MQSS_DEBUG("-->Reading Coupling Map from JSON input...\n");
+      config = PipelineConfig::fromJSON(input);
     } else if (!qdmi.empty()) {
       MQSS_DEBUG("-->Selected QDMI device Mapping...\n");
       config = PipelineConfig::fromQDMI(qdmi);
+    } else if (!coupling_map.empty()) {
+      MQSS_DEBUG("-->Reading Custom Coupling Map...\n");
+      config = PipelineConfig::fromCustomCouplingMap(coupling_map);
     } else {
-      MQSS_DEBUG("--> No input file provided, using pass defaults!" << "\n");
+      MQSS_DEBUG("--> No JSON or QDMI input, using pass defaults!" << "\n");
       config = PipelineConfig::defaults();
     }
     auto architecture = config.arch;
@@ -407,15 +450,23 @@ public:
                    << " : MLIR Module verification failed\n";
     }
   }
+
+private:
+  std::vector<std::pair<std::uint32_t, std::uint32_t>> coupling_map;
 };
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::CommonMappingPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonMappingPass() {
   return std::make_unique<CommonMapping>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqss_backend::createCommonMappingPass(const CommonMappingPassOptions &options) {
+mqss::mqssci::opt::CommonMappingPass(const CommonMappingPassOptions &options) {
   return std::make_unique<CommonMapping>(options);
+}
+
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonMappingPass(
+    const std::vector<std::pair<std::uint32_t, std::uint32_t>> &coupling_map) {
+  return std::make_unique<CommonMapping>(coupling_map);
 }

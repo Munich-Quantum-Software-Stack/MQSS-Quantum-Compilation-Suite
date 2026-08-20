@@ -20,11 +20,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 The [Passes](passes.md) page shows how to run passes through the `mqss-opt`/`mqss-cc` command-line
 tools. This page is for the case where you don't want a separate command-line step at all — you want
-your own C++ program to load an MLIR module and run MQSSCI passes on it directly.
-
-The two are not different features: `mqss-opt` itself is just a small C++ program that does exactly
-what's shown below. Calling it from your own code gives you the same passes, without shelling out to
-a separate binary.
+your own C++ program to compile a circuit directly.
 
 ## Before You Start
 
@@ -36,54 +32,134 @@ rest of this page assumes that step is done and focuses purely on the C++ side.
 
 ## A Minimal Example
 
-Here's the smallest useful program: load an MLIR file, run the `O1` preset pipeline on it, then
-lower the result to OpenQASM 2.
+`mqss::mqssci::MQSSCompiler` is the simplest way to compile a circuit: one header, one class, one
+call. It hides dialect registration, MLIR context setup, and pipeline assembly behind a single
+`compile` call.
+
+```cpp
+#include "MQSSCIInterfaces/MQSSCompiler.h"
+
+mqss::mqssci::MQSSCompiler compiler;
+
+mqss::mqssci::CompilerOptions opts;
+opts.optimization_level = mqss::mqssci::OptLevel::O1;        // O1, O2, or O3 — selects the preset pipeline
+opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;  // or QIR, QIRBASE, QIRADAPTIVE, QIRFULL
+
+std::optional<std::string> qasm = compiler.compile("path/to/circuit.qke", "planqc", opts); // Use compileSource() to parse source string
+if (!qasm) {
+  // Compilation failed. MQSSCompiler has already reported a diagnostic through
+  // MLIR's diagnostic engine — it never throws or aborts the process.
+  return 1;
+}
+
+llvm::outs() << *qasm;
+```
+
+Walking through it:
+
+1. `#include "MQSSCIInterfaces/MQSSCompiler.h"` is the only header you need for this path.
+2. `mqss::mqssci::CompilerOptions` configures the run: `optimization_level` selects the
+   `O1`/`O2`/`O3` preset pipeline (see [Pass Pipelines](passes.md#pass-pipelines) for what each
+   includes), and `result_format` selects the output format — one of the
+   `mqss::mqssci::ResultFormat` enumerators: `OPENQASM2`, `QIR`, `QIRBASE`, `QIRADAPTIVE`, or
+   `QIRFULL`.
+3. The second argument to `compile` (`"planqc"` above) is a known backend name that selects a
+   built-in native-gate set for decomposition. See [Choosing a Backend](#choosing-a-backend) below
+   for the alternatives.
+4. `compile` returns `std::optional<std::string>`, not the compiled circuit directly. On success, it
+   holds the compiled output; on failure it's `std::nullopt`, and the reason has already been
+   reported via `mlir::emitError` — MQSSCI is built without C++ exceptions, so a failed compile
+   never throws or crashes your program, it just returns an empty optional.
+
+## Choosing a Backend
+
+`compile` has overloads for three ways to select the native-gate set used for decomposition: by a
+known backend name, by an explicit gate list, or not at all:
+
+```cpp
+// By backend name: iqm, planqc, and wmi are recognized out of the box.
+compiler.compile("path/to/circuit.qke", "iqm", opts);
+
+// By an explicit native-gate set, when your target isn't one of the built-in backends.
+compiler.compile("path/to/circuit.qke", {"rz", "rx", "cz"}, opts);
+
+// Neither: skip native-gate decomposition entirely.
+compiler.compile("path/to/circuit.qke", opts);
+```
+
+| `backend_name` | Native-gate set      |
+| -------------- | -------------------- |
+| `"iqm"`        | `phased_rx`, `cz`    |
+| `"planqc"`     | `rx`, `cz`, `rz`     |
+| `"wmi"`        | `cz`, `x`, `y`, `rz` |
+
+The full signature (used in the examples above via its three shorthand overloads) also accepts a
+`qubit_connectivity` map alongside the native-gate set, for targets with restricted qubit
+connectivity. See `MQSSCIInterfaces/MQSSCompiler.h` for all four `compile` overloads.
+
+## Discovering Supported Input Formats
+
+`MQSSCompiler::getSupportedInputFormats()` is a static method that returns the display name of every
+input format MQSSCI's `mqss::mqssci::InputFormat` enum defines:
+
+```cpp
+for (std::string_view name : mqss::mqssci::MQSSCompiler::getSupportedInputFormats()) {
+  llvm::outs() << name << "\n";
+}
+```
+
+It returns a `std::vector<std::string_view>` (currently `{"cudaq-quake", "catalyst-quantum"}`) —
+useful for validating a user-supplied format name or listing the options in a CLI's `--help` output.
+Note that `compile`/`compileSource` currently only accept the `cudaq-quake` dialect regardless of
+what this list reports; see the note at the top of `MQSSCompiler.cpp`.
+
+## Advanced: Building a Custom Pipeline Yourself
+
+`MQSSCompiler` covers the common case: a preset optimization level, a fixed native-gate set, and one
+of two output formats. If you need to run individual passes, pass pass-specific options (e.g.
+`CommonGateCancellationPassOptions`), or assemble a pipeline `MQSSCompiler` doesn't support, drop
+down to the same `mlir::OpPassManager`-based API `MQSSCompiler` itself is built on:
 
 ```cpp
 #include "Passes/Transforms/Dialects.h"
 #include "Passes/Transforms/Pipelines.h"
 #include "Passes/CodeGen/CodeGenPasses.h"
 
-// 1. Tell MLIR about the dialects MQSSCI's passes need (Quake, Catalyst-quantum, etc.)
-mlir::DialectRegistry registry;
-mqss::opt::registerMQSSDialects(registry);
-mlir::MLIRContext context(registry);
-context.loadAllAvailableDialects();
+// 1. Get an MLIRContext with every dialect MQSSCI's passes need already loaded.
+std::unique_ptr<mlir::MLIRContext> context = mqss::mqssci::opt::createMQSSContext();
 
 // 2. Parse your MLIR file into a module
-auto module = mlir::parseSourceFile<mlir::ModuleOp>(src_path, &context);
+auto module = mlir::parseSourceFile<mlir::ModuleOp>("path/to/file", context.get());
 if (!module) {
   llvm::errs() << "failed to parse MLIR file\n";
 }
 
-// 3. Build a pass manager and add a preset optimization pipeline
-mlir::PassManager pm(&context);
-mqss::opt::O1(pm);
+// 3. Build a pass manager and add passes to the pipeline
+mlir::PassManager pm(context.get());
+CommonGateCancellationPassOptions CancelOpts;
+CommonCommutePassOptions CommuteOpts;
+CancelOpts.mode = "CancelGate";
+CommuteOpts.mode = "CX-RX";
 
+pm.addPass(CommonGateCancellationPass(CancelOpts));
+pm.addPass(CommonCommutePass(CommuteOpts));
+
+// Run the Pass Pipeline
 if (mlir::failed(pm.run(*module))) {
   llvm::errs() << "Compiler: Pipeline failed\n";
 }
 
 // 4. Lower the optimized module to OpenQASM 2
-pm.addPass(mqss::codegen::QuakeToQASM2Pass());
+pm.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass());
 if (mlir::failed(pm.run(*module))) {
   llvm::errs() << "Compiler: Conversion of Quake to QASM2 failed\n";
 }
 ```
 
-Walking through it:
-
-1. `registerMQSSDialects` fills in a `DialectRegistry` with every MLIR dialect the passes operate on
-   or lower into. Do this before parsing anything — the parser needs to recognize the dialect
-   operations in your input.
-2. `mlir::parseSourceFile` reads your MLIR/Quake/Catalyst-quantum source file into an in-memory
-   module.
-3. `mqss::opt::O1(pm)` appends the whole `O1` preset pipeline to the pass manager in one call. `O2`
-   and `O3` work the same way. See [Pass Pipelines](passes.md#pass-pipelines) for what each preset
-   includes.
-4. `mqss::codegen::QuakeToQASM2Pass()` is a code-generation pass — it's added and run separately
-   from the optimization pipeline, same as chaining `--O1 --quake-to-qasm2` on the `mqss-opt`
-   command line.
+`mqss::mqssci::opt::createMQSSContext()` is a convenience that registers every MQSSCI dialect and
+returns a ready-to-use `MLIRContext` in one call — equivalent to building a `DialectRegistry` with
+`registerMQSSDialects`, constructing an `MLIRContext` from it, and calling
+`loadAllAvailableDialects()` yourself.
 
 If you'd rather capture the OpenQASM output in a string instead of printing it, `QuakeToQASM2Pass`
 also accepts an `llvm::raw_ostream&`:
@@ -91,18 +167,21 @@ also accepts an `llvm::raw_ostream&`:
 ```cpp
 std::string qasm;
 llvm::raw_string_ostream os(qasm);
-pm.addPass(mqss::codegen::QuakeToQASM2Pass(os));
+pm.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
 ```
-
-## Invoking Passes: Same Rules as the Developer Guide
-
-Everything beyond this minimal example — running individual passes instead of a preset, passing
-options to a pass (e.g. `CommonGateCancellationPassOptions`), or assembling a fully custom pipeline
-— works exactly as described in
-[Integrating the MQSS Quantum Compilation Suite within your project](../develop-guide/integrate.md#declaring-a-custom-pass-pipeline).
-There's no separate API for library users: whether you're writing a pass yourself or just consuming
-the library, you build the same `mlir::OpPassManager` and call the same factory functions from
-`Passes/Transforms/Transforms.h` and `Passes/CodeGen/CodeGenPasses.h`.
 
 For the full list of available passes, their options, and valid option values, see
 [Passes](passes.md).
+
+## Testing the Interface
+
+`MQSSCompiler` has its own testing framework at
+`tests/unittests/MQSSCIInterfaces/test_Interface.cpp`. It builds automatically as part of the normal
+build (via `scripts/build.sh` / `make target`) — run it with:
+
+```sh
+make test-interfaces
+```
+
+For what the interfaces testing framework covers and how to extend it, see
+[Testing the Interface](../develop-guide/integrate.md#testing-the-interface) in the developer guide.

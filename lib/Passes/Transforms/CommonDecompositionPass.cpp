@@ -15,23 +15,19 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
+
 #include "Passes/Transforms/Decomposition.h"
-#include "Utils/debug_utils.h"
+#include "Utils/DebugUtils.h"
 
 #include <cmath>
 
-namespace mqss::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONDECOMPOSITIONPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -86,8 +82,8 @@ struct SharedPassLogic {
   }
 };
 
-class CommonDecomposition
-    : public mqss_backend::impl::CommonDecompositionPassBase<
+struct CommonDecomposition
+    : public mqss::mqssci::opt::impl::CommonDecompositionPassBase<
           CommonDecomposition> {
 
 public:
@@ -142,11 +138,11 @@ private:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::CommonDecompositionPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonDecompositionPass() {
   return std::make_unique<CommonDecomposition>();
 }
 
-std::unique_ptr<mlir::Pass> mqss_backend::createCommonDecompositionPass(
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonDecompositionPass(
     const CommonDecompositionPassOptions &options) {
   return std::make_unique<CommonDecomposition>(options);
 }

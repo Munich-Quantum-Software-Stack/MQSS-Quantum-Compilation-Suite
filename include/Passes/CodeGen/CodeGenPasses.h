@@ -15,12 +15,7 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
 /** @file
  * @brief
  * @details Header file that defines the signature for each MLIR/Quake defined
@@ -43,8 +38,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #define GEN_PASS_DECL
 #include "Passes/CodeGen/CodeGen.h.inc"
+#include "Utils/CodegenUtils.h"
 
-namespace mqss::codegen {
+namespace mqss::mqssci::codegen {
 
 std::unique_ptr<mlir::Pass> LLVMDialectToLLVMIRPass();
 std::unique_ptr<mlir::Pass> QuakeToQASM2Pass();
@@ -52,10 +48,11 @@ std::unique_ptr<mlir::Pass> QuantumConversionPass();
 std::unique_ptr<mlir::Pass> BasisConversionPass();
 std::unique_ptr<mlir::Pass>
 createBasisConversionPass(const BasisConversionPassOptions &options);
+std::unique_ptr<mlir::Pass> LLVMDialectToLLVMIRPass(llvm::raw_ostream &os);
 
 std::unique_ptr<mlir::Pass> QuakeToQASM2Pass(llvm::raw_ostream &os);
 
-} // namespace mqss::codegen
+} // namespace mqss::mqssci::codegen
 
 #define GEN_PASS_REGISTRATION
 #include "Passes/CodeGen/CodeGen.h.inc"

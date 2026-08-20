@@ -15,23 +15,19 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
+
 #include "Passes/CodeGen/BasisConversionPatterns.h"
 #include "Passes/CodeGen/CodeGenPasses.h"
 
 #include <llvm/ADT/StringSet.h>
 
-namespace mqss::codegen {
+namespace mqss::mqssci::codegen {
 
 #define GEN_PASS_DEF_BASISCONVERSIONPASS
 #include "Passes/CodeGen/CodeGen.h.inc"
 
-} // namespace mqss::codegen
+} // namespace mqss::mqssci::codegen
 
 using namespace mlir;
 
@@ -272,8 +268,9 @@ std::unordered_map<std::string, const DecompositionRule *> computeWitnesses(
   return witness;
 }
 
-class BasisConversion
-    : public mqss::codegen::impl::BasisConversionPassBase<BasisConversion> {
+struct BasisConversion
+    : public mqss::mqssci::codegen::impl::BasisConversionPassBase<
+          BasisConversion> {
 public:
   BasisConversion() = default;
 
@@ -281,11 +278,6 @@ public:
       : BasisConversion() {
     gates = options.gates;
   }
-
-  // BasisConversion(const BasisConversion &other)
-  //     : BaseMQSSPass(other), AppliedCheckPass(other) {
-  //   nativeGateSet = other.nativeGateSet;
-  // }
 
   void runOnOperation() override {
     bool wasApplied = false;
@@ -344,11 +336,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss::codegen::BasisConversionPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::codegen::BasisConversionPass() {
   return std::make_unique<BasisConversion>();
 }
 
-std::unique_ptr<Pass> mqss::codegen::createBasisConversionPass(
+std::unique_ptr<Pass> mqss::mqssci::codegen::createBasisConversionPass(
     const BasisConversionPassOptions &options) {
   return std::make_unique<BasisConversion>(options);
 }

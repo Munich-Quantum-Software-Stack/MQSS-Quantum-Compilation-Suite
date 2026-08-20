@@ -15,21 +15,17 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
-#include "Passes/Transforms/PassUtils.h"
-#include "Utils/debug_utils.h"
+*/
 
-namespace mqss::opt {
+#include "Passes/Transforms/PassUtils.h"
+#include "Utils/DebugUtils.h"
+
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONSWITCHPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -71,8 +67,8 @@ struct SharedPassLogic {
   }
 };
 
-class CommonSwitch
-    : public mqss_backend::impl::CommonSwitchPassBase<CommonSwitch> {
+struct CommonSwitch
+    : public mqss::mqssci::opt::impl::CommonSwitchPassBase<CommonSwitch> {
 
 public:
   // Default constructor (required for pass registry)
@@ -110,11 +106,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::CommonSwitchPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonSwitchPass() {
   return std::make_unique<CommonSwitch>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqss_backend::createCommonSwitchPass(const CommonSwitchPassOptions &options) {
+mqss::mqssci::opt::CommonSwitchPass(const CommonSwitchPassOptions &options) {
   return std::make_unique<CommonSwitch>(options);
 }

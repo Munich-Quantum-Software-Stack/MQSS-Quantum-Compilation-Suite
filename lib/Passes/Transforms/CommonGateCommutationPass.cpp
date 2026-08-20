@@ -15,22 +15,17 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
 
 #include "Passes/Transforms/PassUtils.h"
-#include "Utils/debug_utils.h"
+#include "Utils/DebugUtils.h"
 
-namespace mqss::opt {
+namespace mqss::mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONCOMMUTEPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqss::mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -90,8 +85,8 @@ struct SharedPassLogic {
  * modifications etc.
  **/
 
-class CommonCommute
-    : public mqss_backend::impl::CommonCommutePassBase<CommonCommute> {
+struct CommonCommute
+    : public mqss::mqssci::opt::impl::CommonCommutePassBase<CommonCommute> {
 
 public:
   // Default constructor (required for pass registry)
@@ -137,11 +132,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::CommonCommutePass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonCommutePass() {
   return std::make_unique<CommonCommute>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqss_backend::createCommonCommutePass(const CommonCommutePassOptions &options) {
+mqss::mqssci::opt::CommonCommutePass(const CommonCommutePassOptions &options) {
   return std::make_unique<CommonCommute>(options);
 }

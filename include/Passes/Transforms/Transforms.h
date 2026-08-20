@@ -15,12 +15,8 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
+
 /** @file
  * @brief
  * @details Header file that defines the signature for each MLIR/Quake defined
@@ -56,7 +52,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  */
 #define CUDAQ_PREFIX_FUNCTION "__nvqpp__mlirgen__"
 
-namespace mqss::opt {
+namespace mqss::mqssci::opt {
 
 // Gate Pattern Cancellation passes
 std::unique_ptr<mlir::Pass> CommonGateCancellationPass();
@@ -69,30 +65,29 @@ std::unique_ptr<mlir::Pass> CommonSwitchPass();
 std::unique_ptr<mlir::Pass> CommonReductionPass();
 std::unique_ptr<mlir::Pass> CommonCNOTReversePass();
 std::unique_ptr<mlir::Pass> CommonMappingPass();
+
 // Programmatic Pass Registration
 std::unique_ptr<mlir::Pass>
-createCommonCommutePass(const CommonCommutePassOptions &options);
-
-std::unique_ptr<mlir::Pass> createCommonGateCancellationPass(
-    const CommonGateCancellationPassOptions &options);
+CommonCommutePass(const CommonCommutePassOptions &options);
 
 std::unique_ptr<mlir::Pass>
-createCommonSwitchPass(const CommonSwitchPassOptions &options);
+CommonGateCancellationPass(const CommonGateCancellationPassOptions &options);
 
 std::unique_ptr<mlir::Pass>
-createCommonDecompositionPass(const CommonDecompositionPassOptions &options);
+CommonSwitchPass(const CommonSwitchPassOptions &options);
 
 std::unique_ptr<mlir::Pass>
-createCommonReductionPass(const CommonReductionPassOptions &options);
+CommonDecompositionPass(const CommonDecompositionPassOptions &options);
 
 std::unique_ptr<mlir::Pass>
-createCommonMappingPass(const CommonMappingPassOptions &options);
+CommonReductionPass(const CommonReductionPassOptions &options);
 
-} // namespace mqss::opt
+std::unique_ptr<mlir::Pass> CommonMappingPass(
+    const std::vector<std::pair<std::uint32_t, std::uint32_t>> &coupling_map);
+std::unique_ptr<mlir::Pass>
+CommonMappingPass(const CommonMappingPassOptions &options);
 
-// namespace mq_cudaq::opt{
-//   std::unique_ptr<mlir::Pass> createLoopNormalizePass();
-// } // namespace mqss::opt
+} // namespace mqss::mqssci::opt
 
 #define GEN_PASS_REGISTRATION
 #include "Passes/Transforms/Transforms.h.inc"

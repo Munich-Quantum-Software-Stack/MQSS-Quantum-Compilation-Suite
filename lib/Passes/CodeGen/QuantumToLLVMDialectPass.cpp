@@ -15,12 +15,7 @@ License for the specific language governing permissions and limitations under
 the License.
 
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-*************************************************************************
-  author Akshay Bhosale
-  co-author: Claude AI Sonnet/Opus
-  date   August 2026
-  version 2.0.0
-*************************************************************************/
+*/
 
 #include "Passes/CodeGen/CodeGenPasses.h"
 #include "Passes/CodeGen/Patterns.h"
@@ -114,6 +109,6 @@ struct QuantumConversion : impl::QuantumConversionPassBase<QuantumConversion> {
 } // namespace quantum
 } // namespace catalyst
 
-std::unique_ptr<mlir::Pass> mqss::codegen::QuantumConversionPass() {
+std::unique_ptr<mlir::Pass> mqss::mqssci::codegen::QuantumConversionPass() {
   return std::make_unique<QuantumConversion>();
 }
