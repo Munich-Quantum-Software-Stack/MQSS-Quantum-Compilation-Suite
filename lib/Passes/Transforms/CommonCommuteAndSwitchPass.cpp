@@ -20,12 +20,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/PassUtils.h"
 #include "Utils/DebugUtils.h"
 
-namespace mqss::opt {
+namespace mqssci::opt {
 
 #define GEN_PASS_DEF_COMMONSWITCHPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqssci::opt
 
 using namespace mlir;
 using namespace llvm;
@@ -67,8 +67,8 @@ struct SharedPassLogic {
   }
 };
 
-class CommonSwitch
-    : public mqss_backend::impl::CommonSwitchPassBase<CommonSwitch> {
+struct CommonSwitch
+    : public mqssci::opt::impl::CommonSwitchPassBase<CommonSwitch> {
 
 public:
   // Default constructor (required for pass registry)
@@ -106,11 +106,11 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::CommonSwitchPass() {
+std::unique_ptr<mlir::Pass> mqssci::opt::CommonSwitchPass() {
   return std::make_unique<CommonSwitch>();
 }
 
 std::unique_ptr<mlir::Pass>
-mqss_backend::CommonSwitchPass(const CommonSwitchPassOptions &options) {
+mqssci::opt::CommonSwitchPass(const CommonSwitchPassOptions &options) {
   return std::make_unique<CommonSwitch>(options);
 }

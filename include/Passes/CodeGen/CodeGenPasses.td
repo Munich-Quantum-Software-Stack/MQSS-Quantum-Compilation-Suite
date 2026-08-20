@@ -8,7 +8,7 @@ def LLVMDialectToLLVMIRPass : Pass<"mlir-to-llvmIR", "mlir::ModuleOp"> {
           Transforms LLVM dialect to LLVM IR.
   }];
 
-  let constructor = "mqss::codegen::LLVMDialectToLLVMIRPass()";
+  let constructor = "mqssci::codegen::LLVMDialectToLLVMIRPass()";
 
 }
 
@@ -19,7 +19,7 @@ def QuakeToQASM2Pass : Pass<"quake-to-qasm2", "mlir::ModuleOp"> {
           Transforms Quake MLIR module to OpenQasm2.
   }];
 
-  let constructor = "mqss::codegen::QuakeToQASM2Pass()";
+  let constructor = "mqssci::codegen::QuakeToQASM2Pass()";
 
 }
 
@@ -36,7 +36,7 @@ def QuantumConversionPass : Pass<"convert-quantum-to-llvm"> {
         >
     ];
 
-   let constructor = "mqss::codegen::QuantumConversionPass()";
+   let constructor = "mqssci::codegen::QuantumConversionPass()";
    let dependentDialects = ["LLVM::LLVMDialect"];
 }
 
@@ -50,7 +50,7 @@ def BasisConversionPass : Pass<"BasisConversionPass", "mlir::ModuleOp"> {
         "gate is native or no further progress can be made"
   }];
 
- let constructor = "mqss::codegen::BasisConversionPass()";
+ let constructor = "mqssci::codegen::BasisConversionPass()";
  let dependentDialects = ["mlir::arith::ArithDialect"];
  let options = [
     Option<"gates", "gates", "std::string",

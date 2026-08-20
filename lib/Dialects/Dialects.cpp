@@ -33,7 +33,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
-namespace mqss::opt {
+namespace mqssci::opt {
 
 void registerMQSSDialects(mlir::DialectRegistry &registry) {
   registry.insert<mlir::func::FuncDialect, mlir::arith::ArithDialect,
@@ -55,4 +55,4 @@ std::unique_ptr<mlir::MLIRContext> createMQSSContext() {
   return context; // unique_ptr is movable; the MLIRContext itself never moves
 }
 
-} // namespace mqss::opt
+} // namespace mqssci::opt

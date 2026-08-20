@@ -24,7 +24,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <mlir/IR/Value.h>
 #include <vector>
-namespace mqss_backend = mqss::opt;
 
 #define DialectAnalysis QuakeAnalysis
 

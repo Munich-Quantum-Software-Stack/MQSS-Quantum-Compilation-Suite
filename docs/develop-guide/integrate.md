@@ -72,23 +72,23 @@ so no manual include-path bookkeeping is required in the consuming project. It a
 
 Everything below this point is the lower-level, `mlir::OpPassManager`-based API — full control over
 dialect registration, individual passes, and pass options. If you just want to compile a circuit
-with a preset optimization level and a known output format, `mqss::MQSSCompiler` wraps all of this
+with a preset optimization level and a known output format, `mqssci::MQSSCompiler` wraps all of this
 behind a single `compile()` call. See [Using MQSSCI as a Library](../user_guide/library.md) for that
 path; come back here if you need something it doesn't cover.
 
 ### Including the Headers
 
-Four headers are relevant to consumers, split across two namespaces — `mqss::opt` for
-dialect-agnostic optimization and `mqss::codegen` for lowering to exchange formats:
+Four headers are relevant to consumers, split across two namespaces — `mqssci::opt` for
+dialect-agnostic optimization and `mqssci::codegen` for lowering to exchange formats:
 
-- `Passes/Transforms/Dialects.h` (`mqss::opt`) — registers the MLIR dialects (Quake, Catalyst's
+- `Passes/Transforms/Dialects.h` (`mqssci::opt`) — registers the MLIR dialects (Quake, Catalyst's
   quantum dialect, and the standard MLIR dialects the passes lower into) that the passes need to
   understand your program. Include this before parsing or building any MLIR module.
-- `Passes/Transforms/Transforms.h` (`mqss::opt`) — declares every individual transformation pass
+- `Passes/Transforms/Transforms.h` (`mqssci::opt`) — declares every individual transformation pass
   factory function, for building a custom pass pipeline pass-by-pass.
-- `Passes/Transforms/Pipelines.h` (`mqss::opt`) — declares the three preset optimization levels
+- `Passes/Transforms/Pipelines.h` (`mqssci::opt`) — declares the three preset optimization levels
   `O1`, `O2` and `O3`, for appending a whole preset stage to an `mlir::OpPassManager` in one call.
-- `Passes/CodeGen/CodeGenPasses.h` (`mqss::codegen`) — declares every individual code-generation
+- `Passes/CodeGen/CodeGenPasses.h` (`mqssci::codegen`) — declares every individual code-generation
   pass factory function (lowering to exchange formats such as `QIR` or `OpenQASM`), for building a
   custom pass pipeline pass-by-pass.
 
@@ -107,7 +107,7 @@ Call one of the preset optimization pipelines — `O1`, `O2`, or `O3` — direct
 #include "Passes/CodeGen/CodeGenPasses.h"
 
 // 1. Get an MLIRContext with every dialect MQSSCI's passes need already loaded.
-std::unique_ptr<mlir::MLIRContext> context = mqss::opt::createMQSSContext();
+std::unique_ptr<mlir::MLIRContext> context = mqssci::opt::createMQSSContext();
 
 //  2. Parse the source dialect and create MLIR module
 auto module = mlir::parseSourceFile<mlir::ModuleOp>(src_path, context.get());
@@ -119,7 +119,7 @@ if (!module) {
 mlir::PassManager pm(context.get());
 
 // 4. Add passes from the O1 pass pipeline
-mqss::opt::O1(pm);
+mqssci::opt::O1(pm);
 
 // Run the passes
 if (mlir::failed(pm.run(*module))) {
@@ -127,13 +127,13 @@ if (mlir::failed(pm.run(*module))) {
 }
 
 // 5. Add a CodeGen Pass and RUN the pass
-pm.addPass(mqss::codegen::QuakeToQASM2Pass());
+pm.addPass(mqssci::codegen::QuakeToQASM2Pass());
 if (mlir::failed(pm.run(*module))) {
   llvm::errs() << "Compiler: Conversion of Quake to QASM2 failed\n";
 }
 ```
 
-`mqss::opt::createMQSSContext()` registers everything MQSSCI's passes need to understand your
+`mqssci::opt::createMQSSContext()` registers everything MQSSCI's passes need to understand your
 program (Quake, Catalyst's quantum dialect, and the standard MLIR dialects the passes lower into)
 and returns a ready-to-use `MLIRContext` in one call — equivalent to building a `DialectRegistry`
 with `registerMQSSDialects`, constructing an `MLIRContext` from it, and calling
@@ -158,8 +158,8 @@ Passes with no configurable options are constructed by calling their factory fun
 #include "Passes/Transforms/Transforms.h"
 
 mlir::OpPassManager pm;
-pm.addPass(mqss::opt::CommonCNOTReversePass());
-pm.addPass(mqss::opt::CommonNormalizeArgAnglePass());
+pm.addPass(mqssci::opt::CommonCNOTReversePass());
+pm.addPass(mqssci::opt::CommonNormalizeArgAnglePass());
 ```
 
 Check `Transforms.h` for other option-free passes.
@@ -176,11 +176,11 @@ mlir::OpPassManager pm;
 
 CommonGateCancellationPassOptions cancelOpts;
 cancelOpts.mode = "CancelGate";
-pm.addPass(mqss::opt::createCommonGateCancellationPass(cancelOpts));
+pm.addPass(mqssci::opt::createCommonGateCancellationPass(cancelOpts));
 
 CommonCommutePassOptions commuteOpts;
 commuteOpts.mode = "CX-RX";
-pm.addPass(mqss::opt::createCommonCommutePass(commuteOpts));
+pm.addPass(mqssci::opt::createCommonCommutePass(commuteOpts));
 ```
 
 Other option-bearing passes: `CommonSwitchPass`, `CommonReductionPass`, `CommonDecompositionPass`,
@@ -193,7 +193,7 @@ The built-in `O2` optimization level combines both styles above into a single re
 (`lib/Passes/Transforms/Pipeline.cpp`):
 
 ```cpp
-void mqss::opt::O2(mlir::OpPassManager &pm) {
+void mqssci::opt::O2(mlir::OpPassManager &pm) {
   CommonGateCancellationPassOptions CancelOpts;
   CommonCommutePassOptions CommuteOpts;
   CancelOpts.mode = "CancelGate";
@@ -211,8 +211,8 @@ void mqss::opt::O2(mlir::OpPassManager &pm) {
 
 ## Testing the Interface
 
-`mqss::MQSSCompiler` has its own GoogleTest suite, separate from the lit/FileCheck tests that cover
-the passes themselves (see [Testing](develop-guide.md#testing)). It lives in
+`mqssci::MQSSCompiler` has its own GoogleTest suite, separate from the lit/FileCheck tests that
+cover the passes themselves (see [Testing](develop-guide.md#testing)). It lives in
 `tests/unittests/MQSSCIInterfaces/test_Interface.cpp` and exercises the library end to end: it
 compiles a real fixture circuit (`tests/unittests/input/two_qubit_bell.qke`) through both `compile`
 and `compileSource` APIs, and checks properties of the emitted output.

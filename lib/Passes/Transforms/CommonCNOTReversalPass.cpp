@@ -23,16 +23,16 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 using namespace mlir;
 using namespace llvm;
 
-namespace mqss::opt {
+namespace mqssci::opt {
 #define GEN_PASS_DEF_COMMONCNOTREVERSEPASS
 #include "Passes/Transforms/Transforms.h.inc"
 
-} // namespace mqss::opt
+} // namespace mqssci::opt
 
 namespace {
 
-class CommonCNOTReverse
-    : public mqss_backend::impl::CommonCNOTReversePassBase<CommonCNOTReverse> {
+struct CommonCNOTReverse
+    : public mqssci::opt::impl::CommonCNOTReversePassBase<CommonCNOTReverse> {
 
 public:
   // Default constructor (required for pass registry)
@@ -57,6 +57,6 @@ public:
 
 } // namespace
 
-std::unique_ptr<mlir::Pass> mqss_backend::CommonCNOTReversePass() {
+std::unique_ptr<mlir::Pass> mqssci::opt::CommonCNOTReversePass() {
   return std::make_unique<CommonCNOTReverse>();
 }

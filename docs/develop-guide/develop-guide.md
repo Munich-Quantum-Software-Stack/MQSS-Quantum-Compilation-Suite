@@ -116,8 +116,8 @@ MQSS-Quantum-Compilation-Suite/
 ```
 
 - Dialect registration lives in `lib/Dialects`. Dialect-agnostic MLIR optimization passes (namespace
-  `mqss::opt`) live in `lib/Passes/Transforms`. Code-generation/lowering passes (namespace
-  `mqss::codegen`) live in `lib/Passes/CodeGen`.
+  `mqssci::opt`) live in `lib/Passes/Transforms`. Code-generation/lowering passes (namespace
+  `mqssci::codegen`) live in `lib/Passes/CodeGen`.
 
 - CUDAQ and Catalyst are included as external dependencies and are downloaded and installed as
   `cmake` modules. Following targets are built for each of these modules:

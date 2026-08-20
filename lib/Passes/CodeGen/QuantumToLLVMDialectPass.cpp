@@ -109,6 +109,6 @@ struct QuantumConversion : impl::QuantumConversionPassBase<QuantumConversion> {
 } // namespace quantum
 } // namespace catalyst
 
-std::unique_ptr<mlir::Pass> mqss::codegen::QuantumConversionPass() {
+std::unique_ptr<mlir::Pass> mqssci::codegen::QuantumConversionPass() {
   return std::make_unique<QuantumConversion>();
 }

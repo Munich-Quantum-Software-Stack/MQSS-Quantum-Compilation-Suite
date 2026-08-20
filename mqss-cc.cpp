@@ -44,17 +44,17 @@ struct ToQirPipelineOptions
     : public mlir::PassPipelineOptions<ToQirPipelineOptions> {
   Option<std::string> profile{
       *this, "profile",
-      llvm::cl::desc(
-          "Target transport layer format, <name[:version[:suboptions]]>. Valid "
-          "names: \"qir\", \"base\", \"adaptive\", \"full\". version: \"2.0\", "
-          "\"2.1\", [Default: \"qir:2.0\"]"),
-      llvm::cl::init("base:2.0")};
+      llvm::cl::desc("Target transport layer format, <name:version>. Valid "
+                     "names: \"qir\", \"qir-base\", \"qir-adaptive\", "
+                     "\"qir-full\". version: \"2.0\", "
+                     "\"2.1\", [Default: \"qir-base:2.0\"]"),
+      llvm::cl::init("qir-base:2.0")};
 };
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
 
-  mqss::opt::registerMQSSDialects(registry);
+  mqssci::opt::registerMQSSDialects(registry);
 
   // Register Dialect Agnostic Passes
   registerMQSSTransformsPasses();
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
       "MQSS-O1 optimization pipeline", // description
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::opt::O1(pm);
+        mqssci::opt::O1(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
       "MQSS-O2 optimization pipeline", // description
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::opt::O2(pm);
+        mqssci::opt::O2(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
       "MQSS-O3 optimization pipeline", // description
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::opt::O3(pm);
+        mqssci::opt::O3(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
       "lower-quake-to-qir", "MQSS Quake to QIR Conversion pipeline",
       [](mlir::OpPassManager &pm, const ToQirPipelineOptions &opts) {
         auto convertto = processQIRLoweringOpts(opts.profile);
-        mqss::opt::QIRConversionPipeline(pm, convertto);
+        mqssci::opt::QIRConversionPipeline(pm, convertto);
       });
 
   return mlir::asMainReturnCode(

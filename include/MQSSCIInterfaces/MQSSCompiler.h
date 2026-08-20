@@ -33,7 +33,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <unordered_map>
 #include <vector>
 
-namespace mqss {
+namespace mqssci {
 
 // Enum of supported input formats.
 enum InputFormat { QUAKE, CATALYSTQUANTUM };
@@ -223,4 +223,4 @@ private:
   parseModuleFromSource(llvm::StringRef source, mlir::MLIRContext &context);
 };
 
-} // namespace mqss
+} // namespace mqssci
