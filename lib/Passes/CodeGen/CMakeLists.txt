@@ -9,6 +9,7 @@ add_mlir_library(
   StaticAllocas.cpp
   DEPENDS
   MQSSMQSSCodeGenPassIncGen
+  MQSSTransformsPassIncGen
   LINK_LIBS
   PUBLIC
   MQSSSupportedDialects
