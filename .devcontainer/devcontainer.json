@@ -1,5 +1,5 @@
 {
-  "name": "mqss-pass-dev",
+  "name": "mqss-qcs-dev",
   "build": {
     "dockerfile": "Dockerfile"
   },

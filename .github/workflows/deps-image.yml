@@ -1,0 +1,85 @@
+name: Deps-Image
+
+# Builds and publishes the prebuilt LLVM/MLIR + CUDA-Q + Catalyst image that
+# .devcontainer/Dockerfile pulls in via --build-arg DEPS_IMAGE, instead of each
+# consumer fetching and building those from source at CMake configure time.
+#
+# Only runs when the image's own recipe or one of the pinned dependency
+# versions changes -- unrelated source changes never trigger a rebuild.
+on:
+  push:
+    # TODO(akshay): "akshay/cmake-deps" is temporary, only to let this PR's own
+    # CI publish+test a matching deps image without waiting for merge to
+    # develop. Remove it from this list before merging.
+    branches: [develop]
+    paths:
+      - ".devcontainer/deps.DockerFile"
+      - "cmake/FetchLLVM.cmake"
+      - "cmake/FindCUDAQ.cmake"
+      - "cmake/FindCatalyst.cmake"
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          docker system prune -af
+
+      # Tag by what's actually inside the image (not a date or commit SHA), so
+      # the tag itself documents which LLVM/CUDA-Q/Catalyst pins it was built
+      # from -- bumping a pin naturally produces a new tag instead of silently
+      # overwriting the old image under the same name. Read from the same
+      # cmake files FindCUDAQ.cmake/FindCatalyst.cmake/FetchLLVM.cmake use, so
+      # this can never drift from what deps.DockerFile actually builds against
+      # them, and lowercase the image path since GHCR requires it (repo/org
+      # names may contain uppercase letters).
+      - name: Compute image name and version tag
+        id: vars
+        run: |
+          llvm_version=$(grep -A1 'set(MQSS_LLVM_VERSION' cmake/FetchLLVM.cmake | tail -1 | grep -oP '"\K[^"]+')
+          cudaq_tag=$(grep -A1 'set(CUDAQ_GIT_TAG' cmake/FindCUDAQ.cmake | tail -1 | grep -oP '"\K[^"]+')
+          catalyst_tag=$(grep -A1 'set(CATALYST_GIT_TAG' cmake/FindCatalyst.cmake | tail -1 | grep -oP '"\K[^"]+')
+          catalyst_tag=${catalyst_tag#v}
+
+          if [ -z "$llvm_version" ] || [ -z "$cudaq_tag" ] || [ -z "$catalyst_tag" ]; then
+            echo "::error::Failed to extract one or more version pins (llvm='$llvm_version' cudaq='$cudaq_tag' catalyst='$catalyst_tag') -- did the set(...) formatting in FetchLLVM.cmake/FindCUDAQ.cmake/FindCatalyst.cmake change?"
+            exit 1
+          fi
+
+          image=$(echo "ghcr.io/${{ github.repository }}/mqssci-deps" | tr '[:upper:]' '[:lower:]')
+          tag="llvm${llvm_version}-cudaq${cudaq_tag}-catalyst${catalyst_tag}"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Building ${image}:${tag}"
+
+      - name: Log in to GHCR
+        run:
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}"
+          --password-stdin
+
+      # amd64 only for now, matching ci.yml's existing scope -- cross-building
+      # LLVM/CUDA-Q/Catalyst for arm64 under QEMU emulation would be far too
+      # slow for CI; a native arm64 runner is a separate follow-up.
+      - name: Build deps image
+        run: |
+          docker build -f .devcontainer/deps.DockerFile \
+            -t "${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}" \
+            -t "${{ steps.vars.outputs.image }}:latest" \
+            .devcontainer
+
+      - name: Push deps image
+        run: |
+          docker push "${{ steps.vars.outputs.image }}:${{ steps.vars.outputs.tag }}"
+          docker push "${{ steps.vars.outputs.image }}:latest"

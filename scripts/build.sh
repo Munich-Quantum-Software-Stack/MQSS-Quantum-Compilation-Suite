@@ -18,11 +18,9 @@ ok() {
 
 CURRENT_DIR=$(pwd)
 BUILD_DIR=${CURRENT_DIR}"/build"
-DEPS_DIR=$BUILD_DIR"/_deps"
 
 # Create directories if they don't exist
 mkdir -p "${BUILD_DIR}"
-mkdir -p "${DEPS_DIR}"
 
 CC="gcc"
 CXX="g++"
