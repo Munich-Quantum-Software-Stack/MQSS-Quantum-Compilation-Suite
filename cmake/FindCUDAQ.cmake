@@ -1,8 +1,5 @@
 # ---- Fetch and build CUDA-Q from source if not found -----------
 # Targets Built: QuakeDialect, CCDialect, QECDialect, OptimBuilder, OptCodeGen
-# TODO(akshay): no-op touch to satisfy deps-image.yml's paths: filter on push,
-# only to trigger a real build+publish run for testing on this branch before
-# merge. Revert this comment before merging.
 option(CUDAQ_AUTO_FETCH "Clone and build CUDA-Q from source if not found" OFF)
 set(CUDAQ_GIT_REPOSITORY
     "https://github.com/NVIDIA/cuda-quantum.git"

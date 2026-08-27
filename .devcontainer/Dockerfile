@@ -7,9 +7,19 @@ ARG base_image=ubuntu:22.04
 # built from; override with --build-arg DEPS_IMAGE=... to test a different one,
 # and bump the default here whenever cmake/FetchLLVM.cmake, cmake/FindCUDAQ.cmake,
 # or cmake/FindCatalyst.cmake change their pinned versions.
+#
+# Everything inside the image (the LLVM/MLIR toolchain, the compiled CUDA-Q and
+# Catalyst archives) is native machine code, so it is published once per
+# architecture as <DEPS_IMAGE>-amd64 / <DEPS_IMAGE>-arm64. BuildKit sets
+# TARGETARCH ("amd64" or "arm64") to the platform the dev container is being
+# built for; the matching stage below is selected and the other one is never
+# pulled. An override passed via --build-arg DEPS_IMAGE=... must likewise have
+# -amd64 / -arm64 tags published.
 ARG DEPS_IMAGE=ghcr.io/akshay9594/mqss-passes-suite/mqssci-deps:llvm22.1.0-cudaq0.15.0-catalyst0.15.0
 
-FROM ${DEPS_IMAGE} AS deps
+FROM ${DEPS_IMAGE}-amd64 AS deps-amd64
+FROM ${DEPS_IMAGE}-arm64 AS deps-arm64
+FROM deps-${TARGETARCH} AS deps
 
 FROM ${base_image} AS prereqs
 SHELL ["/bin/bash", "-c"]
