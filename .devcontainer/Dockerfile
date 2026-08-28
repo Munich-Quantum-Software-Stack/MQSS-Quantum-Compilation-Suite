@@ -15,7 +15,7 @@ ARG base_image=ubuntu:22.04
 # built for; the matching stage below is selected and the other one is never
 # pulled. An override passed via --build-arg DEPS_IMAGE=... must likewise have
 # -amd64 / -arm64 tags published.
-ARG DEPS_IMAGE=ghcr.io/akshay9594/mqss-passes-suite/mqssci-deps:llvm22.1.0-cudaq0.15.0-catalyst0.15.0
+ARG DEPS_IMAGE=ghcr.io/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/mqssci-deps:llvm22.1.0-cudaq0.15.0-catalyst0.15.0
 
 FROM ${DEPS_IMAGE}-amd64 AS deps-amd64
 FROM ${DEPS_IMAGE}-arm64 AS deps-arm64

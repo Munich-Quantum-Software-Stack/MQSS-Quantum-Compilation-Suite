@@ -1,5 +1,7 @@
 # ---- Fetch and build CUDA-Q from source if not found -----------
 # Targets Built: QuakeDialect, CCDialect, QECDialect, OptimBuilder, OptCodeGen
+# Note: CUDA-Q must be built against the same LLVM this project uses, so require
+# that find_package(MLIR CONFIG) already ran.
 option(CUDAQ_AUTO_FETCH "Clone and build CUDA-Q from source if not found" OFF)
 set(CUDAQ_GIT_REPOSITORY
     "https://github.com/NVIDIA/cuda-quantum.git"
