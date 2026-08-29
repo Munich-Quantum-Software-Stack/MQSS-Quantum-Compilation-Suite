@@ -15,20 +15,22 @@ config.substitutions.append(
     ('%mqss-opt', os.path.join(repo_root, 'build/bin/mqss-opt'))
 )
 
+#TODO: Following path should be updated to point to the correct location of the mqss-cc binary.
+# Currently, it is set to a placeholder path that may not exist in your environment.
 config.substitutions.append(
     ('%mqss-cc', os.path.join(repo_root, 'build/bin/mqss-cc'))
 )
 
+#TODO: Following path should be updated to point to the correct location of the cudaq-quake binary.
+# Currently, it is set to a placeholder path that may not exist in your environment.
+# Please update it to the correct path where the cudaq-quake binary is located.
 config.substitutions.append(
-    ('%cudaq-quake', os.path.join(repo_root, 'build/_deps/cudaq/bin/cudaq-quake '))
+    ('%cudaq-quake', os.path.join(repo_root, 'opt/deps/cudaq/bin/cudaq-quake'))
 )
 
-config.substitutions.append(
-    ('%cudaq-opt', os.path.join(repo_root, 'build/_deps/cudaq/bin/cudaq-opt '))
-)
 
 config.substitutions.append(
-    ('FileCheck', os.path.join(repo_root, 'build/_deps/LLVM-22.1.0-toolchain/bin/FileCheck'))
+    ('FileCheck', os.path.join(repo_root, '/opt/deps/llvm/bin/FileCheck'))
 )
 
 config.substitutions.append(

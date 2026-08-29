@@ -13,7 +13,7 @@ name: Deps-Image
 # versions changes -- unrelated source changes never trigger a rebuild.
 on:
   push:
-    branches: [develop, akshay/cmake-deps]
+    branches: [develop]
     paths:
       - ".devcontainer/deps.DockerFile"
       - "cmake/FetchLLVM.cmake"

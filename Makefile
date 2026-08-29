@@ -32,7 +32,6 @@ front-end-paths:
 	echo 'export PATH="$(DEPS_DIR)/cudaq/bin:$$PATH"'
 	echo 'source $(VENV_DIR)/bin/activate'
 	echo 'export PATH="$(INSTALL_DIR):$$PATH"'
-	echo 'export PATH="/usr/local/bin:$$PATH"'
 
 frontend: setup-env
 	@./scripts/download_toolchains.sh
