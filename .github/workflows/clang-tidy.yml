@@ -7,6 +7,9 @@ on:
 jobs:
   clang-tidy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read # pull the private mqssci-deps image referenced by .devcontainer/Dockerfile
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
