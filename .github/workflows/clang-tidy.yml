@@ -22,6 +22,11 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache
           docker system prune -af
 
+      - name: Log in to GHCR
+        run:
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}"
+          --password-stdin
+
       - name: Build Docker image
         run: |
           docker build --build-arg CMAKE_ARCH=x86_64 \

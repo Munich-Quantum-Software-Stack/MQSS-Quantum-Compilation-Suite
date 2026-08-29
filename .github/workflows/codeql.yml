@@ -45,6 +45,11 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache
           docker system prune -af
 
+      - name: Log in to GHCR
+        run:
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}"
+          --password-stdin
+
       - name: Download CodeQL CLI
         run: |
           mkdir -p codeql-home
