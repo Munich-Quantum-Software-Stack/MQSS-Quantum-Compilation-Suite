@@ -17,10 +17,7 @@ ARG base_image=ubuntu:22.04
 # -amd64 / -arm64 tags published.
 ARG DEPS_IMAGE=ghcr.io/munich-quantum-software-stack/mqss-quantum-compilation-suite/mqssci-deps:llvm22.1.0-cudaq0.15.0-catalyst0.15.0
 
-FROM ${DEPS_IMAGE}-amd64 AS deps-amd64
-FROM ${DEPS_IMAGE}-arm64 AS deps-arm64
-FROM deps-${TARGETARCH} AS deps
-
+FROM ${DEPS_IMAGE}-${TARGETARCH} AS deps
 FROM ${base_image} AS prereqs
 SHELL ["/bin/bash", "-c"]
 ARG toolchain=gcc11
