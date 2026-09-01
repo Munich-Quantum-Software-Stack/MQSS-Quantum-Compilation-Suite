@@ -10,6 +10,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       # Step 1: Checkout repo (gives us the Dockerfile)
       - name: Checkout repository
@@ -18,7 +21,8 @@ jobs:
           submodules: recursive
 
       # Cache the CMake build dir (build/_deps and friends) so unchanged dependencies
-      # (LLVM toolchain fetch, CUDA-Q, Catalyst, MQT-Core, MQT-QMAP, QDMI) aren't rebuilt
+      # that still fetch+build from source at configure time (MQT-Core, MQT-QMAP, QDMI --
+      # LLVM/CUDA-Q/Catalyst instead come prebuilt from DEPS_IMAGE above) aren't rebuilt
       # from scratch every run -- only invalidated when the Dockerfile or the CMake files
       # that pin dependency versions change, not by changes to our own source.
       - name: Cache CMake build directory
@@ -39,10 +43,35 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache
           docker system prune -af
 
+      # Compute the exact deps image tag these pins map to (same logic as
+      # .github/workflows/deps-image.yml) so CI never drifts from
+      # .devcontainer/Dockerfile's own hardcoded default ARG -- if someone
+      # bumps a pin here without deps-image.yml having published a matching
+      # tag yet, this fails loudly on a missing manifest instead of silently
+      # building against a stale/mismatched deps image.
+      - name: Compute deps image tag
+        id: deps_vars
+        run: |
+          llvm_version=$(grep -A1 'set(MQSS_LLVM_VERSION' cmake/FetchLLVM.cmake | tail -1 | grep -oP '"\K[^"]+')
+          cudaq_tag=$(grep -A1 'set(CUDAQ_GIT_TAG' cmake/FindCUDAQ.cmake | tail -1 | grep -oP '"\K[^"]+')
+          catalyst_tag=$(grep -A1 'set(CATALYST_GIT_TAG' cmake/FindCatalyst.cmake | tail -1 | grep -oP '"\K[^"]+')
+          catalyst_tag=${catalyst_tag#v}
+          image=$(echo "ghcr.io/${{ github.repository }}/mqssci-deps" | tr '[:upper:]' '[:lower:]')
+          echo "image=${image}:llvm${llvm_version}-cudaq${cudaq_tag}-catalyst${catalyst_tag}" >> "$GITHUB_OUTPUT"
+
+      # GHCR images pushed with GITHUB_TOKEN are private by default, so the
+      # docker build below needs to authenticate to pull DEPS_IMAGE even
+      # though it's coming from this same repo's own package registry.
+      - name: Log in to GHCR
+        run:
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}"
+          --password-stdin
+
       # Step 2: Build Docker image using relative path
       - name: Build Docker image
         run: |
           docker build --build-arg CMAKE_ARCH=x86_64 \
+           --build-arg DEPS_IMAGE="${{ steps.deps_vars.outputs.image }}" \
            --progress=plain -t mqss-pass-dev -f .devcontainer/Dockerfile .
 
       - name: Build

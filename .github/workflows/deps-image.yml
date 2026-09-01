@@ -1,0 +1,128 @@
+name: Deps-Image
+
+# Builds and publishes the prebuilt LLVM/MLIR + CUDA-Q + Catalyst image that
+# .devcontainer/Dockerfile pulls in via --build-arg DEPS_IMAGE, instead of each
+# consumer fetching and building those from source at CMake configure time.
+#
+# The image is native machine code, so it is published once per architecture:
+#   <image>:<version>-amd64   <image>:<version>-arm64   (+ matching -latest)
+# and a multi-arch manifest list is stitched together at the bare <image>:<version>
+# and <image>:latest tags so a plain `docker pull` still resolves to the right one.
+#
+# Only runs when the image's own recipe or one of the pinned dependency
+# versions changes -- unrelated source changes never trigger a rebuild.
+on:
+  push:
+    branches: [develop]
+    paths:
+      - ".devcontainer/deps.DockerFile"
+      - "cmake/FetchLLVM.cmake"
+      - "cmake/FindCUDAQ.cmake"
+      - "cmake/FindCatalyst.cmake"
+  workflow_dispatch:
+
+jobs:
+  # Compute the image name and version tag once, from the same cmake files
+  # FindCUDAQ.cmake/FindCatalyst.cmake/FetchLLVM.cmake use, so it can never
+  # drift from what deps.DockerFile actually builds against them. Tagging by
+  # what's inside the image (not a date or commit SHA) means bumping a pin
+  # naturally produces a new tag instead of silently overwriting the old
+  # image. Lowercase the image path since GHCR requires it (repo/org names
+  # may contain uppercase letters).
+  vars:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.vars.outputs.image }}
+      tag: ${{ steps.vars.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Compute image name and version tag
+        id: vars
+        run: |
+          llvm_version=$(grep -A1 'set(MQSS_LLVM_VERSION' cmake/FetchLLVM.cmake | tail -1 | grep -oP '"\K[^"]+')
+          cudaq_tag=$(grep -A1 'set(CUDAQ_GIT_TAG' cmake/FindCUDAQ.cmake | tail -1 | grep -oP '"\K[^"]+')
+          catalyst_tag=$(grep -A1 'set(CATALYST_GIT_TAG' cmake/FindCatalyst.cmake | tail -1 | grep -oP '"\K[^"]+')
+          catalyst_tag=${catalyst_tag#v}
+
+          if [ -z "$llvm_version" ] || [ -z "$cudaq_tag" ] || [ -z "$catalyst_tag" ]; then
+            echo "::error::Failed to extract one or more version pins (llvm='$llvm_version' cudaq='$cudaq_tag' catalyst='$catalyst_tag') -- did the set(...) formatting in FetchLLVM.cmake/FindCUDAQ.cmake/FindCatalyst.cmake change?"
+            exit 1
+          fi
+
+          image=$(echo "ghcr.io/${{ github.repository }}/mqssci-deps" | tr '[:upper:]' '[:lower:]')
+          tag="llvm${llvm_version}-cudaq${cudaq_tag}-catalyst${catalyst_tag}"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Building ${image}:${tag}"
+
+  # One native build per architecture -- amd64 on the standard runner, arm64 on
+  # a GitHub-hosted arm64 runner. setup-mlir.sh inside deps.DockerFile fetches
+  # the toolchain matching `uname -m`, and CUDA-Q/Catalyst compile from source;
+  # doing that under QEMU emulation would be far too slow for CI, hence native
+  # runners rather than a single cross-building job.
+  build-and-push:
+    needs: vars
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: amd64, runner: ubuntu-latest }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          docker system prune -af
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build deps image (${{ matrix.arch }})
+        run: |
+          docker build --platform "linux/${{ matrix.arch }}" \
+            -f .devcontainer/deps.DockerFile \
+            -t "${{ needs.vars.outputs.image }}:${{ needs.vars.outputs.tag }}-${{ matrix.arch }}" \
+            -t "${{ needs.vars.outputs.image }}:latest-${{ matrix.arch }}" \
+            .devcontainer
+
+      - name: Push deps image (${{ matrix.arch }})
+        run: |
+          docker push "${{ needs.vars.outputs.image }}:${{ needs.vars.outputs.tag }}-${{ matrix.arch }}"
+          docker push "${{ needs.vars.outputs.image }}:latest-${{ matrix.arch }}"
+
+  # Stitch the per-arch tags into a multi-arch manifest list at the bare
+  # <image>:<version> and <image>:latest tags, so consumers that don't append
+  # an -<arch> suffix (a plain `docker pull`, older Dockerfiles) still get the
+  # image matching their platform.
+  manifest:
+    needs: [vars, build-and-push]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Publish multi-arch manifest lists
+        run: |
+          for t in "${{ needs.vars.outputs.tag }}" latest; do
+            docker buildx imagetools create \
+              -t "${{ needs.vars.outputs.image }}:${t}" \
+              "${{ needs.vars.outputs.image }}:${t}-amd64" \
+              "${{ needs.vars.outputs.image }}:${t}-arm64"
+          done
