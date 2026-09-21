@@ -64,6 +64,9 @@ hadamard and CNOT gates in the input dialect `quake.h` and `quake.x` will be dec
 `phased_rx` and `cz` gates. Similarly, one can invoke passes on the catalyst-quantum mlir dialect by
 just replacing the quake dialect input with the catalyst-quantum input.
 
+Add `--verify=after-each-pass` to the command above to automatically check that the decomposition
+preserved the circuit's behavior. See [Verifying Circuit Correctness](verification.md) for details.
+
 ## Using mqss-cc script (Frontend test)
 
 Note: Before running a Frontend test, make sure you follow the installation instructions within

@@ -29,4 +29,5 @@ suite.
 develop-guide
 templates
 integrate
+verification
 ```

@@ -113,23 +113,23 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
       config.execution.runConstructionChecker = true;
     }
 
-    MQSS_DEBUG("Equivalence check Result for: " << func_name);
+    llvm::outs() << "Equivalence check Result for: " << func_name << " is ";
     ecm.run();
     switch (ecm.equivalence()) {
     case ec::EquivalenceCriterion::Equivalent:
-      MQSS_DEBUG(" Equivalent\n");
+      llvm::outs() << "Equivalent\n";
       break;
     case ec::EquivalenceCriterion::EquivalentUpToGlobalPhase:
-      MQSS_DEBUG(" Equivalent Upto global Phase\n");
+      llvm::outs() << "Equivalent Upto global Phase\n";
       break;
     case ec::EquivalenceCriterion::EquivalentUpToPhase:
-      MQSS_DEBUG(" Equivalent Upto Phase\n");
+      llvm::outs() << "Equivalent Upto Phase\n";
       break;
     case ec::EquivalenceCriterion::ProbablyEquivalent:
-      MQSS_DEBUG(" Probably Equivalent\n");
+      llvm::outs() << "Probably Equivalent\n";
       break;
     default:
-      MQSS_DEBUG(" NOT equivalent\n");
+      llvm::outs() << "NOT equivalent\n";
       break;
     }
   }

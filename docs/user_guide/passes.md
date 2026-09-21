@@ -272,6 +272,12 @@ MQSS-O3 optimization pipeline</br> Passes enabled:
 - `cse`
 - `canonicalize`
 
+## Verifying a Pipeline's Correctness
+
+Any pass or pipeline above can be checked for correctness with the `--verify` flag, which confirms
+that a transformation didn't change what the circuit computes. See
+[Verifying Circuit Correctness](verification.md) for details.
+
 ## Example Usage
 
 ### Using mqss-opt
@@ -296,9 +302,9 @@ invocations.
 
 ### Using mqss-cc
 
-``mqss-cc` is a wrapper script that takes `C++`/`Python` source code as input, converts the source
-to the appropriate MLIR dialect, and then runs `mqss-opt` on that dialect. It is the convenient
-entry point when you want to start from kernel source rather than from an existing MLIR file.
+`mqss-cc` is a wrapper script that takes `C++`/`Python` source code as input, converts the source to
+the appropriate MLIR dialect, and then runs `mqss-opt` on that dialect. It is the convenient entry
+point when you want to start from kernel source rather than from an existing MLIR file.
 
 Note: Currently, the script checks the extension of the source `.cpp` or `.py` and then performs the
 appropriate translation. If a `.cpp` is detected, it is assumed that the source is a cudaq kernel.

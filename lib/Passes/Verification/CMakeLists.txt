@@ -1,6 +1,6 @@
 add_mlir_library(
   MQSSCIVerificationPasses
-  CommonVerificationPass.cpp
+  EquivalenceVerification.cpp
   DEPENDS
   LINK_LIBS
   PUBLIC

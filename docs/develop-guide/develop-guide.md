@@ -49,9 +49,11 @@ docker run --rm -it \
 
 ```
 MQSS-Quantum-Compilation-Suite/
-├── cmake/                      # Find*.cmake modules: CUDAQ, Catalyst, QDMI, MQT-QMAP, MQT-QCEC, etc.
+├── cmake/                      # Find*.cmake modules: CUDAQ, Catalyst, QDMI, MQT-Core, MQT-QMAP, MQT-QCEC, etc.
 ├── docs/                       # Sphinx documentation source (this page included)
 ├── include/
+│   ├── MQSSCIInterfaces/
+│   │   └── MQSSCompiler.h      # Simplified C++ library API (see Integrate guide)
 │   ├── Passes/
 │   │   ├── Analysis/
 │   │   │   ├── CatalystExtractor.h
@@ -69,23 +71,29 @@ MQSS-Quantum-Compilation-Suite/
 │   │   │   ├── CMakeLists.txt
 │   │   │   ├── Decomposition.h
 │   │   │   ├── Dialects.h
-│   │   │   ├── MappingPassUtils.h
-│   │   │   ├── PassIncludes.h
-│   │   │   ├── PassUtils.h
+│   │   │   ├── PassLogic.h
 │   │   │   ├── Pipelines.h
-│   │   │   ├── Transforms.h
-│   │   │   ├── Transforms.td
-│   │   │   └── TranspilationPassUtils.h
+│   │   │   ├── TransformPasses.h
+│   │   │   └── TransformPasses.td
+│   │   ├── Verification/
+│   │   │   └── Instrumentation.h
 │   │   └── CMakeLists.txt
 │   ├── Utils/
-│   │   ├── debug_utils.h
-│   │   ├── dialectutils.h
-│   │   └── Error.h
+│   │   ├── CodegenUtils.h
+│   │   ├── DebugUtils.h
+│   │   ├── DialectUtils.h
+│   │   ├── Error.h
+│   │   ├── MQTCoreUtils.h
+│   │   ├── TransformUtils.h
+│   │   └── TranspilationPassUtils.h
 │   └── CMakeLists.txt
 ├── lib/
 │   ├── Dialects/
 │   │   ├── CMakeLists.txt
 │   │   └── Dialects.cpp
+│   ├── MQSSCIInterfaces/
+│   │   ├── CMakeLists.txt
+│   │   └── MQSSCompiler.cpp
 │   ├── Passes/
 │   │   ├── CodeGen/
 │   │   │   ├── BasisConversionPass.cpp
@@ -107,6 +115,9 @@ MQSS-Quantum-Compilation-Suite/
 │   │   │   ├── CommonNormalizeArgAnglePass.cpp
 │   │   │   ├── CommonPatternReductionPass.cpp
 │   │   │   └── Pipeline.cpp
+│   │   ├── Verification/
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── EquivalenceVerification.cpp
 │   │   └── CMakeLists.txt
 │   └── CMakeLists.txt
 ├── scripts/                    # build.sh, mqss-cc wrapper, front-end toolchain download scripts
@@ -117,32 +128,57 @@ MQSS-Quantum-Compilation-Suite/
 
 - Dialect registration lives in `lib/Dialects`. Dialect-agnostic MLIR optimization passes (namespace
   `mqss::mqssci::opt`) live in `lib/Passes/Transforms`. Code-generation/lowering passes (namespace
-  `mqss::mqssci::codegen`) live in `lib/Passes/CodeGen`.
+  `mqss::mqssci::codegen`) live in `lib/Passes/CodeGen`. Circuit-equivalence verification (namespace
+  `mqss::mqssci::verify`) lives in `lib/Passes/Verification` — see
+  [Verification Infrastructure](verification.md). `lib/MQSSCIInterfaces` wraps the pass library
+  behind a single-call `MQSSCompiler` API for consumers who don't need direct `mlir::OpPassManager`
+  access — see [Integrating the MQSS Quantum Compilation Suite](integrate.md).
 
 - CUDAQ and Catalyst are included as external dependencies and are downloaded and installed as
   `cmake` modules. Following targets are built for each of these modules:
   - CUDAQ: `QuakeDialect CCDialect QECDialect OptimBuilder OptCodeGen`
   - Catalyst : `MLIRMBQC MLIRQRef MLIRQuantum` These targets incorporate all dialect related headers
     and API implementations.
+  - MQT-Core, MQT-QMAP, and MQT-QCEC are fetched similarly and are what the verification
+    infrastructure uses to represent circuits and run equivalence checks.
 
 ## CMakeLists.txt
 
-The pass library is built as three separate CMake targets, one per directory under `lib/`, each with
-its own `CMakeLists.txt` declaring exactly the external dependencies (CUDAQ, Catalyst, QDMI,
-MQT-QMAP, MLIR conversion libraries, etc.) that its own sources actually need:
+The pass library is built as one CMake target per directory under `lib/`, each with its own
+`CMakeLists.txt` declaring exactly the external dependencies (CUDAQ, Catalyst, QDMI, MQT-Core,
+MQT-QMAP, MQT-QCEC, MLIR conversion libraries, etc.) that its own sources actually need:
 
 - `lib/Dialects/CMakeLists.txt` — builds `MQSSSupportedDialects` (dialect registration).
 - `lib/Passes/CodeGen/CMakeLists.txt` — builds `MQSSCICodeGenPasses` (code-generation/lowering
   passes), linking `MQSSSupportedDialects` `PUBLIC`.
-- `lib/Passes/Transforms/CMakeLists.txt` — builds `MQSSCIPasses` (dialect-agnostic optimization
-  passes), linking `MQSSCICodeGenPasses` `PUBLIC`.
+- `lib/Passes/Transforms/CMakeLists.txt` — builds `MQSSCITransformPasses` (dialect-agnostic
+  optimization passes), linking `MQSSCICodeGenPasses` `PUBLIC`.
+- `lib/Passes/Verification/CMakeLists.txt` — builds `MQSSCIVerificationPasses` (equivalence-checking
+  instrumentation, see [Verification Infrastructure](verification.md)), linking
+  `MQSSSupportedDialects`, `MQT::CoreIR`, and `MQT::QCEC` `PUBLIC`.
+- `lib/MQSSCIInterfaces/CMakeLists.txt` — builds `MQSSCIInterfaces` (the `MQSSCompiler` library
+  API), linking `MQSSCITransformPasses` and `MQSSCIVerificationPasses` `PUBLIC`. Exposed to external
+  consumers as the `mqss-ci::mqss-ci` alias (see [Integrate](integrate.md)).
+
+Note: `MQSSCITransformPasses` and `MQSSCIVerificationPasses` are built as plain static libraries (no
+`SHARED` keyword). `add_mlir_library` builds a static library in two pieces — an `obj.<name>` object
+library that does the actual compiling, and a `<name>` static archive that just packages its
+already- compiled objects — so `target_compile_options`/`target_compile_definitions` calls must
+target `obj.<name>` (guarded by `if(TARGET obj.<name>)`) to actually affect compilation; targeting
+`<name>` alone silently does nothing. See
+[Verification Infrastructure](verification.md#a-cmake-pitfall-specific-to-this-library) for a worked
+example of this pitfall. Relatedly, these two libraries used to be built `SHARED`; they were
+switched to static because two `SHARED` libraries that both statically link overlapping LLVM
+component libraries (as these do, transitively through `MLIRPass`/`MLIRTransforms`) each end up with
+their own private copy of LLVM's global command-line option registry, which crashes at runtime with
+an "option registered more than once" error the moment both are loaded into the same process.
 
 Because each dependency is declared `PUBLIC` at the target that actually needs it, everything
 propagates transitively up the chain. `root/CMakeLists.txt` only has to link the final executable
 against the top of that chain plus MLIR's own driver library:
 
 ```cmake
-target_link_libraries(mqss-opt PUBLIC MLIROptLib MQSSCIPasses)
+target_link_libraries(mqss-opt PUBLIC MLIROptLib MQSSCITransformPasses MQSSCIVerificationPasses)
 ```
 
 Note: this transitive propagation is convenient, but it isn't a substitute for checking what a given
@@ -203,6 +239,13 @@ down the chain.
 
   Note: Make sure that the path to `cudaq-quake` and `mqss-opt` are appended to the `$PATH`
   environment variable of your shell via the command : `eval "$(make set-target-paths)"`.
+
+## Verification
+
+Circuit-equivalence verification is implemented as an `mlir::PassInstrumentation` rather than an
+ordinary pass — see [Verification Infrastructure](verification.md) for the implementation details,
+including a CMake pitfall specific to its static library target that's easy to repeat when adding
+new compile options elsewhere in the project.
 
 ## Enabling Pass Debug Information
 

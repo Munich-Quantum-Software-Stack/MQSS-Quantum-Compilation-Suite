@@ -19,4 +19,4 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
-// CHECK: Equivalence check Result for: __nvqpp__mlirgen__bellILm2EE Equivalent
+// CHECK: Equivalence check Result for: __nvqpp__mlirgen__bellILm2EE is Equivalent
