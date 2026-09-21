@@ -22,7 +22,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/Pipelines.h"
 #include "Passes/Transforms/TransformPasses.h"
 #include "Passes/Verification/Instrumentation.h"
-#include "Passes/Verification/VerificationPasses.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
@@ -68,7 +67,7 @@ int main(int argc, char **argv) {
   // CLI flags (per-pass flags and pipeline names).
   registerMQSSTransformsPasses();
   registerMQSSCodeGenPasses();
-  registerMQSSVerificationPasses();
+  // registerMQSSVerificationPasses();
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::createCanonicalizerPass();
@@ -113,7 +112,8 @@ int main(int argc, char **argv) {
   // LLVM's cl::opt system requires every option to exist before
   // cl::ParseCommandLineOptions runs.
   cl::opt<string> VerificationModeCLOpt(
-      "verify", cl::desc("Specify verification mode: off, always, final"),
+      "verify",
+      cl::desc("Specify verification mode: off, once, after-each-pass"),
       cl::value_desc("mode"), cl::init("off"));
 
   llvm::StringRef toolName = "MQSS Optimizer\n";
@@ -167,80 +167,16 @@ int main(int argc, char **argv) {
         if (failed(defaultConfig.setupPassPipeline(pm)))
           return mlir::failure();
 
-        if (verifymode == "final" || verifymode == "always") {
+        if (verifymode == "once" || verifymode == "after-each-pass") {
           llvm::DenseMap<llvm::StringRef, VerifyQuantumComputationTy> snapshot;
           pm.addInstrumentation(
-              std::make_unique<EquivalenceVerificationInstrumentation>(
+              std::make_unique<mqss::mqssci::verify::VerifyPassInstrumentation>(
                   std::move(snapshot)));
           return mlir::success();
         }
+        return mlir::success();
       });
 
   return mlir::asMainReturnCode(
       MlirOptMain(output->os(), std::move(file), registry, config));
 }
-
-// int main(int argc, char **argv) {
-//   mlir::DialectRegistry registry;
-
-//   mqss::mqssci::opt::registerMQSSDialects(registry);
-
-//   // Register Dialect Agnostic Passes
-//   registerMQSSTransformsPasses();
-
-//   // Register CodeGen Passes
-//   registerMQSSCodeGenPasses();
-
-//   registerMQSSVerificationPasses();
-
-//   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-//     return mlir::createCanonicalizerPass();
-//   });
-//   mlir::registerPass(
-//       []() -> std::unique_ptr<mlir::Pass> { return mlir::createCSEPass(); });
-
-//   // Register Pass-pipelines
-//   mlir::registerPassPipeline(
-//       "O1",                            // pipeline name (used on CLI too)
-//       "MQSS-O1 optimization pipeline", // description
-//       [](mlir::OpPassManager &pm, StringRef options,
-//          std::function<LogicalResult(const Twine &)> errorHandler) {
-//         mqss::mqssci::opt::O1(pm);
-//         return mlir::success();
-//       },
-//       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
-//       // options callback
-//   );
-//   mlir::registerPassPipeline(
-//       "O2",                            // pipeline name (used on CLI too)
-//       "MQSS-O2 optimization pipeline", // description
-//       [](mlir::OpPassManager &pm, StringRef options,
-//          std::function<LogicalResult(const Twine &)> errorHandler) {
-//         mqss::mqssci::opt::O2(pm);
-//         return mlir::success();
-//       },
-//       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
-//       // options callback
-//   );
-//   mlir::registerPassPipeline(
-//       "O3",                            // pipeline name (used on CLI too)
-//       "MQSS-O3 optimization pipeline", // description
-//       [](mlir::OpPassManager &pm, StringRef options,
-//          std::function<LogicalResult(const Twine &)> errorHandler) {
-//         mqss::mqssci::opt::O3(pm);
-//         return mlir::success();
-//       },
-//       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {}
-//       // options callback
-//   );
-
-//   mlir::PassPipelineRegistration<ToQirPipelineOptions>(
-//       "lower-quake-to-qir", "MQSS Quake to QIR Conversion pipeline",
-//       [](mlir::OpPassManager &pm, const ToQirPipelineOptions &opts) {
-//         auto convertto = processQIRLoweringOpts(opts.profile);
-//         mqss::mqssci::opt::QIRConversionPipeline(pm, convertto);
-//       });
-
-//   return mlir::asMainReturnCode(
-//       mlir::MlirOptMain(argc, argv, "MQSS Optimizer\n", registry));
-// }

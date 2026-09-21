@@ -56,6 +56,7 @@ enum Gate {
   T,
   TAdj,
   SWAP,
+  PhasedRx,
   UNKNOWN
 };
 
@@ -96,6 +97,7 @@ static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         {"RX", {QubitRole::Target}},
         {"RY", {QubitRole::Target}},
         {"RZ", {QubitRole::Target}},
+        {"PhasedRx", {QubitRole::Target}},
 
         // Two-qubit symmetric gates
         {"SWAP", {QubitRole::Target, QubitRole::Target}}
@@ -197,6 +199,8 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return TAdj;
   if (GateTy == "SWAP")
     return SWAP;
+  if (GateTy == "PhasedRx")
+    return PhasedRx;
   return UNKNOWN;
 }
 

@@ -67,6 +67,12 @@ inline std::tuple<bool, StringLiteral> isQuakeQuantumGate(Operation *op) {
       return {true, "CH"};
     return {true, "H"};
   }
+  if (auto x = dyn_cast<quake::PhasedRxOp>(op)) {
+    return {true, "PhasedRx"};
+  }
+  if (auto x = dyn_cast<quake::SwapOp>(op)) {
+    return {true, "SWAP"};
+  }
 
   if (auto x = dyn_cast<quake::SOp>(op)) {
     if (x.isAdj())
