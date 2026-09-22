@@ -157,7 +157,7 @@ TEST(MQSSCIInterfacesTest, CompilesToQIRBaseForWmiBackend) {
   // exactly that basis before QIR lowering.
   EXPECT_NE(qir->find("call void @__quantum__qis__rz__body"), std::string::npos)
       << "expected at least one native rz rotation";
-  EXPECT_NE(qir->find("call void @__quantum__qis__x__body"), std::string::npos)
+  EXPECT_NE(qir->find("call void @__quantum__qis__rx__body"), std::string::npos)
       << "expected at least one native x gate";
   EXPECT_NE(qir->find("call void @__quantum__qis__cz__body"), std::string::npos)
       << "expected the native two-qubit cz gate";
@@ -165,7 +165,7 @@ TEST(MQSSCIInterfacesTest, CompilesToQIRBaseForWmiBackend) {
   // The fixture's quake.h is not in wmi's native set and should have been
   // decomposed into rz/x rotations, not left as a QIR __quantum__qis__h call.
   EXPECT_EQ(qir->find("__quantum__qis__h__body"), std::string::npos)
-      << "found a non-native 'h' gate; wmi's native set is {cz, x, y, rz}";
+      << "found a non-native 'h' gate; wmi's native set is {cz, x, y, rz, sx}";
 
   // Exactly one two-qubit interaction should remain, matching the fixture's
   // single quake.x (a CNOT, decomposed into cz). Matched on "call void @..."
@@ -208,6 +208,43 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForQIRBase) {
   // the QIR lowering branch specifically, since it's a different codepath
   // through compileImpl() than the OpenQASM2 case above.
   EXPECT_EQ(*qir_from_path, *qir_from_source);
+}
+
+TEST(MQSSCIInterfacesTest, DefaultQubitMappingTest) {
+  // Trivial single-qubit circuit -- content is irrelevant to this test; what
+  // matters is that it allocates fewer qubits than the coupling map below.
+  const std::string circuit = R"(
+    func.func @__nvqpp__mlirgen__k() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+      %q0 = quake.alloca !quake.ref
+      quake.h %q0 : (!quake.ref) -> ()
+      %m = quake.mz %q0 : (!quake.ref) -> !quake.measure
+      return
+    }
+  )";
+
+  // A minimal 6-qubit linear chain: the circuit only uses 1 of these 6
+  // qubits, so CommonMappingPass must derive the device's qubit count from
+  // the coupling map itself (not from the circuit) and map onto it without
+  // throwing.
+  const std::vector<std::pair<std::uint32_t, std::uint32_t>> connectivity{
+      {0, 1}, {1, 0}, {1, 2}, {2, 1}, {2, 3},
+      {3, 2}, {3, 4}, {4, 3}, {4, 5}, {5, 4}};
+  const std::vector<std::string> nativeGates{"rx", "ry", "rz", "cx"};
+
+  mqss::mqssci::MQSSCompiler compiler;
+  const mqss::mqssci::CompilerOptions opts{mqss::mqssci::OptLevel::O1,
+                                           mqss::mqssci::ResultFormat::QIRBASE};
+
+  // If CommonMappingPass misderives the device's qubit count, this throws
+  // instead of returning nullopt; gtest reports an uncaught exception as a
+  // test failure, so no explicit try/catch is needed here.
+  std::optional<std::string> qir =
+      compiler.compileSource(circuit, "", nativeGates, connectivity, opts);
+
+  ASSERT_TRUE(qir.has_value())
+      << "compileSource() returned nullopt; expected a valid QIR base-profile "
+         "program";
+  EXPECT_FALSE(qir->empty());
 }
 
 } // namespace

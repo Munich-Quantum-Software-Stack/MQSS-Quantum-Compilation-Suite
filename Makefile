@@ -9,7 +9,7 @@ INSTALL_DIR ?= $(BUILD_DIR)/bin
 
 INSTALL_PATH = --install-dir ${INSTALL_DIR}
 
-DEBUG_FLAG =		# --debug (for pass debug info)
+DEBUG_FLAG =	# --debug (for pass debug info)
 
 ################# Paths to Dependencies ###############
 

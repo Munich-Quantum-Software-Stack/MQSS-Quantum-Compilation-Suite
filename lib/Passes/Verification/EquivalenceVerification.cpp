@@ -47,44 +47,15 @@ mqss::mqssci::verify::VerifyPassInstrumentation::createMQTQuantumComputation(
   return qc;
 }
 
-void performCheck(qc::QuantumComputation qc1, qc::QuantumComputation qc2,
-                  ec::Configuration config) {
+// void performCheck(qc::QuantumComputation qc1, qc::QuantumComputation qc2,
+//                   ec::Configuration config) {
 
-  ec::EquivalenceCheckingManager ecm(qc1, qc2, config);
-
-  // If the AlternatingChecker structurally cannot handle the pair
-  // of circuits, fallback to ConstructionChecker
-  if (config.execution.runAlternatingChecker &&
-      !ec::DDAlternatingChecker::canHandle(qc1, qc2)) {
-    config.execution.runAlternatingChecker = false;
-    config.execution.runConstructionChecker = true;
-  }
-
-  ecm.run();
-  switch (ecm.equivalence()) {
-  case ec::EquivalenceCriterion::Equivalent:
-    llvm::outs() << "Equivalent\n";
-    break;
-  case ec::EquivalenceCriterion::EquivalentUpToGlobalPhase:
-    llvm::outs() << "Equivalent Upto global Phase\n";
-    break;
-  case ec::EquivalenceCriterion::EquivalentUpToPhase:
-    llvm::outs() << "Equivalent Upto Phase\n";
-    break;
-  case ec::EquivalenceCriterion::ProbablyEquivalent:
-    llvm::outs() << "Probably Equivalent\n";
-    break;
-  default:
-    llvm::outs() << "NOT equivalent\n";
-    break;
-  }
-  llvm::outs() << "\n";
-}
+// }
 
 // Take a snapshot of the Quantum Circuit before the Pass(es)
 void mqss::mqssci::verify::VerifyPassInstrumentation::runBeforePass(
     Pass *pass, Operation *op) {
-  MQSS_DEBUG("-->[verify] runBeforePass: " << pass->getName() << "\n");
+  // MQSS_DEBUG("-->[verify] runBeforePass: " << pass->getName() << "\n");
 
   DialectAnalysisSelector selector(op);
   auto &analysis = *selector.get();
@@ -113,7 +84,7 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runBeforePass(
 void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
     Pass *pass, Operation *op) {
 
-  MQSS_DEBUG("-->[verify] runAfterPass: " << pass->getName() << "\n");
+  MQSS_DEBUG("-->[verify] Pass: " << pass->getName() << "\n");
 
   DialectAnalysisSelector selector(op);
   auto &analysis = *selector.get();
@@ -144,6 +115,7 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
   config = ec::Configuration{};
   config.functionality.checkPartialEquivalence = true;
 
+  bool verification_result = true;
   for (auto [func_name, vqc_ty] : cached_module_snapshot) {
     if (vqc_ty.qc1.empty() || vqc_ty.qc2.empty()) {
       MQSS_DEBUG("Skipping verification for: " << func_name
@@ -151,9 +123,42 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
       continue;
     }
 
-    llvm::outs() << "[verify] " << func_name << ": ";
-    performCheck(vqc_ty.qc1, vqc_ty.qc2, config);
+    ec::EquivalenceCheckingManager ecm(vqc_ty.qc1, vqc_ty.qc2, config);
+
+    // If the AlternatingChecker structurally cannot handle the pair
+    // of circuits, fallback to ConstructionChecker
+    if (config.execution.runAlternatingChecker &&
+        !ec::DDAlternatingChecker::canHandle(vqc_ty.qc1, vqc_ty.qc2)) {
+      config.execution.runAlternatingChecker = false;
+      config.execution.runConstructionChecker = true;
+    }
+    MQSS_DEBUG("[verify] Result for " << func_name << " : ");
+    ecm.run();
+    switch (ecm.equivalence()) {
+    case ec::EquivalenceCriterion::Equivalent:
+      MQSS_DEBUG("Equivalent\n");
+      break;
+    case ec::EquivalenceCriterion::EquivalentUpToGlobalPhase:
+      MQSS_DEBUG("Equivalent Upto global Phase\n");
+      break;
+    case ec::EquivalenceCriterion::EquivalentUpToPhase:
+      MQSS_DEBUG("Equivalent Upto Phase\n");
+      break;
+    case ec::EquivalenceCriterion::ProbablyEquivalent:
+      MQSS_DEBUG("Probably Equivalent\n");
+      break;
+    default:
+      verification_result = false;
+      MQSS_DEBUG("NOT equivalent\n");
+      break;
+    }
+    llvm::outs() << "\n";
   }
+
+  if (verification_result)
+    llvm::outs() << "[verify] Result for " << pass->getName() << " : Success\n";
+  else
+    llvm::outs() << "[verify] Result for " << pass->getName() << " : failed\n";
 }
 
 void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPassFailed(

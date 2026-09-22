@@ -85,7 +85,13 @@ struct PipelineConfig {
       0---1
     */
     const CouplingMap cm = getCouplingMap(coupling_map);
-    config.arch.loadCouplingMap(5, cm);
+    std::set<std::uint32_t> qubits;
+    for (const auto &[a, b] : cm) {
+      qubits.insert(a);
+      qubits.insert(b);
+    }
+    std::size_t numQubits = qubits.size();
+    config.arch.loadCouplingMap(numQubits, cm);
     // Defining the settings of the mqt-mapper
     config.settings = getDefaultSettings();
     return config;

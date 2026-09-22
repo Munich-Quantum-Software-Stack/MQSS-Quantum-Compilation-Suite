@@ -125,7 +125,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     } else if (backend_name == "planqc") {
       conv_opts.gates = "rx,cz,rz";
     } else if (backend_name == "wmi") {
-      conv_opts.gates = "cz,x,y,rz";
+      conv_opts.gates = "cz,x,y,rz,sx";
     } else {
       mlir::emitError(
           module->getLoc(),

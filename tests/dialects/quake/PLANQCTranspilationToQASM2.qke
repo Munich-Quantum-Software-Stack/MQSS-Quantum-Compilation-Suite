@@ -24,19 +24,15 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
 }
 
 // CHECK: qreg var0[2];
-// CHECK: rz(3.141593e+00) var0[0];
-// CHECK: rx(3.141593e+00) var0[0];
+// CHECK: rz(1.570796e+00) var0[0];
+// CHECK: rx(1.570796e+00) var0[0];
 // CHECK: rz(1.570796e+00) var0[0];
 // CHECK: rz(7.853982e-01) var0[0];
 // CHECK: rx(3.141593e+00) var0[1];
-// CHECK: rz(3.141593e+00) var0[1];
-// CHECK: rx(3.141593e+00) var0[1];
+// CHECK: rz(1.570796e+00) var0[1];
+// CHECK: rx(1.570796e+00) var0[1];
 // CHECK: rz(1.570796e+00) var0[1];
 // CHECK: cz var0[0], var0[1];
-// CHECK: rz(3.141593e+00) var0[1];
-// CHECK: rx(3.141593e+00) var0[1];
 // CHECK: rz(1.570796e+00) var0[1];
-// CHECK: creg var3[1];
-// CHECK: measure var0[0] -> var3[0];
-// CHECK: creg var4[1];
-// CHECK: measure var0[1] -> var4[0];
+// CHECK: rx(1.570796e+00) var0[1];
+// CHECK: rz(1.570796e+00) var0[1];

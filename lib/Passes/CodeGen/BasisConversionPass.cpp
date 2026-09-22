@@ -40,7 +40,10 @@ getDecompositionTable() {
       table = [] {
         std::unordered_map<std::string, std::vector<DecompositionRule>> t;
         t["h"] = {
-            makeRule<quake::HOp>("HToRzXRz", {"rz", "x"}, rewriteHToRzXRz),
+            // Always emits a fixed pi/2 Rx, i.e. "sx" (sqrt-X), not a
+            // generic parameterized one -- see the comment on
+            // rewriteHToRzRxRz.
+            makeRule<quake::HOp>("HToRzSxRz", {"rz", "sx"}, rewriteHToRzRxRz),
             makeRule<quake::HOp>("HToU3", {"u3"}, rewriteHToU3),
             makeRule<quake::HOp>("HToPhasedRx", {"phased_rx"},
                                  rewriteHToPhasedRx)};
@@ -72,6 +75,13 @@ getDecompositionTable() {
             makeRule<quake::RxOp>("RxToHRzH", {"h", "rz"}, rewriteRxToHRzH),
             makeRule<quake::RxOp>("RxToPhasedRx", {"phased_rx"},
                                   rewriteRxToPhasedRx)};
+        // "sx" is the fixed pi/2 special case of "rx" (see classifyOp); reuse
+        // the same phased_rx fallback rather than duplicating it. It has no
+        // fallback through "h"/"rz" because that path is exactly how "h"
+        // itself produces "sx" in the first place (HToRzSxRz above) -- a
+        // rule the other way would just bounce the two back and forth.
+        t["sx"] = {makeRule<quake::RxOp>("SxToPhasedRx", {"phased_rx"},
+                                         rewriteRxToPhasedRx)};
         t["ry"] = {makeRule<quake::RyOp>("RyToRzRxRz", {"rz", "rx"},
                                          rewriteRyToRzRxRz)};
         t["rz"] = {
@@ -168,11 +178,21 @@ std::optional<std::string> classifyOp(Operation *op) {
     if (g.isAdj() || g.getTargets().size() != 1 ||
         g.getParameters().size() != 1)
       return std::nullopt;
-    if (g.getControls().empty())
-      return std::string("rx");
-    if (g.getControls().size() == 1)
-      return std::string("crx");
-    return std::nullopt;
+    if (!g.getControls().empty())
+      return g.getControls().size() == 1 ? std::optional<std::string>("crx")
+                                         : std::nullopt;
+    // A fixed pi/2 rotation about X is "sx" (sqrt-X): its own native gate on
+    // hardware whose basis doesn't include an arbitrary-angle Rx (e.g. WMI's
+    // {cz, x, y, rz, sx}). Distinguish it from a genuinely parameterized
+    // "rx" so it isn't left unresolved on such targets, and doesn't get
+    // bounced back and forth with the "h" rule that produces it.
+    if (auto cst = g.getParameter().getDefiningOp<mlir::arith::ConstantOp>()) {
+      if (auto fp = dyn_cast<FloatAttr>(cst.getValue())) {
+        if (std::abs(fp.getValueAsDouble() - M_PI_2) < 1e-9)
+          return std::string("sx");
+      }
+    }
+    return std::string("rx");
   }
   if (auto g = dyn_cast<quake::RyOp>(op)) {
     if (g.isAdj() || g.getTargets().size() != 1 ||
@@ -220,6 +240,16 @@ std::optional<std::string> classifyOp(Operation *op) {
   return std::nullopt;
 }
 
+// "sx" (a fixed pi/2 rotation about X) is a strictly weaker ask than generic
+// "rx": any target that already declares arbitrary-angle "rx" native can
+// trivially perform its pi/2 special case too. Fold that one-way implication
+// into a single legality check used everywhere this pass asks "is this
+// mnemonic native?", instead of duplicating it at each call site.
+bool isNative(const llvm::StringSet<> &native, llvm::StringRef mnemonic) {
+  return native.contains(mnemonic) ||
+         (mnemonic == "sx" && native.contains("rx"));
+}
+
 // For a given native set, figures out -- for every mnemonic that isn't
 // itself native -- one rule that is *transitively* guaranteed to bottom out
 // in native gates (not just a rule whose immediate output happens to be
@@ -248,12 +278,12 @@ std::unordered_map<std::string, const DecompositionRule *> computeWitnesses(
     changed = false;
     for (const auto &entry : table) {
       const std::string &mnemonic = entry.first;
-      if (native.contains(mnemonic) || witness.count(mnemonic))
+      if (isNative(native, mnemonic) || witness.count(mnemonic))
         continue;
       for (const auto &rule : entry.second) {
         bool allResolvable = true;
         for (const auto &produced : rule.produces) {
-          if (native.contains(produced) || witness.count(produced))
+          if (isNative(native, produced) || witness.count(produced))
             continue;
           allResolvable = false;
           break;
@@ -310,7 +340,7 @@ public:
       bool changed = false;
       kernel.walk([&](Operation *op) {
         std::optional<std::string> mnemonic = classifyOp(op);
-        if (!mnemonic || native.contains(*mnemonic))
+        if (!mnemonic || isNative(native, *mnemonic))
           return;
         auto wit = witnesses.find(*mnemonic);
         if (wit == witnesses.end()) {

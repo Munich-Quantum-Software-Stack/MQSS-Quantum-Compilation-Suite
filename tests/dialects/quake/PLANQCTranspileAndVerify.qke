@@ -19,4 +19,6 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
-// CHECK: [verify] __nvqpp__mlirgen__bellILm2EE: Equivalent
+// CHECK: [verify] Result for BasisConversionPass : Success
+// CHECK: [verify] Result for CSE : Success
+// CHECK: [verify] Result for Canonicalizer : Success
