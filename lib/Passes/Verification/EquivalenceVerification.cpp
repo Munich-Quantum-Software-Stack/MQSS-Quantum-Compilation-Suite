@@ -2,9 +2,23 @@
 
 #include "Passes/Verification/Instrumentation.h"
 #include "Utils/DebugUtils.h"
+#include "ir/QuantumComputation.hpp"
 
 using namespace mlir;
 using namespace llvm;
+
+// TODO: Currently equivalence check runs after every pass. The obvious fix,
+// using PassInstrumentation's runBeforePipeline/runAfterPipeline is to snapshot
+// once before the whole run and compare once after. Currently this does not
+// work: those hooks are only invoked via Pass::runPipeline (mlir/Pass/Pass.h),
+// i.e. when a pass dynamically schedules a nested OpPassManager on an
+// operation. None of our passes do this, and mqss-opt's pipeline is flat (it
+// matches the PassManager's own anchor type rather than being nested under it),
+// so runBeforePipeline/ runAfterPipeline never fire here — confirmed
+// empirically, not just theoretically.A true once-at-the-end mode would need to
+// snapshot/compare from outside PassInstrumentation entirely — e.g. wrapping
+// the pm.run(...) call in mqss-cc.cpp's own driver code rather than relying on
+// pipeline-level instrumentation hooks.
 
 // Create and Return a qc::QuantumComputation object (defined in MQT-Core).
 // MQT-QCEC runs equivalence checks on this object.
@@ -33,10 +47,44 @@ mqss::mqssci::verify::VerifyPassInstrumentation::createMQTQuantumComputation(
   return qc;
 }
 
+void performCheck(qc::QuantumComputation qc1, qc::QuantumComputation qc2,
+                  ec::Configuration config) {
+
+  ec::EquivalenceCheckingManager ecm(qc1, qc2, config);
+
+  // If the AlternatingChecker structurally cannot handle the pair
+  // of circuits, fallback to ConstructionChecker
+  if (config.execution.runAlternatingChecker &&
+      !ec::DDAlternatingChecker::canHandle(qc1, qc2)) {
+    config.execution.runAlternatingChecker = false;
+    config.execution.runConstructionChecker = true;
+  }
+
+  ecm.run();
+  switch (ecm.equivalence()) {
+  case ec::EquivalenceCriterion::Equivalent:
+    llvm::outs() << "Equivalent\n";
+    break;
+  case ec::EquivalenceCriterion::EquivalentUpToGlobalPhase:
+    llvm::outs() << "Equivalent Upto global Phase\n";
+    break;
+  case ec::EquivalenceCriterion::EquivalentUpToPhase:
+    llvm::outs() << "Equivalent Upto Phase\n";
+    break;
+  case ec::EquivalenceCriterion::ProbablyEquivalent:
+    llvm::outs() << "Probably Equivalent\n";
+    break;
+  default:
+    llvm::outs() << "NOT equivalent\n";
+    break;
+  }
+  llvm::outs() << "\n";
+}
+
 // Take a snapshot of the Quantum Circuit before the Pass(es)
 void mqss::mqssci::verify::VerifyPassInstrumentation::runBeforePass(
     Pass *pass, Operation *op) {
-  MQSS_DEBUG("-->runBeforePass: " << pass->getName() << "\n");
+  MQSS_DEBUG("-->[verify] runBeforePass: " << pass->getName() << "\n");
 
   DialectAnalysisSelector selector(op);
   auto &analysis = *selector.get();
@@ -65,7 +113,7 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runBeforePass(
 void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
     Pass *pass, Operation *op) {
 
-  MQSS_DEBUG("\n-->runAfterPass: " << pass->getName() << "\n");
+  MQSS_DEBUG("-->[verify] runAfterPass: " << pass->getName() << "\n");
 
   DialectAnalysisSelector selector(op);
   auto &analysis = *selector.get();
@@ -103,34 +151,16 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
       continue;
     }
 
-    ec::EquivalenceCheckingManager ecm(vqc_ty.qc1, vqc_ty.qc2, config);
-
-    // If the AlternatingChecker structurally cannot handle the pair
-    // of circuits, fallback to ConstructionChecker
-    if (config.execution.runAlternatingChecker &&
-        !ec::DDAlternatingChecker::canHandle(vqc_ty.qc1, vqc_ty.qc2)) {
-      config.execution.runAlternatingChecker = false;
-      config.execution.runConstructionChecker = true;
-    }
-
-    llvm::outs() << "Equivalence check Result for: " << func_name << " is ";
-    ecm.run();
-    switch (ecm.equivalence()) {
-    case ec::EquivalenceCriterion::Equivalent:
-      llvm::outs() << "Equivalent\n";
-      break;
-    case ec::EquivalenceCriterion::EquivalentUpToGlobalPhase:
-      llvm::outs() << "Equivalent Upto global Phase\n";
-      break;
-    case ec::EquivalenceCriterion::EquivalentUpToPhase:
-      llvm::outs() << "Equivalent Upto Phase\n";
-      break;
-    case ec::EquivalenceCriterion::ProbablyEquivalent:
-      llvm::outs() << "Probably Equivalent\n";
-      break;
-    default:
-      llvm::outs() << "NOT equivalent\n";
-      break;
-    }
+    llvm::outs() << "[verify] " << func_name << ": ";
+    performCheck(vqc_ty.qc1, vqc_ty.qc2, config);
   }
+}
+
+void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPassFailed(
+    Pass *pass, Operation *op) {
+  // runAfterPassFailed — the pass itself didn't complete; verification was
+  // skipped
+  llvm::errs() << "[verify] pass '" << pass->getName()
+               << "' failed before equivalence could be checked (at "
+               << op->getLoc() << ")\n";
 }

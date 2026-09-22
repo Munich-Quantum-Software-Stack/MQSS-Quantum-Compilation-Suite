@@ -34,6 +34,7 @@ private:
                               MapVector<Operation *, QuantumOpView> OpQView);
   void runBeforePass(mlir::Pass *pass, mlir::Operation *op) override;
   void runAfterPass(mlir::Pass *pass, mlir::Operation *op) override;
+  void runAfterPassFailed(Pass *pass, Operation *op) override;
   llvm::DenseMap<llvm::StringRef, VerifyQuantumComputationTy>
       cached_module_snapshot;
 };

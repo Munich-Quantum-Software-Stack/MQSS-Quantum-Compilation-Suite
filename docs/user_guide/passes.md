@@ -274,8 +274,8 @@ MQSS-O3 optimization pipeline</br> Passes enabled:
 
 ## Verifying a Pipeline's Correctness
 
-Any pass or pipeline above can be checked for correctness with the `--verify` flag, which confirms
-that a transformation didn't change what the circuit computes. See
+Any pass or pipeline above can be checked for correctness with the `--mqssci-verify` flag, which
+confirms that a transformation didn't change what the circuit computes. See
 [Verifying Circuit Correctness](verification.md) for details.
 
 ## Example Usage

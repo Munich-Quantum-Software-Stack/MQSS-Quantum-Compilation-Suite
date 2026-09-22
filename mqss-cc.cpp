@@ -67,7 +67,6 @@ int main(int argc, char **argv) {
   // CLI flags (per-pass flags and pipeline names).
   registerMQSSTransformsPasses();
   registerMQSSCodeGenPasses();
-  // registerMQSSVerificationPasses();
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::createCanonicalizerPass();
@@ -111,10 +110,11 @@ int main(int argc, char **argv) {
   // before CLI parsing happens below (registerAndParseCLIOptions), since
   // LLVM's cl::opt system requires every option to exist before
   // cl::ParseCommandLineOptions runs.
-  cl::opt<string> VerificationModeCLOpt(
-      "verify",
-      cl::desc("Specify verification mode: off, once, after-each-pass"),
-      cl::value_desc("mode"), cl::init("off"));
+  cl::opt<bool> VerificationModeCLOpt(
+      "mqssci-verify",
+      cl::desc(
+          "Perform Circuit Equivalence Check after each pass, default:false"),
+      cl::init(0));
 
   llvm::StringRef toolName = "MQSS Optimizer\n";
 
@@ -164,11 +164,11 @@ int main(int argc, char **argv) {
         // -pass-pipeline=... string.
         // if (failed(pipeline.addToPipeline(pm, errorHandler)))
         //   return mlir::failure();
-        if (failed(defaultConfig.setupPassPipeline(pm)))
+        if (failed(defaultConfig.setupPassPipeline(pm))) {
           return mlir::failure();
-
-        if (verifymode == "once" || verifymode == "after-each-pass") {
-          llvm::DenseMap<llvm::StringRef, VerifyQuantumComputationTy> snapshot;
+        }
+        llvm::DenseMap<llvm::StringRef, VerifyQuantumComputationTy> snapshot;
+        if (verifymode) {
           pm.addInstrumentation(
               std::make_unique<mqss::mqssci::verify::VerifyPassInstrumentation>(
                   std::move(snapshot)));

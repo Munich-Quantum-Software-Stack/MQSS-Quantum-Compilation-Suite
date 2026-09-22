@@ -47,27 +47,15 @@ perform Equivalence Checking. Specifically, we use the following methods:
 
 ## Enabling verification
 
-Add the `--verify` flag to your `mqss-opt` invocation:
+Add the `--mqssci-verify` flag to your `mqss-opt` invocation:
 
 ```sh
-mqss-opt bell-state.qke --BasisConversionPass=gates=phased_rx,cz --verify=after-each-pass
+mqss-opt bell-state.qke --BasisConversionPass=gates=phased_rx,cz --mqssci-verify
 ```
 
-The flag accepts three values:
-
-| Value             | What it does                                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------------------------ |
-| `off`             | No verification. This is the default — verification adds no overhead unless you ask for it.            |
-| `once`            | Checks equivalence for the pass pipeline. Compares circuit before first pass and after the final pass. |
-| `after-each-pass` | Checks equivalence after each pass. (Currently behaves the same as `once` — see note below.)           |
-
-If you don't pass `--verify` at all, nothing changes about how `mqss-opt` behaves — verification is
-entirely opt-in.
-
-Note: `once` and `after-each-pass` currently produce the same result. A future update will make
-`after-each-pass` report which _specific_ pass introduced a problem when you run several passes
-together, while `once` will only tell you whether the overall pipeline preserved equivalence. For
-now, either value gives you the same equivalence check.
+It's a plain on/off switch — pass `--mqssci-verify` to enable it, or leave it out for the default
+(off). When enabled, equivalence is checked after every pass in whatever you ran, so if you pass
+several passes at once, each one gets its own check.
 
 ## Reading the output
 
@@ -75,11 +63,14 @@ When verification runs, it prints one line per quantum kernel (function) in your
 you whether the before-and-after circuits are equivalent:
 
 ```text
-Equivalence check Result for: __nvqpp__mlirgen__bellILm2EE is Equivalent
+[verify] __nvqpp__mlirgen__bellILm2EE: Equivalent
 ```
 
-If a transformation changed what the circuit computes, this will instead say the circuit is **NOT**
-equivalent — that's a signal that something in the pass pipeline you ran needs investigating.
+If a transformation changed what the circuit computes, this will instead say the circuit is **NOT
+equivalent** — that's a signal that something in the pass pipeline you ran needs investigating. If a
+pass itself fails to complete (unrelated to equivalence — a crash, an illegal rewrite, etc.),
+verification is skipped for that pass and a message is printed instead explaining that the pass
+didn't finish, so equivalence couldn't be checked.
 
 ## Where this fits
 
@@ -88,5 +79,5 @@ Verification works with any pass or pipeline you invoke on `mqss-opt` — a sing
 [Passes](passes.md) for the full list of passes you can combine it with, and
 [Running test circuits](running.md) for more examples of invoking `mqss-opt`.
 
-Note: `--verify` is currently only available when invoking `mqss-opt` directly. The `mqss-cc`
+Note: `--mqssci-verify` is currently only available when invoking `mqss-opt` directly. The `mqss-cc`
 front-end wrapper does not yet expose it as a first-class flag.

@@ -3,7 +3,7 @@ include(FetchContent)
 FetchContent_Declare(
   qdmi
   GIT_REPOSITORY https://github.com/Munich-Quantum-Software-Stack/QDMI.git
-  GIT_TAG v1.3.2)
+  GIT_TAG v1.3.3)
 
 set(BUILD_QDMI_EXAMPLES
     ON
