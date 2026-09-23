@@ -115,6 +115,11 @@ compiler.compile("path/to/circuit.qke", opts);
 | `"planqc"`     | `rx`, `cz`, `rz`     |
 | `"wmi"`        | `cz`, `x`, `y`, `rz` |
 
+The gate mnemonics used here — both in these built-in sets and in an explicit native-gate set you
+supply yourself — are the same ones the `BasisConversionPass` recognizes. See
+[Supported Gate Mnemonics](passes.md#supported-gate-mnemonics) for the full list of mnemonics, the
+Quake operation each one maps to, and their constraints (parameter count, controls, adjointness).
+
 The full signature (used in the examples above via its three shorthand overloads) also accepts a
 `qubit_connectivity` map alongside the native-gate set, for targets with restricted qubit
 connectivity. See `MQSSCIInterfaces/MQSSCompiler.h` for all four `compile` overloads.

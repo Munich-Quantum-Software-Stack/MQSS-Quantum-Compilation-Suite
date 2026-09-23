@@ -195,6 +195,51 @@ Example Invocation:
 
 - `--BasisConversionPass=gates=rx,cz,rz`
 
+#### Supported Gate Mnemonics
+
+The `gates` option (and the corresponding `native_gate_set` argument of `MQSSCompiler::compile`, see
+[Choosing a Backend](library.md#choosing-a-backend)) takes a comma-separated list of gate mnemonics.
+These are the mnemonics the pass recognizes, both as members of the requested native set and as
+gates it knows how to decompose:
+
+| Mnemonic    | Gate                            | Quake Operation   | Notes                                                                     |
+| ----------- | ------------------------------- | ----------------- | ------------------------------------------------------------------------- |
+| `h`         | Hadamard                        | `quake.h`         | Uncontrolled, single target.                                              |
+| `x`         | Pauli-X                         | `quake.x`         | Uncontrolled, single target.                                              |
+| `cx`        | Controlled-X (CNOT)             | `quake.x`         | Exactly one control.                                                      |
+| `y`         | Pauli-Y                         | `quake.y`         | Uncontrolled, non-adjoint.                                                |
+| `cy`        | Controlled-Y                    | `quake.y`         | Exactly one control, non-adjoint.                                         |
+| `z`         | Pauli-Z                         | `quake.z`         | Uncontrolled, single target.                                              |
+| `cz`        | Controlled-Z                    | `quake.z`         | Exactly one control.                                                      |
+| `s`         | S (√Z phase gate)               | `quake.s`         | Non-adjoint.                                                              |
+| `sdg`       | S† (adjoint of S)               | `quake.s`         | Adjoint form.                                                             |
+| `t`         | T (⁴√Z phase gate)              | `quake.t`         | Non-adjoint.                                                              |
+| `tdg`       | T† (adjoint of T)               | `quake.t`         | Adjoint form.                                                             |
+| `r1`        | R1(θ) phase rotation            | `quake.r1`        | One parameter, non-adjoint, uncontrolled.                                 |
+| `rx`        | Rx(θ)                           | `quake.rx`        | One parameter, non-adjoint, uncontrolled.                                 |
+| `sx`        | √X — fixed π/2 rotation about X | `quake.rx`        | Recognized only when the parameter is the constant `π/2`; see note below. |
+| `crx`       | Controlled-Rx(θ)                | `quake.rx`        | Exactly one control, one parameter.                                       |
+| `ry`        | Ry(θ)                           | `quake.ry`        | One parameter, uncontrolled.                                              |
+| `cry`       | Controlled-Ry(θ)                | `quake.ry`        | Exactly one control, one parameter.                                       |
+| `rz`        | Rz(θ)                           | `quake.rz`        | One parameter, non-adjoint, uncontrolled.                                 |
+| `crz`       | Controlled-Rz(θ)                | `quake.rz`        | Exactly one control, one parameter.                                       |
+| `u2`        | U2(φ, λ)                        | `quake.u2`        | Two parameters, uncontrolled.                                             |
+| `u3`        | U3(θ, φ, λ)                     | `quake.u3`        | Three parameters, uncontrolled.                                           |
+| `swap`      | SWAP                            | `quake.swap`      | Two targets, uncontrolled.                                                |
+| `phased_rx` | PhasedRx(θ, φ)                  | `quake.phased_rx` | Two parameters, non-adjoint, uncontrolled.                                |
+
+Notes:
+
+- `sx` is not a distinct Quake operation — it is the special case of `quake.rx` whose angle is the
+  compile-time constant π/2. An `rx` with any other (or non-constant) angle is classified as plain
+  `rx`, not `sx`. Because any device with a generic `rx` can trivially perform its π/2 special case,
+  requesting `rx` in the native set also satisfies `sx` without listing it explicitly.
+- Gates outside this table (e.g. adjoint `rx`/`ry`/`rz`/`r1`, or operations like `quake.measure`)
+  are not recognized by this pass and are left untouched.
+- If a gate present in the circuit cannot be legalized into the requested native set — no chain of
+  decomposition rules bottoms out in only native mnemonics — the pass emits a warning and leaves
+  that gate as-is rather than looping forever.
+
 ## CodeGen Passes
 
 These passes lower the optimized and transpiled MLIR down toward a target transport format,
