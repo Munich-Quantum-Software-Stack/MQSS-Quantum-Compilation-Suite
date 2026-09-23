@@ -280,7 +280,7 @@ void rewriteRyToRzRxRz(IRRewriter &rewriter, quake::RyOp op) {
   auto rotation = op.getParameters()[0];
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto c1 = createQuakeConstOp(loc, rewriter, M_PI, rewriter.getF64Type());
+  auto c1 = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
   rewriter.create<quake::RzOp>(loc, false, ValueRange{c1}, ValueRange{},
                                target);
   rewriter.create<quake::RxOp>(loc, false, ValueRange{rotation}, ValueRange{},

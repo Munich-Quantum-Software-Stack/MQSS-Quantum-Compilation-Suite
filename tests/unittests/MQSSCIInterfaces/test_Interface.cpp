@@ -18,10 +18,19 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
 #include "MQSSCIInterfaces/MQSSCompiler.h"
+#include "Passes/Transforms/Dialects.h"
+#include "Passes/Verification/Instrumentation.h"
 
+#include <cudaq/Optimizer/Dialect/Quake/QuakeOps.h>
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/DialectRegistry.h>
+#include <mlir/IR/MLIRContext.h>
+#include <mlir/Parser/Parser.h>
+#include <mlir/Pass/Pass.h>
+#include <mlir/Pass/PassManager.h>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -245,6 +254,92 @@ TEST(MQSSCIInterfacesTest, DefaultQubitMappingTest) {
       << "compileSource() returned nullopt; expected a valid QIR base-profile "
          "program";
   EXPECT_FALSE(qir->empty());
+}
+
+TEST(MQSSCIInterfacesTest, CompileSucceedsWithVerificationEnabled) {
+  // Regression test: BasisConversionPass's H decomposition and compileImpl's
+  // repeated-pm.run() structure both used to break circuit equivalence (see
+  // develop-guide/verification.md). With both fixed, a real, correct
+  // compilation should pass verification cleanly rather than tripping the
+  // signalPassFailure() path added to VerifyPassInstrumentation::runAfterPass.
+  mqss::mqssci::MQSSCompiler compiler;
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
+  opts.verify = true;
+
+  std::optional<std::string> qasm =
+      compiler.compile(kBellStateCircuit, "planqc", opts);
+
+  ASSERT_TRUE(qasm.has_value())
+      << "compile() returned nullopt with opts.verify = true; "
+         "BasisConversionPass's output should be equivalent to the input "
+         "circuit, so verification should not fail the compile";
+  EXPECT_FALSE(qasm->empty());
+}
+
+// A deliberately non-equivalence-preserving pass: erases the first
+// controlled-X it finds. Used only to give VerifyPassInstrumentation a
+// pass it's guaranteed to be able to catch, without depending on any real
+// MQSS pass having a defect (which would make this test fragile -- passing
+// or failing based on unrelated bugs elsewhere rather than on whether
+// verification itself works).
+struct EraseFirstCNOTPass
+    : public mlir::PassWrapper<EraseFirstCNOTPass,
+                               mlir::OperationPass<mlir::ModuleOp>> {
+  void runOnOperation() override {
+    getOperation().walk([&](quake::XOp op) {
+      if (!op.getControls().empty()) {
+        op.erase();
+        return mlir::WalkResult::interrupt();
+      }
+      return mlir::WalkResult::advance();
+    });
+  }
+};
+
+TEST(MQSSCIInterfacesTest, VerificationCatchesNonEquivalentPass) {
+  // This exercises VerifyPassInstrumentation directly (the mechanism
+  // MQSSCompiler wires into its BasisConversion pass manager when
+  // opts.verify is set) rather than going through MQSSCompiler::compile(),
+  // since there's no reliable way to force a genuine equivalence failure
+  // through passes that are themselves correct.
+  mlir::DialectRegistry registry;
+  mqss::mqssci::opt::registerMQSSDialects(registry);
+  mlir::MLIRContext context(registry);
+  context.loadAllAvailableDialects();
+
+  std::ifstream fixture(kBellStateCircuit);
+  ASSERT_TRUE(fixture.is_open());
+  std::stringstream buffer;
+  buffer << fixture.rdbuf();
+  auto module = mlir::parseSourceString<mlir::ModuleOp>(buffer.str(), &context);
+  ASSERT_TRUE(module);
+
+  mlir::PassManager pm(&context);
+  pm.addPass(std::make_unique<EraseFirstCNOTPass>());
+  llvm::DenseMap<llvm::StringRef, VerifyQuantumComputationTy> snapshot;
+
+  // Pin the checker portfolio to just the alternating (DD-based, exact)
+  // checker. The default portfolio also races the simulation checker, which
+  // is randomly seeded and probabilistic -- for a circuit this small it can
+  // occasionally report "probably equivalent" for a genuinely broken
+  // transformation, which made this test flaky across separate process runs
+  // (confirmed empirically: same scenario, same binary, different outcome).
+  ec::Configuration config;
+  config.execution.runAlternatingChecker = true;
+  config.execution.runSimulationChecker = false;
+  config.execution.runZXChecker = false;
+  config.execution.runConstructionChecker = false;
+
+  pm.addInstrumentation(
+      std::make_unique<mqss::mqssci::verify::VerifyPassInstrumentation>(
+          std::move(snapshot), config));
+
+  EXPECT_TRUE(mlir::failed(pm.run(*module)))
+      << "EraseFirstCNOTPass removes a gate, which changes what the "
+         "circuit computes; VerifyPassInstrumentation should detect the "
+         "mismatch and call signalPassFailure(), making pm.run() fail";
 }
 
 } // namespace

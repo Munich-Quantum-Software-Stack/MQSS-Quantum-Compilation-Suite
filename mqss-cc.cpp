@@ -162,8 +162,6 @@ int main(int argc, char **argv) {
         // Apply whatever the user asked for on the CLI: a single pass, a
         // named pipeline (O1/O2/O3/lower-quake-to-qir), or an explicit
         // -pass-pipeline=... string.
-        // if (failed(pipeline.addToPipeline(pm, errorHandler)))
-        //   return mlir::failure();
         if (failed(defaultConfig.setupPassPipeline(pm))) {
           return mlir::failure();
         }

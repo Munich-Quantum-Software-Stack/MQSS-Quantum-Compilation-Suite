@@ -23,6 +23,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/Dialects.h"
 #include "Passes/Transforms/Pipelines.h"
 #include "Passes/Transforms/TransformPasses.h"
+#include "Passes/Verification/Instrumentation.h"
 #include "Utils/DebugUtils.h"
 #include "Utils/Error.h"
 #include "mlir/IR/DialectRegistry.h"
@@ -84,30 +85,31 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
 
   // 3. Build a pass manager and add a preset optimization pipeline
   // Default pipeline is set to -O1.
-  mlir::PassManager pm(&context);
+  mlir::PassManager pmOptimize(&context);
   switch (opts.optimization_level) {
   case OptLevel::O1:
-    mqss::mqssci::opt::O1(pm);
+    mqss::mqssci::opt::O1(pmOptimize);
     break;
   case OptLevel::O2:
-    mqss::mqssci::opt::O2(pm);
+    mqss::mqssci::opt::O2(pmOptimize);
     break;
   case OptLevel::O3:
-    mqss::mqssci::opt::O3(pm);
+    mqss::mqssci::opt::O3(pmOptimize);
     break;
   default:
-    mqss::mqssci::opt::O1(pm);
+    mqss::mqssci::opt::O1(pmOptimize);
     break;
   }
 
-  if (mlir::failed(pm.run(*module))) {
+  if (mlir::failed(pmOptimize.run(*module))) {
     mlir::emitError(module->getLoc(), "Compiler: Optimization Pipeline failed");
     return std::nullopt;
   }
 
+  mlir::PassManager pmMap(&context);
   // 4. Perform Qubit Mapping
-  pm.addPass(mqss::mqssci::opt::CommonMappingPass(qubit_connectivity));
-  if (mlir::failed(pm.run(*module))) {
+  pmMap.addPass(mqss::mqssci::opt::CommonMappingPass(qubit_connectivity));
+  if (mlir::failed(pmMap.run(*module))) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
                     "Compiler: Qubit Mapping failed!");
     return std::nullopt;
@@ -117,6 +119,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   // If a supported/known back-end is provided, perform
   // decomposition using the known native-gate set. Else,
   // use the user provided native-gate set.
+  mlir::PassManager pmConvert(&context);
   BasisConversionPassOptions conv_opts;
   conv_opts.gates = "";
   if (!backend_name.empty()) {
@@ -132,8 +135,8 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
           "Unsupported backend name! Only iqm, planqc, wmi supported!");
       return std::nullopt;
     }
-
-    pm.addPass(mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
+    pmConvert.addPass(
+        mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
 
   } else if (!native_gates.empty()) {
     for (unsigned i = 0; i < native_gates.size(); i++) {
@@ -141,24 +144,40 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
       if (i != native_gates.size() - 1)
         conv_opts.gates += ",";
     }
-    pm.addPass(mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
+    pmConvert.addPass(
+        mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
   } else {
     MQSS_DEBUG("No back-end name or native gate-set provided! Skipping "
                "BasisConversion!");
   }
 
-  // 6. Lower the optimized module to OpenQASM 2 or QIR
+  // 6. Perform verification via Circuit Equivalence Check after each pass
+  // in the pass pipeline.
+  if (opts.verify) {
+    llvm::DenseMap<llvm::StringRef, VerifyQuantumComputationTy> snapshot;
+    pmConvert.addInstrumentation(
+        std::make_unique<mqss::mqssci::verify::VerifyPassInstrumentation>(
+            std::move(snapshot)));
+  }
+
+  if (mlir::failed(pmConvert.run(*module))) {
+    mlir::emitError(mlir::UnknownLoc::get(&context),
+                    "Compiler: BasisConversion and or Verification failed!");
+    return std::nullopt;
+  }
+
+  // 7. Lower the optimized module to OpenQASM 2 or QIR
   std::string result;
   llvm::raw_string_ostream os(result);
-
+  mlir::PassManager pmLower(&context);
   switch (opts.result_format) {
   // cudaq::translateToOpenQASM walks the module's full call graph and emits
   // every non-entrypoint func::FuncOp as a "gate name(...) { ... }" block,
   // whether or not anything in the final circuit still calls it. Strip these
   // out so the returned OpenQASM2 is just the entry point's circuit body.
   case OPENQASM2:
-    pm.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
-    if (mlir::failed(pm.run(*module))) {
+    pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
+    if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(mlir::UnknownLoc::get(&context),
                       "Compiler: Conversion of Quake to QASM2 failed");
       return std::nullopt;
@@ -176,8 +195,8 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
                       "invalid QIR lowering options: " + opts.result_format);
       return std::nullopt;
     }
-    mqss::mqssci::opt::QIRConversionPipeline(pm, *convertto, os);
-    if (mlir::failed(pm.run(*module))) {
+    mqss::mqssci::opt::QIRConversionPipeline(pmLower, *convertto, os);
+    if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(mlir::UnknownLoc::get(&context),
                       "Compiler: Conversion of Quake to " + result_type_string +
                           " failed");

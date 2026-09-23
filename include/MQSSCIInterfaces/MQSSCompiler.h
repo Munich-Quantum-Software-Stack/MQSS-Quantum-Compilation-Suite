@@ -75,6 +75,7 @@ inline std::string resulttype_tostring(ResultFormat result_format) {
 struct CompilerOptions {
   OptLevel optimization_level;
   ResultFormat result_format;
+  bool verify = false;
 };
 
 class MQSSCompiler {

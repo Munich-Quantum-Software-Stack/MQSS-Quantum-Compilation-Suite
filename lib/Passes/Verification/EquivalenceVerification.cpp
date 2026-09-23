@@ -47,11 +47,6 @@ mqss::mqssci::verify::VerifyPassInstrumentation::createMQTQuantumComputation(
   return qc;
 }
 
-// void performCheck(qc::QuantumComputation qc1, qc::QuantumComputation qc2,
-//                   ec::Configuration config) {
-
-// }
-
 // Take a snapshot of the Quantum Circuit before the Pass(es)
 void mqss::mqssci::verify::VerifyPassInstrumentation::runBeforePass(
     Pass *pass, Operation *op) {
@@ -109,12 +104,6 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
         info.AllocatedQubits, info.NumMeasureQubits, info.OpQViewMap);
   }
 
-  // setup default configuration
-  // Alternating, Simulation and ZX Checkers are all ON by default
-  ec::Configuration config{};
-  config = ec::Configuration{};
-  config.functionality.checkPartialEquivalence = true;
-
   bool verification_result = true;
   for (auto [func_name, vqc_ty] : cached_module_snapshot) {
     if (vqc_ty.qc1.empty() || vqc_ty.qc2.empty()) {
@@ -123,15 +112,14 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
       continue;
     }
 
-    ec::EquivalenceCheckingManager ecm(vqc_ty.qc1, vqc_ty.qc2, config);
-
-    // If the AlternatingChecker structurally cannot handle the pair
-    // of circuits, fallback to ConstructionChecker
-    if (config.execution.runAlternatingChecker &&
-        !ec::DDAlternatingChecker::canHandle(vqc_ty.qc1, vqc_ty.qc2)) {
-      config.execution.runAlternatingChecker = false;
-      config.execution.runConstructionChecker = true;
-    }
+    // checker_config is caller-supplied (see the constructor); it must not
+    // be mutated here. EquivalenceCheckingManager's constructor already
+    // performs the alternating-checker-unsupported fallback internally on
+    // its own copy of the config, so there is nothing to do here beyond
+    // constructing it -- mutating checker_config would only leak into the
+    // *next* kernel/pass's check without affecting this one, since ecm has
+    // already snapshotted the config by this point.
+    ec::EquivalenceCheckingManager ecm(vqc_ty.qc1, vqc_ty.qc2, checker_config);
     MQSS_DEBUG("[verify] Result for " << func_name << " : ");
     ecm.run();
     switch (ecm.equivalence()) {
@@ -155,10 +143,13 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
     llvm::outs() << "\n";
   }
 
-  if (verification_result)
+  if (verification_result) {
     llvm::outs() << "[verify] Result for " << pass->getName() << " : Success\n";
-  else
-    llvm::outs() << "[verify] Result for " << pass->getName() << " : failed\n";
+  } else {
+    // TODO: This is a failure signal that would bail an entire pipeline. Worth
+    // revisiting.
+    signalPassFailure(pass);
+  }
 }
 
 void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPassFailed(
