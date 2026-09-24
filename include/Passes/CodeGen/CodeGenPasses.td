@@ -23,6 +23,17 @@ def QuakeToQASM2Pass : Pass<"quake-to-qasm2", "mlir::ModuleOp"> {
 
 }
 
+def QuakeDialectToIQMJSONPass : Pass<"quake-to-iqmJSON", "mlir::ModuleOp"> {
+  let summary = "Transforms Quake MLIR module to IQM's JSON format";
+
+  let description = [{
+          Transforms Quake MLIR module to IQM's JSON format.
+  }];
+
+  let constructor = "mqss::mqssci::codegen::QuakeDialectToIQMJSONPass()";
+
+}
+
 def QuantumConversionPass : Pass<"convert-quantum-to-llvm"> {
     let summary = "Perform a dialect conversion from Quantum dialect to LLVM dialect.";
 
