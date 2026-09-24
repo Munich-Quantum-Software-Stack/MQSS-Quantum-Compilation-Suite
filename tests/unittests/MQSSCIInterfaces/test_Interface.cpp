@@ -219,6 +219,56 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForQIRBase) {
   EXPECT_EQ(*qir_from_path, *qir_from_source);
 }
 
+TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForIqmBackend) {
+  mqss::mqssci::MQSSCompiler compiler;
+
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::IQMJSON;
+
+  std::optional<std::string> json =
+      compiler.compile(kBellStateCircuit, "iqm", opts);
+
+  ASSERT_TRUE(json.has_value())
+      << "compile() returned nullopt; expected a valid IQM JSON program";
+  EXPECT_FALSE(json->empty());
+
+  // The circuit's entry-point function name should be carried through as the
+  // JSON program's name.
+  EXPECT_NE(json->find("\"name\": \"__nvqpp__mlirgen__testILm2EE\""),
+            std::string::npos);
+
+  // "iqm" maps to the {phased_rx, cz} native-gate set (see library.md).
+  // BasisConversionPass should have decomposed the whole circuit into
+  // exactly that basis, which IQM's JSON emitter renders as "prx"/"cz".
+  // See tests/dialects/quake/IQMTranspileToIQMJSON.qke for the same
+  // decomposition pattern checked at the pass level.
+  EXPECT_NE(json->find("\"name\": \"prx\""), std::string::npos)
+      << "expected at least one native phased_rx (\"prx\") gate";
+  EXPECT_NE(json->find("\"name\": \"cz\""), std::string::npos)
+      << "expected the native two-qubit cz gate";
+
+  // The fixture's single quake.x is a controlled-X (CNOT) between QB1 and
+  // QB2; it should have been decomposed into cz, not left as a raw cx.
+  // Rather than matching the pretty-printed "qubits" array verbatim
+  // (fragile against indentation changes), just check both qubit names
+  // appear within the cz instruction's own JSON object.
+  size_t cz_pos = json->find("\"name\": \"cz\"");
+  ASSERT_NE(cz_pos, std::string::npos);
+  std::string cz_instruction = json->substr(cz_pos, 150);
+  EXPECT_NE(cz_instruction.find("\"QB1\""), std::string::npos)
+      << "expected the native cz gate to act on QB1";
+  EXPECT_NE(cz_instruction.find("\"QB2\""), std::string::npos)
+      << "expected the native cz gate to act on QB2";
+
+  // The circuit measures its qubits; at least one measurement instruction
+  // should be present in the output.
+  EXPECT_NE(json->find("\"name\": \"measure\""), std::string::npos)
+      << "expected a measurement instruction";
+  EXPECT_NE(json->find("\"key\": \"m_QB1\""), std::string::npos)
+      << "expected a measurement instruction keyed to QB1";
+}
+
 TEST(MQSSCIInterfacesTest, DefaultQubitMappingTest) {
   // Trivial single-qubit circuit -- content is irrelevant to this test; what
   // matters is that it allocates fewer qubits than the coupling map below.
