@@ -51,6 +51,8 @@ createBasisConversionPass(const BasisConversionPassOptions &options);
 std::unique_ptr<mlir::Pass> LLVMDialectToLLVMIRPass(llvm::raw_ostream &os);
 
 std::unique_ptr<mlir::Pass> QuakeToQASM2Pass(llvm::raw_ostream &os);
+std::unique_ptr<mlir::Pass> QuakeDialectToIQMJSONPass();
+std::unique_ptr<mlir::Pass> QuakeDialectToIQMJSONPass(llvm::raw_ostream &os);
 
 } // namespace mqss::mqssci::codegen
 

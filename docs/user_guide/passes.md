@@ -264,6 +264,26 @@ Transforms a Quake MLIR module into OpenQASM 2. Invocation:
 
 - `--quake-to-qasm2`
 
+### quake-to-iqmJSON
+
+Transforms a Quake MLIR module into IQM's JSON circuit format.
+
+Invocation:
+
+- `--quake-to-iqmJSON`
+
+Note: This pass emits gate names and arguments as understood by IQM's native gate set (`prx`, `cz`)
+and expects the input module to already be expressed in that gate set. Run
+[`BasisConversionPass`](#basisconversionpass) with `gates=phased_rx,cz` beforehand to legalize the
+circuit, followed by `cse` and `canonicalize` to clean up the result. For example:
+
+```sh
+mqss-opt test.qke --BasisConversionPass=gates=phased_rx,cz --cse --canonicalize --quake-to-iqmJSON
+```
+
+See `tests/dialects/quake/IQMTranspileToIQMJSON.qke` for a full example, including the expected JSON
+output.
+
 ### convert-quantum-to-llvm
 
 Performs a dialect conversion from the Catalyst-quantum dialect to the LLVM dialect.

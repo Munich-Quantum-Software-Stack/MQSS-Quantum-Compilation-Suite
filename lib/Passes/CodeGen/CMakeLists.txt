@@ -8,6 +8,7 @@ add_mlir_library(
   BasisConversionPass.cpp
   GlobalizeArrayValuesPass.cpp
   StaticAllocas.cpp
+  TranslateToIQMJSON.cpp
   DEPENDS
   MQSSMQSSCodeGenPassIncGen
   MQSSTransformsPassIncGen

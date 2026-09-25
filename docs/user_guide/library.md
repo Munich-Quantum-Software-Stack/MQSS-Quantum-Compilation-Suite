@@ -43,7 +43,7 @@ mqss::mqssci::MQSSCompiler compiler;
 
 mqss::mqssci::CompilerOptions opts;
 opts.optimization_level = mqss::mqssci::OptLevel::O1;        // O1, O2, or O3 — selects the preset pipeline
-opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;  // or QIR, QIRBASE, QIRADAPTIVE, QIRFULL
+opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;  // or QIR, QIRBASE, QIRADAPTIVE, QIRFULL, IQMJSON
 opts.verify = false;                                         // optional; see Verifying the Compiled Output below
 
 std::optional<std::string> qasm = compiler.compile("path/to/circuit.qke", "planqc", opts); // Use compileSource() to parse source string
@@ -62,8 +62,8 @@ Walking through it:
 2. `mqss::mqssci::CompilerOptions` configures the run: `optimization_level` selects the
    `O1`/`O2`/`O3` preset pipeline (see [Pass Pipelines](passes.md#pass-pipelines) for what each
    includes), and `result_format` selects the output format — one of the
-   `mqss::mqssci::ResultFormat` enumerators: `OPENQASM2`, `QIR`, `QIRBASE`, `QIRADAPTIVE`, or
-   `QIRFULL`.
+   `mqss::mqssci::ResultFormat` enumerators: `OPENQASM2`, `QIR`, `QIRBASE`, `QIRADAPTIVE`,
+   `QIRFULL`, or `IQMJSON`.
 3. The second argument to `compile` (`"planqc"` above) is a known backend name that selects a
    built-in native-gate set for decomposition. See [Choosing a Backend](#choosing-a-backend) below
    for the alternatives.

@@ -50,7 +50,7 @@ inline constexpr std::array<InputFormatInfo, 2> kInputFormats = {{
     {CATALYSTQUANTUM, "catalyst-quantum"},
 }};
 
-enum ResultFormat { OPENQASM2, QIR, QIRBASE, QIRADAPTIVE, QIRFULL };
+enum ResultFormat { OPENQASM2, QIR, QIRBASE, QIRADAPTIVE, QIRFULL, IQMJSON };
 
 enum OptLevel { O1, O2, O3 };
 
@@ -67,6 +67,8 @@ inline std::string resulttype_tostring(ResultFormat result_format) {
     return "qir-adaptive";
   case QIRFULL:
     return "qir-full";
+  case IQMJSON:
+    return "iqmJSON";
   default:
     return "";
   }

@@ -184,6 +184,14 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     }
     result = stripSpuriousGateDefs(result);
     break;
+  case IQMJSON:
+    pmLower.addPass(mqss::mqssci::codegen::QuakeDialectToIQMJSONPass(os));
+    if (mlir::failed(pmLower.run(*module))) {
+      mlir::emitError(mlir::UnknownLoc::get(&context),
+                      "Compiler: Conversion of Quake to IQMJSON failed");
+      return std::nullopt;
+    }
+    break;
   case QIR:
   case QIRBASE:
   case QIRADAPTIVE:
