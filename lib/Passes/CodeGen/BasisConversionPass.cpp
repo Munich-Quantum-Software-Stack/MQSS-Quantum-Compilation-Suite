@@ -20,8 +20,10 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/CodeGen/BasisConversionPatterns.h"
 #include "Passes/CodeGen/CodeGenPasses.h"
 #include "Utils/DebugUtils.h"
+#include "Utils/TranspilationPassUtils.h"
 
 #include <llvm/ADT/StringSet.h>
+#include <llvm/Support/Error.h>
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 
 namespace mqss::mqssci::codegen {
@@ -298,6 +300,64 @@ std::unordered_map<std::string, const DecompositionRule *> computeWitnesses(
   return witness;
 }
 
+// Expected qubit count and parameter count for each mnemonic.
+// Used to sanity check a QDMI reported operation before trusting it.
+// For example a device reporting rz with 0 parameters is not our rz.
+const std::unordered_map<std::string, std::pair<size_t, size_t>> &
+getMnemonicArity() {
+  static const std::unordered_map<std::string, std::pair<size_t, size_t>>
+      arity = {
+          {"h", {1, 0}},         {"x", {1, 0}},    {"y", {1, 0}},
+          {"z", {1, 0}},         {"s", {1, 0}},    {"sdg", {1, 0}},
+          {"t", {1, 0}},         {"tdg", {1, 0}},  {"sx", {1, 0}},
+          {"r1", {1, 1}},        {"rx", {1, 1}},   {"ry", {1, 1}},
+          {"rz", {1, 1}},        {"u2", {1, 2}},   {"u3", {1, 3}},
+          {"prx", {1, 2}},       {"swap", {2, 0}}, {"cx", {2, 0}},
+          {"cz", {2, 0}},        {"cy", {2, 0}},   {"crx", {2, 1}},
+          {"cry", {2, 1}},       {"crz", {2, 1}},
+      };
+  return arity;
+}
+
+// Builds the native gate set from a QDMI device.
+// There is no alias table, so operation names are used as is.
+// An operation with the wrong arity for its name is dropped with a warning.
+llvm::Expected<llvm::StringSet<>>
+getNativeGateSetFromQDMI(const std::string &conf, const std::string &deviceName,
+                         Location loc) {
+  auto device = createQDMIDevice(
+      conf.c_str(), deviceName.empty() ? nullptr : deviceName.c_str());
+  if (!device)
+    return device.takeError();
+
+  auto gateSet = getDeviceNativeGateSet(*device);
+  if (!gateSet)
+    return gateSet.takeError();
+
+  const auto &arity = getMnemonicArity();
+  llvm::StringSet<> native;
+  for (const OperationInfo &op : *gateSet) {
+    auto it = arity.find(op.name);
+    if (it != arity.end() && op.numQubits && op.numParameters &&
+        (*op.numQubits != it->second.first ||
+         *op.numParameters != it->second.second)) {
+      mlir::emitWarning(loc)
+          << "BasisConversion: QDMI device operation '" << op.name << "' ("
+          << *op.numQubits << " qubit(s), " << *op.numParameters
+          << " parameter(s)) does not match this pass's expected shape "
+             "for '"
+          << op.name << "', ignoring it as a native gate.";
+      continue;
+    }
+    native.insert(op.name);
+  }
+  if (native.empty())
+    return llvm::createStringError(
+        llvm::inconvertibleErrorCode(),
+        "QDMI device reported no operations usable as a native gate set");
+  return native;
+}
+
 struct BasisConversion
     : public mqss::mqssci::codegen::impl::BasisConversionPassBase<
           BasisConversion> {
@@ -307,6 +367,8 @@ public:
   explicit BasisConversion(const BasisConversionPassOptions &options)
       : BasisConversion() {
     gates = options.gates;
+    qdmi = options.qdmi;
+    device = options.device;
   }
 
   void runOnOperation() override {
@@ -315,9 +377,25 @@ public:
     MQSS_DEBUG("\n[Applying Pass: BasisConversion]\n");
     auto kernel = getOperation();
     llvm::StringSet<> native;
-    auto split_gates = split(gates, ",");
-    for (const auto &gate : split_gates)
-      native.insert(gate);
+
+    if (!qdmi.empty()) {
+      if (gates.getNumOccurrences() > 0)
+        mlir::emitWarning(kernel.getLoc())
+            << "BasisConversion: both 'qdmi' and 'gates' were given; using "
+               "the QDMI device's native gate set and ignoring 'gates'.";
+      auto qdmiNative =
+          getNativeGateSetFromQDMI(qdmi, device, kernel.getLoc());
+      if (!qdmiNative) {
+        mlir::emitError(kernel.getLoc())
+            << "BasisConversion: " << llvm::toString(qdmiNative.takeError());
+        return signalPassFailure();
+      }
+      native = std::move(*qdmiNative);
+    } else {
+      auto split_gates = split(gates, ",");
+      for (const auto &gate : split_gates)
+        native.insert(gate);
+    }
 
     const auto &table = getDecompositionTable();
     // Computed once, up front: for every non-native mnemonic that can

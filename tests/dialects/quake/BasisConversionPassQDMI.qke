@@ -1,0 +1,42 @@
+// RUN: echo "%qdmi-cxx-device-so CXX" > %t.conf
+// RUN: %mqss-opt %s --BasisConversionPass=qdmi=%t.conf 2>&1 | FileCheck %s
+// RUN: %not %mqss-opt %s "--BasisConversionPass=qdmi=%t.conf device=DoesNotExist" 2>&1 | FileCheck %s --check-prefix=BADDEVICE
+// RUN: %mqss-opt %s "--BasisConversionPass=gates=h,cx,rz qdmi=%t.conf" 2>&1 | FileCheck %s --check-prefix=PRECEDENCE
+
+// The mock cxx QDMI device's native gate set is exactly rx, ry, rz, cx.
+// See examples/device/src/cxx_device.cpp in the QDMI repository.
+// Every gate below is not in that set, so all must be legalized away.
+
+module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__qdmiTestILm2EE = "_ZN10qdmiTestILm2EEclEv"}} {
+  func.func @__nvqpp__mlirgen__qdmiTestILm2EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+    %0 = quake.alloca !quake.veq<2>
+    %1 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+    quake.h %1 : (!quake.ref) -> ()
+    quake.x %1 : (!quake.ref) -> ()
+    quake.y %1 : (!quake.ref) -> ()
+    quake.z %1 : (!quake.ref) -> ()
+    quake.s %1 : (!quake.ref) -> ()
+    quake.t %1 : (!quake.ref) -> ()
+    %2 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+    quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+    %measOut = quake.mz %0 : (!quake.veq<2>) -> !cc.stdvec<!quake.measure>
+    return
+  }
+  func.func @_ZN10qdmiTestILm2EEclEv(%arg0: !cc.ptr<i8>) {
+    return
+  }
+}
+
+// CHECK-NOT: quake.h
+// CHECK-NOT: {{quake\.x %[a-zA-Z0-9_]+ :}}
+// CHECK-NOT: quake.y
+// CHECK-NOT: quake.z
+// CHECK-NOT: quake.s
+// CHECK-NOT: quake.t
+// CHECK: quake.x [%{{.*}}] %{{.*}} : (!quake.ref, !quake.ref) -> ()
+// CHECK: %measOut = quake.mz
+
+// BADDEVICE: No QDMI device named 'DoesNotExist'; available: 'C++ Device with 5 qubits'
+
+// PRECEDENCE: both 'qdmi' and 'gates' were given; using the QDMI device's native gate set and ignoring 'gates'
+// PRECEDENCE-NOT: quake.h

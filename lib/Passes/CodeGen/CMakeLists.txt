@@ -17,6 +17,8 @@ add_mlir_library(
   MQSSSupportedDialects
   CUDAQ::CodeGen
   CUDAQ::Builder
+  qdmi::qdmi
+  qdmi::example_driver
   MLIRPass
   MLIRTransforms
   MLIRFuncToLLVM
@@ -29,3 +31,8 @@ target_compile_options(MQSSCICodeGenPasses PRIVATE -fexceptions)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_definitions(MQSSCICodeGenPasses PRIVATE MQSS_ENABLE_DEBUG)
 endif()
+
+# Needed so MQT-QMap's sc/utils.hpp can find MQT-Core's OpType.hpp.
+# This header is pulled in by TranspilationPassUtils.h.
+target_include_directories(MQSSCICodeGenPasses
+                           PRIVATE ${MQT_CORE_INCLUDE_DIR}/mqt-core)

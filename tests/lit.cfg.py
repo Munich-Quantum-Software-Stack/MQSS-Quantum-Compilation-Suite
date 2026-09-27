@@ -36,3 +36,7 @@ config.substitutions.append(
 config.substitutions.append(
     ('%qdmi-cxx-device-so', os.path.join(repo_root, 'build/_deps/qdmi-build/examples/device/src/libcxx-qdmi-device.so'))
 )
+
+config.substitutions.append(
+    ('%not', os.path.join(repo_root, '/opt/deps/llvm/bin/not'))
+)
