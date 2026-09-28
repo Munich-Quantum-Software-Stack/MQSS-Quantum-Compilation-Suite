@@ -231,8 +231,9 @@ void controlledDCE(SmallPtrSet<mlir::Operation *, 16> OpsToErase,
   llvm::SmallPtrSet<mlir::Operation *, 16> operandsToCleanup;
 
   for (mlir::Operation *op : OpsToErase) {
-
     for (mlir::Value operand : op->getOperands()) {
+      if (operand == OldAllocaOp)
+        continue; // handled separately below; don't double-erase
       if (!OpsToErase.contains(operand.getDefiningOp()))
         operandsToCleanup.insert(operand.getDefiningOp());
     }
@@ -337,6 +338,14 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
     }
   }
 
+  // TODO: This always resolves against NewMeasureOps[0] -- the *first*
+  // newly-created measurement overall -- regardless of which oldMeasOp is
+  // being processed. For a kernel with more than one measurement statement
+  // (e.g. several separate quake.mz/quantum.measure ops), every old measure
+  // op ends up silently wired to that same first new measurement's results
+  // instead of its own corresponding one. Needs to look up the NewMeasureOps
+  // entry that actually corresponds to oldMeasOp (matching on identity or
+  // position) rather than hardcoding index 0.
   for (auto &[oldMeasOp, numMeasurements] : MeasureOps) {
     if (numMeasurements == 1) {
       auto newResults = NewMeasureOps[0].Results;
@@ -387,6 +396,9 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
       if (qview.isMeasureOp) {
         loadMeasureOpIntoQC(qview, qc);
         MeasureOps[Op] = qview.measurements.size();
+        if (qview.measurements.size() != 1)
+          OpsToErase.insert(
+              Op); // only the shape resolveSSAformForMeasureOps can't handle
       }
     }
 #ifdef MQSS_ENABLE_DEBUG

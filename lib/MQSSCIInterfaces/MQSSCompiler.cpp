@@ -124,7 +124,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   conv_opts.gates = "";
   if (!backend_name.empty()) {
     if (backend_name == "iqm") {
-      conv_opts.gates = "phased_rx,cz";
+      conv_opts.gates = "prx,cz";
     } else if (backend_name == "planqc") {
       conv_opts.gates = "rx,cz,rz";
     } else if (backend_name == "wmi") {
@@ -150,6 +150,18 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     MQSS_DEBUG("No back-end name or native gate-set provided! Skipping "
                "BasisConversion!");
   }
+
+  // Some BasisConversionPass rewrite rules build a gate's angle out of an
+  // arithmetic expression (e.g. arith.negf/arith.divf on a prior operand)
+  // rather than a literal constant. Downstream lowering (e.g.
+  // QuakeDialectToIQMJSONPass, via cudaq::translateToIQMJson) expects every
+  // rotation parameter to already be a literal constant it can read as a
+  // double, and asserts rather than failing gracefully if it isn't. Folding
+  // here, right after BasisConversion and before any lowering pass runs,
+  // collapses those expressions back down to literal constants regardless of
+  // which result_format is requested below.
+  pmConvert.addPass(mlir::createCSEPass());
+  pmConvert.addPass(mlir::createCanonicalizerPass());
 
   // 6. Perform verification via Circuit Equivalence Check after each pass
   // in the pass pipeline.
@@ -185,12 +197,14 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     result = stripSpuriousGateDefs(result);
     break;
   case IQMJSON:
+    pmLower.addPass(mqss::mqssci::opt::createExpandMeasurementsPass());
     pmLower.addPass(mqss::mqssci::codegen::QuakeDialectToIQMJSONPass(os));
     if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(mlir::UnknownLoc::get(&context),
                       "Compiler: Conversion of Quake to IQMJSON failed");
       return std::nullopt;
     }
+    llvm::outs() << result << "\n";
     break;
   case QIR:
   case QIRBASE:

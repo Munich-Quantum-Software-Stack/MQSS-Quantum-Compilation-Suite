@@ -173,7 +173,7 @@ Verification is exercised via the same lit/FileCheck infrastructure described in
 transpilation pipeline with `--mqssci-verify` appended, and check for the printed result:
 
 ```sh
-// RUN: %mqss-opt %s --BasisConversionPass=gates=phased_rx,cz --cse --canonicalize --mqssci-verify 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --BasisConversionPass=gates=prx,cz --cse --canonicalize --mqssci-verify 2>&1 | FileCheck %s
 
 // CHECK: [verify] __nvqpp__mlirgen__bellILm2EE: Equivalent
 ```

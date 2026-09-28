@@ -1,0 +1,12 @@
+func.func @__nvqpp__mlirgen__rotations() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+%0 = quake.alloca !quake.veq<2>
+%q0 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
+%q1 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+%angle = arith.constant 0.78539816339744828 : f64
+quake.rx (%angle) %q0 : (f64, !quake.ref) -> ()
+quake.ry (%angle) %q1 : (f64, !quake.ref) -> ()
+quake.rz (%angle) %q0 : (f64, !quake.ref) -> ()
+quake.x [%q0] %q1 : (!quake.ref, !quake.ref) -> ()
+%meas = quake.mz %0 : (!quake.veq<2>) -> !cc.stdvec<!quake.measure>
+return
+}

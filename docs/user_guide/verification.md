@@ -50,7 +50,7 @@ perform Equivalence Checking. Specifically, we use the following methods:
 Add the `--mqssci-verify` flag to your `mqss-opt` invocation:
 
 ```sh
-mqss-opt bell-state.qke --BasisConversionPass=gates=phased_rx,cz --mqssci-verify
+mqss-opt bell-state.qke --BasisConversionPass=gates=prx,cz --mqssci-verify
 ```
 
 It's a plain on/off switch — pass `--mqssci-verify` to enable it, or leave it out for the default

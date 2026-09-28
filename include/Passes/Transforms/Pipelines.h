@@ -67,4 +67,5 @@ void O3(mlir::OpPassManager &pm);
 void QIRConversionPipeline(mlir::OpPassManager &pm,
                            const std::string &qir_version,
                            llvm::raw_ostream &os = llvm::outs());
+void QuakeToIQMJSONPipeline(mlir::OpPassManager &pm);
 } // namespace mqss::mqssci::opt

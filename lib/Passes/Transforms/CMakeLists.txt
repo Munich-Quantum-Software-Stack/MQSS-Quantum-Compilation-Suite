@@ -9,6 +9,7 @@ add_mlir_library(
   CommonMappingPass.cpp
   CommonNormalizeArgAnglePass.cpp
   Pipeline.cpp
+  QuakeExpandMeasurements.cpp
   DEPENDS
   MQSSTransformsPassIncGen
   LINK_LIBS
@@ -35,6 +36,10 @@ endif()
 target_compile_options(MQSSCITransformPasses PRIVATE -fexceptions)
 if(TARGET obj.MQSSCITransformPasses)
   target_compile_options(obj.MQSSCITransformPasses PRIVATE -fexceptions)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(obj.MQSSCITransformPasses
+                               PRIVATE MQSS_ENABLE_DEBUG)
+  endif()
 endif()
 
 target_include_directories(

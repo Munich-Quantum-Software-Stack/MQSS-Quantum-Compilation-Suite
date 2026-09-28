@@ -56,13 +56,13 @@ Following command shows an example of how passes can be invoked on this circuit 
 dialect is saved as bell_state.qke):
 
 ```sh
-mqss-opt bell-state.qke --cse --canonicalize --BasisConversionPass=gates=phased_rx,cz
+mqss-opt bell-state.qke --cse --canonicalize --BasisConversionPass=gates=prx,cz
 ```
 
 The output is the same input `bell-state.qke` dialect but with transformations. In this case, the
-hadamard and CNOT gates in the input dialect `quake.h` and `quake.x` will be decomposed to the
-`phased_rx` and `cz` gates. Similarly, one can invoke passes on the catalyst-quantum mlir dialect by
-just replacing the quake dialect input with the catalyst-quantum input.
+hadamard and CNOT gates in the input dialect `quake.h` and `quake.x` will be decomposed to the `prx`
+and `cz` gates. Similarly, one can invoke passes on the catalyst-quantum mlir dialect by just
+replacing the quake dialect input with the catalyst-quantum input.
 
 Add `--mqssci-verify` to the command above to automatically check that the decomposition preserved
 the circuit's behavior. See [Verifying Circuit Correctness](verification.md) for details.

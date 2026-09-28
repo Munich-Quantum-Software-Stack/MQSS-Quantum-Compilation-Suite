@@ -37,6 +37,29 @@ def CommonGateCancellationPass : Pass<"CommonGateCancellationPass", "mlir::Modul
 
 }
 
+def ExpandMeasurements : Pass<"expand-measurements"> {
+  let summary = "Expand a whole-register quake.mz into one quake.mz per qubit.";
+  let description = [{
+    `quake.mz` can take a statically-sized `!quake.veq` argument to measure an
+    entire register in one op. Some lowering paths have no concept of
+    "measure this whole register" (e.g. IQM JSON, where every `"measure"`
+    instruction names exactly one qubit) and either mistranslate or reject
+    such an op. This pass expands it into one `quake.mz` per qubit, unrolled
+    directly at rewrite time since the register's size is always known from
+    its type -- no runtime loop is introduced.
+
+    Only `quake.mz` on a single, statically-sized `!quake.veq` operand is
+    handled, with either no consumer or `quake.discriminate` consumers (the
+    `!cc.stdvec<!quake.measure>` -> `!cc.stdvec<i1>` bridge). Any other shape
+    (a dynamically-sized register, a non-discriminate consumer) fails the
+    pass with a diagnostic rather than being silently left unexpanded.
+  }];
+
+  // let dependentDialects = ["cudaq::cc::CCDialect", "mlir::LLVM::LLVMDialect"];
+
+  let constructor = "mqss::mqssci::opt::createExpandMeasurementsPass()";
+}
+
 def CommonCommutePass : Pass<"CommonCommutePass", "mlir::ModuleOp"> {
   let summary = "This pass searches commutes gates that match a specific pattern.";
   let constructor = "mqss::mqssci::opt::CommonCommutePass()";

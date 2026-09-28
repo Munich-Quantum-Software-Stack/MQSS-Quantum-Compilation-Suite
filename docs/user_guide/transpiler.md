@@ -89,9 +89,9 @@ documentation : <https://mqt.readthedocs.io/projects/qmap/en/latest/mapping.html
 
 The transpiler includes a Basis Conversion pass that can map the gate operations in the input MLIR
 (quake) dialect to the native gate-set of the target device. The native-gate can be provided as a
-comma separated list of gates to the pass `--BasisConversion=gates=phased_rx,cz`. The pass
-recursively goes through each gate operation in the input dialect and maps the gate to one of the
-native gates of the target device using a set of Decomposition Patterns. Please refer to
+comma separated list of gates to the pass `--BasisConversion=gates=prx,cz`. The pass recursively
+goes through each gate operation in the input dialect and maps the gate to one of the native gates
+of the target device using a set of Decomposition Patterns. Please refer to
 `include/Passes/transforms/DecompositionPatterns.h` for a list of decomposition patterns currently
 available to the pass. If a the pass cannot decompose a certain gate operation in the input dialect
 a warning message is displayed pointing to the failed decomposition.
