@@ -1,0 +1,537 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="FAQs" href="../faqs/index.html"><link rel="prev" title="Integrating the MQSS Quantum Compilation Suite within your project" href="integrate.html">
+
+    <!-- Generated with Sphinx 8.1.3 and Furo 2025.12.19 -->
+        <title>Verification Infrastructure - MQSS Quantum Compilation Suite documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">MQSS Quantum Compilation Suite  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">MQSS Quantum Compilation Suite  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-versions">
+  <p class="caption">Documentation version: v2.3.0</p>
+  <ul>
+    <li><a href="../../v1.0.0/index.html">v1.0.0</a></li>
+    <li><a href="../../v2.0.0/index.html">v2.0.0</a></li>
+    <li><a href="../../v2.1.0/index.html">v2.1.0</a></li>
+    <li><a href="../../v2.2.0/index.html">v2.2.0</a></li>
+    <li><a href="../../v2.2.1/index.html">v2.2.1</a></li>
+    <li><a href="verification.html">v2.3.0</a></li>
+  </ul>
+</div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../user_guide/index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/build.html">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/running.html">Running test circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/passes.html">Passes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/verification.html">Verifying Circuit Correctness</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/library.html">Using MQSSCI as a Library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_guide/qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Development Guide</a><input aria-label="Toggle navigation of Development Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="develop-guide.html">Development Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="templates.html">Writing Passes for the MQSS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrate.html">Integrating the MQSS Quantum Compilation Suite within your project</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Verification Infrastructure</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../faqs/index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../faqs/mqss-faq.html">MQSS FAQs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../faqs/mlir-faq.html">MLIR FAQs</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/develop-guide/verification.md.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <!--------------------------------------------------------------------------------------------------
+Copyright 2024 Munich Quantum Software Stack Project
+
+Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
+"License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+----------------------------------------------------------------------------------------------------->
+<section id="verification-infrastructure">
+<h1>Verification Infrastructure<a class="headerlink" href="#verification-infrastructure" title="Link to this heading">¶</a></h1>
+<p>This page describes the implementation of circuit-equivalence verification: what it checks, how it’s
+wired into <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>, and what to know before extending it. For the end-user-facing
+<code class="docutils literal notranslate"><span class="pre">--mqssci-verify</span></code> flag, see <a class="reference internal" href="../user_guide/verification.html"><span class="std std-doc">Verifying Circuit Correctness</span></a>.</p>
+<section id="design-instrumentation-not-a-pass">
+<h2>Design: instrumentation, not a pass<a class="headerlink" href="#design-instrumentation-not-a-pass" title="Link to this heading">¶</a></h2>
+<p>Verification is implemented as an <code class="docutils literal notranslate"><span class="pre">mlir::PassInstrumentation</span></code>, not as an ordinary MLIR pass. This
+was a deliberate choice: a pass only runs when a user explicitly places it in a <code class="docutils literal notranslate"><span class="pre">-pass-pipeline=...</span></code>
+string or invokes it by name, which means the user has to remember to bracket whatever subset of
+passes they run with a “snapshot” pass and a “verify” pass. <code class="docutils literal notranslate"><span class="pre">PassInstrumentation</span></code> instead attaches
+to the <code class="docutils literal notranslate"><span class="pre">mlir::PassManager</span></code> itself and its <code class="docutils literal notranslate"><span class="pre">runBeforePass</span></code>/<code class="docutils literal notranslate"><span class="pre">runAfterPass</span></code> hooks fire around <em>every</em>
+pass the manager executes — one pass, a whole pipeline, or an arbitrary <code class="docutils literal notranslate"><span class="pre">-pass-pipeline=...</span></code> string
+all get the same coverage automatically, with no special-casing required from the user.</p>
+<p>The class is <code class="docutils literal notranslate"><span class="pre">mqss::mqssci::verify::VerifyPassInstrumentation</span></code>:</p>
+<ul class="simple">
+<li><p>Declared in <code class="docutils literal notranslate"><span class="pre">include/Passes/Verification/Instrumentation.h</span></code>.</p></li>
+<li><p>Defined in <code class="docutils literal notranslate"><span class="pre">lib/Passes/Verification/EquivalenceVerification.cpp</span></code>.</p></li>
+<li><p>Built into the <code class="docutils literal notranslate"><span class="pre">MQSSCIVerificationPasses</span></code> static library
+(<code class="docutils literal notranslate"><span class="pre">lib/Passes/Verification/CMakeLists.txt</span></code>), which depends on <code class="docutils literal notranslate"><span class="pre">MQT::CoreIR</span></code> and <code class="docutils literal notranslate"><span class="pre">MQT::QCEC</span></code> in
+addition to <code class="docutils literal notranslate"><span class="pre">MQSSSupportedDialects</span></code>, <code class="docutils literal notranslate"><span class="pre">MLIRPass</span></code>, and <code class="docutils literal notranslate"><span class="pre">MLIRTransforms</span></code>.</p></li>
+</ul>
+</section>
+<section id="how-a-check-runs">
+<h2>How a check runs<a class="headerlink" href="#how-a-check-runs" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">runBeforePass(pass,</span> <span class="pre">op)</span></code></strong> — <code class="docutils literal notranslate"><span class="pre">op</span></code> is the <code class="docutils literal notranslate"><span class="pre">ModuleOp</span></code> about to be processed. A
+<code class="docutils literal notranslate"><span class="pre">DialectAnalysisSelector</span></code> walks it and, for each kernel <code class="docutils literal notranslate"><span class="pre">FuncOp</span></code>, <code class="docutils literal notranslate"><span class="pre">createMQTQuantumComputation</span></code>
+translates its gate/measurement operations into an <code class="docutils literal notranslate"><span class="pre">qc::QuantumComputation</span></code> (MQT Core’s circuit
+representation). This snapshot is cached in <code class="docutils literal notranslate"><span class="pre">cached_module_snapshot</span></code>, an
+<code class="docutils literal notranslate"><span class="pre">llvm::DenseMap&lt;llvm::StringRef,</span> <span class="pre">VerifyQuantumComputationTy&gt;</span></code> keyed by <strong>kernel symbol name</strong>,
+not by <code class="docutils literal notranslate"><span class="pre">FuncOp</span></code> identity. This matters: a pass may legitimately replace a <code class="docutils literal notranslate"><span class="pre">FuncOp</span></code> with a new
+object (signature conversion, cloning) while keeping its symbol name — keying by name is what
+lets the “before” and “after” snapshots still be matched up correctly in that case.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">runAfterPass(pass,</span> <span class="pre">op)</span></code></strong> — re-runs the same translation to populate the “after” half of the
+snapshot, builds the <code class="docutils literal notranslate"><span class="pre">ec::Configuration</span></code> (see below), then for each kernel with both halves
+populated calls the free helper <code class="docutils literal notranslate"><span class="pre">performCheck(qc1,</span> <span class="pre">qc2,</span> <span class="pre">config)</span></code>, which owns the
+<code class="docutils literal notranslate"><span class="pre">ec::EquivalenceCheckingManager</span></code> construction, the alternating-checker fallback, and printing the
+result as <code class="docutils literal notranslate"><span class="pre">[verify]</span> <span class="pre">&lt;kernel</span> <span class="pre">name&gt;:</span> <span class="pre">&lt;result&gt;</span></code> via <code class="docutils literal notranslate"><span class="pre">llvm::outs()</span></code>.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">runAfterPassFailed(pass,</span> <span class="pre">op)</span></code></strong> — fires when the <em>pass itself</em> fails to complete (crash,
+illegal rewrite, <code class="docutils literal notranslate"><span class="pre">signalPassFailure()</span></code>), not when an equivalence check finds a mismatch — that
+distinction matters, since a naive reading of the name suggests the opposite. Per MLIR’s own doc
+comment on this hook, <code class="docutils literal notranslate"><span class="pre">op</span></code> “may be in an invalid state” at this point, so this override
+deliberately doesn’t re-run <code class="docutils literal notranslate"><span class="pre">DialectAnalysisSelector</span></code> or any other IR walk over it — it only
+prints the failing pass’s name and <code class="docutils literal notranslate"><span class="pre">op-&gt;getLoc()</span></code> to <code class="docutils literal notranslate"><span class="pre">llvm::errs()</span></code>, and the equivalence check is
+simply skipped for that pass.</p></li>
+</ol>
+</section>
+<section id="equivalence-checking-configuration">
+<h2>Equivalence checking configuration<a class="headerlink" href="#equivalence-checking-configuration" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">runAfterPass</span></code> constructs a default-initialized <code class="docutils literal notranslate"><span class="pre">ec::Configuration</span></code> and sets
+<code class="docutils literal notranslate"><span class="pre">config.functionality.checkPartialEquivalence</span> <span class="pre">=</span> <span class="pre">true</span></code>. A default <code class="docutils literal notranslate"><span class="pre">Configuration</span></code> already enables a
+<em>portfolio</em> of checkers, not a single hand-picked one:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">bool</span><span class="w"> </span><span class="n">runConstructionChecker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">runSimulationChecker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">runAlternatingChecker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">runZXChecker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>On top of that, <code class="docutils literal notranslate"><span class="pre">EquivalenceCheckingManager</span></code>’s constructor performs one automatic fallback: if the
+alternating (decision-diagram-based) checker is enabled but
+<code class="docutils literal notranslate"><span class="pre">DDAlternatingChecker::canHandle(qc1,</span> <span class="pre">qc2)</span></code> returns false — typically because the circuits have
+ancillary qubits it can’t structurally represent — it disables the alternating checker and enables
+the construction checker instead. The code in <code class="docutils literal notranslate"><span class="pre">runAfterPass</span></code> mirrors this same check explicitly
+before calling <code class="docutils literal notranslate"><span class="pre">ecm.run()</span></code>, so it’s applied even in scenarios where the manager’s own internal check
+might not catch it.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ecm.equivalence()</span></code> returns an <code class="docutils literal notranslate"><span class="pre">ec::EquivalenceCriterion</span></code>, not a boolean. The values that represent
+a “good” result are <code class="docutils literal notranslate"><span class="pre">Equivalent</span></code>, <code class="docutils literal notranslate"><span class="pre">EquivalentUpToGlobalPhase</span></code>, <code class="docutils literal notranslate"><span class="pre">EquivalentUpToPhase</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">ProbablyEquivalent</span></code> (the last only occurs when the simulation checker resolves things first, since
+it is a probabilistic method — see
+<a class="reference external" href="https://mqt.readthedocs.io/projects/qcec/en/stable/equivalence_checking.html">mqt-qcec’s equivalence checking documentation</a>
+for what each checker actually verifies). Global-phase differences are expected and fine to accept:
+gate decompositions frequently introduce a global phase relative to the original circuit, which has
+no physical effect. When adding new success/failure handling, check the specific
+<code class="docutils literal notranslate"><span class="pre">EquivalenceCriterion</span></code> value returned rather than testing for one specific variant.</p>
+</section>
+<section id="the-mqssci-verify-cli-flag">
+<h2>The <code class="docutils literal notranslate"><span class="pre">--mqssci-verify</span></code> CLI flag<a class="headerlink" href="#the-mqssci-verify-cli-flag" title="Link to this heading">¶</a></h2>
+<p>Declared in <code class="docutils literal notranslate"><span class="pre">mqss-cc.cpp</span></code> as a plain boolean option:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">cl</span><span class="o">::</span><span class="n">opt</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">VerificationModeCLOpt</span><span class="p">(</span>
+<span class="w">    </span><span class="s">"mqssci-verify"</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cl</span><span class="o">::</span><span class="n">desc</span><span class="p">(</span><span class="s">"Perform Circuit Equivalence Check after each pass, default:false"</span><span class="p">),</span>
+<span class="w">    </span><span class="n">cl</span><span class="o">::</span><span class="n">init</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>It’s read out (<code class="docutils literal notranslate"><span class="pre">VerificationModeCLOpt.getValue()</span></code>) only <em>after</em> <code class="docutils literal notranslate"><span class="pre">registerAndParseCLIOptions</span></code> has run
+— reading a <code class="docutils literal notranslate"><span class="pre">cl::opt</span></code>’s value before parsing returns its unparsed default, not whatever the user
+passed. The value is then captured into the lambda passed to
+<code class="docutils literal notranslate"><span class="pre">MlirOptMainConfig::setPassPipelineSetupFn</span></code>, where <code class="docutils literal notranslate"><span class="pre">pm.addInstrumentation(...)</span></code> is conditionally
+called only when the flag is set — leaving it unset skips adding the instrumentation entirely, so it
+costs nothing at runtime rather than merely no-op’ing inside the hooks.</p>
+<section id="why-there-s-only-one-mode-not-a-cheaper-once-per-run-option">
+<h3>Why there’s only one mode, not a cheaper once-per-run option<a class="headerlink" href="#why-there-s-only-one-mode-not-a-cheaper-once-per-run-option" title="Link to this heading">¶</a></h3>
+<p>An earlier iteration explored a second mode — snapshot once before the whole pipeline, compare once
+after, instead of after every pass — using
+<code class="docutils literal notranslate"><span class="pre">PassInstrumentation::runBeforePipeline</span></code>/<code class="docutils literal notranslate"><span class="pre">runAfterPipeline</span></code> (which fire once around a whole
+<code class="docutils literal notranslate"><span class="pre">OpPassManager</span></code> run rather than per-pass, so the expensive <code class="docutils literal notranslate"><span class="pre">ecm.run()</span></code> call would only happen once).
+This turned out not to work, and not for a fixable reason: <code class="docutils literal notranslate"><span class="pre">runBeforePipeline</span></code>/<code class="docutils literal notranslate"><span class="pre">runAfterPipeline</span></code>
+are only invoked via <code class="docutils literal notranslate"><span class="pre">Pass::runPipeline</span></code> (<code class="docutils literal notranslate"><span class="pre">mlir/Pass/Pass.h</span></code>) — i.e. when a pass <em>itself</em>, while
+running, dynamically schedules a nested <code class="docutils literal notranslate"><span class="pre">OpPassManager</span></code> on some operation. None of the MQSS passes
+do this, and <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>’s own pipeline is flat (it matches the top-level <code class="docutils literal notranslate"><span class="pre">PassManager</span></code>’s own anchor
+operation type rather than being nested under it), so these two hooks simply never fire for a normal
+<code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> invocation — confirmed empirically, not just from reading the header. Flipping the
+pipeline registered in the CLI or adjusting the hook bodies doesn’t change this; the hooks are
+unreachable from this call shape.</p>
+<p>Because of that, <code class="docutils literal notranslate"><span class="pre">VerifyPassInstrumentation</span></code> doesn’t have a <code class="docutils literal notranslate"><span class="pre">runBeforePipeline</span></code>/<code class="docutils literal notranslate"><span class="pre">runAfterPipeline</span></code>
+override at all — verification always runs after every pass. If a cheaper once-per-run mode is
+wanted later, it can’t be built on <code class="docutils literal notranslate"><span class="pre">PassInstrumentation</span></code>’s pipeline hooks; it would need to snapshot
+and compare from <em>outside</em> the instrumentation entirely — e.g. wrapping the <code class="docutils literal notranslate"><span class="pre">pm.run(...)</span></code> call in
+<code class="docutils literal notranslate"><span class="pre">mqss-cc.cpp</span></code>’s own driver code. See the <code class="docutils literal notranslate"><span class="pre">TODO</span></code> comment at the top of <code class="docutils literal notranslate"><span class="pre">EquivalenceVerification.cpp</span></code>
+for the same note, kept next to the code it concerns.</p>
+</section>
+<section id="setpasspipelinesetupfn-composes-with-rather-than-replaces-the-cli-s-default-pipeline-handling">
+<h3><code class="docutils literal notranslate"><span class="pre">setPassPipelineSetupFn</span></code> composes with, rather than replaces, the CLI’s default pipeline handling<a class="headerlink" href="#setpasspipelinesetupfn-composes-with-rather-than-replaces-the-cli-s-default-pipeline-handling" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">registerAndParseCLIOptions</span></code>/<code class="docutils literal notranslate"><span class="pre">MlirOptMainConfig::createFromCLOptions()</span></code> already wire up a default
+<code class="docutils literal notranslate"><span class="pre">passPipelineCallback</span></code> that knows how to apply whatever the user asked for on the CLI (a single
+pass, a named pipeline, an explicit <code class="docutils literal notranslate"><span class="pre">-pass-pipeline=...</span></code> string). <code class="docutils literal notranslate"><span class="pre">setPassPipelineSetupFn</span></code>
+<strong>replaces</strong> that callback outright rather than adding to it, so <code class="docutils literal notranslate"><span class="pre">mqss-cc.cpp</span></code> takes a copy of
+<code class="docutils literal notranslate"><span class="pre">config</span></code> before installing its own callback (<code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">defaultConfig</span> <span class="pre">=</span> <span class="pre">config;</span></code>), and the new callback
+calls <code class="docutils literal notranslate"><span class="pre">defaultConfig.setupPassPipeline(pm)</span></code> first before adding the verification instrumentation.</p>
+</section>
+</section>
+<section id="a-cmake-pitfall-specific-to-this-library">
+<h2>A CMake pitfall specific to this library<a class="headerlink" href="#a-cmake-pitfall-specific-to-this-library" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">lib/Passes/Verification/CMakeLists.txt</span></code> builds <code class="docutils literal notranslate"><span class="pre">MQSSCIVerificationPasses</span></code> as a static library (no
+<code class="docutils literal notranslate"><span class="pre">SHARED</span></code> keyword). For a static <code class="docutils literal notranslate"><span class="pre">add_mlir_library</span></code>, the macro creates a separate <code class="docutils literal notranslate"><span class="pre">obj.&lt;name&gt;</span></code>
+<em>object</em> library that does the actual compiling; the <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;</span></code> static target just archives
+<code class="docutils literal notranslate"><span class="pre">$&lt;TARGET_OBJECTS:obj.&lt;name&gt;&gt;</span></code> and compiles nothing itself. Any <code class="docutils literal notranslate"><span class="pre">target_compile_options</span></code> or
+<code class="docutils literal notranslate"><span class="pre">target_compile_definitions</span></code> call aimed at <code class="docutils literal notranslate"><span class="pre">MQSSCIVerificationPasses</span></code> directly (rather than
+<code class="docutils literal notranslate"><span class="pre">obj.MQSSCIVerificationPasses</span></code>) silently has no effect on how <code class="docutils literal notranslate"><span class="pre">EquivalenceVerification.cpp</span></code> is
+actually compiled. This bit both <code class="docutils literal notranslate"><span class="pre">-fexceptions</span></code> and <code class="docutils literal notranslate"><span class="pre">MQSS_ENABLE_DEBUG</span></code> during development — the fix
+is the same each time:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">target_compile_options</span><span class="p">(</span><span class="s">MQSSCIVerificationPasses</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">-fexceptions</span><span class="p">)</span>
+<span class="nb">if</span><span class="p">(</span><span class="s">TARGET</span><span class="w"> </span><span class="s">obj.MQSSCIVerificationPasses</span><span class="p">)</span>
+<span class="w">  </span><span class="nb">target_compile_options</span><span class="p">(</span><span class="s">obj.MQSSCIVerificationPasses</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">-fexceptions</span><span class="p">)</span>
+<span class="nb">endif</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Apply the same <code class="docutils literal notranslate"><span class="pre">if(TARGET</span> <span class="pre">obj.&lt;name&gt;)</span> <span class="pre">...</span> <span class="pre">endif()</span></code> guard for any future compile option or definition
+added to this target.</p>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading">¶</a></h2>
+<p>Verification is exercised via the same lit/FileCheck infrastructure described in
+<a class="reference internal" href="develop-guide.html#testing"><span class="std std-ref">Testing</span></a>. Two representative tests:
+<code class="docutils literal notranslate"><span class="pre">tests/dialects/quake/IQMTranspileAndVerify.qke</span></code> and
+<code class="docutils literal notranslate"><span class="pre">tests/dialects/quake/PLANQCTranspileAndVerify.qke</span></code>. Both follow the same pattern: run a real
+transpilation pipeline with <code class="docutils literal notranslate"><span class="pre">--mqssci-verify</span></code> appended, and check for the printed result:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>//<span class="w"> </span>RUN:<span class="w"> </span>%mqss-opt<span class="w"> </span>%s<span class="w"> </span>--BasisConversionPass<span class="o">=</span><span class="nv">gates</span><span class="o">=</span>phased_rx,cz<span class="w"> </span>--cse<span class="w"> </span>--canonicalize<span class="w"> </span>--mqssci-verify<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>FileCheck<span class="w"> </span>%s
+
+//<span class="w"> </span>CHECK:<span class="w"> </span><span class="o">[</span>verify<span class="o">]</span><span class="w"> </span>__nvqpp__mlirgen__bellILm2EE:<span class="w"> </span>Equivalent
+</pre></div>
+</div>
+</section>
+<section id="known-limitations-to-keep-in-mind-when-extending-this">
+<h2>Known limitations to keep in mind when extending this<a class="headerlink" href="#known-limitations-to-keep-in-mind-when-extending-this" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Verification always runs after every pass in the pipeline — there’s no cheaper once-per-run mode
+(see <a class="reference internal" href="#why-theres-only-one-mode-not-a-cheaper-once-per-run-option"><span class="xref myst">above</span></a> for why that isn’t
+reachable via <code class="docutils literal notranslate"><span class="pre">PassInstrumentation</span></code> as currently used).</p></li>
+<li><p>Verification runs once per kernel <code class="docutils literal notranslate"><span class="pre">FuncOp</span></code> found by <code class="docutils literal notranslate"><span class="pre">DialectAnalysisSelector</span></code>; it does not
+currently skip kernels once they stop being translatable to <code class="docutils literal notranslate"><span class="pre">qc::QuantumComputation</span></code> (e.g. after
+lowering past the quantum dialects into LLVM dialect during code generation). Placing
+<code class="docutils literal notranslate"><span class="pre">--mqssci-verify</span></code> ahead of a <code class="docutils literal notranslate"><span class="pre">CodeGen</span></code> pass in a pipeline is untested territory.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">createMQTQuantumComputation</span></code> silently skips any <code class="docutils literal notranslate"><span class="pre">Gate</span></code> enum value it has no translation case for
+(see <code class="docutils literal notranslate"><span class="pre">loadGates</span></code> in <code class="docutils literal notranslate"><span class="pre">include/Utils/MQTCoreUtils.h</span></code>) rather than erroring. A gate type added to the
+<code class="docutils literal notranslate"><span class="pre">Gate</span></code> enum in <code class="docutils literal notranslate"><span class="pre">include/Passes/Analysis/Extractor.h</span></code> without a corresponding case in <code class="docutils literal notranslate"><span class="pre">loadGates</span></code>
+will be dropped from the translated circuit rather than causing a build or runtime error. When
+adding a new gate type end-to-end, add its <code class="docutils literal notranslate"><span class="pre">loadGates</span></code> case in the same change.</p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../faqs/index.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">FAQs</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="integrate.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Integrating the MQSS Quantum Compilation Suite within your project</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Verification Infrastructure</a><ul>
+<li><a class="reference internal" href="#design-instrumentation-not-a-pass">Design: instrumentation, not a pass</a></li>
+<li><a class="reference internal" href="#how-a-check-runs">How a check runs</a></li>
+<li><a class="reference internal" href="#equivalence-checking-configuration">Equivalence checking configuration</a></li>
+<li><a class="reference internal" href="#the-mqssci-verify-cli-flag">The <code class="docutils literal notranslate"><span class="pre">--mqssci-verify</span></code> CLI flag</a><ul>
+<li><a class="reference internal" href="#why-there-s-only-one-mode-not-a-cheaper-once-per-run-option">Why there’s only one mode, not a cheaper once-per-run option</a></li>
+<li><a class="reference internal" href="#setpasspipelinesetupfn-composes-with-rather-than-replaces-the-cli-s-default-pipeline-handling"><code class="docutils literal notranslate"><span class="pre">setPassPipelineSetupFn</span></code> composes with, rather than replaces, the CLI’s default pipeline handling</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#a-cmake-pitfall-specific-to-this-library">A CMake pitfall specific to this library</a></li>
+<li><a class="reference internal" href="#testing">Testing</a></li>
+<li><a class="reference internal" href="#known-limitations-to-keep-in-mind-when-extending-this">Known limitations to keep in mind when extending this</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>
