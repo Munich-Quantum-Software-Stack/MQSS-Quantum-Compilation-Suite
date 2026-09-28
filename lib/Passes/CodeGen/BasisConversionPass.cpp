@@ -22,6 +22,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Utils/DebugUtils.h"
 
 #include <llvm/ADT/StringSet.h>
+#include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 
 namespace mqss::mqssci::codegen {
 
@@ -356,6 +357,26 @@ public:
       });
       if (!changed)
         return;
+
+      // Some rules (e.g. CrzToRzCxRzCx) build a new op's angle out of an
+      // arithmetic expression -- arith.negf/arith.divf on a prior operand --
+      // rather than a literal constant. classifyOp()'s "is this angle
+      // exactly pi/2, i.e. sx?" check only matches a *direct*
+      // arith::ConstantOp definer (BasisConversionPass.cpp's classifyOp,
+      // above), not a foldable expression, so a rotation that's genuinely
+      // pi/2 can be misclassified as generic "rx" purely because of how many
+      // decomposition hops it went through -- which can leave it stuck
+      // un-legalizable on a target whose native set has "sx" but not generic
+      // "rx" (e.g. wmi's {cz, x, y, rz, sx}). Fold such expressions back down
+      // to literal constants before the next round's classifyOp() calls
+      // re-inspect whatever this round just produced. An empty pattern set
+      // is enough: GreedyRewriteConfig folds constant-foldable ops by
+      // default, so this is purely a folding/DCE pass, not a general
+      // canonicalization.
+      mlir::RewritePatternSet emptyPatterns(kernel.getContext());
+      (void)mlir::applyPatternsGreedily(
+          kernel, mlir::FrozenRewritePatternSet(std::move(emptyPatterns)));
+
       if (round == maxRounds - 1)
         mlir::emitWarning(kernel.getLoc())
             << "BasisConversion: gave up after " << maxRounds

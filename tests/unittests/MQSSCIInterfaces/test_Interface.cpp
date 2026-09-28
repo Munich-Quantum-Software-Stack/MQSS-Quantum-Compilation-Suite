@@ -25,6 +25,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <iostream>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/DialectRegistry.h>
 #include <mlir/IR/MLIRContext.h>
@@ -243,6 +244,62 @@ TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForIqmBackend) {
   // exactly that basis, which IQM's JSON emitter renders as "prx"/"cz".
   // See tests/dialects/quake/IQMTranspileToIQMJSON.qke for the same
   // decomposition pattern checked at the pass level.
+  EXPECT_NE(json->find("\"name\": \"prx\""), std::string::npos)
+      << "expected at least one native prx (\"prx\") gate";
+  EXPECT_NE(json->find("\"name\": \"cz\""), std::string::npos)
+      << "expected the native two-qubit cz gate";
+
+  // The fixture's single quake.x is a controlled-X (CNOT) between QB1 and
+  // QB2; it should have been decomposed into cz, not left as a raw cx.
+  // Rather than matching the pretty-printed "qubits" array verbatim
+  // (fragile against indentation changes), just check both qubit names
+  // appear within the cz instruction's own JSON object.
+  size_t cz_pos = json->find("\"name\": \"cz\"");
+  ASSERT_NE(cz_pos, std::string::npos);
+  std::string cz_instruction = json->substr(cz_pos, 150);
+  EXPECT_NE(cz_instruction.find("\"QB1\""), std::string::npos)
+      << "expected the native cz gate to act on QB1";
+  EXPECT_NE(cz_instruction.find("\"QB2\""), std::string::npos)
+      << "expected the native cz gate to act on QB2";
+
+  // The circuit measures its qubits; at least one measurement instruction
+  // should be present in the output.
+  EXPECT_NE(json->find("\"name\": \"measure\""), std::string::npos)
+      << "expected a measurement instruction";
+  EXPECT_NE(json->find("\"key\": \"m_QB1\""), std::string::npos)
+      << "expected a measurement instruction keyed to QB1";
+}
+
+TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForExplicitNativeGateSet) {
+  // Same circuit/assertions as CompilesToIQMJSONForIqmBackend, but exercises
+  // compileImpl()'s other branch (MQSSCompiler.cpp's native_gates path, not
+  // its backend_name path): instead of a known backend name resolving to a
+  // hardcoded gate list internally, the caller supplies the {prx, cz}
+  // native-gate set directly.
+  mqss::mqssci::MQSSCompiler compiler;
+
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::IQMJSON;
+
+  const std::vector<std::string> nativeGates{"prx", "cz", "prx_12"};
+  std::optional<std::string> json =
+      compiler.compile(kBellStateCircuit, nativeGates, opts);
+
+  ASSERT_TRUE(json.has_value())
+      << "compile() returned nullopt; expected a valid IQM JSON program";
+  EXPECT_FALSE(json->empty());
+
+  // The circuit's entry-point function name should be carried through as the
+  // JSON program's name.
+  EXPECT_NE(json->find("\"name\": \"__nvqpp__mlirgen__testILm2EE\""),
+            std::string::npos);
+
+  // BasisConversionPass should have decomposed the whole circuit into
+  // exactly the {prx, cz} set passed in, which IQM's JSON emitter renders as
+  // "prx"/"cz" -- identical output to CompilesToIQMJSONForIqmBackend, since
+  // that test's "iqm" backend name resolves to this same gate set internally
+  // (see MQSSCompiler.cpp's backend_name branch).
   EXPECT_NE(json->find("\"name\": \"prx\""), std::string::npos)
       << "expected at least one native prx (\"prx\") gate";
   EXPECT_NE(json->find("\"name\": \"cz\""), std::string::npos)
