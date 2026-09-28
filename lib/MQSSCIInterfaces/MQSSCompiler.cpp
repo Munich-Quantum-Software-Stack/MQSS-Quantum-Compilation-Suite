@@ -124,7 +124,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   conv_opts.gates = "";
   if (!backend_name.empty()) {
     if (backend_name == "iqm") {
-      conv_opts.gates = "phased_rx,cz";
+      conv_opts.gates = "prx,cz";
     } else if (backend_name == "planqc") {
       conv_opts.gates = "rx,cz,rz";
     } else if (backend_name == "wmi") {

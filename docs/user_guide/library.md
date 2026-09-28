@@ -111,7 +111,7 @@ compiler.compile("path/to/circuit.qke", opts);
 
 | `backend_name` | Native-gate set      |
 | -------------- | -------------------- |
-| `"iqm"`        | `phased_rx`, `cz`    |
+| `"iqm"`        | `prx`, `cz`          |
 | `"planqc"`     | `rx`, `cz`, `rz`     |
 | `"wmi"`        | `cz`, `x`, `y`, `rz` |
 

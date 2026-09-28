@@ -238,13 +238,13 @@ TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForIqmBackend) {
   EXPECT_NE(json->find("\"name\": \"__nvqpp__mlirgen__testILm2EE\""),
             std::string::npos);
 
-  // "iqm" maps to the {phased_rx, cz} native-gate set (see library.md).
+  // "iqm" maps to the {prx, cz} native-gate set (see library.md).
   // BasisConversionPass should have decomposed the whole circuit into
   // exactly that basis, which IQM's JSON emitter renders as "prx"/"cz".
   // See tests/dialects/quake/IQMTranspileToIQMJSON.qke for the same
   // decomposition pattern checked at the pass level.
   EXPECT_NE(json->find("\"name\": \"prx\""), std::string::npos)
-      << "expected at least one native phased_rx (\"prx\") gate";
+      << "expected at least one native prx (\"prx\") gate";
   EXPECT_NE(json->find("\"name\": \"cz\""), std::string::npos)
       << "expected the native two-qubit cz gate";
 

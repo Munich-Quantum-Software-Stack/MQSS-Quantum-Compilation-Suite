@@ -202,31 +202,31 @@ The `gates` option (and the corresponding `native_gate_set` argument of `MQSSCom
 These are the mnemonics the pass recognizes, both as members of the requested native set and as
 gates it knows how to decompose:
 
-| Mnemonic    | Gate                            | Quake Operation   | Notes                                                                     |
-| ----------- | ------------------------------- | ----------------- | ------------------------------------------------------------------------- |
-| `h`         | Hadamard                        | `quake.h`         | Uncontrolled, single target.                                              |
-| `x`         | Pauli-X                         | `quake.x`         | Uncontrolled, single target.                                              |
-| `cx`        | Controlled-X (CNOT)             | `quake.x`         | Exactly one control.                                                      |
-| `y`         | Pauli-Y                         | `quake.y`         | Uncontrolled, non-adjoint.                                                |
-| `cy`        | Controlled-Y                    | `quake.y`         | Exactly one control, non-adjoint.                                         |
-| `z`         | Pauli-Z                         | `quake.z`         | Uncontrolled, single target.                                              |
-| `cz`        | Controlled-Z                    | `quake.z`         | Exactly one control.                                                      |
-| `s`         | S (√Z phase gate)               | `quake.s`         | Non-adjoint.                                                              |
-| `sdg`       | S† (adjoint of S)               | `quake.s`         | Adjoint form.                                                             |
-| `t`         | T (⁴√Z phase gate)              | `quake.t`         | Non-adjoint.                                                              |
-| `tdg`       | T† (adjoint of T)               | `quake.t`         | Adjoint form.                                                             |
-| `r1`        | R1(θ) phase rotation            | `quake.r1`        | One parameter, non-adjoint, uncontrolled.                                 |
-| `rx`        | Rx(θ)                           | `quake.rx`        | One parameter, non-adjoint, uncontrolled.                                 |
-| `sx`        | √X — fixed π/2 rotation about X | `quake.rx`        | Recognized only when the parameter is the constant `π/2`; see note below. |
-| `crx`       | Controlled-Rx(θ)                | `quake.rx`        | Exactly one control, one parameter.                                       |
-| `ry`        | Ry(θ)                           | `quake.ry`        | One parameter, uncontrolled.                                              |
-| `cry`       | Controlled-Ry(θ)                | `quake.ry`        | Exactly one control, one parameter.                                       |
-| `rz`        | Rz(θ)                           | `quake.rz`        | One parameter, non-adjoint, uncontrolled.                                 |
-| `crz`       | Controlled-Rz(θ)                | `quake.rz`        | Exactly one control, one parameter.                                       |
-| `u2`        | U2(φ, λ)                        | `quake.u2`        | Two parameters, uncontrolled.                                             |
-| `u3`        | U3(θ, φ, λ)                     | `quake.u3`        | Three parameters, uncontrolled.                                           |
-| `swap`      | SWAP                            | `quake.swap`      | Two targets, uncontrolled.                                                |
-| `phased_rx` | PhasedRx(θ, φ)                  | `quake.phased_rx` | Two parameters, non-adjoint, uncontrolled.                                |
+| Mnemonic | Gate                            | Quake Operation   | Notes                                                                     |
+| -------- | ------------------------------- | ----------------- | ------------------------------------------------------------------------- |
+| `h`      | Hadamard                        | `quake.h`         | Uncontrolled, single target.                                              |
+| `x`      | Pauli-X                         | `quake.x`         | Uncontrolled, single target.                                              |
+| `cx`     | Controlled-X (CNOT)             | `quake.x`         | Exactly one control.                                                      |
+| `y`      | Pauli-Y                         | `quake.y`         | Uncontrolled, non-adjoint.                                                |
+| `cy`     | Controlled-Y                    | `quake.y`         | Exactly one control, non-adjoint.                                         |
+| `z`      | Pauli-Z                         | `quake.z`         | Uncontrolled, single target.                                              |
+| `cz`     | Controlled-Z                    | `quake.z`         | Exactly one control.                                                      |
+| `s`      | S (√Z phase gate)               | `quake.s`         | Non-adjoint.                                                              |
+| `sdg`    | S† (adjoint of S)               | `quake.s`         | Adjoint form.                                                             |
+| `t`      | T (⁴√Z phase gate)              | `quake.t`         | Non-adjoint.                                                              |
+| `tdg`    | T† (adjoint of T)               | `quake.t`         | Adjoint form.                                                             |
+| `r1`     | R1(θ) phase rotation            | `quake.r1`        | One parameter, non-adjoint, uncontrolled.                                 |
+| `rx`     | Rx(θ)                           | `quake.rx`        | One parameter, non-adjoint, uncontrolled.                                 |
+| `sx`     | √X — fixed π/2 rotation about X | `quake.rx`        | Recognized only when the parameter is the constant `π/2`; see note below. |
+| `crx`    | Controlled-Rx(θ)                | `quake.rx`        | Exactly one control, one parameter.                                       |
+| `ry`     | Ry(θ)                           | `quake.ry`        | One parameter, uncontrolled.                                              |
+| `cry`    | Controlled-Ry(θ)                | `quake.ry`        | Exactly one control, one parameter.                                       |
+| `rz`     | Rz(θ)                           | `quake.rz`        | One parameter, non-adjoint, uncontrolled.                                 |
+| `crz`    | Controlled-Rz(θ)                | `quake.rz`        | Exactly one control, one parameter.                                       |
+| `u2`     | U2(φ, λ)                        | `quake.u2`        | Two parameters, uncontrolled.                                             |
+| `u3`     | U3(θ, φ, λ)                     | `quake.u3`        | Three parameters, uncontrolled.                                           |
+| `swap`   | SWAP                            | `quake.swap`      | Two targets, uncontrolled.                                                |
+| `prx`    | PhasedRx(θ, φ)                  | `quake.phased_rx` | Two parameters, non-adjoint, uncontrolled.                                |
 
 Notes:
 
@@ -274,11 +274,11 @@ Invocation:
 
 Note: This pass emits gate names and arguments as understood by IQM's native gate set (`prx`, `cz`)
 and expects the input module to already be expressed in that gate set. Run
-[`BasisConversionPass`](#basisconversionpass) with `gates=phased_rx,cz` beforehand to legalize the
+[`BasisConversionPass`](#basisconversionpass) with `gates=prx,cz` beforehand to legalize the
 circuit, followed by `cse` and `canonicalize` to clean up the result. For example:
 
 ```sh
-mqss-opt test.qke --BasisConversionPass=gates=phased_rx,cz --cse --canonicalize --quake-to-iqmJSON
+mqss-opt test.qke --BasisConversionPass=gates=prx,cz --cse --canonicalize --quake-to-iqmJSON
 ```
 
 See `tests/dialects/quake/IQMTranspileToIQMJSON.qke` for a full example, including the expected JSON

@@ -45,49 +45,47 @@ getDecompositionTable() {
             // rewriteHToRzRxRz.
             makeRule<quake::HOp>("HToRzSxRz", {"rz", "sx"}, rewriteHToRzRxRz),
             makeRule<quake::HOp>("HToU3", {"u3"}, rewriteHToU3),
-            makeRule<quake::HOp>("HToPhasedRx", {"phased_rx"},
-                                 rewriteHToPhasedRx)};
-        t["x"] = {makeRule<quake::XOp>("XToHZH", {"h", "z"}, rewriteXToHZH),
-                  makeRule<quake::XOp>("XToRx", {"rx"}, rewriteXToRx),
-                  makeRule<quake::XOp>("XToPhasedRx", {"phased_rx"},
-                                       rewriteXToPhasedRx)};
-        t["y"] = {makeRule<quake::YOp>("YToRy", {"ry"}, rewriteYToRy),
-                  makeRule<quake::YOp>("YToPhasedRx", {"phased_rx"},
-                                       rewriteYToPhasedRx)};
+            makeRule<quake::HOp>("HToPhasedRx", {"prx"}, rewriteHToPhasedRx)};
+        t["x"] = {
+            makeRule<quake::XOp>("XToHZH", {"h", "z"}, rewriteXToHZH),
+            makeRule<quake::XOp>("XToRx", {"rx"}, rewriteXToRx),
+            makeRule<quake::XOp>("XToPhasedRx", {"prx"}, rewriteXToPhasedRx)};
+        t["y"] = {
+            makeRule<quake::YOp>("YToRy", {"ry"}, rewriteYToRy),
+            makeRule<quake::YOp>("YToPhasedRx", {"prx"}, rewriteYToPhasedRx)};
         t["z"] = {makeRule<quake::ZOp>("ZToHXH", {"h", "x"}, rewriteZToHXH),
                   makeRule<quake::ZOp>("ZToRz", {"rz"}, rewriteZToRz)};
         t["s"] = {
             makeRule<quake::SOp>("SToRz", {"rz"}, rewriteSToRz),
             makeRule<quake::SOp>("SToSdgSdgSdg", {"sdg"}, rewriteSToSdgSdgSdg),
             makeRule<quake::SOp>("SToTT", {"t"}, rewriteSToTT),
-            makeRule<quake::SOp>("SToPhasedRx", {"phased_rx"},
-                                 rewriteSToPhasedRx)};
+            makeRule<quake::SOp>("SToPhasedRx", {"prx"}, rewriteSToPhasedRx)};
         t["sdg"] = {makeRule<quake::SOp>("SdgToRz", {"rz"}, rewriteSdgToRz),
                     makeRule<quake::SOp>("SdgToSSS", {"s"}, rewriteSdgToSSS)};
-        t["t"] = {makeRule<quake::TOp>("TToRz", {"rz"}, rewriteTToRz),
-                  makeRule<quake::TOp>("TToPhasedRx", {"phased_rx"},
-                                       rewriteTToPhasedRx)};
+        t["t"] = {
+            makeRule<quake::TOp>("TToRz", {"rz"}, rewriteTToRz),
+            makeRule<quake::TOp>("TToPhasedRx", {"prx"}, rewriteTToPhasedRx)};
         t["tdg"] = {makeRule<quake::TOp>("TdgToRz", {"rz"}, rewriteTdgToRz)};
         t["r1"] = {makeRule<quake::R1Op>("R1ToRz", {"rz"}, rewriteR1ToRz),
-                   makeRule<quake::R1Op>("R1ToPhasedRx", {"phased_rx"},
+                   makeRule<quake::R1Op>("R1ToPhasedRx", {"prx"},
                                          rewriteR1ToPhasedRx)};
         t["rx"] = {
             makeRule<quake::RxOp>("RxToHRzH", {"h", "rz"}, rewriteRxToHRzH),
-            makeRule<quake::RxOp>("RxToPhasedRx", {"phased_rx"},
+            makeRule<quake::RxOp>("RxToPhasedRx", {"prx"},
                                   rewriteRxToPhasedRx)};
         // "sx" is the fixed pi/2 special case of "rx" (see classifyOp); reuse
-        // the same phased_rx fallback rather than duplicating it. It has no
+        // the same prx fallback rather than duplicating it. It has no
         // fallback through "h"/"rz" because that path is exactly how "h"
         // itself produces "sx" in the first place (HToRzSxRz above) -- a
         // rule the other way would just bounce the two back and forth.
-        t["sx"] = {makeRule<quake::RxOp>("SxToPhasedRx", {"phased_rx"},
+        t["sx"] = {makeRule<quake::RxOp>("SxToPhasedRx", {"prx"},
                                          rewriteRxToPhasedRx)};
         t["ry"] = {makeRule<quake::RyOp>("RyToRzRxRz", {"rz", "rx"},
                                          rewriteRyToRzRxRz)};
         t["rz"] = {
             makeRule<quake::RzOp>("RzToHRxH", {"h", "rx"}, rewriteRzToHRxH),
             makeRule<quake::RzOp>("RzToU3", {"u3"}, rewriteRzToU3),
-            makeRule<quake::RzOp>("RzToPhasedRx", {"phased_rx"},
+            makeRule<quake::RzOp>("RzToPhasedRx", {"prx"},
                                   rewriteRzToPhasedRx)};
         t["u2"] = {makeRule<quake::U2Op>("U2ToRzRyRz", {"rz", "ry"},
                                          rewriteU2ToRzRyRz),
@@ -234,7 +232,7 @@ std::optional<std::string> classifyOp(Operation *op) {
   if (auto g = dyn_cast<quake::PhasedRxOp>(op)) {
     if (!g.isAdj() && g.getControls().empty() &&
         g.getParameters().size() == 2 && g.getTargets().size() == 1)
-      return std::string("phased_rx");
+      return std::string("prx");
     return std::nullopt;
   }
   return std::nullopt;
