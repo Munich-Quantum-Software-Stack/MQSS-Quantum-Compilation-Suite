@@ -42,6 +42,15 @@ namespace {
 std::filesystem::path kBellStateCircuit =
     MQSSCI_TEST_FIXTURE_DIR "/two_qubit_bell.qke";
 
+// Measures a whole 2-qubit register in one `quake.mz` (rather than
+// per-qubit, like kBellStateCircuit) -- the shape that used to make
+// QuakeDialectToIQMJSONPass silently drop every qubit but the first, since
+// IQM JSON has no "measure this whole register" instruction. See
+// ExpandVeqMeasurement in QuakeExpandMeasurements.cpp, which now splits it
+// into one `quake.mz` per qubit before JSON emission.
+std::filesystem::path kMultiRotationCircuit =
+    MQSSCI_TEST_FIXTURE_DIR "/multi_rotation_circuit.qke";
+
 TEST(MQSSCIInterfacesTest, CompilesToOpenQASM2ForPlanqcBackend) {
   mqss::mqssci::MQSSCompiler compiler;
 
@@ -324,6 +333,57 @@ TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForExplicitNativeGateSet) {
       << "expected a measurement instruction";
   EXPECT_NE(json->find("\"key\": \"m_QB1\""), std::string::npos)
       << "expected a measurement instruction keyed to QB1";
+}
+
+TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForWholeRegisterMeasurement) {
+  // Regression test: kMultiRotationCircuit measures both qubits in a single
+  // `quake.mz` on the whole register, rather than one `quake.mz` per qubit
+  // (see kBellStateCircuit above). Before ExpandVeqMeasurement,
+  // QuakeDialectToIQMJSONPass translated that as exactly one "measure"
+  // instruction keyed to the register's first qubit, silently dropping every
+  // other qubit -- IQM's own circuit validator rejects the result outright
+  // once a circuit has more than one such call, reporting the reused key as
+  // a duplicate ("Measurement key 'm_QB1' is not unique").
+  mqss::mqssci::MQSSCompiler compiler;
+
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::IQMJSON;
+
+  std::optional<std::string> json =
+      compiler.compile(kMultiRotationCircuit, "iqm", opts);
+
+  ASSERT_TRUE(json.has_value())
+      << "compile() returned nullopt; expected a valid IQM JSON program";
+  EXPECT_FALSE(json->empty());
+
+  EXPECT_NE(json->find("\"name\": \"__nvqpp__mlirgen__rotations\""),
+            std::string::npos);
+
+  // Exactly one measurement instruction per qubit, each with its own,
+  // distinct key -- not one dropped, and not both collapsed onto the same
+  // key.
+  EXPECT_NE(json->find("\"key\": \"m_QB1\""), std::string::npos)
+      << "expected a measurement instruction keyed to QB1";
+  EXPECT_NE(json->find("\"key\": \"m_QB2\""), std::string::npos)
+      << "expected a measurement instruction keyed to QB2";
+
+  auto countOccurrences = [](const std::string &haystack,
+                             const std::string &needle) {
+    int count = 0;
+    for (size_t pos = haystack.find(needle); pos != std::string::npos;
+         pos = haystack.find(needle, pos + 1))
+      ++count;
+    return count;
+  };
+  EXPECT_EQ(countOccurrences(*json, "\"name\": \"measure\""), 2)
+      << "expected exactly one measurement instruction per qubit";
+  EXPECT_EQ(countOccurrences(*json, "\"key\": \"m_QB1\""), 1)
+      << "m_QB1 should be used for exactly one measurement, not duplicated "
+         "across both qubits";
+  EXPECT_EQ(countOccurrences(*json, "\"key\": \"m_QB2\""), 1)
+      << "m_QB2 should be used for exactly one measurement, not duplicated "
+         "across both qubits";
 }
 
 TEST(MQSSCIInterfacesTest, DefaultQubitMappingTest) {

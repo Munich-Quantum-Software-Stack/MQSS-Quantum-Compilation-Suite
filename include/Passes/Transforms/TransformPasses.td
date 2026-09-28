@@ -37,6 +37,23 @@ def CommonGateCancellationPass : Pass<"CommonGateCancellationPass", "mlir::Modul
 
 }
 
+def ExpandMeasurements : Pass<"expand-measurements"> {
+  let summary = "Expand multi-ref measurements to series on single refs.";
+  let description = [{
+    The `mx`, `my`, `mz` ops can take a list of qubits and/or veq arguments.
+    The target may only support measuring a single qubit however. This pass
+    expands these ops in list format into a series of measurements (including
+    loops) on individual qubits and into a single `std::vector<bool>` result.
+
+    The `reset` op can also take a veq argument and this pass will also expand
+    that to a series of `reset` operations on single qubits.
+  }];
+
+  // let dependentDialects = ["cudaq::cc::CCDialect", "mlir::LLVM::LLVMDialect"];
+
+  let constructor = "mqss::mqssci::opt::createExpandMeasurementsPass()";
+}
+
 def CommonCommutePass : Pass<"CommonCommutePass", "mlir::ModuleOp"> {
   let summary = "This pass searches commutes gates that match a specific pattern.";
   let constructor = "mqss::mqssci::opt::CommonCommutePass()";

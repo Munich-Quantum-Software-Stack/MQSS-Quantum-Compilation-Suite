@@ -87,6 +87,8 @@ std::unique_ptr<mlir::Pass> CommonMappingPass(
     const std::vector<std::pair<std::uint32_t, std::uint32_t>> &coupling_map);
 std::unique_ptr<mlir::Pass>
 CommonMappingPass(const CommonMappingPassOptions &options);
+std::unique_ptr<mlir::Pass> createExpandMeasurementsPass();
+std::unique_ptr<mlir::Pass> LoopNormalizePass();
 
 } // namespace mqss::mqssci::opt
 

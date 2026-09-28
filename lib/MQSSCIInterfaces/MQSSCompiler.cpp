@@ -197,6 +197,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     result = stripSpuriousGateDefs(result);
     break;
   case IQMJSON:
+    pmLower.addPass(mqss::mqssci::opt::createExpandMeasurementsPass());
     pmLower.addPass(mqss::mqssci::codegen::QuakeDialectToIQMJSONPass(os));
     if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(mlir::UnknownLoc::get(&context),

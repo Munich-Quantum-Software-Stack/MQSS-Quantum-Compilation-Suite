@@ -536,6 +536,7 @@ static void eraseOpsSafely(llvm::SmallPtrSetImpl<mlir::Operation *> &eraseSet) {
 
     for (auto it = ordered.begin(); it != ordered.end();) {
       mlir::Operation *op = *it;
+      llvm::outs() << "Controlled DCE for: " << *op << "\n";
 
       bool hasInternalUsersLeft = false;
       for (mlir::Value result : op->getResults()) {
