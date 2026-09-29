@@ -27,13 +27,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "qdmi_example_driver.h"
 #include "sc/utils.hpp"
 
-#include <llvm/Support/Error.h>
-
 #include <cassert>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <llvm/Support/Error.h>
 #include <optional>
 #include <set>
 #include <sstream>
@@ -69,9 +68,9 @@ struct OperationInfo {
 
 inline llvm::Expected<size_t> getDeviceNumQubits(QDMI_Device device) {
   size_t numQubits = 0;
-  int ret = QDMI_device_query_device_property(
-      device, QDMI_DEVICE_PROPERTY_QUBITSNUM, sizeof(size_t), &numQubits,
-      nullptr);
+  int ret =
+      QDMI_device_query_device_property(device, QDMI_DEVICE_PROPERTY_QUBITSNUM,
+                                        sizeof(size_t), &numQubits, nullptr);
   if (ret != QDMI_SUCCESS)
     return makeQDMIError("Could not query the number of qubits", ret);
   return numQubits;
@@ -106,13 +105,11 @@ inline llvm::Expected<CouplingMap> getDeviceCouplingMap(QDMI_Device device) {
 
     // query the index of each site
     uint64_t src_id = 0, dst_id = 0;
-    ret = QDMI_device_query_site_property(device, src,
-                                          QDMI_SITE_PROPERTY_INDEX,
+    ret = QDMI_device_query_site_property(device, src, QDMI_SITE_PROPERTY_INDEX,
                                           sizeof(uint64_t), &src_id, nullptr);
     if (ret != QDMI_SUCCESS)
       return makeQDMIError("Could not query a coupling map site index", ret);
-    ret = QDMI_device_query_site_property(device, dst,
-                                          QDMI_SITE_PROPERTY_INDEX,
+    ret = QDMI_device_query_site_property(device, dst, QDMI_SITE_PROPERTY_INDEX,
                                           sizeof(uint64_t), &dst_id, nullptr);
     if (ret != QDMI_SUCCESS)
       return makeQDMIError("Could not query a coupling map site index", ret);
@@ -150,8 +147,8 @@ extractQDMIObj(const std::string &conf_path) {
 
 inline llvm::Expected<std::string> getDeviceName(QDMI_Device device) {
   size_t namesSize = 0;
-  int ret = QDMI_device_query_device_property(
-      device, QDMI_DEVICE_PROPERTY_NAME, 0, nullptr, &namesSize);
+  int ret = QDMI_device_query_device_property(device, QDMI_DEVICE_PROPERTY_NAME,
+                                              0, nullptr, &namesSize);
   if (ret != QDMI_SUCCESS || namesSize == 0)
     return makeQDMIError("Could not query the device name size", ret);
 
@@ -242,14 +239,13 @@ createQDMIDevice(const char *device_conf_path,
     }
     available += (available.empty() ? "'" : ", '") + *name + "'";
   }
-  return llvm::createStringError(
-      llvm::inconvertibleErrorCode(),
-      llvm::Twine("No QDMI device named '") + device_name +
-          "'; available: " + available);
+  return llvm::createStringError(llvm::inconvertibleErrorCode(),
+                                 llvm::Twine("No QDMI device named '") +
+                                     device_name +
+                                     "'; available: " + available);
 }
 
-inline llvm::Expected<DeviceProperty>
-getDeviceProperties(QDMI_Device device) {
+inline llvm::Expected<DeviceProperty> getDeviceProperties(QDMI_Device device) {
   auto numQubits = getDeviceNumQubits(device);
   if (!numQubits)
     return numQubits.takeError();
@@ -293,9 +289,9 @@ llvm::Expected<std::optional<T>>
 queryOperationProperty(QDMI_Device device, QDMI_Operation operation,
                        QDMI_Operation_Property prop) {
   T value{};
-  int ret = QDMI_device_query_operation_property(
-      device, operation, 0, nullptr, 0, nullptr, prop, sizeof(T), &value,
-      nullptr);
+  int ret = QDMI_device_query_operation_property(device, operation, 0, nullptr,
+                                                 0, nullptr, prop, sizeof(T),
+                                                 &value, nullptr);
   if (ret == QDMI_ERROR_NOTSUPPORTED)
     return std::optional<T>();
   if (ret != QDMI_SUCCESS)
@@ -309,14 +305,14 @@ getOperationInfo(QDMI_Device device, QDMI_Operation operation) {
 
   size_t nameSize = 0;
   int ret = QDMI_device_query_operation_property(
-      device, operation, 0, nullptr, 0, nullptr,
-      QDMI_OPERATION_PROPERTY_NAME, 0, nullptr, &nameSize);
+      device, operation, 0, nullptr, 0, nullptr, QDMI_OPERATION_PROPERTY_NAME,
+      0, nullptr, &nameSize);
   if (ret != QDMI_SUCCESS || nameSize == 0)
     return makeQDMIError("Could not query the operation name size", ret);
   info.name.assign(nameSize - 1, '\0');
   ret = QDMI_device_query_operation_property(
-      device, operation, 0, nullptr, 0, nullptr,
-      QDMI_OPERATION_PROPERTY_NAME, nameSize, info.name.data(), nullptr);
+      device, operation, 0, nullptr, 0, nullptr, QDMI_OPERATION_PROPERTY_NAME,
+      nameSize, info.name.data(), nullptr);
   if (ret != QDMI_SUCCESS)
     return makeQDMIError("Could not query the operation name", ret);
 

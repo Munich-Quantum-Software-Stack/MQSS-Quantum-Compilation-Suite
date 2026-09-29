@@ -307,14 +307,12 @@ const std::unordered_map<std::string, std::pair<size_t, size_t>> &
 getMnemonicArity() {
   static const std::unordered_map<std::string, std::pair<size_t, size_t>>
       arity = {
-          {"h", {1, 0}},         {"x", {1, 0}},    {"y", {1, 0}},
-          {"z", {1, 0}},         {"s", {1, 0}},    {"sdg", {1, 0}},
-          {"t", {1, 0}},         {"tdg", {1, 0}},  {"sx", {1, 0}},
-          {"r1", {1, 1}},        {"rx", {1, 1}},   {"ry", {1, 1}},
-          {"rz", {1, 1}},        {"u2", {1, 2}},   {"u3", {1, 3}},
-          {"prx", {1, 2}},       {"swap", {2, 0}}, {"cx", {2, 0}},
-          {"cz", {2, 0}},        {"cy", {2, 0}},   {"crx", {2, 1}},
-          {"cry", {2, 1}},       {"crz", {2, 1}},
+          {"h", {1, 0}},    {"x", {1, 0}},   {"y", {1, 0}},   {"z", {1, 0}},
+          {"s", {1, 0}},    {"sdg", {1, 0}}, {"t", {1, 0}},   {"tdg", {1, 0}},
+          {"sx", {1, 0}},   {"r1", {1, 1}},  {"rx", {1, 1}},  {"ry", {1, 1}},
+          {"rz", {1, 1}},   {"u2", {1, 2}},  {"u3", {1, 3}},  {"prx", {1, 2}},
+          {"swap", {2, 0}}, {"cx", {2, 0}},  {"cz", {2, 0}},  {"cy", {2, 0}},
+          {"crx", {2, 1}},  {"cry", {2, 1}}, {"crz", {2, 1}},
       };
   return arity;
 }
@@ -383,8 +381,7 @@ public:
         mlir::emitWarning(kernel.getLoc())
             << "BasisConversion: both 'qdmi' and 'gates' were given; using "
                "the QDMI device's native gate set and ignoring 'gates'.";
-      auto qdmiNative =
-          getNativeGateSetFromQDMI(qdmi, device, kernel.getLoc());
+      auto qdmiNative = getNativeGateSetFromQDMI(qdmi, device, kernel.getLoc());
       if (!qdmiNative) {
         mlir::emitError(kernel.getLoc())
             << "BasisConversion: " << llvm::toString(qdmiNative.takeError());
