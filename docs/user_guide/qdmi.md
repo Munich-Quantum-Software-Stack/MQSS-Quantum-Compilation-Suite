@@ -24,5 +24,6 @@ The
 hardware. Various compiler passes (especially for transpilation) need information about the
 target-device to efficiently map the input quantum circuit to the topology of the target-device.
 Currently, the Qubit Mapping pass (`--CommonMappingPass`) uses the QDMI client interface to query a
-target device for the device coupling map. In the future, we plan to leverage the QDMI interface to
-drive more optimization passes.
+target device for the device coupling map, and the `--BasisConversionPass` uses it to query the
+device's native gate set. In the future, we plan to leverage the QDMI interface to drive more
+optimization passes.
