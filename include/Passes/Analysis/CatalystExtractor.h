@@ -246,14 +246,14 @@ private:
 
         if (role == QubitRole::Control) {
           ID.base = gop;
-          ID.index = -1;
+          ID.index = nullptr;
           view.getQubits(QubitRole::Control).ids.push_back(ID);
           view.getQubits(QubitRole::Control).in.push_back(gop);
           view.getQubits(QubitRole::Control).out.push_back(resop);
         }
         if (role == QubitRole::Target) {
           ID.base = gop;
-          ID.index = -1;
+          ID.index = nullptr;
           view.getQubits(QubitRole::Target).ids.push_back(ID);
           view.getQubits(QubitRole::Target).in.push_back(gop);
           view.getQubits(QubitRole::Target).out.push_back(resop);
@@ -270,7 +270,7 @@ private:
 
         auto gop = measop->getOperand(i);
         ID.base = gop;
-        ID.index = -1;
+        ID.index = nullptr;
         view.getQubits(QubitRole::Target).ids.push_back(ID);
         view.getQubits(QubitRole::Target).in.push_back(gop);
         view.getQubits(QubitRole::Target).out.push_back(resop);

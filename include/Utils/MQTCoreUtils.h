@@ -24,11 +24,21 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "sc/exact/ExactMapper.hpp"
 #include "sc/heuristic/HeuristicMapper.hpp"
 
+#include <mlir/Dialect/Utils/StaticValueUtils.h>
 #include <mlir/IR/Diagnostics.h>
 #include <mlir/IR/Location.h>
+#include <mlir/IR/OpDefinition.h>
 #include <mlir/IR/Value.h>
 
 using namespace mlir;
+
+static qc::Qubit toQubitIndex(mlir::OpFoldResult Opfr) {
+  std::optional<int64_t> idx = mlir::getConstantIntValue(Opfr);
+  assert(idx.has_value() &&
+         "CommonMappingPass requires statically-known qubit indices; got a "
+         "dynamic quake.extract_ref/quantum.extract index");
+  return static_cast<qc::Qubit>(*idx);
+}
 
 static std::optional<double> getConstantDouble(mlir::Value v) {
   auto defOp = v.getDefiningOp<mlir::arith::ConstantOp>();
@@ -82,15 +92,16 @@ static bool loadMeasureOpIntoQC(QuantumOpView qview, qc::QuantumComputation &qc,
 
   auto targetQubit = targetQubitVector[0].index;
   for (auto entry : qview.measurements) {
-    qc.measure(entry.QubitIndex, entry.ClassicalBitIndex);
+    qc.measure(toQubitIndex(entry.QubitIndex), entry.ClassicalBitIndex);
   }
   return true;
 }
 
 static bool loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
                       Gate GateTy, SmallVector<mlir::Value, 2> params,
-                      int64_t controlQubit, int64_t targetQubit1,
-                      int64_t targetQubit2 = -2) {
+                      mlir::OpFoldResult controlQubit,
+                      mlir::OpFoldResult targetQubit1,
+                      mlir::OpFoldResult targetQubit2) {
 
   // llvm::outs() << "Gate Op: " << *gateOp << " , Ty: " << GateTy << "\n";
 
@@ -100,37 +111,37 @@ static bool loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
   switch (GateTy) {
   case Gate::H:
   case Gate::Hadamard:
-    qc.h(targetQubit1);
+    qc.h(toQubitIndex(targetQubit1));
     break;
   case Gate::CNOT:
-    qc.cx(controlQubit, targetQubit1);
+    qc.cx(toQubitIndex(controlQubit), toQubitIndex(targetQubit1));
     break;
   case Gate::CY:
-    qc.cy(controlQubit, targetQubit1);
+    qc.cy(toQubitIndex(controlQubit), toQubitIndex(targetQubit1));
     break;
   case Gate::CZ:
-    qc.cz(controlQubit, targetQubit1);
+    qc.cz(toQubitIndex(controlQubit), toQubitIndex(targetQubit1));
     break;
   case Gate::PauliX:
-    qc.x(targetQubit1);
+    qc.x(toQubitIndex(targetQubit1));
     break;
   case Gate::PauliY:
-    qc.y(targetQubit1);
+    qc.y(toQubitIndex(targetQubit1));
     break;
   case Gate::PauliZ:
-    qc.z(targetQubit1);
+    qc.z(toQubitIndex(targetQubit1));
     break;
   case Gate::S:
-    qc.s(targetQubit1);
+    qc.s(toQubitIndex(targetQubit1));
     break;
   case Gate::SAdj:
-    qc.sdg(targetQubit1);
+    qc.sdg(toQubitIndex(targetQubit1));
     break;
   case Gate::T:
-    qc.t(targetQubit1);
+    qc.t(toQubitIndex(targetQubit1));
     break;
   case Gate::TAdj:
-    qc.tdg(targetQubit1);
+    qc.tdg(toQubitIndex(targetQubit1));
     break;
   case Gate::RX:
     if (params.size() != 1) {
@@ -144,8 +155,7 @@ static bool loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
                       "Mapping: No angle found to create RX gate!");
       return false;
     }
-    qc.rx(angle.value(), targetQubit1);
-
+    qc.rx(angle.value(), toQubitIndex(targetQubit1));
     break;
   case Gate::RY:
     if (params.size() != 1) {
@@ -159,7 +169,7 @@ static bool loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
                       "Mapping: No angle found to create RY gate!");
       return false;
     }
-    qc.ry(angle.value(), targetQubit1);
+    qc.ry(angle.value(), toQubitIndex(targetQubit1));
     break;
   case Gate::RZ:
     if (params.size() != 1) {
@@ -173,10 +183,10 @@ static bool loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
                       "Mapping: No angle found to create RZ gate!");
       return false;
     }
-    qc.rz(angle.value(), targetQubit1);
+    qc.rz(angle.value(), toQubitIndex(targetQubit1));
     break;
   case Gate::SWAP:
-    qc.swap(targetQubit1, targetQubit2);
+    qc.swap(toQubitIndex(targetQubit1), toQubitIndex(targetQubit2));
     break;
   case Gate::PhasedRx:
     if (params.size() != 2) {
@@ -192,11 +202,13 @@ static bool loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
       return false;
     }
 
-    qc.r(angle.value(), param2.value(), targetQubit1);
+    qc.r(angle.value(), param2.value(), toQubitIndex(targetQubit1));
     break;
   default:
     mlir::emitError(gateOp->getLoc(), "Mapping: Unsupported Gate Type");
     return false;
+    std::optional<double> phi = getConstantDouble(params[1]);
+    qc.r(angle.value(), phi.value(), toQubitIndex(targetQubit1));
     break;
   }
   return true;
@@ -206,9 +218,9 @@ static bool loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
                               qc::QuantumComputation &qc,
                               bool isControlled = false) {
 
-  int64_t controlQubitIdx = -2;
-  int64_t targetQubit1Idx = -2;
-  int64_t targetQubit2Idx = -2;
+  mlir::OpFoldResult controlQubitIdx = nullptr;
+  mlir::OpFoldResult targetQubit1Idx = nullptr;
+  mlir::OpFoldResult targetQubit2Idx = nullptr;
   auto targetQubitVector = qview.getQubits(QubitRole::Target).ids;
 
   if (isControlled) {
@@ -220,7 +232,7 @@ static bool loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
     }
 
     controlQubitIdx = controlQubitVector[0].index;
-    if (controlQubitIdx == -1) {
+    if (!controlQubitIdx) {
       // Gate operation in Catalyst (value semantics)
       // Qubit in Catalyst
       auto operand = controlQubitVector[0].base;
@@ -245,7 +257,7 @@ static bool loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
     targetQubit2Idx = targetQubitVector[1].index;
   }
 
-  if (targetQubit1Idx == -1) {
+  if (!targetQubit1Idx) {
     // Gate operation in Catalyst (value semantics)
     // Qubit in Catalyst
     auto operand = targetQubitVector[0].base;

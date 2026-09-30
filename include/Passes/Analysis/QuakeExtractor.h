@@ -21,6 +21,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Utils/DialectUtils.h"
 
 #include <llvm/Support/raw_ostream.h>
+#include <mlir/Dialect/Utils/StaticValueUtils.h>
 
 class QuakeAnalysis : public MyModuleAnalysis {
 
@@ -178,10 +179,16 @@ private:
       return {ID, nullptr};
     }
     if (auto ext_ref = dyn_cast<quake::ExtractRefOp>(Operand)) {
-      auto base = ext_ref.getVeq();
-      auto index = ext_ref.getConstantIndex();
-      ID.base = base;
-      ID.index = index;
+      ID.base = ext_ref.getVeq();
+
+      if (ext_ref.hasConstantIndex()) {
+        ID.index = mlir::getAsIndexOpFoldResult(
+            ext_ref->getContext(),
+            ext_ref.getConstantIndex()); // std::size_t -> IntegerAttr ->
+                                         // OpFoldResult
+      } else {
+        ID.index = ext_ref.getIndex(); // already a Value -> OpFoldResult
+      }
       return {ID, ext_ref};
     }
     return {ID, nullptr};
@@ -222,7 +229,12 @@ private:
       // Do something
       QubitID ID;
       ID.base = extract_refop.getVeq();
-      ID.index = extract_refop.getConstantIndex();
+      if (extract_refop.hasConstantIndex()) {
+        ID.index = mlir::getAsIndexOpFoldResult(
+            extract_refop->getContext(), extract_refop.getConstantIndex());
+      } else {
+        ID.index = extract_refop.getIndex(); // already a Value -> OpFoldResult
+      }
       view.getQubits(QubitRole::Target).ids.push_back(ID);
     } else if (auto quakemeasop = dyn_cast<quake::MeasurementInterface>(Op)) {
       NumMeasureQubits +=
@@ -236,7 +248,7 @@ private:
         auto gop = quakemeasop->getOperand(i);
 
         ID.base = gop;
-        ID.index = -1;
+        ID.index = nullptr;
         view.getQubits(QubitRole::Target).ids.push_back(ID);
         view.getQubits(QubitRole::Target).in.push_back(gop);
         view.getQubits(QubitRole::Target).out.push_back(resop);
@@ -266,7 +278,8 @@ private:
 
     if (auto RefOp = dyn_cast<quake::ExtractRefOp>(operand.getDefiningOp())) {
       auto q = static_cast<int64_t>(RefOp.getConstantIndex());
-      measurements.push_back({q, nextClassicalBit++});
+      auto qofr = mlir::getAsIndexOpFoldResult(RefOp.getContext(), q);
+      measurements.push_back({qofr, nextClassicalBit++});
       return 1;
     }
 
@@ -274,7 +287,8 @@ private:
     if (auto veqTy = dyn_cast<quake::VeqType>(measuredTy)) {
       if (veqTy.hasSpecifiedSize()) {
         for (auto q = 0; q < veqTy.getSize(); ++q) {
-          measurements.push_back({q, nextClassicalBit++});
+          auto qofr = mlir::getAsIndexOpFoldResult(veqTy.getContext(), q);
+          measurements.push_back({qofr, nextClassicalBit++});
         }
         return static_cast<int64_t>(veqTy.getSize());
       }

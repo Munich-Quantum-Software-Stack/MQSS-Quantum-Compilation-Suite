@@ -63,7 +63,7 @@ enum Gate {
 
 struct QubitID {
   mlir::Value base;
-  int64_t index = -1;
+  mlir::OpFoldResult index;
 };
 
 using tupleVectorsQubitIDs =
@@ -127,7 +127,7 @@ struct QubitOperands {
 };
 
 struct MeasurementInfo {
-  int64_t QubitIndex;
+  mlir::OpFoldResult QubitIndex;
   int ClassicalBitIndex;
 };
 
@@ -269,7 +269,7 @@ static std::optional<QubitID> getOriginQubit(mlir::Value v) {
       // llvm::outs().indent(4) << "reg: " << reg << ", Index attr: " <<
       // indexAttr.getInt() << "\n";
 
-      return QubitID{reg, indexAttr.getInt()};
+      return QubitID{reg, indexAttr};
     }
 
     // Case 2:
