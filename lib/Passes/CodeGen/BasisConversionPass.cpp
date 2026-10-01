@@ -334,20 +334,20 @@ getNativeGateSetFromQDMI(const std::string &conf, const std::string &deviceName,
 
   const auto &arity = getMnemonicArity();
   llvm::StringSet<> native;
-  for (const OperationInfo &op : *gateSet) {
-    auto it = arity.find(op.name);
-    if (it != arity.end() && op.numQubits && op.numParameters &&
-        (*op.numQubits != it->second.first ||
-         *op.numParameters != it->second.second)) {
+  for (const GateOperationInfo &gate : *gateSet) {
+    auto it = arity.find(gate.gate_name);
+    if (it != arity.end() && gate.num_qubits && gate.num_parameters &&
+        (*gate.num_qubits != it->second.first ||
+         *gate.num_parameters != it->second.second)) {
       mlir::emitWarning(loc)
-          << "BasisConversion: QDMI device operation '" << op.name << "' ("
-          << *op.numQubits << " qubit(s), " << *op.numParameters
+          << "BasisConversion: QDMI device operation '" << gate.gate_name
+          << "' (" << *gate.num_qubits << " qubit(s), " << *gate.num_parameters
           << " parameter(s)) does not match this pass's expected shape "
              "for '"
-          << op.name << "', ignoring it as a native gate.";
+          << gate.gate_name << "', ignoring it as a native gate.";
       continue;
     }
-    native.insert(op.name);
+    native.insert(gate.gate_name);
   }
   if (native.empty())
     return llvm::createStringError(

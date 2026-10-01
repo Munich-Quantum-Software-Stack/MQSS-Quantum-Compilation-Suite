@@ -59,10 +59,10 @@ struct DeviceProperty {
 // A native operation reported by a QDMI device.
 // The fields are optional because a device may not report them
 // without concrete sites or parameters.
-struct OperationInfo {
-  std::string name;
-  std::optional<size_t> numQubits;
-  std::optional<size_t> numParameters;
+struct GateOperationInfo {
+  std::string gate_name;
+  std::optional<size_t> num_qubits;
+  std::optional<size_t> num_parameters;
   std::optional<double> fidelity;
 };
 
@@ -299,9 +299,9 @@ queryOperationProperty(QDMI_Device device, QDMI_Operation operation,
   return std::optional<T>(value);
 }
 
-inline llvm::Expected<OperationInfo>
+inline llvm::Expected<GateOperationInfo>
 getOperationInfo(QDMI_Device device, QDMI_Operation operation) {
-  OperationInfo info;
+  GateOperationInfo info;
 
   size_t nameSize = 0;
   int ret = QDMI_device_query_operation_property(
@@ -309,10 +309,10 @@ getOperationInfo(QDMI_Device device, QDMI_Operation operation) {
       0, nullptr, &nameSize);
   if (ret != QDMI_SUCCESS || nameSize == 0)
     return makeQDMIError("Could not query the operation name size", ret);
-  info.name.assign(nameSize - 1, '\0');
+  info.gate_name.assign(nameSize - 1, '\0');
   ret = QDMI_device_query_operation_property(
       device, operation, 0, nullptr, 0, nullptr, QDMI_OPERATION_PROPERTY_NAME,
-      nameSize, info.name.data(), nullptr);
+      nameSize, info.gate_name.data(), nullptr);
   if (ret != QDMI_SUCCESS)
     return makeQDMIError("Could not query the operation name", ret);
 
@@ -320,13 +320,13 @@ getOperationInfo(QDMI_Device device, QDMI_Operation operation) {
       device, operation, QDMI_OPERATION_PROPERTY_QUBITSNUM);
   if (!numQubits)
     return numQubits.takeError();
-  info.numQubits = *numQubits;
+  info.num_qubits = *numQubits;
 
   auto numParameters = queryOperationProperty<size_t>(
       device, operation, QDMI_OPERATION_PROPERTY_PARAMETERSNUM);
   if (!numParameters)
     return numParameters.takeError();
-  info.numParameters = *numParameters;
+  info.num_parameters = *numParameters;
 
   // Fidelity is best effort.
   // A device may only report it for concrete sites.
@@ -336,19 +336,19 @@ getOperationInfo(QDMI_Device device, QDMI_Operation operation) {
     return fidelity.takeError();
   info.fidelity = *fidelity;
 
-  MQSS_DEBUG("-->QDMI Operation: " << info.name << "\n");
+  MQSS_DEBUG("-->QDMI Operation: " << info.gate_name << "\n");
   return info;
 }
 
 // Queries the device's operations and their properties once.
 // Callers should cache the result instead of querying per IR operation.
-inline llvm::Expected<std::vector<OperationInfo>>
+inline llvm::Expected<std::vector<GateOperationInfo>>
 getDeviceNativeGateSet(QDMI_Device device) {
   auto operations = getDeviceOperations(device);
   if (!operations)
     return operations.takeError();
 
-  std::vector<OperationInfo> gate_set;
+  std::vector<GateOperationInfo> gate_set;
   gate_set.reserve(operations->size());
   for (QDMI_Operation operation : *operations) {
     auto info = getOperationInfo(device, operation);
