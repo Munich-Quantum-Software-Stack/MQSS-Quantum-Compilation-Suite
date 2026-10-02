@@ -71,8 +71,8 @@ Example Invocation:
 - `--CommonDecompositionPass=mode=CxToHCzH`
 
 Note: This is a representative dialect-agnostic decomposition pass. It will be superseded by the
-`BasisConversionPass` in the future, which performs recursive, device-aware decomposition rather
-than a fixed set of rewrites.
+`BasisConversionPass`, which performs recursive, device-aware decomposition rather than a fixed set
+of rewrites, and can query the target's native gate set from a QDMI device.
 
 ### CommonGateCancellationPass
 
@@ -170,13 +170,13 @@ target's coupling map can be supplied either as a JSON file or queried directly 
 Pass Options:
 
 - `--input=<string>` — Path to JSON input (Coupling Map of target device)
-- `--qdmi=<QDMI Device Name>` - Query QDMI Device for Coupling Map (Needs Device .so file).
+- `--qdmi=<path to .conf file>` — Query the coupling map from a QDMI device.
 
 Example invocation:
 
-- `--CommonMappingPass=qdmi=cxx_qdmi.conf`</br> where `cxx_qdmi.conf` contains the path to the qdmi
-  device shared object file and the device name prefix. See `tests/dialects/quake/cxx_qdmi.conf` for
-  more details.
+- `--CommonMappingPass=qdmi=tests/input/cxx_qdmi.conf`</br> run from the repository root. The
+  `.conf` file contains one line with the path to the QDMI device shared object file and the device
+  prefix. See `tests/input/cxx_qdmi.conf` and `tests/input/mqt_qdmi.conf` for examples.
 
 ### BasisConversionPass
 
@@ -189,11 +189,32 @@ Note: Currently only available for the `Quake` MLIR dialect.
 
 Pass Options:
 
-- `gates=<comma-separated list of gates>`
+- `gates=<comma-separated list of gates>` — The native gate set to decompose to. Defaults to
+  `h,cx,rz`.
+- `qdmi=<path to .conf file>` — Query the native gate set from a QDMI device instead of using
+  `gates`. The `.conf` file has the same format as for [`CommonMappingPass`](#commonmappingpass).
+- `device=<device name>` — Select a QDMI device by the name it reports, when the session has more
+  than one. Defaults to the first device. If no device matches, the error message lists the
+  available names. Wrap names containing spaces in braces or quotes. For example, the mock device in
+  `tests/input/cxx_qdmi.conf` is named `C++ Device with 5 qubits`, selected with
+  `device={C++ Device with 5 qubits}`.
 
 Example Invocation:
 
 - `--BasisConversionPass=gates=rx,cz,rz`
+- `--BasisConversionPass=qdmi=tests/input/cxx_qdmi.conf`, run from the repository root
+- `--BasisConversionPass="qdmi=tests/input/cxx_qdmi.conf device=<device name>"`
+
+When `qdmi` is set:
+
+- The device's operations are queried once per pass run. Each operation name is used as a gate
+  mnemonic as is, so it must match the [Supported Gate Mnemonics](#supported-gate-mnemonics) table
+  below. For example, IQM devices report `prx`. Names the pass does not recognize have no effect.
+- An operation whose number of qubits or parameters does not match the table is ignored with a
+  warning.
+- If `gates` is also given, the QDMI gate set is used and a warning is emitted.
+- The pass fails with an error if the device cannot be loaded, no device matches `device`, or every
+  reported operation was ignored (or none was reported).
 
 #### Supported Gate Mnemonics
 

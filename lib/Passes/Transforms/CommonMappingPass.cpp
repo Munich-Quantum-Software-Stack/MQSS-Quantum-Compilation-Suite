@@ -137,11 +137,15 @@ struct PipelineConfig {
 
     MQSS_DEBUG("-->Device conf is: " << device_conf << "\n");
     auto dev = createQDMIDevice(device_conf.c_str());
+    if (!dev)
+      llvm::report_fatal_error(dev.takeError());
 
-    auto device_properties = getDeviceProperties(dev);
+    auto device_properties = getDeviceProperties(*dev);
+    if (!device_properties)
+      llvm::report_fatal_error(device_properties.takeError());
 
-    auto numQubits = device_properties.numQubits;
-    auto device_coupling_map = device_properties.cm;
+    auto numQubits = device_properties->numQubits;
+    auto device_coupling_map = device_properties->cm;
     assert(!device_coupling_map.empty() &&
            "Could not fetch the coupling map of QDMI device!");
 

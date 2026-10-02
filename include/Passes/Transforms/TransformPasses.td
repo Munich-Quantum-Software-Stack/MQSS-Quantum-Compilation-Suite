@@ -159,7 +159,7 @@ def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
   let summary = "A dialect-agnostic mapping pass";
   let description = [{
     A dialect-agnostic mapping pass that accepts an input JSON
-    and a QDMI device name.
+    or a QDMI device .conf file.
   }];
   let options = [
     Option<"input", "input", "std::string",
@@ -167,7 +167,7 @@ def CommonMappingPass : Pass<"CommonMappingPass", "mlir::ModuleOp"> {
            "Path to JSON input.">,
     Option<"qdmi", "qdmi", "std::string",
            /*default=*/"\"\"",
-           "QDMI device name.">,
+           "Path to a QDMI device .conf file.">,
   ];
 
  let constructor = "mqss::mqssci::opt::CommonMappingPass()";

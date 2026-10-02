@@ -66,5 +66,9 @@ def BasisConversionPass : Pass<"BasisConversionPass", "mlir::ModuleOp"> {
  let options = [
     Option<"gates", "gates", "std::string",
       /*default=*//*default=*/"\"h,cx,rz\"", "Mnemonics of the gates considered native (e.g. h,cx,rz);.">,
+    Option<"qdmi", "qdmi", "std::string",
+      /*default=*/"\"\"", "Path to a QDMI device .conf file; when set, the native gate set is queried from the QDMI device instead of 'gates'.">,
+    Option<"device", "device", "std::string",
+      /*default=*/"\"\"", "QDMI device name to select, when the session reports more than one device; defaults to the first device.">,
   ];
 }
