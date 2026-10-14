@@ -40,9 +40,8 @@ static std::optional<double> getConstantDouble(mlir::Value v) {
   return attr.getValueAsDouble();
 }
 
-static void
-resolveSSAformForMeasureOps(mlir::Operation *OldMeasOp,
-                            SmallVector<mlir::Value, 2> newResults) {
+static void resolveSSAformForMeasureOps(mlir::Operation *OldMeasOp,
+                                        SmallVector<mlir::Value> newResults) {
   // llvm::outs() << "Old meas op: " << *OldMeasOp
   //              << " results: " << OldMeasOp->getResults().size() << ","
   //              << newResults.size() << "\n";

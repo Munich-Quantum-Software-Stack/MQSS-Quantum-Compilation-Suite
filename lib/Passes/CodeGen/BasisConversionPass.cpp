@@ -38,7 +38,7 @@ using namespace mlir;
 namespace {
 
 const std::unordered_map<std::string, std::vector<DecompositionRule>> &
-getDecompositionTable() {
+getDecompositionTable(const QuantumDialect &DialectTy) {
   static const std::unordered_map<std::string, std::vector<DecompositionRule>>
       table = [] {
         std::unordered_map<std::string, std::vector<DecompositionRule>> t;
@@ -373,7 +373,12 @@ public:
     bool wasApplied = false;
 
     MQSS_DEBUG("\n[Applying Pass: BasisConversion]\n");
+    auto &selector = getAnalysis<DialectAnalysisSelector>();
+    auto &analysis = *selector.get();
+    auto DialectTy = selector.getDialect();
+
     auto kernel = getOperation();
+
     llvm::StringSet<> native;
 
     if (!qdmi.empty()) {
@@ -394,7 +399,7 @@ public:
         native.insert(gate);
     }
 
-    const auto &table = getDecompositionTable();
+    const auto &table = getDecompositionTable(DialectTy);
     // Computed once, up front: for every non-native mnemonic that can
     // transitively bottom out in native gates, the rule that gets it there.
     // Mnemonics absent from this map (but present in the table) are known
@@ -426,7 +431,11 @@ public:
           return;
         }
         IRRewriter rewriter(op->getContext());
-        wit->second->apply(rewriter, op);
+        auto result = wit->second->apply(DialectTy, rewriter, op);
+        if (!result) {
+          signalPassFailure();
+          return;
+        }
         changed = true;
         wasApplied = true;
       });
@@ -456,6 +465,11 @@ public:
         mlir::emitWarning(kernel.getLoc())
             << "BasisConversion: gave up after " << maxRounds
             << " rounds without reaching a fixed point";
+    }
+    if (failed(analysis.verifyModule())) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : MLIR Module verification failed\n";
+      signalPassFailure();
     }
   }
 };

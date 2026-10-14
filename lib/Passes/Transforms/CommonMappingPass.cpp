@@ -224,7 +224,7 @@ private:
 
 struct MeasureMeantOpInfoTy {
   const qc::Operation *MeasOp;
-  SmallVector<mlir::Value, 2> Results;
+  SmallVector<mlir::Value> Results;
 };
 
 // Performs a controlled Dead-Code elimination optimization.
@@ -267,9 +267,9 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
     auto parameter = op->getParameter();
 
     // defining the list of controls, targets and parameters
-    SmallVector<mlir::Value, 2> params = {};
-    SmallVector<mlir::Value, 2> controlValues = {};
-    SmallVector<mlir::Value, 2> targetValues = {};
+    SmallVector<mlir::Value> params = {};
+    SmallVector<mlir::Value> controlValues = {};
+    SmallVector<mlir::Value> targetValues = {};
 
     for (auto target : targets) {
       auto targetRefOp =

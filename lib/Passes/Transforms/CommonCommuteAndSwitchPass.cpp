@@ -33,11 +33,11 @@ using namespace llvm;
 
 namespace {
 
-enum class PassMode { SwitchXYZH, SwitchHXYZ, NA };
+enum class PassMode { SwitchXYZH, SwitchHXYZ };
 
 struct SharedPassLogic {
 
-  void run(MyModuleAnalysis &analysis, PassMode Mode,
+  bool run(MyModuleAnalysis &analysis, PassMode Mode,
            QuantumDialect DialectTy) {
 
     PassInfoty PassInfo;
@@ -64,7 +64,7 @@ struct SharedPassLogic {
       PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     }
 
-    performCommuteAndSwitch(analysis, PassInfo, DialectTy);
+    return performCommuteAndSwitch(analysis, PassInfo, DialectTy);
   }
 };
 
@@ -89,18 +89,25 @@ public:
     MQSS_DEBUG("\n[Applying Pass: CommonGateSwitch]\n");
 
     SharedPassLogic PassLogic;
+    bool success = false;
     if (mode == "XYZHtoHXYZ")
-      PassLogic.run(analysis, PassMode::SwitchXYZH, DialectTy);
+      success = PassLogic.run(analysis, PassMode::SwitchXYZH, DialectTy);
     else if (mode == "HXYZtoXYZH")
-      PassLogic.run(analysis, PassMode::SwitchHXYZ, DialectTy);
+      success = PassLogic.run(analysis, PassMode::SwitchHXYZ, DialectTy);
     else {
       getOperation()->emitError() << "invalid mode: " << mode;
+      signalPassFailure();
+      return;
+    }
+
+    if (!success) {
       signalPassFailure();
     }
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
+      signalPassFailure();
     }
   }
 };

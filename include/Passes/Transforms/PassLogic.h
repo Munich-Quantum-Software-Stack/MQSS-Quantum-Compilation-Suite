@@ -27,6 +27,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cmath>
 #include <llvm/Support/Debug.h>
+#include <mlir/IR/Diagnostics.h>
 
 static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
 
@@ -194,7 +195,7 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
   return CommuteCandidates;
 }
 
-static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
+static bool performCommuteAndSwitch(MyModuleAnalysis &analysis,
                                     PassInfoty PassInfo,
                                     QuantumDialect DialectTy) {
 
@@ -206,14 +207,20 @@ static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
     auto *Op2 = Ops.Op2;
     auto funcOp = Op1->getParentOfType<mlir::func::FuncOp>();
     auto KernelDialectInfo = analysis.getKernelDialectInfo();
-    assert(KernelDialectInfo.count(funcOp) &&
-           "Get Op Info: No QuantumOpInfo for funcOp");
+    if (!KernelDialectInfo.count(funcOp)) {
+      mlir::emitError(funcOp->getLoc(),
+                      "No QuantumOpInfo for funcOp, Skipping function!");
+      return true;
+    }
+
     auto Qview = KernelDialectInfo[funcOp].OpQViewMap;
 
     if (Qview.count(Op2)) {
       auto Op2TargetQubits = Qview[Op2].getQubits(QubitRole::Target).ids;
-      assert(Op2TargetQubits.size() == 1 &&
-             "Currently, Can only switch single qubit gates!");
+      if (Op2TargetQubits.size() != 1) {
+        Op2->emitError() << "Currently, Can only switch single qubit gates!";
+        return false;
+      }
 
       mlir::IRRewriter builder(Op2->getContext());
       builder.setInsertionPointAfter(Op2);
@@ -240,8 +247,14 @@ static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
         }
       }
 
-      assert(OpToSwitchOut && "Op to switch out cannot be NULL!!");
-      assert(!ReplacementGateTy.empty() && "Need the replacementgatety!!");
+      if (!OpToSwitchOut) {
+        mlir::emitError(Op2->getLoc(), "Op to switch out cannot be NULL!!");
+        return false;
+      }
+      if (ReplacementGateTy.empty()) {
+        mlir::emitError(OpToSwitchOut->getLoc(), "Need the replacement gate!!");
+        return false;
+      }
 
       auto TargetInQubitOps =
           Qview[OpToSwitchOut].getQubits(QubitRole::Target).in;
@@ -250,6 +263,11 @@ static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
           createNewGate(OpToSwitchOut->getLoc(), DialectTy, ReplacementGateTy,
                         {}, TargetInQubitOps, {}, builder);
 
+      if (!NewOp) {
+        mlir::emitError(OpToSwitchOut->getLoc(),
+                        "Could not create the requested Op!");
+        return false;
+      }
       analysis.addOperation(NewOp);
 
       OpToSwitchOut->replaceAllUsesWith(NewOp);
@@ -260,6 +278,7 @@ static void performCommuteAndSwitch(MyModuleAnalysis &analysis,
       builder.eraseOp(OpToSwitchOut);
     }
   }
+  return true;
 }
 
 static void performNullRotationCancellation(

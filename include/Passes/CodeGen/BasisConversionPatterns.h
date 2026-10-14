@@ -17,6 +17,8 @@ the License.
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
+#pragma once
+
 #include "Utils/DialectUtils.h"
 #include "Utils/Error.h"
 #include "Utils/TransformUtils.h"
@@ -75,277 +77,410 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // already know which rule matched a given op and just need to apply it.
 //===----------------------------------------------------------------------===//
 
-/// Pluck out the values from \p controls and \p target whose type is
-/// `WireType` and replace all the \p op uses with those values.
-void selectWiresAndReplaceUses(Operation *op, ValueRange controls,
-                               mlir::Value target) {
-  SmallVector<mlir::Value, 4> newWireValues;
-  for (const auto &v : controls)
-    if (isa<cudaq::quake::WireType>(v.getType()))
-      newWireValues.push_back(v);
-  if (isa<cudaq::quake::WireType>(target.getType()))
-    newWireValues.push_back(target);
-  assert(op->getResults().size() == newWireValues.size() &&
-         "incorrect number of output wires provided");
-  op->replaceAllUsesWith(newWireValues);
-}
-
-void selectWiresAndReplaceUses(Operation *op, ValueRange newValues) {
-  SmallVector<mlir::Value, 4> newWireValues;
-  for (const auto &v : newValues)
-    if (isa<cudaq::quake::WireType>(v.getType()))
-      newWireValues.push_back(v);
-  assert(op->getResults().size() == newWireValues.size() &&
-         "incorrect number of output wires provided");
-  op->replaceAllUsesWith(newWireValues);
-}
-
 // The Rx here is always a fixed pi/2 rotation ("sx"/sqrt-X), never a
 // parameterized one -- BasisConversionPass's classifyOp() relies on that to
 // tell this apart from a genuinely arbitrary-angle Rx.
-void rewriteHToRzRxRz(IRRewriter &rewriter, quake::HOp op) {
+bool rewriteHToRzRxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                      quake::HOp op) {
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
 
-  auto c1 = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{c1}, ValueRange{},
-                               target);
-  rewriter.create<quake::RxOp>(loc, false, ValueRange{c1}, ValueRange{},
-                               target);
-  auto c2 = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{c2}, ValueRange{},
-                               target);
+  auto c1 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  if (!c1)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {c1}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "RX", {}, {target}, {c1}, rewriter);
+  if (!newGate)
+    return false;
+  auto c2 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  if (!c2)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "RZ", {}, {target}, {c2}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteHToU3(IRRewriter &rewriter, quake::HOp op) {
+bool rewriteHToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                  quake::HOp op) {
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  auto halfPi =
-      createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  auto zero = createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-  auto pi = createQuakeConstOp(loc, rewriter, M_PI, rewriter.getF64Type());
-  rewriter.create<quake::U3Op>(loc, ValueRange{halfPi, zero, pi}, ValueRange{},
-                               ValueRange{target});
+  auto halfPi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
+  auto pi = createArithConstantOp(loc, DialectTy, rewriter, M_PI);
+  if (!halfPi || !zero || !pi)
+    return false;
+  auto *newGate = createNewGate(loc, DialectTy, "U3", {}, {target},
+                                {halfPi, zero, pi}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteXToHZH(IRRewriter &rewriter, quake::XOp op) {
+bool rewriteXToHZH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                   quake::XOp op) {
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::HOp>(loc, false, target);
-  rewriter.create<quake::ZOp>(loc, false, target);
-  rewriter.create<quake::HOp>(loc, false, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "PauliZ", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteXToRx(IRRewriter &rewriter, quake::XOp op) {
+bool rewriteXToRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                  quake::XOp op) {
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto angle = createQuakeConstOp(loc, rewriter, M_PI, rewriter.getF64Type());
-  rewriter.create<quake::RxOp>(loc, false, ValueRange{angle}, ValueRange{},
-                               target);
+  auto angle = createArithConstantOp(loc, DialectTy, rewriter, M_PI);
+  if (!angle)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RX", {}, {target}, {angle}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteYToRy(IRRewriter &rewriter, quake::YOp op) {
+bool rewriteYToRy(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                  quake::YOp op) {
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto angle = createQuakeConstOp(loc, rewriter, -M_PI, rewriter.getF64Type());
-  rewriter.create<quake::RyOp>(loc, false, ValueRange{angle}, ValueRange{},
-                               target);
+  auto angle = createArithConstantOp(loc, DialectTy, rewriter, -M_PI);
+  if (!angle)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RY", {}, {target}, {angle}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteZToHXH(IRRewriter &rewriter, quake::ZOp op) {
+bool rewriteZToHXH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                   quake::ZOp op) {
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::HOp>(loc, false, target);
-  rewriter.create<quake::XOp>(loc, false, target);
-  rewriter.create<quake::HOp>(loc, false, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "PauliX", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteZToRz(IRRewriter &rewriter, quake::ZOp op) {
+bool rewriteZToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                  quake::ZOp op) {
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto angle = createQuakeConstOp(loc, rewriter, M_PI, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{angle}, ValueRange{},
-                               target);
+  auto angle = createArithConstantOp(loc, DialectTy, rewriter, M_PI);
+  if (!angle)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteSToRz(IRRewriter &rewriter, quake::SOp op) {
+bool rewriteSToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                  quake::SOp op) {
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto angle = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{angle}, ValueRange{},
-                               target);
+  auto angle = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  if (!angle)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteSToSdgSdgSdg(IRRewriter &rewriter, quake::SOp op) {
+bool rewriteSToSdgSdgSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                         quake::SOp op) {
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::SOp>(loc, true, target);
-  rewriter.create<quake::SOp>(loc, true, target);
-  rewriter.create<quake::SOp>(loc, true, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "SAdj", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "SAdj", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "SAdj", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteSToTT(IRRewriter &rewriter, quake::SOp op) {
+bool rewriteSToTT(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                  quake::SOp op) {
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::TOp>(loc, false, target);
-  rewriter.create<quake::TOp>(loc, false, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "T", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "T", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteSdgToRz(IRRewriter &rewriter, quake::SOp op) {
+bool rewriteSdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                    quake::SOp op) {
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto angle =
-      createQuakeConstOp(loc, rewriter, -M_PI_2, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{angle}, ValueRange{},
-                               target);
+  auto angle = createArithConstantOp(loc, DialectTy, rewriter, -M_PI_2);
+  if (!angle)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteSdgToSSS(IRRewriter &rewriter, quake::SOp op) {
+bool rewriteSdgToSSS(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                     quake::SOp op) {
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::SOp>(loc, false, target);
-  rewriter.create<quake::SOp>(loc, false, target);
-  rewriter.create<quake::SOp>(loc, false, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "S", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "S", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "S", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteTToRz(IRRewriter &rewriter, quake::TOp op) {
+bool rewriteTToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                  quake::TOp op) {
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto angle = createQuakeConstOp(loc, rewriter, M_PI_4, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{angle}, ValueRange{},
-                               target);
+  auto angle = createArithConstantOp(loc, DialectTy, rewriter, M_PI_4);
+  if (!angle)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteTdgToRz(IRRewriter &rewriter, quake::TOp op) {
+bool rewriteTdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                    quake::TOp op) {
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto angle =
-      createQuakeConstOp(loc, rewriter, -M_PI_4, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{angle}, ValueRange{},
-                               target);
+  auto angle = createArithConstantOp(loc, DialectTy, rewriter, -M_PI_4);
+  if (!angle)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteR1ToRz(IRRewriter &rewriter, quake::R1Op op) {
+bool rewriteR1ToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                   quake::R1Op op) {
   auto target = op.getTargets()[0];
   auto param = op.getParameters()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{param}, ValueRange{},
-                               target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {param}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteRxToHRzH(IRRewriter &rewriter, quake::RxOp op) {
+bool rewriteRxToHRzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                     quake::RxOp op) {
   auto target = op.getTargets()[0];
   auto param = op.getParameters()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{param}, ValueRange{},
-                               target);
-  rewriter.create<quake::HOp>(loc, target);
+
+  auto *newGate =
+      createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {param}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteRyToRzRxRz(IRRewriter &rewriter, quake::RyOp op) {
+// TODO: Is this correct?
+//       c1 and c2 are both Pi/2
+bool rewriteRyToRzRxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                       quake::RyOp op) {
   Location loc = op.getLoc();
   auto rotation = op.getParameters()[0];
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto c1 = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{c1}, ValueRange{},
-                               target);
-  rewriter.create<quake::RxOp>(loc, false, ValueRange{rotation}, ValueRange{},
-                               target);
-  auto c2 = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{c2}, ValueRange{},
-                               target);
+  auto c1 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  if (!c1)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {c1}, rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "RX", {}, {target}, {rotation}, rewriter);
+  if (!newGate)
+    return false;
+  auto c2 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  if (!c2)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "RZ", {}, {target}, {c2}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteRzToHRxH(IRRewriter &rewriter, quake::RzOp op) {
+bool rewriteRzToHRxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                     quake::RzOp op) {
   auto target = op.getTargets()[0];
   auto param = op.getParameters()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::RxOp>(loc, false, param, ValueRange{}, target);
-  rewriter.create<quake::HOp>(loc, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "RX", {}, {target}, {param}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteRzToU3(IRRewriter &rewriter, quake::RzOp op) {
+bool rewriteRzToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                   quake::RzOp op) {
   auto target = op.getTargets()[0];
   auto param = op.getParameters()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  auto zero = createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-  rewriter.create<quake::U3Op>(loc, ValueRange{zero, zero, param}, ValueRange{},
-                               ValueRange{target});
+  auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
+  if (!zero)
+    return false;
+  auto *newGate = createNewGate(loc, DialectTy, "U3", {}, {target},
+                                {zero, zero, param}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteU2ToRzRyRz(IRRewriter &rewriter, quake::U2Op op) {
+bool rewriteU2ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                       quake::U2Op op) {
   auto params = op.getParameters();
   auto phi = params[0];
   auto lambda = params[1];
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto halfPi =
-      createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{phi}, ValueRange{},
-                               target);
-  rewriter.create<quake::RyOp>(loc, false, ValueRange{halfPi}, ValueRange{},
-                               target);
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{lambda}, ValueRange{},
-                               target);
+  auto halfPi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+
+  if (!halfPi)
+    return false;
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {phi}, rewriter);
+
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "RY", {}, {target}, {halfPi}, rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {lambda}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteU2ToU3(IRRewriter &rewriter, quake::U2Op op) {
+bool rewriteU2ToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                   quake::U2Op op) {
   auto params = op.getParameters();
   auto phi = params[0];
   auto lambda = params[1];
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  auto halfPi =
-      createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  rewriter.create<quake::U3Op>(loc, ValueRange{halfPi, phi, lambda},
-                               ValueRange{}, target);
+  auto halfPi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  if (!halfPi)
+    return false;
+  auto *newGate = createNewGate(loc, DialectTy, "U3", {}, {target},
+                                {halfPi, phi, lambda}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteU3ToRzRyRz(IRRewriter &rewriter, quake::U3Op op) {
+bool rewriteU3ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                       quake::U3Op op) {
   auto params = op.getParameters();
   auto theta = params[0];
   auto phi = params[1];
@@ -353,84 +488,150 @@ void rewriteU3ToRzRyRz(IRRewriter &rewriter, quake::U3Op op) {
   Location loc = op.getLoc();
   ValueRange target = op.getTargets();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{lambda}, ValueRange{},
-                               target);
-  rewriter.create<quake::RyOp>(loc, false, ValueRange{theta}, ValueRange{},
-                               target);
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{phi}, ValueRange{},
-                               target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {lambda}, rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "RY", {}, {target}, {theta}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "RZ", {}, {target}, {phi}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteSwapToUpperCxCxCx(IRRewriter &rewriter, quake::SwapOp op) {
+bool rewriteSwapToUpperCxCxCx(const QuantumDialect &DialectTy,
+                              IRRewriter &rewriter, quake::SwapOp op) {
   auto q0 = op.getTargets()[0];
   auto q1 = op.getTargets()[1];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::XOp>(loc, q0, q1);
-  rewriter.create<quake::XOp>(loc, q1, q0);
-  rewriter.create<quake::XOp>(loc, q0, q1);
+  auto *newGate = createNewGate(loc, DialectTy, "CX", {q0}, {q1}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "CX", {q1}, {q0}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "CX", {q0}, {q1}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteCxToUpperHCzH(IRRewriter &rewriter, quake::XOp op) {
+bool rewriteCxToUpperHCzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                          quake::XOp op) {
   auto control = op.getControls()[0];
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::ZOp>(loc, control, target);
-  rewriter.create<quake::HOp>(loc, target);
+
+  auto *newGate =
+      createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "CZ", {control}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteCzToUpperHCxH(IRRewriter &rewriter, quake::ZOp op) {
+bool rewriteCzToUpperHCxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                          quake::ZOp op) {
   auto control = op.getControls()[0];
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::XOp>(loc, control, target);
-  rewriter.create<quake::HOp>(loc, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "CX", {control}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteCyToSCxSdg(IRRewriter &rewriter, quake::YOp op) {
+bool rewriteCyToSCxSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                       quake::YOp op) {
   auto control = op.getControls()[0];
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::SOp>(loc, target);
-  rewriter.create<quake::XOp>(loc, control, target);
-  rewriter.create<quake::SOp>(loc, true, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "S", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "CX", {control}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "SAdj", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteCrxToHCrzH(IRRewriter &rewriter, quake::RxOp op) {
+bool rewriteCrxToHCrzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                       quake::RxOp op) {
   auto control = op.getControls()[0];
   auto target = op.getTargets()[0];
   auto param = op.getParameters()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::RzOp>(loc, false, mlir::Value{param}, control, target);
-  rewriter.create<quake::HOp>(loc, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "RZ", {control}, {target}, {param},
+                          rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteCrzToHCrxH(IRRewriter &rewriter, quake::RzOp op) {
+bool rewriteCrzToHCrxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                       quake::RzOp op) {
   auto control = op.getControls()[0];
   auto target = op.getTargets()[0];
   auto param = op.getParameters()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  rewriter.create<quake::HOp>(loc, target);
-  rewriter.create<quake::RxOp>(loc, false, param, control, target);
-  rewriter.create<quake::HOp>(loc, target);
+  auto *newGate =
+      createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "RX", {control}, {target}, {param},
+                          rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteCrzToRzCu3(IRRewriter &rewriter, quake::RzOp op) {
+bool rewriteCrzToRzCu3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                       quake::RzOp op) {
   auto control = op.getControls()[0];
   auto target = op.getTargets()[0];
   auto param = op.getParameters()[0];
@@ -440,18 +641,25 @@ void rewriteCrzToRzCu3(IRRewriter &rewriter, quake::RzOp op) {
   mlir::Value angle = op.getParameter();
   if (op.isAdj())
     angle = arith::NegFOp::create(rewriter, loc, angle);
-  mlir::Value halfAngle = createQuakeDivF(loc, angle, 2.0, rewriter);
-  mlir::Value negHalfAngle = arith::NegFOp::create(rewriter, loc, halfAngle);
-
-  auto zero = createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{negHalfAngle},
-                               ValueRange{}, control);
-  rewriter.create<quake::U3Op>(loc, ValueRange{zero, zero, param}, control,
-                               target);
+  auto halfAngle = createDivFOp(loc, DialectTy, angle, 2.0, rewriter);
+  auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
+  if (!halfAngle || !zero)
+    return false;
+  auto negHalfAngle = arith::NegFOp::create(rewriter, loc, halfAngle);
+  auto *newGate = createNewGate(loc, DialectTy, "RZ", {control}, {},
+                                ValueRange{negHalfAngle}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "U3", {control}, {target},
+                          {zero, zero, param}, rewriter);
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteCrzToRzCxRzCx(IRRewriter &rewriter, quake::RzOp op) {
+bool rewriteCrzToRzCxRzCx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                          quake::RzOp op) {
   auto control = op.getControls()[0];
   auto target = op.getTargets()[0];
   Location loc = op.getLoc();
@@ -459,39 +667,65 @@ void rewriteCrzToRzCxRzCx(IRRewriter &rewriter, quake::RzOp op) {
   mlir::Value angle = op.getParameter();
   if (op.isAdj())
     angle = arith::NegFOp::create(rewriter, loc, angle);
-  mlir::Value halfAngle = createQuakeDivF(loc, angle, 2.0, rewriter);
+  mlir::Value halfAngle = createDivFOp(loc, DialectTy, angle, 2.0, rewriter);
+  if (!halfAngle)
+    return false;
   mlir::Value negHalfAngle = arith::NegFOp::create(rewriter, loc, halfAngle);
 
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{halfAngle}, ValueRange{},
-                               ValueRange{target});
-  rewriter.create<quake::XOp>(loc, ValueRange{control}, ValueRange{target});
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{negHalfAngle},
-                               ValueRange{}, ValueRange{target});
-  rewriter.create<quake::XOp>(loc, ValueRange{control}, ValueRange{target});
+  auto *newGate =
+      createNewGate(loc, DialectTy, "RZ", {}, {target}, {halfAngle}, rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "CX", {control}, {target}, {}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "RZ", {}, {target}, {negHalfAngle},
+                          rewriter);
+  if (!newGate)
+    return false;
+  newGate =
+      createNewGate(loc, DialectTy, "CX", {control}, {target}, {}, rewriter);
+
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteCryToRzCrxRz(IRRewriter &rewriter, quake::RyOp op) {
+bool rewriteCryToRzCrxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                         quake::RyOp op) {
   auto control = op.getControls()[0];
   auto target = op.getTargets()[0];
   auto param = op.getParameters()[0];
   Location loc = op.getLoc();
   rewriter.setInsertionPointAfter(op);
-  auto negHalfPi =
-      createQuakeConstOp(loc, rewriter, -M_PI_2, rewriter.getF64Type());
-  auto halfPi =
-      createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{negHalfPi}, ValueRange{},
-                               target);
-  rewriter.create<quake::RxOp>(loc, false, param, control, target);
-  rewriter.create<quake::RzOp>(loc, false, ValueRange{halfPi}, ValueRange{},
-                               target);
+  auto negHalfPi = createArithConstantOp(loc, DialectTy, rewriter, -M_PI_2);
+  auto halfPi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+
+  if (!negHalfPi || !halfPi)
+    return false;
+  auto *newGate = createNewGate(loc, DialectTy, "RZ", ValueRange{}, {target},
+                                ValueRange{negHalfPi}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "RX", {control}, {target},
+                          ValueRange{param}, rewriter);
+  if (!newGate)
+    return false;
+  newGate = createNewGate(loc, DialectTy, "RZ", ValueRange{}, {target},
+                          ValueRange{halfPi}, rewriter);
+
+  if (!newGate)
+    return false;
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteHToPhasedRx(IRRewriter &rewriter, quake::HOp op) {
+bool rewriteHToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                        quake::HOp op) {
   if (!op.getControls().empty())
-    return;
+    return false;
 
   // Op info
   Location loc = op->getLoc();
@@ -500,23 +734,33 @@ void rewriteHToPhasedRx(IRRewriter &rewriter, quake::HOp op) {
   rewriter.setInsertionPointAfter(op);
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
-  auto zero = createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-  auto pi = createQuakeConstOp(loc, rewriter, M_PI, rewriter.getF64Type());
-  auto pi_2 = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
+  auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
+  auto pi = createArithConstantOp(loc, DialectTy, rewriter, M_PI);
+  auto pi_2 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
 
+  if (!zero || !pi || !pi_2)
+    return false;
   std::array<mlir::Value, 2> parameters = {pi_2, pi_2};
-  rewriter.create<quake::PhasedRxOp>(loc, parameters, noControls, target);
+  auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
+                                {target}, parameters, rewriter);
+  if (!newGate)
+    return false;
   parameters[0] = pi;
   parameters[1] = zero;
-  rewriter.create<quake::PhasedRxOp>(loc, parameters, noControls, target);
+  newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
+                          parameters, rewriter);
+  if (!newGate)
+    return false;
 
   // selectWiresAndReplaceUses(op, target);
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteXToPhasedRx(IRRewriter &rewriter, cudaq::quake::XOp op) {
+bool rewriteXToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                        cudaq::quake::XOp op) {
   if (!op.getControls().empty())
-    return;
+    return false;
 
   // Op info
   Location loc = op->getLoc();
@@ -524,19 +768,25 @@ void rewriteXToPhasedRx(IRRewriter &rewriter, cudaq::quake::XOp op) {
   rewriter.setInsertionPointAfter(op);
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
-  auto zero = createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-  auto pi = createQuakeConstOp(loc, rewriter, M_PI, rewriter.getF64Type());
+  auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
+  auto pi = createArithConstantOp(loc, DialectTy, rewriter, M_PI);
 
+  if (!zero || !pi)
+    return false;
   SmallVector<mlir::Value> parameters = {pi, zero};
-  rewriter.create<quake::PhasedRxOp>(loc, parameters, noControls, target);
-
+  auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
+                                {target}, parameters, rewriter);
+  if (!newGate)
+    return false;
   // selectWiresAndReplaceUses(op, target);
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteRxToPhasedRx(IRRewriter &rewriter, cudaq::quake::RxOp op) {
+bool rewriteRxToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                         cudaq::quake::RxOp op) {
   if (!op.getControls().empty())
-    return;
+    return false;
 
   // Op info
   Location loc = op->getLoc();
@@ -549,20 +799,25 @@ void rewriteRxToPhasedRx(IRRewriter &rewriter, cudaq::quake::RxOp op) {
 
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
-  mlir::Value zero =
-      createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
+  mlir::Value zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
 
+  if (!zero)
+    return false;
   SmallVector<mlir::Value> parameters = {angle, zero};
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
+                                {target}, parameters, rewriter);
 
+  if (!newGate)
+    return false;
   // selectWiresAndReplaceUses(op, target);
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteRzToPhasedRx(IRRewriter &rewriter, cudaq::quake::RzOp op) {
+bool rewriteRzToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                         cudaq::quake::RzOp op) {
   if (!op.getControls().empty())
-    return;
+    return false;
 
   // Op info
   Location loc = op->getLoc();
@@ -575,31 +830,42 @@ void rewriteRzToPhasedRx(IRRewriter &rewriter, cudaq::quake::RzOp op) {
 
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
-  auto zero = createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-  auto pi_2 = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
+  auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
+  auto pi_2 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  if (!zero || !pi_2)
+    return false;
+
   auto negPi_2 = arith::NegFOp::create(rewriter, loc, pi_2);
   auto negAngle = arith::NegFOp::create(rewriter, loc, angle);
 
   std::array<mlir::Value, 2> parameters = {pi_2, zero};
 
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
+                                {target}, parameters, rewriter);
+  if (!newGate)
+    return false;
   parameters[0] = negAngle;
   parameters[1] = pi_2;
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
+                          parameters, rewriter);
+  if (!newGate)
+    return false;
   parameters[0] = negPi_2;
   parameters[1] = zero;
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
+                          parameters, rewriter);
+  if (!newGate)
+    return false;
 
   // selectWiresAndReplaceUses(op, target);
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteR1ToPhasedRx(IRRewriter &rewriter, cudaq::quake::R1Op op) {
+bool rewriteR1ToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                         cudaq::quake::R1Op op) {
   if (!op.getControls().empty())
-    return;
+    return false;
 
   // Op info
   Location loc = op->getLoc();
@@ -611,52 +877,71 @@ void rewriteR1ToPhasedRx(IRRewriter &rewriter, cudaq::quake::R1Op op) {
 
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
-  auto zero = createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-  auto pi_2 = createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
+  auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
+  auto pi_2 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  if (!zero || !pi_2)
+    return false;
   auto negPi_2 = arith::NegFOp::create(rewriter, loc, pi_2);
   auto negAngle = arith::NegFOp::create(rewriter, loc, angle);
 
   std::array<mlir::Value, 2> parameters = {pi_2, zero};
 
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
+                                {target}, parameters, rewriter);
+  if (!newGate) {
+    return false;
+  }
   parameters[0] = negAngle;
   parameters[1] = pi_2;
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
+                          parameters, rewriter);
+  if (!newGate) {
+    return false;
+  }
   parameters[0] = negPi_2;
   parameters[1] = zero;
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
+                          parameters, rewriter);
 
+  if (!newGate) {
+    return false;
+  }
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteYToPhasedRx(IRRewriter &rewriter, cudaq::quake::YOp op) {
+bool rewriteYToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                        cudaq::quake::YOp op) {
   if (!op.getControls().empty())
-    return;
+    return false;
 
   // Op info
   Location loc = op->getLoc();
   mlir::Value target = op.getTarget();
 
   // Necessary/Helpful constants
-  SmallVector<mlir::Value> noControls;
-  auto pi = createQuakeConstOp(loc, rewriter, M_PI, rewriter.getF64Type());
-  auto negPi_2 =
-      createQuakeConstOp(loc, rewriter, -M_PI_2, rewriter.getF64Type());
+  auto pi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  auto negPi_2 = createArithConstantOp(loc, DialectTy, rewriter, -M_PI_2);
+
+  if (!pi || !negPi_2) {
+    return false;
+  }
 
   SmallVector<mlir::Value> parameters = {pi, negPi_2};
-
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
-
+  SmallVector<mlir::Value> noControls;
+  auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
+                                {target}, parameters, rewriter);
+  if (!newGate) {
+    return false;
+  }
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteSToPhasedRx(IRRewriter &rewriter, cudaq::quake::SOp op) {
+bool rewriteSToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                        cudaq::quake::SOp op) {
   if (!op.getControls().empty())
-    return;
+    return false;
 
   // Op info
   Location loc = op->getLoc();
@@ -664,63 +949,84 @@ void rewriteSToPhasedRx(IRRewriter &rewriter, cudaq::quake::SOp op) {
 
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
-  mlir::Value zero =
-      createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-  mlir::Value pi_2 =
-      createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
+  mlir::Value zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
+  mlir::Value pi_2 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
+  if (!zero || !pi_2)
+    return false;
   mlir::Value negPi_2 = arith::NegFOp::create(rewriter, loc, pi_2);
 
   mlir::Value angle = op.isAdj() ? pi_2 : negPi_2;
 
   std::array<mlir::Value, 2> parameters = {pi_2, zero};
 
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
+                                {target}, parameters, rewriter);
+  if (!newGate) {
+    return false;
+  }
   parameters[0] = angle;
   parameters[1] = pi_2;
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
+                          parameters, rewriter);
+  if (!newGate) {
+    return false;
+  }
   parameters[0] = negPi_2;
   parameters[1] = zero;
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
+                          parameters, rewriter);
+  if (!newGate) {
+    return false;
+  }
   rewriter.eraseOp(op);
+  return true;
 }
 
-void rewriteTToPhasedRx(IRRewriter &rewriter, cudaq::quake::TOp op) {
+bool rewriteTToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                        cudaq::quake::TOp op) {
   if (!op.getControls().empty())
-    return;
+    return false;
 
   // Op info
   Location loc = op->getLoc();
   mlir::Value target = op.getTarget();
-  mlir::Value angle =
-      createQuakeConstOp(loc, rewriter, -M_PI_4, rewriter.getF64Type());
+  mlir::Value angle = createArithConstantOp(loc, DialectTy, rewriter, -M_PI_4);
   if (op.isAdj())
     angle = arith::NegFOp::create(rewriter, loc, angle);
 
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
-  mlir::Value zero =
-      createQuakeConstOp(loc, rewriter, 0.0, rewriter.getF64Type());
-  mlir::Value pi_2 =
-      createQuakeConstOp(loc, rewriter, M_PI_2, rewriter.getF64Type());
-  mlir::Value negPi_2 = arith::NegFOp::create(rewriter, loc, pi_2);
+  auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
+  mlir::Value pi_2 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
 
+  if (!angle || !zero || !pi_2)
+    return false;
+  mlir::Value negPi_2 = arith::NegFOp::create(rewriter, loc, pi_2);
   std::array<mlir::Value, 2> parameters = {pi_2, zero};
 
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
+                                {target}, parameters, rewriter);
+  if (!newGate) {
+    return false;
+  }
   parameters[0] = angle;
   parameters[1] = pi_2;
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
+                          parameters, rewriter);
+  if (!newGate) {
+    return false;
+  }
   parameters[0] = negPi_2;
   parameters[1] = zero;
-  rewriter.create<cudaq::quake::PhasedRxOp>(loc, parameters, noControls,
-                                            target);
+  newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
+                          parameters, rewriter);
+
+  if (!newGate) {
+    return false;
+  }
 
   rewriter.eraseOp(op);
+  return true;
 }
 
 //===----------------------------------------------------------------------===//
@@ -732,14 +1038,30 @@ void rewriteTToPhasedRx(IRRewriter &rewriter, cudaq::quake::TOp op) {
 struct DecompositionRule {
   const char *name;
   std::vector<std::string> produces;
-  std::function<void(IRRewriter &, Operation *)> apply;
+  std::function<bool(const QuantumDialect &, IRRewriter &, Operation *)> apply;
 };
 
-template <typename QuakeOpT>
+// A named functor, rather than a lambda defined inside makeRule's body: a
+// lambda there is a *local type*, and some GCC versions mishandle
+// constructing std::function from it once the same makeRule<OpT>
+// instantiation is used more than once (e.g. makeRule<quake::R1Op> for both
+// rewriteR1ToRz and rewriteR1ToPhasedRx) -- `-fpermissive` lets it past the
+// local-type-as-template-argument rule but then fails to emit a definition
+// for that constructor instantiation ("used but never defined"). A functor
+// at namespace scope has ordinary external linkage, so this doesn't apply.
+template <typename OpT> struct RuleAdaptor {
+  bool (*rewrite)(const QuantumDialect &, IRRewriter &, OpT);
+
+  bool operator()(const QuantumDialect &DialectTy, IRRewriter &rewriter,
+                  Operation *op) const {
+    return rewrite(DialectTy, rewriter, cast<OpT>(op));
+  }
+};
+
+template <typename OpT>
 DecompositionRule makeRule(const char *name, std::vector<std::string> produces,
-                           void (*rewrite)(IRRewriter &, QuakeOpT)) {
+                           bool (*rewrite)(const QuantumDialect &, IRRewriter &,
+                                           OpT)) {
   return DecompositionRule{name, std::move(produces),
-                           [rewrite](IRRewriter &rewriter, Operation *op) {
-                             rewrite(rewriter, cast<QuakeOpT>(op));
-                           }};
+                           RuleAdaptor<OpT>{rewrite}};
 }

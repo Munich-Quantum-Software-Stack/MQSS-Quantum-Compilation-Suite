@@ -55,6 +55,7 @@ enum Gate {
   SAdj,
   T,
   TAdj,
+  U3,
   SWAP,
   PhasedRx,
   UNKNOWN
@@ -66,20 +67,22 @@ struct QubitID {
 };
 
 using tupleVectorsQubitIDs =
-    std::tuple<SmallVector<QubitID, 2>, SmallVector<QubitID, 2>>;
+    std::tuple<SmallVector<QubitID>, SmallVector<QubitID>>;
 
 using tupleVectorsValues =
-    std::tuple<SmallVector<mlir::Value, 2>, SmallVector<mlir::Value, 2>>;
+    std::tuple<SmallVector<mlir::Value>, SmallVector<mlir::Value>>;
 
 enum class QubitRole { Control, Target };
 
-static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
+inline const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
     {
         // Controlled gates
         {"CNOT", {QubitRole::Control, QubitRole::Target}},
         {"CX", {QubitRole::Control, QubitRole::Target}},
         {"CY", {QubitRole::Control, QubitRole::Target}},
         {"CZ", {QubitRole::Control, QubitRole::Target}},
+        {"CH", {QubitRole::Control, QubitRole::Target}},
+        {"U3", {QubitRole::Control, QubitRole::Target}},
 
         // Single-qubit gates
         {"PauliX", {QubitRole::Target}},
@@ -87,7 +90,6 @@ static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         {"PauliZ", {QubitRole::Target}},
         {"Hadamard", {QubitRole::Target}},
         {"H", {QubitRole::Target}},
-        {"CH", {QubitRole::Control, QubitRole::Target}},
         {"S", {QubitRole::Target}},
         {"T", {QubitRole::Target}},
         {"SAdj", {QubitRole::Target}},
@@ -104,7 +106,7 @@ static const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         // TODO:Add more Here
 };
 
-static const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
+inline const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
   auto it = gateOperandRoleTable.find(gateName);
   if (it != gateOperandRoleTable.end())
     return it->second;
@@ -113,9 +115,9 @@ static const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
 }
 
 struct QubitOperands {
-  SmallVector<QubitID, 2> ids;
-  SmallVector<mlir::Value, 2> in;
-  SmallVector<mlir::Value, 2> out;
+  SmallVector<QubitID> ids;
+  SmallVector<mlir::Value> in;
+  SmallVector<mlir::Value> out;
 
   [[nodiscard]] bool empty() const {
     return ids.empty() && in.empty() && out.empty();
@@ -201,6 +203,8 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return SWAP;
   if (GateTy == "PhasedRx")
     return PhasedRx;
+  if (GateTy == "U3")
+    return U3;
   return UNKNOWN;
 }
 
