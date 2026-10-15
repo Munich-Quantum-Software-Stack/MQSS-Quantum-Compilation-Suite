@@ -24,6 +24,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "sc/exact/ExactMapper.hpp"
 #include "sc/heuristic/HeuristicMapper.hpp"
 
+#include <mlir/IR/Diagnostics.h>
+#include <mlir/IR/Location.h>
 #include <mlir/IR/Value.h>
 
 using namespace mlir;
@@ -40,37 +42,52 @@ static std::optional<double> getConstantDouble(mlir::Value v) {
   return attr.getValueAsDouble();
 }
 
-static void resolveSSAformForMeasureOps(mlir::Operation *OldMeasOp,
+static bool resolveSSAformForMeasureOps(mlir::Operation *OldMeasOp,
                                         SmallVector<mlir::Value> newResults) {
   // llvm::outs() << "Old meas op: " << *OldMeasOp
   //              << " results: " << OldMeasOp->getResults().size() << ","
   //              << newResults.size() << "\n";
   auto OldResults = OldMeasOp->getResults();
+  if (OldResults.size() != newResults.size()) {
+    mlir::emitError(
+        OldMeasOp->getLoc(),
+        "ResolveSSA: Old and New MeasureOp should have same Result Qubits!");
+    return false;
+  }
   for (int j = 0; j < OldResults.size(); ++j) {
     auto oldRes = OldResults[j];
     auto newRes = newResults[j];
     oldRes.replaceAllUsesWith(newRes);
   }
-  assert(OldMeasOp->use_empty() &&
-         "Old measurement Op should not have any users before erasing!");
+  if (!OldMeasOp->use_empty()) {
+    mlir::emitError(OldMeasOp->getLoc(),
+                    "ResolveSSA: Old measurement Op should not have any users "
+                    "before erasing!");
+    return false;
+  }
   OldMeasOp->erase();
+  return true;
 }
 
 // Load the measurement operation within QuantumComputation
-static void loadMeasureOpIntoQC(QuantumOpView qview,
-                                qc::QuantumComputation &qc) {
+static bool loadMeasureOpIntoQC(QuantumOpView qview, qc::QuantumComputation &qc,
+                                mlir::Location loc) {
 
   auto targetQubitVector = qview.getQubits(QubitRole::Target).ids;
-  assert((targetQubitVector.size() == 1) &&
-         "Only Single Qubit Measurement Ops supported");
+  if (targetQubitVector.size() != 1) {
+    mlir::emitError(loc,
+                    "Mapping: Only Single Qubit Measurement Ops supported");
+    return false;
+  }
 
   auto targetQubit = targetQubitVector[0].index;
   for (auto entry : qview.measurements) {
     qc.measure(entry.QubitIndex, entry.ClassicalBitIndex);
   }
+  return true;
 }
 
-static void loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
+static bool loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
                       Gate GateTy, SmallVector<mlir::Value, 2> params,
                       int64_t controlQubit, int64_t targetQubit1,
                       int64_t targetQubit2 = -2) {
@@ -78,6 +95,7 @@ static void loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
   // llvm::outs() << "Gate Op: " << *gateOp << " , Ty: " << GateTy << "\n";
 
   std::optional<double> angle;
+  std::optional<double> param2;
   // TODO: Load more gates into qc. Add to the following list.
   switch (GateTy) {
   case Gate::H:
@@ -105,37 +123,86 @@ static void loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
   case Gate::S:
     qc.s(targetQubit1);
     break;
+  case Gate::SAdj:
+    qc.sdg(targetQubit1);
+    break;
   case Gate::T:
     qc.t(targetQubit1);
     break;
+  case Gate::TAdj:
+    qc.tdg(targetQubit1);
+    break;
   case Gate::RX:
-    assert(params.size() == 1 && "RX gate should have only 1 parameter!");
+    if (params.size() != 1) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: RX gate should have only 1 parameter!");
+      return false;
+    }
     angle = getConstantDouble(params[0]);
+    if (!angle.has_value()) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: No angle found to create RX gate!");
+      return false;
+    }
     qc.rx(angle.value(), targetQubit1);
+
     break;
   case Gate::RY:
-    assert(params.size() == 1 && "RY gate should have only 1 parameter!");
+    if (params.size() != 1) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: RY gate should have only 1 parameter!");
+      return false;
+    }
     angle = getConstantDouble(params[0]);
+    if (!angle.has_value()) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: No angle found to create RY gate!");
+      return false;
+    }
     qc.ry(angle.value(), targetQubit1);
     break;
   case Gate::RZ:
-    assert(params.size() == 1 && "RZ gate should have only 1 parameter!");
+    if (params.size() != 1) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: RZ gate should have only 1 parameter!");
+      return false;
+    }
     angle = getConstantDouble(params[0]);
+    if (!angle.has_value()) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: No angle found to create RZ gate!");
+      return false;
+    }
     qc.rz(angle.value(), targetQubit1);
     break;
   case Gate::SWAP:
     qc.swap(targetQubit1, targetQubit2);
     break;
   case Gate::PhasedRx:
-    assert(params.size() == 2 && "PhasedRx gate should have 2 parameters!");
+    if (params.size() != 2) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: PhasedRx gate should have 2 parameters!");
+      return false;
+    }
     angle = getConstantDouble(params[0]);
-    std::optional<double> phi = getConstantDouble(params[1]);
-    qc.r(angle.value(), phi.value(), targetQubit1);
+    param2 = getConstantDouble(params[1]);
+    if (!angle.has_value() || !param2.has_value()) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: Missing angle needed to create PhasedRx gate!");
+      return false;
+    }
+
+    qc.r(angle.value(), param2.value(), targetQubit1);
+    break;
+  default:
+    mlir::emitError(gateOp->getLoc(), "Mapping: Unsupported Gate Type");
+    return false;
     break;
   }
+  return true;
 }
 
-static void loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
+static bool loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
                               qc::QuantumComputation &qc,
                               bool isControlled = false) {
 
@@ -146,19 +213,32 @@ static void loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
 
   if (isControlled) {
     auto controlQubitVector = qview.getQubits(QubitRole::Control).ids;
-    assert((controlQubitVector.size() == 1) &&
-           "Only upto 2-Qubit gates supported!");
+    if ((controlQubitVector.size() != 1)) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: Gates with 2 Control Qubits not supported");
+      return false;
+    }
 
     controlQubitIdx = controlQubitVector[0].index;
     if (controlQubitIdx == -1) {
       // Gate operation in Catalyst (value semantics)
       // Qubit in Catalyst
       auto operand = controlQubitVector[0].base;
-      controlQubitIdx = getOriginQubit(operand)->index;
+      auto controlOrig = getOriginQubit(operand);
+      if (controlOrig.has_value()) {
+        controlQubitIdx = controlOrig->index;
+      } else {
+        mlir::emitError(operand.getLoc(),
+                        "Mapping: Could not fetch origin Qubit of operand!");
+        return false;
+      }
     }
   }
-  assert((targetQubitVector.size() == 1 || targetQubitVector.size() == 2) &&
-         "Only upto 1-Qubit Non-controlled gates supported!");
+  if (targetQubitVector.size() != 1 && targetQubitVector.size() != 2) {
+    mlir::emitError(gateOp->getLoc(),
+                    "Mapping: Gates with 1 or 2 target Qubits supported!");
+    return false;
+  }
 
   targetQubit1Idx = targetQubitVector[0].index;
   if (targetQubitVector.size() == 2) {
@@ -169,8 +249,15 @@ static void loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
     // Gate operation in Catalyst (value semantics)
     // Qubit in Catalyst
     auto operand = targetQubitVector[0].base;
-    targetQubit1Idx = getOriginQubit(operand)->index;
+    auto targetOrig = getOriginQubit(operand);
+    if (targetOrig.has_value()) {
+      targetQubit1Idx = targetOrig->index;
+    } else {
+      mlir::emitError(operand.getLoc(),
+                      "Mapping: Could not fetch origin Qubit of operand!");
+      return false;
+    }
   }
-  loadGates(gateOp, qc, qview.GateTy, qview.params, controlQubitIdx,
-            targetQubit1Idx, targetQubit2Idx);
+  return loadGates(gateOp, qc, qview.GateTy, qview.params, controlQubitIdx,
+                   targetQubit1Idx, targetQubit2Idx);
 }

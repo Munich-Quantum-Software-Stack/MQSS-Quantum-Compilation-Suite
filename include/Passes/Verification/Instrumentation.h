@@ -8,6 +8,7 @@
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Support/raw_ostream.h>
+#include <mlir/IR/Location.h>
 #include <mlir/Pass/PassInstrumentation.h>
 #include <string>
 #include <unordered_map>
@@ -43,8 +44,8 @@ public:
   llvm::DenseMap<StringRef, VerifyQuantumComputationTy> get_module_snap_shot();
 
 private:
-  qc::QuantumComputation
-  createMQTQuantumComputation(std::size_t allocatedQubits,
+  llvm::Expected<qc::QuantumComputation>
+  createMQTQuantumComputation(mlir::Location loc, std::size_t allocatedQubits,
                               std::size_t numMeasureQubits,
                               MapVector<Operation *, QuantumOpView> OpQView);
   void runBeforePass(mlir::Pass *pass, mlir::Operation *op) override;
