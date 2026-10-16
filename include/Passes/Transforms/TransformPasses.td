@@ -115,24 +115,6 @@ def CommonReductionPass : Pass<"CommonReductionPass", "mlir::ModuleOp"> {
   ];
 }
 
-def CommonDecompositionPass : Pass<"CommonDecompositionPass", "mlir::ModuleOp"> {
-  let summary = "Perform Gate Decomposition, {Cx} -> HCzH or {Cz} -> HCxH. ";
-
-  let description = [{
-        Perform Gate Decomposition, {Cx} -> HCzH or {Cz} -> HCxH. Also, can
-        revers the control and targets of each
-        "two-qubits CNot gate in a circuit
-  }];
-
- let constructor = "mqss::mqssci::opt::CommonDecompositionPass()";
-  let dependentDialects = ["mlir::arith::ArithDialect"];
-
-  let options = [
-    Option<"mode", "mode", "std::string",
-      /*default=*//*default=*/"\"CxToHCzH\"", "Select PassMode CxToHCzH, CzToHCxH, HToRzXRz, CHToCX.">,
-  ];
-}
-
 
 def CommonCNOTReversePass : Pass<"CommonCNOTReversePass", "mlir::ModuleOp"> {
   let summary = "Reverse the control and targets of each CNot gate in a circuit";

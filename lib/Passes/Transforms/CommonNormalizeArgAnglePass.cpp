@@ -39,17 +39,38 @@ public:
   void runOnOperation() override {
 
     auto &selector = getAnalysis<DialectAnalysisSelector>();
+    if (!selector.get()) {
+
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid MLIR Dialect\n";
+      signalPassFailure();
+      return;
+    }
     auto &analysis = *selector.get();
+    if (!analysis.isValid()) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid Module Analysis\n";
+      signalPassFailure();
+      return;
+    }
     auto DialectTy = selector.getDialect();
 
     MQSS_DEBUG("\n[Applying Pass: NormalizeAngle]\n");
 
-    for (auto [kernel, Info] : analysis.getKernelDialectInfo())
-      performArgAngelNormalization(Info.OpQViewMap, DialectTy);
+    for (auto [kernel, Info] : analysis.getKernelDialectInfo()) {
+      if (!performArgAngelNormalization(Info.OpQViewMap, DialectTy)) {
+        mlir::emitError(kernel->getLoc(),
+                        "NormalizeAngle: Failed to apply pass");
+        signalPassFailure();
+        return;
+      }
+    }
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
+      signalPassFailure();
+      return;
     }
   }
 };

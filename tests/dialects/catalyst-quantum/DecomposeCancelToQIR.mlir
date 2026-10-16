@@ -1,8 +1,12 @@
-// RUN: %mqss-opt %s --CommonDecompositionPass=mode=CxToHCzH --CommonGateCancellationPass=mode=CancelGate --convert-quantum-to-llvm --mlir-to-llvmIR -o /dev/null 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCNOTReversePass --CommonGateCancellationPass=mode=CancelGate --convert-quantum-to-llvm --mlir-to-llvmIR -o /dev/null 2>&1 | FileCheck %s
 
-// A three-stage pipeline: decompose CNOT to H-CZ-H, cancel the resulting run of three
-// consecutive Hadamards down to one, then lower the simplified circuit all the way to
-// QIR-flavoured LLVM IR.
+// A three-stage pipeline: reverse the CNOT into an H-CX-H sandwich, cancel the
+// adjacent Hadamard pair that forms on the target-output chain (where the
+// circuit's own two Hadamards sit), then lower the simplified circuit all the
+// way to QIR-flavoured LLVM IR. The control-output chain's own boundary H has
+// no further consumer in this circuit but is still a real op, so it still
+// lowers to a call even though nothing downstream reads its result. Pointer
+// SSA numbers are matched loosely for the same reason as in bell_state.mlir.
 module {
   func.func @DecomposeCancelToQIR_test() {
     %qreg = quantum.alloc(2) : !quantum.reg
@@ -17,15 +21,12 @@ module {
 }
 
 // CHECK: define void @DecomposeCancelToQIR_test() {
-// CHECK:   %1 = call ptr @__catalyst__rt__qubit_allocate_array(i64 2)
-// CHECK:   %2 = call ptr @__catalyst__rt__array_get_element_ptr_1d(ptr %1, i64 0)
-// CHECK:   %3 = load ptr, ptr %2, align 8
-// CHECK:   %4 = call ptr @__catalyst__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK:   %5 = load ptr, ptr %4, align 8
-// CHECK:   call void @__catalyst__qis__H(ptr %5, ptr null)
-// CHECK:   call void @__catalyst__qis__CZ(ptr %3, ptr %5, ptr null)
-// CHECK:   call void @__catalyst__qis__Hadamard(ptr %5, ptr null)
-// CHECK:   %6 = call ptr @__catalyst__qis__Measure(ptr %5, i32 -1)
-// CHECK:   %7 = load i1, ptr %6, align 1
+// CHECK:   call ptr @__catalyst__rt__qubit_allocate_array(i64 2)
+// CHECK:   call void @__catalyst__qis__H(ptr {{.*}}, ptr null)
+// CHECK:   call void @__catalyst__qis__H(ptr {{.*}}, ptr null)
+// CHECK:   call void @__catalyst__qis__CNOT(ptr {{.*}}, ptr {{.*}}, ptr null)
+// CHECK:   call void @__catalyst__qis__H(ptr {{.*}}, ptr null)
+// CHECK:   call void @__catalyst__qis__Hadamard(ptr {{.*}}, ptr null)
+// CHECK:   call ptr @__catalyst__qis__Measure(ptr {{.*}}, i32 -1)
 // CHECK:   ret void
 // CHECK: }

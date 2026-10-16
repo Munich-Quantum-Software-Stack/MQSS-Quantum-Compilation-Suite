@@ -66,38 +66,78 @@ public:
           // }
           if (auto allocaOp = dyn_cast<catalyst::quantum::AllocOp>(Op)) {
             kernelInfo.AllocatedQubits = allocaOp.getNqubitsAttr().value();
-            assert(!kernelInfo.AllocOp &&
-                   "Can only have 1 alloc instruction in a quantum kernel!");
+            if (kernelInfo.AllocOp) {
+              mlir::emitError(allocaOp->getLoc(),
+                              "CatalystExtractor: gaterOpInfo: Can Only have 1 "
+                              "allocaOp in a kernel");
+              _valid = false;
+              return;
+            }
             kernelInfo.AllocOp = allocaOp;
             return;
           }
 
           auto view = createQuantumView(Op, kernelInfo.NumMeasureQubits);
-          kernelInfo.OpQViewMap[Op] = std::move(view);
+          if (!view) {
+            mlir::emitError(kernel->getLoc(),
+                            "CatalystExtractor: gaterOpInfo: Could not create "
+                            "QuantumView for Kernel");
+            _valid = false;
+            return;
+          }
+          kernelInfo.OpQViewMap[Op] = std::move(*view);
         }
       });
       KernelDialectInfo[kernel] = std::move(kernelInfo);
     }
   }
 
-  void addOperation(Operation *NewOp) override {
+  bool addOperation(Operation *NewOp) override {
     auto funcOp = NewOp->getParentOfType<mlir::func::FuncOp>();
-    assert(funcOp && "Adding New O: Parent Function not found!");
-    assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
+    if (!funcOp) {
+      mlir::emitError(
+          NewOp->getLoc(),
+          "CatalystExtractor: Adding New Op: Parent Function not found!");
+      return false;
+    }
+    if (!KernelDialectInfo.count(funcOp)) {
+      mlir::emitError(
+          NewOp->getLoc(),
+          "CatalystExtractor: Adding New Op: No QuantumOpInfo for funcOp");
+      return false;
+    }
     auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
-    assert(!QInfo.count(NewOp) &&
-           "Adding New Op: Op already present in QuantumInfoMap");
+    if (QInfo.count(NewOp)) {
+      mlir::emitError(NewOp->getLoc(), "CatalystExtractor: Adding New Op: Op "
+                                       "already present in QuantumInfoMap");
+      return false;
+    }
     auto view =
         createQuantumView(NewOp, KernelDialectInfo[funcOp].NumMeasureQubits);
-    QInfo[NewOp] = view;
+    if (!view) {
+      mlir::emitError(NewOp->getLoc(),
+                      "CatalystExtractor: addOperation: Could not create "
+                      "QuantumView for Op");
+      return false;
+    }
+    QInfo[NewOp] = *view;
+    return true;
   }
 
   bool UpdateOperands(Operation *Op, QubitRole Role, mlir::Value OrigValue,
                       mlir::Value NewValue) {
     auto funcOp = getOpParentFunc(Op);
-    assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
+    if (!KernelDialectInfo.count(funcOp)) {
+      mlir::emitError(Op->getLoc(),
+                      "CatalystExtractor: No QuantumOpInfo for funcOp");
+      return false;
+    }
     auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
-    assert(QInfo.count(Op) && "Updating Op: Op not present in QuantumInfoMap");
+    if (!QInfo.count(Op)) {
+      mlir::emitError(Op->getLoc(),
+                      "CatalystExtractor: Op not present in QuantumInfoMap");
+      return false;
+    }
     QuantumOpView &OpQView = QInfo[Op];
     auto &Operands = OpQView.getQubits(Role).in;
     auto it = std::find(Operands.begin(), Operands.end(), OrigValue);
@@ -108,10 +148,14 @@ public:
     return true;
   }
 
-  void clearKernelBody(func::FuncOp &kernel,
+  bool clearKernelBody(func::FuncOp &kernel,
                        std::set<Operation *> notToErase) override {
     // cleaning the mlir::funcOp corresponding to the quake circuit
-    assert(KernelDialectInfo.count(kernel) && "No QuantumOpInfo for funcOp");
+    if (!KernelDialectInfo.count(kernel)) {
+      mlir::emitError(kernel->getLoc(),
+                      "CatalystExtractor: No QuantumOpInfo for funcOp");
+      return false;
+    }
     auto &QInfo = KernelDialectInfo[kernel].OpQViewMap;
     for (auto &[Op, qview] : QInfo) {
       if (notToErase.count(Op))
@@ -119,29 +163,42 @@ public:
       QInfo.erase(Op);
       Op->erase();
     }
+    return true;
   }
 
   MapVector<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
     return KernelDialectInfo;
   }
 
-  const QuantumOpView getOpInfo(Operation *Op) override {
+  const std::optional<QuantumOpView> getOpInfo(Operation *Op) override {
     auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
-    assert(KernelDialectInfo.count(funcOp) &&
-           "Get Op Info: No QuantumOpInfo for funcOp");
+    if (!KernelDialectInfo.count(funcOp)) {
+      mlir::emitError(
+          Op->getLoc(),
+          "CatalystExtractor: Get Op Info: No QuantumOpInfo for funcOp");
+      return std::nullopt;
+    }
     auto QInfo = KernelDialectInfo[funcOp].OpQViewMap;
-    assert(QInfo.count(Op) && "Get Op Info: Op not present QuantumInfoMap");
+    if (!QInfo.count(Op)) {
+      mlir::emitError(
+          Op->getLoc(),
+          "CatalystExtractor: Get Op Info: Op not present QuantumInfoMap");
+      return std::nullopt;
+    }
     return QInfo[Op];
   }
 
   mlir::LogicalResult verifyModule() override { return module.verify(); }
+  [[nodiscard]] bool isValid() const override { return _valid; }
 
 private:
   ModuleOp module;
   MapVector<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
   int nextClassicalBit = 0;
+  bool _valid = true;
 
-  QuantumOpView createQuantumView(Operation *Op, size_t &NumMeasureQubits) {
+  std::optional<QuantumOpView> createQuantumView(Operation *Op,
+                                                 size_t &NumMeasureQubits) {
     QuantumOpView view;
     if (hasQuantumEffect(Op)) {
       view.hasSideEffects = true;
@@ -165,10 +222,16 @@ private:
           getGateOpRoles(gateName); // Now we can separate out the
                                     // Qubits into Ctrl/Target
 
-      assert(!OpRoles.empty() &&
-             "Found a gate Op with empty Operand Roles(Control/Target)");
-      assert((OpRoles.size() == g.getQubitOperands().size()) &&
-             "Operand Roles not equals No. of Qubit Operands");
+      if (OpRoles.empty()) {
+        mlir::emitError(g->getLoc(), "CatalystExtractor: Found a gate Op with "
+                                     "empty Operand Roles(Control/Target)");
+        return std::nullopt;
+      }
+      if (OpRoles.size() != g.getQubitOperands().size()) {
+        mlir::emitError(g->getLoc(), "CatalystExtractor: Operand Roles not "
+                                     "equals No. of Qubit Operands");
+        return std::nullopt;
+      }
 
       for (auto p : g.getParams()) {
         view.params.push_back(p);
@@ -226,7 +289,6 @@ private:
 
   mlir::func::FuncOp getOpParentFunc(Operation *Op) {
     auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
-    assert(funcOp && "Adding New O: Parent Function not found!");
     return funcOp;
   }
 
@@ -237,6 +299,12 @@ private:
     for (auto operand : op->getOperands()) {
       if (mlir::isa<catalyst::quantum::QubitType>(operand.getType())) {
         auto originOpQubit = getOriginQubit(operand);
+        if (!originOpQubit) {
+          mlir::emitError(
+              operand.getLoc(),
+              "CatalystExtractor: Origin Qubit of operand not found");
+          continue;
+        }
         measurements.push_back({originOpQubit->index, nextClassicalBit++});
         ++count;
       }

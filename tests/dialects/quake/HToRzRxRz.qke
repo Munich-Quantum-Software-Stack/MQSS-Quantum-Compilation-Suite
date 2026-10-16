@@ -1,5 +1,5 @@
 
-// RUN: %mqss-opt %s --CommonDecompositionPass=mode=HToRzXRz 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --BasisConversionPass=gates=rz,rx 2>&1 | FileCheck %s
 
 func.func @__nvqpp__mlirgen__ghzILm2EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
   %0 = quake.alloca !quake.veq<2>
@@ -12,8 +12,7 @@ func.func @__nvqpp__mlirgen__ghzILm2EE() attributes {"cudaq-entrypoint", "cudaq-
   return
 }
 
-// CHECK: %cst = arith.constant 3.1415926535897931 : f64
-// CHECK: %cst_0 = arith.constant 1.5707963267948966 : f64
+// CHECK: %cst = arith.constant 1.5707963267948966 : f64
 // CHECK: quake.rz (%cst) %3 : (f64, !quake.ref) -> ()
-// CHECK: quake.x %3 : (!quake.ref) -> ()
-// CHECK: quake.rz (%cst_0) %3 : (f64, !quake.ref) -> ()
+// CHECK: quake.rx (%cst) %3 : (f64, !quake.ref) -> ()
+// CHECK: quake.rz (%cst) %3 : (f64, !quake.ref) -> ()

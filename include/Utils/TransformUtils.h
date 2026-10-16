@@ -46,6 +46,7 @@ struct ReductionPassInfoty {
 };
 
 struct CommuteTy {
+  llvm::StringRef kernelName = "";
   Operation *Op1 = nullptr;
   Operation *Op2 = nullptr;
   QuantumOpView Op1QView;
@@ -55,13 +56,10 @@ struct CommuteTy {
 struct CommuteInfoTy {
 
 public:
-  void gather(Operation *Op1, Operation *Op2) {
-    CommuteTy Commute{Op1, Op2};
-    CommuteCandidates.push_back(Commute);
-  }
-  void gather(Operation *Op1, Operation *Op2, QuantumOpView Op1QView,
-              QuantumOpView Op2QView) {
-    CommuteTy Commute{Op1, Op2, Op1QView, Op2QView};
+  void gather(llvm::StringRef kernelName, Operation *Op1 = nullptr,
+              Operation *Op2 = nullptr, QuantumOpView Op1QView = {},
+              QuantumOpView Op2QView = {}) {
+    CommuteTy Commute{kernelName, Op1, Op2, Op1QView, Op2QView};
     CommuteCandidates.push_back(Commute);
   }
 

@@ -459,8 +459,10 @@ bool createMappedCircuit(mlir::IRRewriter &builder, Location &loc,
   return true;
 }
 
-bool performMapping(MyModuleAnalysis &analysis, Architecture architecture,
-                    Configuration &settings, QuantumDialect &DialectTy) {
+tuple<bool, llvm::StringRef> performMapping(MyModuleAnalysis &analysis,
+                                            Architecture architecture,
+                                            Configuration &settings,
+                                            QuantumDialect &DialectTy) {
 
   for (auto &[kernel, info] : analysis.getKernelDialectInfo()) {
 
@@ -492,7 +494,7 @@ bool performMapping(MyModuleAnalysis &analysis, Architecture architecture,
         if (!loadGateOpsIntoQC(Op, qview, qc, qview.isControlled())) {
           mlir::emitError(Op->getLoc(), "Mapping: Error when loading GateOp "
                                         "into MQT's QuantumComputation");
-          return false;
+          return {false, kernel.getSymName()};
         }
         OpsToErase.insert(Op);
       }
@@ -501,7 +503,7 @@ bool performMapping(MyModuleAnalysis &analysis, Architecture architecture,
         if (!loadMeasureOpIntoQC(qview, qc, Op->getLoc())) {
           mlir::emitError(Op->getLoc(), "Mapping: Error when loading MeasureOp "
                                         "into MQT's QuantumComputation");
-          return false;
+          return {false, kernel.getSymName()};
         }
         MeasureOps[Op] = qview.measurements.size();
         if (qview.measurements.size() != 1)
@@ -522,7 +524,7 @@ bool performMapping(MyModuleAnalysis &analysis, Architecture architecture,
       mlir::emitError(kernel->getLoc(),
                       "Mapping: Could not create Heuristic Mapper Obj")
           << e.what();
-      return false;
+      return {false, kernel.getSymName()};
     }
     try {
       mapper->map(settings);
@@ -530,7 +532,7 @@ bool performMapping(MyModuleAnalysis &analysis, Architecture architecture,
       mlir::emitError(kernel->getLoc(),
                       "Mapping: Could not map the circuit to the architecture!")
           << e.what();
-      return false;
+      return {false, kernel.getSymName()};
     }
 
     auto qcMapped = qc::QuantumComputation();
@@ -539,7 +541,7 @@ bool performMapping(MyModuleAnalysis &analysis, Architecture architecture,
     if (qcMapped.empty()) {
       mlir::emitError(kernel->getLoc(), "Mapping: Could not move circuit to "
                                         "MQT-Core's qc::QuantumComputation!");
-      return false;
+      return {false, kernel.getSymName()};
     }
 
     mlir::IRRewriter builder(kernel->getContext());
@@ -555,7 +557,7 @@ bool performMapping(MyModuleAnalysis &analysis, Architecture architecture,
         createAllocOp(loc, DialectTy, builder, info.AllocatedQubits);
     if (!newAllocOp) {
       mlir::emitError(loc, "Mapping: Could not create AllocOp");
-      return false;
+      return {false, kernel.getSymName()};
     }
 
     // cleaning the mlir::funcOp corresponding to the quake circuit
@@ -564,15 +566,15 @@ bool performMapping(MyModuleAnalysis &analysis, Architecture architecture,
     if (!createMappedCircuit(builder, loc, DialectTy, newAllocOp, qcMapped,
                              MeasureOps)) {
       mlir::emitError(loc, "Could not create Mapping for Circuit!");
-      return false;
+      return {false, kernel.getSymName()};
     }
 
     if (!controlledDCE(OpsToErase, info.AllocOp, newAllocOp)) {
       mlir::emitError(loc, "Could not perform Controlled DCE!");
-      return false;
+      return {false, kernel.getSymName()};
     }
   }
-  return true;
+  return {true, ""};
 }
 
 struct CommonMapping
@@ -647,10 +649,25 @@ public:
     auto settings = config.settings;
 
     auto &selector = getAnalysis<DialectAnalysisSelector>();
-    auto &analysis = *selector.get();
-    auto DialectTy = selector.getDialect();
+    if (!selector.get()) {
 
-    if (!performMapping(analysis, architecture, settings, DialectTy)) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid MLIR Dialect\n";
+      signalPassFailure();
+      return;
+    }
+    auto &analysis = *selector.get();
+    if (!analysis.isValid()) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid Module Analysis\n";
+      signalPassFailure();
+      return;
+    }
+    auto DialectTy = selector.getDialect();
+    auto [success, kernelName] =
+        performMapping(analysis, architecture, settings, DialectTy);
+    if (!success) {
+      llvm::errs() << "Mapping: Failed to apply Pass: " << kernelName << "\n";
       signalPassFailure();
       return;
     }

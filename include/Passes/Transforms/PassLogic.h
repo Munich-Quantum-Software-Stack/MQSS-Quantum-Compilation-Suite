@@ -29,7 +29,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <llvm/Support/Debug.h>
 #include <mlir/IR/Diagnostics.h>
 
-static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
+static tuple<bool, llvm::StringRef>
+Commute(std::vector<CommuteTy> CommmutationCandidates) {
 
   for (auto CandidatesInfo : CommmutationCandidates) {
     MQSS_DEBUG("Commuting...\n");
@@ -41,10 +42,12 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates) {
 
     MQSS_DEBUG("---------------------------------------------\n");
   }
+  return {true, ""};
 }
 
-static void Commute(std::vector<CommuteTy> CommmutationCandidates,
-                    Comparety CompareKey, MyModuleAnalysis &analysis) {
+static tuple<bool, llvm::StringRef>
+Commute(std::vector<CommuteTy> CommmutationCandidates, Comparety CompareKey,
+        MyModuleAnalysis &analysis) {
 
   auto KeyGate1 = CompareKey.KeyGate1;
   auto KeyGate2 = CompareKey.KeyGate2;
@@ -71,10 +74,21 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates,
     // The CompareKeys are used to determine which operand (Ctrl/Target) is
     // replaced
 
-    assert(!Op1QView.getQubits(KeyGate1).in.empty() &&
-           "Op1 does not have operand targets");
-    assert(!Op2QView.getQubits(KeyGate2).out.empty() &&
-           "Op2 does not have result targets");
+    if (Op1QView.getQubits(KeyGate1).in.empty()) {
+      mlir::emitError(Op1->getLoc(),
+                      "Commute: Op1 does not have operand targets");
+      return {false, OpInfo.kernelName};
+    }
+    if (Op2QView.getQubits(KeyGate2).in.empty()) {
+      mlir::emitError(Op2->getLoc(),
+                      "Commute: Op2 does not have operand targets");
+      return {false, OpInfo.kernelName};
+    }
+    if (Op2QView.getQubits(KeyGate2).out.empty()) {
+      mlir::emitError(Op2->getLoc(),
+                      "Commute: Op2 does not have result targets");
+      return {false, OpInfo.kernelName};
+    }
 
     auto Op1Operand = Op1QView.getQubits(KeyGate1).in[0];
     auto Op2Operand = Op2QView.getQubits(KeyGate2).in[0];
@@ -94,10 +108,17 @@ static void Commute(std::vector<CommuteTy> CommmutationCandidates,
 
     MQSS_DEBUG("---------------------------------------------\n");
   }
+  return {true, ""};
 }
 
-static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
-                                                 PassInfoty PassInfo) {
+struct CommutRetTy {
+  bool success = false;
+  llvm::StringRef kernelName = "";
+  vector<CommuteTy> CommutedCandidates{};
+};
+
+static CommutRetTy performCommutation(MyModuleAnalysis &analysis,
+                                      PassInfoty PassInfo) {
 
   auto Gate1Ty = PassInfo.FirstGateTy;
   auto Gate2Ty = PassInfo.SecondGateTy;
@@ -152,7 +173,7 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
           if (SameQubits({Op1CtrlQubits.ids, Op1TargetQubits.ids},
                          {Op2CtrlQubits.ids, Op2TargetQubits.ids},
                          CompareKey)) {
-            CommutationInfo.gather(Op1, Op2);
+            CommutationInfo.gather(kernel.getSymName(), Op1, Op2);
           } else if (SameQubitValues({Op1CtrlQubits.out, Op1TargetQubits.out},
                                      {Op2CtrlQubits.in, Op2TargetQubits.in},
                                      CompareKey)) {
@@ -165,7 +186,8 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
             //  %new_ctrl = quantum.custom "RX"(%cst) %2 : !quantum.bit
             //  %new_pair:2 = quantum.custom "CNOT"() %new_ctrl, %3 :
             //  !quantum.bit, !quantum.bit
-            SSACommuteCandidates.gather(Op1, Op2, Op1QView, nextOpView);
+            SSACommuteCandidates.gather(kernel.getSymName(), Op1, Op2, Op1QView,
+                                        nextOpView);
           }
           // TODO: For catalyst - Cannot commute by checking the output qubits
           // and input qubits of Gate Ops. If the check returns true, and the
@@ -180,26 +202,35 @@ static std::vector<CommuteTy> performCommutation(MyModuleAnalysis &analysis,
     }
   }
 
+  bool successful = false;
+  llvm::StringRef kernelName = "";
   auto CommuteCandidates = CommutationInfo.getCommutationCandidates();
   if (!CommuteCandidates.empty()) {
-    Commute(CommuteCandidates);
+    std::tie(successful, kernelName) = Commute(CommuteCandidates);
   } else {
     CommuteCandidates = SSACommuteCandidates.getCommutationCandidates();
     if (!CommuteCandidates.empty()) {
-      Commute(CommuteCandidates, CompareKey, analysis);
+      std::tie(successful, kernelName) =
+          Commute(CommuteCandidates, CompareKey, analysis);
     } else {
+      successful = true;
       MQSS_DEBUG("-----No Commutation candidates for the kernel----\n");
     }
   }
 
-  return CommuteCandidates;
+  return {successful, kernelName, CommuteCandidates};
 }
 
-static bool performCommuteAndSwitch(MyModuleAnalysis &analysis,
-                                    PassInfoty PassInfo,
-                                    QuantumDialect DialectTy) {
+static tuple<bool, llvm::StringRef>
+performCommuteAndSwitch(MyModuleAnalysis &analysis, PassInfoty PassInfo,
+                        QuantumDialect DialectTy) {
 
-  auto CommutedOps = performCommutation(analysis, PassInfo);
+  auto [success, kernelName, CommutedOps] =
+      performCommutation(analysis, PassInfo);
+
+  if (!success) {
+    return {false, kernelName};
+  }
 
   for (auto Ops : CommutedOps) {
 
@@ -208,9 +239,10 @@ static bool performCommuteAndSwitch(MyModuleAnalysis &analysis,
     auto funcOp = Op1->getParentOfType<mlir::func::FuncOp>();
     auto KernelDialectInfo = analysis.getKernelDialectInfo();
     if (!KernelDialectInfo.count(funcOp)) {
-      mlir::emitError(funcOp->getLoc(),
-                      "No QuantumOpInfo for funcOp, Skipping function!");
-      return true;
+      mlir::emitError(
+          funcOp->getLoc(),
+          "CommuteAndSwitch: No QuantumOpInfo for funcOp, Skipping function!");
+      continue;
     }
 
     auto Qview = KernelDialectInfo[funcOp].OpQViewMap;
@@ -218,8 +250,9 @@ static bool performCommuteAndSwitch(MyModuleAnalysis &analysis,
     if (Qview.count(Op2)) {
       auto Op2TargetQubits = Qview[Op2].getQubits(QubitRole::Target).ids;
       if (Op2TargetQubits.size() != 1) {
-        Op2->emitError() << "Currently, Can only switch single qubit gates!";
-        return false;
+        Op2->emitError() << "CommuteAndSwitch: Currently, Can only switch "
+                            "single qubit gates!";
+        return {false, funcOp.getSymName()};
       }
 
       mlir::IRRewriter builder(Op2->getContext());
@@ -248,12 +281,14 @@ static bool performCommuteAndSwitch(MyModuleAnalysis &analysis,
       }
 
       if (!OpToSwitchOut) {
-        mlir::emitError(Op2->getLoc(), "Op to switch out cannot be NULL!!");
-        return false;
+        mlir::emitError(Op2->getLoc(),
+                        "CommuteAndSwitch: Op to switch out cannot be NULL!!");
+        return {false, funcOp.getSymName()};
       }
       if (ReplacementGateTy.empty()) {
-        mlir::emitError(OpToSwitchOut->getLoc(), "Need the replacement gate!!");
-        return false;
+        mlir::emitError(OpToSwitchOut->getLoc(),
+                        "CommuteAndSwitch: Need the replacement gate!!");
+        return {false, funcOp.getSymName()};
       }
 
       auto TargetInQubitOps =
@@ -265,10 +300,12 @@ static bool performCommuteAndSwitch(MyModuleAnalysis &analysis,
 
       if (!NewOp) {
         mlir::emitError(OpToSwitchOut->getLoc(),
-                        "Could not create the requested Op!");
-        return false;
+                        "CommuteAndSwitch: Could not create the requested Op!");
+        return {false, funcOp.getSymName()};
       }
-      analysis.addOperation(NewOp);
+      if (!analysis.addOperation(NewOp)) {
+        return {false, funcOp.getSymName()};
+      }
 
       OpToSwitchOut->replaceAllUsesWith(NewOp);
       // TODO: Should the operands of the following Ops be updated in
@@ -278,7 +315,7 @@ static bool performCommuteAndSwitch(MyModuleAnalysis &analysis,
       builder.eraseOp(OpToSwitchOut);
     }
   }
-  return true;
+  return {true, ""};
 }
 
 static void performNullRotationCancellation(
@@ -297,14 +334,17 @@ static void performNullRotationCancellation(
     auto parameters = FirstGateQView.params;
     bool deleteGate = true;
     for (auto param : parameters) {
-      if (auto constOp = param.getDefiningOp<mlir::arith::ConstantOp>()) {
-        if (auto floatAttr = dyn_cast<mlir::FloatAttr>(constOp.getValue())) {
-          double v = floatAttr.getValueAsDouble();
-          if (!checkDoublePiMultiplies(v) && v != 0) {
-            deleteGate = false;
-            break;
-          }
-        }
+      auto constOp = param.getDefiningOp<mlir::arith::ConstantOp>();
+      if (!constOp) {
+        deleteGate = false; // unknown angle — can't prove it's safe to delete
+        break;
+      }
+      auto floatAttr = dyn_cast<mlir::FloatAttr>(constOp.getValue());
+      if (!floatAttr ||
+          (!checkDoublePiMultiplies(floatAttr.getValueAsDouble()) &&
+           floatAttr.getValueAsDouble() != 0)) {
+        deleteGate = false;
+        break;
       }
     }
 
@@ -312,9 +352,18 @@ static void performNullRotationCancellation(
       ToErase.insert(GateOp);
   }
 
-  for (auto gop : ToErase) {
-    MQSS_DEBUG("--->Erasing: " << *gop << "\n");
-    cancel(gop);
+  for (auto *op : ToErase) {
+    MQSS_DEBUG("--> Erasing: " << *op << "\n");
+    if (op->getNumOperands() < op->getNumResults()) {
+      mlir::emitError(op->getLoc(),
+                      "Null RotationCancellation: fewer operands than results, "
+                      "cannot safely splice this op out");
+      continue;
+    }
+    for (unsigned i = 0; i < op->getNumResults(); ++i) {
+      op->getResult(i).replaceAllUsesWith(op->getOperand(i));
+    }
+    cancel(op);
   }
 }
 
@@ -384,11 +433,15 @@ performCancellation(MapVector<Operation *, QuantumOpView> OpQuantumView,
 
   for (auto *op : ToErase) {
     MQSS_DEBUG("--> Erasing: " << *op << "\n");
-
+    if (op->getNumOperands() < op->getNumResults()) {
+      mlir::emitError(op->getLoc(),
+                      "GateCancellation: fewer operands than results, "
+                      "cannot safely splice this op out");
+      continue;
+    }
     for (unsigned i = 0; i < op->getNumResults(); ++i) {
       op->getResult(i).replaceAllUsesWith(op->getOperand(i));
     }
-
     cancel(op);
   }
 }
@@ -398,16 +451,9 @@ struct pipelinety {
   QuantumOpView GateOpView;
 };
 
-static void performReduction(MyModuleAnalysis &analysis,
-                             const ReductionPassInfoty PassInfo,
-                             QuantumDialect DialectTy) {
-
-  if (PassInfo.NewGateTy == Gate::UNKNOWN) {
-    return;
-  }
-
-  int i = 0;
-  auto FirstGateToCancelTy = PassInfo.GatesToCancel[i];
+static tuple<bool, llvm::StringRef>
+performReduction(MyModuleAnalysis &analysis, const ReductionPassInfoty PassInfo,
+                 QuantumDialect DialectTy) {
 
   for (auto &[Kernel, KernelInfo] : analysis.getKernelDialectInfo()) {
 
@@ -432,6 +478,7 @@ static void performReduction(MyModuleAnalysis &analysis,
         bool patterncheck = true;
         for (auto i = 0; i < pipeline.size(); i++) {
           if (pipeline[i].GateOpView.GateTy != PassInfo.GatesToCancel[i]) {
+            patterncheck = false;
             break;
           }
         }
@@ -446,7 +493,7 @@ static void performReduction(MyModuleAnalysis &analysis,
           auto FirstPatternOp = pipeline[i].GateOp;
           auto FirstPatternOpQView = pipeline[i].GateOpView;
           auto SecondPatternOp = pipeline[i + 1].GateOp;
-          auto SecondPatternOpQView = pipeline[i].GateOpView;
+          auto SecondPatternOpQView = pipeline[i + 1].GateOpView;
 
           auto NextOp = FirstPatternOp->getNextNode();
 
@@ -471,7 +518,7 @@ static void performReduction(MyModuleAnalysis &analysis,
                 break;
               }
               auto FirstGateTargetOutQubits =
-                  FirstGateQView.getQubits(QubitRole::Target).out;
+                  FirstPatternOpQView.getQubits(QubitRole::Target).out;
               if (touchesAny(NextOp, FirstGateTargetOutQubits)) {
                 InterveningOps = true;
                 break;
@@ -536,14 +583,25 @@ static void performReduction(MyModuleAnalysis &analysis,
           FirstOp->getLoc(), DialectTy, parseGateTy(PassInfo.NewGateTy),
           RefOpCtrlQubits, RefOptargetQubits, RefOpParams, builder);
 
-      assert(NewOp && "Replacement Gate not created!");
-      analysis.addOperation(NewOp);
-      auto FinalOp = pattern[pattern.size() - 1].GateOp;
+      if (!NewOp) {
+        mlir::emitError(
+            FirstOp->getLoc(),
+            "Reduction: Replacement Gate could not be created for this Op");
+        return {false, Kernel.getSymName()};
+      }
+
+      if (!analysis.addOperation(NewOp)) {
+        return {false, Kernel.getSymName()};
+      }
+      auto *FinalOp = pattern[pattern.size() - 1].GateOp;
       if (!FinalOp->getUsers().empty()) {
         // TODO: Should be revisited!
-        auto NewOpResults = analysis.getOpInfo(NewOp)
-                                .getQubits(PassInfo.CompareKey.KeyGate2)
-                                .out[0];
+        auto OpInfo = analysis.getOpInfo(NewOp);
+        if (!OpInfo) {
+          mlir::emitError(NewOp->getLoc(),
+                          "Reduction: Could not find Info for Op");
+          return {false, Kernel.getSymName()};
+        }
         FinalOp->replaceAllUsesWith(NewOp);
       } else {
         for (auto entry : pattern) {
@@ -558,9 +616,10 @@ static void performReduction(MyModuleAnalysis &analysis,
       // }
     }
   }
+  return {true, ""};
 }
 
-static void performArgAngelNormalization(
+static bool performArgAngelNormalization(
     MapVector<Operation *, QuantumOpView> OpQuantumView,
     QuantumDialect DialectTy) {
 
@@ -578,11 +637,12 @@ static void performArgAngelNormalization(
     for (auto param : GateQView.params) {
       if (auto constOp = param.getDefiningOp<mlir::arith::ConstantOp>()) {
         if (auto floatAttr = dyn_cast<mlir::FloatAttr>(constOp.getValue())) {
-          double v = floatAttr.getValueAsDouble();
-
+          auto v = floatAttr.getValueAsDouble();
+          double pi = std::numbers::pi;
+          double normalizedV = v - std::floor(v / (2 * pi)) * (2 * pi);
           auto newVal = normalizeValue(v, builder, GateOp->getLoc());
 
-          if (newVal != param)
+          if (v != normalizedV)
             nParameters.push_back(newVal);
         }
       }
@@ -599,16 +659,27 @@ static void performArgAngelNormalization(
 
     auto *NewOp = createNewGate(GateOp->getLoc(), DialectTy,
                                 parseGateTy(GateQView.GateTy), GateCtrlQubits,
-                                GateTargetQubits, GateQView.params, builder,
+                                GateTargetQubits, normalizedParams, builder,
                                 GateQView.isAdjoint);
 
+    if (!NewOp) {
+      mlir::emitError(GateOp->getLoc(),
+                      "NormalizeAngle: Could not create New Op!");
+      return false;
+    }
+    if (GateOp->getNumOperands() < GateOp->getNumResults()) {
+      mlir::emitError(GateOp->getLoc(),
+                      "NormalizeAngle: fewer operands than results, cannot "
+                      "safely replace this op");
+      return false;
+    }
+    for (unsigned i = 0; i < GateOp->getNumResults(); ++i) {
+      GateOp->getResult(i).replaceAllUsesWith(NewOp->getResult(i));
+    }
+    cancel(GateOp);
     MQSS_DEBUG("--->Created: " << *NewOp << "\n");
   }
-
-  for (auto *Op : ToErase) {
-    MQSS_DEBUG("-->To Erase: " << *Op << "\n");
-    cancel(Op);
-  }
+  return true;
 }
 
 // Performs CNOT Reversal, with SSA resolution (For value semantics)
@@ -626,11 +697,16 @@ static void performArgAngelNormalization(
 //    !quantum.bit %out_qubits_2 = quantum.custom "PauliY"() %h2_ctrl :
 //    !quantum.bit %out_qubits_3 = quantum.custom "PauliY"() %h2_tgt :
 //    !quantum.bit
-static void performCNOTReversal(MyModuleAnalysis &analysis,
-                                QuantumDialect DialectTy) {
+struct DecompositionTy {
+  llvm::StringRef kernelName = "";
+  std::vector<Operation *> NewGates = {};
+};
+
+static tuple<bool, llvm::StringRef>
+performCNOTReversal(MyModuleAnalysis &analysis, QuantumDialect DialectTy) {
 
   SmallSetVector<Operation *, 16> ToErase;
-  std::unordered_map<Operation *, std::vector<Operation *>> DecomposeMap;
+  std::unordered_map<Operation *, DecompositionTy> DecomposeMap;
   for (auto &[kernel, kernelInfo] : analysis.getKernelDialectInfo()) {
     if (kernelInfo.AllocatedQubits == 0)
       continue;
@@ -650,47 +726,108 @@ static void performCNOTReversal(MyModuleAnalysis &analysis,
       auto NewGate1 = createNewGate(loc, DialectTy, "H", {}, TargetInQubitOps,
                                     GateQView.params, builder);
 
+      if (!NewGate1) {
+        mlir::emitError(loc, "CNOT Reversal: Could not create first Hadamard");
+        return {false, kernel.getSymName()};
+      }
       auto NewGate2 = createNewGate(loc, DialectTy, "H", {}, ControlInQubitOps,
                                     GateQView.params, builder);
+      if (!NewGate2) {
+        mlir::emitError(loc, "CNOT Reversal: Could not create second Hadamard");
+        return {false, kernel.getSymName()};
+      }
 
       auto NewGate3 =
           createNewGate(loc, DialectTy, "CNOT", TargetInQubitOps,
                         ControlInQubitOps, GateQView.params, builder);
 
+      if (!NewGate3) {
+        mlir::emitError(loc, "CNOT Reversal: Could not create CNOT");
+        return {false, kernel.getSymName()};
+      }
+
       auto NewGate4 = createNewGate(loc, DialectTy, "H", {}, TargetInQubitOps,
                                     GateQView.params, builder);
+
+      if (!NewGate4) {
+        mlir::emitError(loc, "CNOT Reversal: Could not create third Hadamard");
+        return {false, kernel.getSymName()};
+      }
 
       auto NewGate5 = createNewGate(loc, DialectTy, "H", {}, ControlInQubitOps,
                                     GateQView.params, builder);
 
-      analysis.addOperation(NewGate1);
-      analysis.addOperation(NewGate2);
-      analysis.addOperation(NewGate3);
-      analysis.addOperation(NewGate4);
-      analysis.addOperation(NewGate5);
+      if (!NewGate5) {
+        mlir::emitError(loc, "CNOT Reversal: Could not create fourth Hadamard");
+        return {false, kernel.getSymName()};
+      }
 
-      DecomposeMap[GateOp] = {NewGate1, NewGate2, NewGate3, NewGate4, NewGate5};
+      if (!analysis.addOperation(NewGate1)) {
+        return {false, kernel.getSymName()};
+      }
+      if (!analysis.addOperation(NewGate2)) {
+        return {false, kernel.getSymName()};
+      }
+      if (!analysis.addOperation(NewGate3)) {
+        return {false, kernel.getSymName()};
+      }
+      if (!analysis.addOperation(NewGate4)) {
+        return {false, kernel.getSymName()};
+      }
+      if (!analysis.addOperation(NewGate5)) {
+        return {false, kernel.getSymName()};
+      }
+
+      DecomposeMap[GateOp] = {
+          kernel.getSymName(),
+          {NewGate1, NewGate2, NewGate3, NewGate4, NewGate5}};
     }
   }
 
   for (auto &[Op, DecomposePattern] : DecomposeMap) {
-    auto Gate1 = DecomposePattern[0];
-    auto Gate2 = DecomposePattern[1];
-    auto Gate3 = DecomposePattern[2];
-    auto Gate4 = DecomposePattern[3];
-    auto Gate5 = DecomposePattern[4];
-    auto OpQview = analysis.getOpInfo(Op);
+    auto Gate1 = DecomposePattern.NewGates[0];
+    auto Gate2 = DecomposePattern.NewGates[1];
+    auto Gate3 = DecomposePattern.NewGates[2];
+    auto Gate4 = DecomposePattern.NewGates[3];
+    auto Gate5 = DecomposePattern.NewGates[4];
+
+    auto OpInfo = analysis.getOpInfo(Op);
+    if (!OpInfo) {
+      mlir::emitError(Op->getLoc(),
+                      "CNOT Reversal: Info does not exist for Op");
+      return {false, DecomposePattern.kernelName};
+    }
+    auto OpQview = *OpInfo;
 
     if (OpQview.getQubits(QubitRole::Target).out.empty() &&
         OpQview.getQubits(QubitRole::Control).out.empty())
       continue;
 
-    auto Gate1Tgt =
-        analysis.getOpInfo(Gate1).getQubits(QubitRole::Target).out[0];
-    auto Gate2Tgt =
-        analysis.getOpInfo(Gate2).getQubits(QubitRole::Target).out[0];
+    OpInfo = analysis.getOpInfo(Gate1);
+    if (!OpInfo) {
+      mlir::emitError(Gate1->getLoc(),
+                      "CNOT Reversal: Info does not exist for Op");
+      return {false, DecomposePattern.kernelName};
+    }
+    auto Gate1OpInfo = *OpInfo;
+    auto Gate1Tgt = Gate1OpInfo.getQubits(QubitRole::Target).out[0];
 
-    auto Gate3OpInfo = analysis.getOpInfo(Gate3);
+    OpInfo = analysis.getOpInfo(Gate2);
+    if (!OpInfo) {
+      mlir::emitError(Gate2->getLoc(),
+                      "CNOT Reversal: Info does not exist for Op");
+      return {false, DecomposePattern.kernelName};
+    }
+    auto Gate2OpInfo = *OpInfo;
+    auto Gate2Tgt = Gate2OpInfo.getQubits(QubitRole::Target).out[0];
+
+    OpInfo = analysis.getOpInfo(Gate3);
+    if (!OpInfo) {
+      mlir::emitError(Gate3->getLoc(),
+                      "CNOT Reversal: Info does not exist for Op");
+      return {false, DecomposePattern.kernelName};
+    }
+    auto Gate3OpInfo = *OpInfo;
     auto Gate3CtrlOp = Gate3OpInfo.getQubits(QubitRole::Control).in[0];
     auto Gate3TgtOp = Gate3OpInfo.getQubits(QubitRole::Target).in[0];
 
@@ -699,9 +836,22 @@ static void performCNOTReversal(MyModuleAnalysis &analysis,
     auto Gate3ResultTgt = Gate3OpInfo.getQubits(QubitRole::Target).out[0];
 
     MQSS_DEBUG("Gate3 Result Info fine\n");
-    auto Gate4OpInfo = analysis.getOpInfo(Gate4);
-    auto Gate5OpInfo = analysis.getOpInfo(Gate5);
+    OpInfo = analysis.getOpInfo(Gate4);
+    if (!OpInfo) {
+      mlir::emitError(Gate4->getLoc(),
+                      "CNOT Reversal: Info does not exist for Op");
+      return {false, DecomposePattern.kernelName};
+    }
+    auto Gate4OpInfo = *OpInfo;
     auto Gate4OpTgt = Gate4OpInfo.getQubits(QubitRole::Target).in[0];
+    OpInfo = analysis.getOpInfo(Gate5);
+    if (!OpInfo) {
+      mlir::emitError(Gate5->getLoc(),
+                      "CNOT Reversal: Info does not exist for Op");
+      return {false, DecomposePattern.kernelName};
+    }
+
+    auto Gate5OpInfo = *OpInfo;
     auto Gate5OpTgt = Gate5OpInfo.getQubits(QubitRole::Target).in[0];
     MQSS_DEBUG("Gate4 and 5 Target Info fine\n");
 
@@ -726,4 +876,5 @@ static void performCNOTReversal(MyModuleAnalysis &analysis,
     MQSS_DEBUG("-->To Erase: " << *Op << "\n");
     cancel(Op);
   }
+  return {true, ""};
 }

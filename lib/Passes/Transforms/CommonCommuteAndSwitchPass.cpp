@@ -37,8 +37,8 @@ enum class PassMode { SwitchXYZH, SwitchHXYZ };
 
 struct SharedPassLogic {
 
-  bool run(MyModuleAnalysis &analysis, PassMode Mode,
-           QuantumDialect DialectTy) {
+  tuple<bool, llvm::StringRef> run(MyModuleAnalysis &analysis, PassMode Mode,
+                                   QuantumDialect DialectTy) {
 
     PassInfoty PassInfo;
 
@@ -83,17 +83,33 @@ public:
 
   void runOnOperation() override {
     auto &selector = getAnalysis<DialectAnalysisSelector>();
+    if (!selector.get()) {
+
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid MLIR Dialect\n";
+      signalPassFailure();
+      return;
+    }
     auto &analysis = *selector.get();
+    if (!analysis.isValid()) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid Module Analysis\n";
+      signalPassFailure();
+      return;
+    }
     auto DialectTy = selector.getDialect();
 
     MQSS_DEBUG("\n[Applying Pass: CommonGateSwitch]\n");
 
     SharedPassLogic PassLogic;
     bool success = false;
+    llvm::StringRef kernelName = "";
     if (mode == "XYZHtoHXYZ")
-      success = PassLogic.run(analysis, PassMode::SwitchXYZH, DialectTy);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::SwitchXYZH, DialectTy);
     else if (mode == "HXYZtoXYZH")
-      success = PassLogic.run(analysis, PassMode::SwitchHXYZ, DialectTy);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::SwitchHXYZ, DialectTy);
     else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
@@ -101,7 +117,10 @@ public:
     }
 
     if (!success) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Failed to apply Pass on: " << kernelName << "\n";
       signalPassFailure();
+      return;
     }
 
     if (failed(analysis.verifyModule())) {

@@ -1,5 +1,11 @@
-// RUN: %mqss-opt %s --CommonDecompositionPass=mode=HToRzXRz --convert-quantum-to-llvm --mlir-to-llvmIR -o /dev/null 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCNOTReversePass --convert-quantum-to-llvm --mlir-to-llvmIR -o /dev/null 2>&1 | FileCheck %s
 
+// CommonCNOTReversePass leaves the leading Hadamard untouched (it's not a
+// CNOT) and rewrites only the CNOT into its H-CX-H sandwich, lowered all the
+// way to QIR-flavoured LLVM IR. Pointer SSA numbers are matched loosely
+// (`{{.*}}`) since they depend on convert-quantum-to-llvm's own internal
+// numbering, not on anything this pass controls; the gate call sequence and
+// names are what's actually under test here.
 func.func @bell() -> (i1, i1) {
   // Allocate a 2-qubit register.
   %reg = quantum.alloc(2) : !quantum.reg
@@ -20,9 +26,9 @@ func.func @bell() -> (i1, i1) {
   return %m0, %m1 : i1, i1
 }
 
-// CHECK: call void @__catalyst__qis__RZ(double 0x400921FB54442D18, ptr %3, ptr null)
-// CHECK: call void @__catalyst__qis__PauliX(ptr %3, ptr null)
-// CHECK: call void @__catalyst__qis__RZ(double 0x3FF921FB54442D18, ptr %3, ptr null)
-// CHECK: %4 = call ptr @__catalyst__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK: %5 = load ptr, ptr %4, align 8
-// CHECK: call void @__catalyst__qis__CNOT(ptr %3, ptr %5, ptr null)
+// CHECK: call void @__catalyst__qis__Hadamard(ptr {{.*}}, ptr null)
+// CHECK: call void @__catalyst__qis__H(ptr {{.*}}, ptr null)
+// CHECK: call void @__catalyst__qis__H(ptr {{.*}}, ptr null)
+// CHECK: call void @__catalyst__qis__CNOT(ptr {{.*}}, ptr {{.*}}, ptr null)
+// CHECK: call void @__catalyst__qis__H(ptr {{.*}}, ptr null)
+// CHECK: call void @__catalyst__qis__H(ptr {{.*}}, ptr null)

@@ -63,7 +63,7 @@ enum Gate {
 
 struct QubitID {
   mlir::Value base;
-  int64_t index;
+  int64_t index = -1;
 };
 
 using tupleVectorsQubitIDs =
@@ -244,11 +244,12 @@ inline StringRef parseGateTy(const Gate &GateTy) {
 
 static std::optional<QubitID> getOriginQubit(mlir::Value v) {
   // llvm::outs()<< "Def-Use analyze: " << v << "\n";
+  if (!v)
+    return std::nullopt;
   while (true) {
     auto definingOp = v.getDefiningOp();
 
     if (!definingOp) {
-
       return std::nullopt; // block argument or unknown source
     }
 
@@ -283,8 +284,9 @@ static std::optional<QubitID> getOriginQubit(mlir::Value v) {
       unsigned resultNo = result.getResultNumber();
       SmallVector<mlir::Value> qubitOperands;
       for (mlir::Value operand : definingOp->getOperands()) {
-        if (isa<mlir::arith::ConstantOp>(operand.getDefiningOp()))
+        if (isa_and_nonnull<mlir::arith::ConstantOp>(operand.getDefiningOp())) {
           continue;
+        }
         qubitOperands.push_back(operand);
       }
 
@@ -311,16 +313,18 @@ public:
 
   virtual mlir::LogicalResult verifyModule() = 0;
 
+  virtual bool isValid() const = 0;
+
   virtual MapVector<mlir::func::FuncOp, QuantumKernelInfo>
   getKernelDialectInfo() = 0;
 
-  virtual void addOperation(Operation *NewOp) = 0;
+  virtual bool addOperation(Operation *NewOp) = 0;
 
   virtual bool UpdateOperands(Operation *Op, QubitRole Role,
                               mlir::Value OrigValue, mlir::Value NewValue) = 0;
 
-  virtual const QuantumOpView getOpInfo(Operation *Op) = 0;
+  virtual const std::optional<QuantumOpView> getOpInfo(Operation *Op) = 0;
 
-  virtual void clearKernelBody(func::FuncOp &kernel,
+  virtual bool clearKernelBody(func::FuncOp &kernel,
                                std::set<Operation *> notToErase) = 0;
 };
