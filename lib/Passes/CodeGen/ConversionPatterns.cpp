@@ -20,7 +20,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/CodeGen/Patterns.h"
 #include "Passes/CodeGen/StaticAllocas.h"
 #include "Quantum/IR/QuantumOps.h"
-#include "Quantum/Utils/QIRPauliRot.h"
 #include "mlir/Dialect/LLVMIR/FunctionCallUtils.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/BuiltinAttributes.h"
@@ -33,8 +32,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 using namespace mlir;
 using namespace catalyst::quantum;
 
-namespace catalyst {
-namespace quantum {
+namespace mqss::mqssci::codegen {
 
 template <typename OpT, typename TypeT>
 OpT ensureFunctionDeclaration(PatternRewriter &rewriter, Operation *op,
@@ -60,10 +58,11 @@ OpT ensureFunctionDeclaration(PatternRewriter &rewriter, Operation *op,
     }
 
     fnDecl = newFunc;
-  } else {
-    // Verify the existing symbol is the correct type
-    assert(isa<OpT>(fnDecl) &&
-           "Existing symbol is not the expected operation type");
+  } else if (!isa<OpT>(fnDecl)) {
+    mlir::emitError(op->getLoc())
+        << "symbol '" << fnSymbol
+        << "' already exists but is not the expected operation type";
+    return OpT(); // null sentinel -- same idiom as getModifiersPtr
   }
 
   return cast<OpT>(fnDecl);
@@ -99,9 +98,11 @@ Value getPauliProductPtr(Location loc, OpBuilder &rewriter, ModuleOp mod,
                          mod);
 }
 
-void createPauliRotCall(Location loc, ConversionPatternRewriter &rewriter,
-                        Operation *op, Value pauliWordPtr, Value thetaValue,
-                        Value modifiersPtr, Value cond, ValueRange inQubits) {
+LogicalResult createPauliRotCall(Location loc,
+                                 ConversionPatternRewriter &rewriter,
+                                 Operation *op, Value pauliWordPtr,
+                                 Value thetaValue, Value modifiersPtr,
+                                 Value cond, ValueRange inQubits) {
   MLIRContext *ctx = rewriter.getContext();
   StringRef qirName = "__catalyst__qis__PauliRot";
   Type ptrType = LLVM::LLVMPointerType::get(ctx);
@@ -114,6 +115,11 @@ void createPauliRotCall(Location loc, ConversionPatternRewriter &rewriter,
   LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
       rewriter, op, qirName, qirSignature);
 
+  if (!fnDecl) {
+    return rewriter.notifyMatchFailure(
+        op, "createPauliRotCall: could not resolve function declaration for '" +
+                qirName + "'");
+  }
   int64_t numQubits = inQubits.size();
   SmallVector<Value> args;
   args.push_back(pauliWordPtr);
@@ -125,12 +131,12 @@ void createPauliRotCall(Location loc, ConversionPatternRewriter &rewriter,
   args.append(inQubits.begin(), inQubits.end());
 
   LLVM::CallOp::create(rewriter, loc, fnDecl, args);
+  return success();
 }
 
-} // namespace quantum
-} // namespace catalyst
+} // namespace mqss::mqssci::codegen
 
-namespace {
+namespace mqss::mqssci::codegen {
 
 constexpr int64_t UNKNOWN = ShapedType::kDynamic;
 constexpr int32_t NO_POSTSELECT = -1;
@@ -150,8 +156,13 @@ Value getModifiersPtr(Location loc, RewriterBase &rewriter,
                       const TypeConverter *conv, bool adjoint,
                       ValueRange controlledQubits,
                       ValueRange controlledValues) {
-  assert(controlledQubits.size() == controlledValues.size() &&
-         "controlled qubits and controlled values have different lengths");
+  if (controlledQubits.size() != controlledValues.size()) {
+    mlir::emitError(
+        loc, "getModifiersPtr: controlled qubits (" +
+                 Twine(controlledQubits.size()) + ") and controlled values (" +
+                 Twine(controlledValues.size()) + ") have different lengths");
+    return Value();
+  }
 
   MLIRContext *ctx = rewriter.getContext();
 
@@ -261,6 +272,12 @@ template <typename T> struct RTBasedPattern : public OpConversionPattern<T> {
       }
       LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
           rewriter, op, qirName, qirSignature);
+
+      if (!fnDecl)
+        return rewriter.notifyMatchFailure(
+            op, "RTBasedPattern: could not resolve function declaration for '" +
+                    qirName + "'");
+
       SmallVector<Value> operands = {seed_val};
       rewriter.replaceOpWithNewOp<LLVM::CallOp>(op, fnDecl, operands);
     } else {
@@ -269,6 +286,11 @@ template <typename T> struct RTBasedPattern : public OpConversionPattern<T> {
           LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(ctx), {});
       LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
           rewriter, op, qirName, qirSignature);
+      if (!fnDecl)
+        return rewriter.notifyMatchFailure(
+            op, "RTBasedPattern: could not resolve function declaration for '" +
+                    qirName + "'");
+
       rewriter.replaceOpWithNewOp<LLVM::CallOp>(op, fnDecl, ValueRange{});
     }
 
@@ -300,6 +322,11 @@ struct DeviceInitOpPattern : public OpConversionPattern<DeviceInitOp> {
                                        /*auto_qubit_management = */ int1Type});
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op,
+          "DeviceInitOpPattern: could not resolve function declaration for '" +
+              qirName + "'");
 
     auto rtd_lib = op.getLib().str();
     auto rtd_name = op.getDeviceName().str();
@@ -354,6 +381,12 @@ struct DeviceReleaseOpPattern : public OpConversionPattern<DeviceReleaseOp> {
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
 
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(op,
+                                         "DeviceReleaseOpPattern: could not "
+                                         "resolve function declaration for '" +
+                                             qirName + "'");
+
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(op, fnDecl, ValueRange{});
 
     return success();
@@ -375,6 +408,12 @@ struct NumQubitsOpPattern : public OpConversionPattern<NumQubitsOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op,
+          "NumQubitsOpPattern: could not resolve function declaration for '" +
+              qirName + "'");
 
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(op, fnDecl, ValueRange{});
 
@@ -402,6 +441,11 @@ struct AllocOpPattern : public OpConversionPattern<AllocOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op, "AllocOpPattern: could not resolve function declaration for '" +
+                  qirName + "'");
 
     Value nQubits = adaptor.getNqubits();
     if (!nQubits) {
@@ -431,6 +475,12 @@ struct AllocQubitOpPattern : public OpConversionPattern<AllocQubitOp> {
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
 
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op,
+          "AllocQubitOpPattern: could not resolve function declaration for '" +
+              qirName + "'");
+
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(op, fnDecl, ValueRange{});
 
     return success();
@@ -452,6 +502,11 @@ struct DeallocOpPattern : public OpConversionPattern<DeallocOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op, "DeallocOpPattern: could not resolve function declaration for '" +
+                  qirName + "'");
 
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(op, fnDecl,
                                               adaptor.getOperands());
@@ -475,6 +530,12 @@ struct DeallocQubitOpPattern : public OpConversionPattern<DeallocQubitOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(op,
+                                         "DeallocQubitOpPattern: could not "
+                                         "resolve function declaration for '" +
+                                             qirName + "'");
 
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(op, fnDecl,
                                               adaptor.getOperands());
@@ -500,6 +561,11 @@ struct ExtractOpPattern : public OpConversionPattern<ExtractOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op, "ExtractOpPattern: could not resolve function declaration for '" +
+                  qirName + "'");
 
     Value index = adaptor.getIdx();
     if (!index) {
@@ -548,6 +614,12 @@ struct InsertOpArrayBackedPattern : public OpConversionPattern<InsertOp> {
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
 
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op, "InsertOpArrayBackedPattern: could not resolve function "
+              "declaration for '" +
+                  qirName + "'");
+
     Value index = adaptor.getIdx();
     if (!index) {
       index = LLVM::ConstantOp::create(rewriter, loc, op.getIdxAttrAttr());
@@ -582,6 +654,10 @@ struct CustomOpPattern : public OpConversionPattern<CustomOp> {
         getModifiersPtr(loc, rewriter, conv, op.getAdjointFlag(),
                         adaptor.getInCtrlQubits(), adaptor.getInCtrlValues());
 
+    if (!modifiersPtr)
+      return rewriter.notifyMatchFailure(
+          op, "CustomOpPattern: controlled qubits and controlled values have "
+              "different lengths");
     // TODO: Might be better to have corresponding attribute for those custom op
     // with variadic input qubits, so we don't need to explicitly check any op
     // gate name here
@@ -607,6 +683,11 @@ struct CustomOpPattern : public OpConversionPattern<CustomOp> {
                                     /*isVarArg=*/hasVariadicInputQbits);
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op, "CustomOpPattern: could not resolve function declaration for '" +
+                  qirName + "'");
 
     SmallVector<Value> args;
     args.insert(args.end(), adaptor.getParams().begin(),
@@ -651,7 +732,10 @@ struct GlobalPhaseOpPattern : public OpConversionPattern<GlobalPhaseOp> {
     auto modifiersPtr =
         getModifiersPtr(loc, rewriter, conv, op.getAdjointFlag(),
                         adaptor.getInCtrlQubits(), adaptor.getInCtrlValues());
-
+    if (!modifiersPtr)
+      return rewriter.notifyMatchFailure(
+          op, "GlobalPhaseOpPattern: controlled qubits and controlled values "
+              "have different lengths");
     std::string qirName = "__catalyst__qis__GlobalPhase";
     Type qirSignature = LLVM::LLVMFunctionType::get(
         LLVM::LLVMVoidType::get(ctx),
@@ -659,6 +743,13 @@ struct GlobalPhaseOpPattern : public OpConversionPattern<GlobalPhaseOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op,
+          "GlobalPhaseOpPattern: could not resolve function declaration for '" +
+              qirName + "'");
+
     SmallVector<Value> args;
     args.insert(args.end(), adaptor.getAngle());
     args.insert(args.end(), modifiersPtr);
@@ -682,7 +773,10 @@ struct MultiRZOpPattern : public OpConversionPattern<MultiRZOp> {
     auto modifiersPtr =
         getModifiersPtr(loc, rewriter, conv, op.getAdjointFlag(),
                         adaptor.getInCtrlQubits(), adaptor.getInCtrlValues());
-
+    if (!modifiersPtr)
+      return rewriter.notifyMatchFailure(
+          op, "MultiRZOpPattern: controlled qubits and controlled values have "
+              "different lengths");
     std::string qirName = "__catalyst__qis__MultiRZ";
     Type qirSignature = LLVM::LLVMFunctionType::get(
         LLVM::LLVMVoidType::get(ctx),
@@ -692,6 +786,11 @@ struct MultiRZOpPattern : public OpConversionPattern<MultiRZOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op, "MultiRZOpPattern: could not resolve function declaration for '" +
+                  qirName + "'");
 
     int64_t numQubits = op.getOutQubits().size();
     SmallVector<Value> args;
@@ -727,16 +826,23 @@ struct PauliRotOpPattern : public OpConversionPattern<PauliRotOp> {
     auto modifiersPtr =
         getModifiersPtr(loc, rewriter, conv, op.getAdjointFlag(),
                         adaptor.getInCtrlQubits(), adaptor.getInCtrlValues());
-
+    if (!modifiersPtr)
+      return rewriter.notifyMatchFailure(
+          op, "PauliRotOpPattern: controlled qubits and controlled values have "
+              "different lengths");
     Value pauliWordPtr =
         getPauliProductPtr(loc, rewriter, mod, op.getPauliProduct());
     Value thetaValue = adaptor.getAngle();
     Value cond =
         LLVM::ConstantOp::create(rewriter, loc, rewriter.getBoolAttr(true));
 
-    createPauliRotCall(loc, rewriter, op.getOperation(), pauliWordPtr,
-                       thetaValue, modifiersPtr, cond, adaptor.getInQubits());
-
+    auto createdPauliRotCall = createPauliRotCall(
+        loc, rewriter, op.getOperation(), pauliWordPtr, thetaValue,
+        modifiersPtr, cond, adaptor.getInQubits());
+    if (createdPauliRotCall.failed()) {
+      return rewriter.notifyMatchFailure(
+          op, "PauliRotOpPattern : could not create PauliRotCall");
+    }
     SmallVector<Value> values;
     values.insert(values.end(), adaptor.getInQubits().begin(),
                   adaptor.getInQubits().end());
@@ -760,7 +866,10 @@ struct PCPhaseOpPattern : public OpConversionPattern<PCPhaseOp> {
     auto modifiersPtr =
         getModifiersPtr(loc, rewriter, conv, op.getAdjointFlag(),
                         adaptor.getInCtrlQubits(), adaptor.getInCtrlValues());
-
+    if (!modifiersPtr)
+      return rewriter.notifyMatchFailure(
+          op, "PCPhaseOpPattern: controlled qubits and controlled values have "
+              "different lengths");
     std::string qirName = "__catalyst__qis__PCPhase";
     Type qirSignature = LLVM::LLVMFunctionType::get(
         LLVM::LLVMVoidType::get(ctx),
@@ -770,6 +879,11 @@ struct PCPhaseOpPattern : public OpConversionPattern<PCPhaseOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op, "PCPhaseOpPattern: could not resolve function declaration for '" +
+                  qirName + "'");
 
     int64_t numQubits = op.getOutQubits().size();
     SmallVector<Value> args;
@@ -806,10 +920,16 @@ struct QubitUnitaryOpPattern : public OpConversionPattern<QubitUnitaryOp> {
     auto modifiersPtr =
         getModifiersPtr(loc, rewriter, conv, op.getAdjointFlag(),
                         adaptor.getInCtrlQubits(), adaptor.getInCtrlValues());
+    if (!modifiersPtr)
+      return rewriter.notifyMatchFailure(
+          op, "QubitUnitaryOpPattern: controlled qubits and controlled values "
+              "have different lengths");
 
-    assert(isa<MemRefType>(op.getMatrix().getType()) &&
-           "unitary must take in memref before lowering");
-
+    if (!isa<MemRefType>(op.getMatrix().getType())) {
+      return rewriter.notifyMatchFailure(
+          op,
+          "QubitUnitaryOpPattern: unitary must take in memref before lowering");
+    }
     Type matrixType = conv->convertType(MemRefType::get(
         {UNKNOWN, UNKNOWN}, ComplexType::get(Float64Type::get(ctx))));
 
@@ -822,6 +942,12 @@ struct QubitUnitaryOpPattern : public OpConversionPattern<QubitUnitaryOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(op,
+                                         "QubitUnitaryOpPattern: could not "
+                                         "resolve function declaration for '" +
+                                             qirName + "'");
 
     int64_t numQubits = adaptor.getInQubits().size();
     SmallVector<Value> args = adaptor.getOperands();
@@ -897,6 +1023,12 @@ struct NamedObsOpPattern : public OpConversionPattern<NamedObsOp> {
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
 
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op,
+          "NamedObsOpPattern: could not resolve function declaration for '" +
+              qirName + "'");
+
     auto obsTypeInt = static_cast<uint32_t>(op.getType());
     Value obsType = LLVM::ConstantOp::create(
         rewriter, loc, rewriter.getI64IntegerAttr(obsTypeInt));
@@ -918,9 +1050,11 @@ struct HermitianOpPattern : public OpConversionPattern<HermitianOp> {
     MLIRContext *ctx = getContext();
     const TypeConverter *conv = getTypeConverter();
 
-    assert(isa<MemRefType>(op.getMatrix().getType()) &&
-           "hermitian must take in memref before lowering");
-
+    if (!isa<MemRefType>(op.getMatrix().getType())) {
+      return rewriter.notifyMatchFailure(
+          op,
+          "HermitianOpPattern: hermitian must take in memref before lowering");
+    }
     Type matrixType = conv->convertType(MemRefType::get(
         {UNKNOWN, UNKNOWN}, ComplexType::get(Float64Type::get(ctx))));
 
@@ -933,6 +1067,12 @@ struct HermitianOpPattern : public OpConversionPattern<HermitianOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op,
+          "HermitianOpPattern: could not resolve function declaration for '" +
+              qirName + "'");
 
     int64_t numQubits = op.getQubits().size();
     SmallVector<Value> args = adaptor.getOperands();
@@ -966,6 +1106,10 @@ struct TensorOpPattern : public OpConversionPattern<TensorOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op, "TensorOpPattern: could not resolve function declaration for '" +
+                  qirName + "'");
 
     int64_t numTerms = op.getTerms().size();
     SmallVector<Value> args = adaptor.getOperands();
@@ -989,9 +1133,11 @@ struct HamiltonianOpPattern : public OpConversionPattern<HamiltonianOp> {
     MLIRContext *ctx = getContext();
     const TypeConverter *conv = getTypeConverter();
 
-    assert(isa<MemRefType>(op.getCoeffs().getType()) &&
-           "hamiltonian must take in memref before lowering");
-
+    if (!isa<MemRefType>(op.getCoeffs().getType())) {
+      return rewriter.notifyMatchFailure(
+          op, "HamiltonianOpPattern: hamiltonian must "
+              "take in memref before lowering");
+    }
     Type vectorType =
         conv->convertType(MemRefType::get({UNKNOWN}, Float64Type::get(ctx)));
 
@@ -1004,6 +1150,12 @@ struct HamiltonianOpPattern : public OpConversionPattern<HamiltonianOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op,
+          "HamiltonianOpPattern: could not resolve function declaration for '" +
+              qirName + "'");
 
     int64_t numTerms = op.getTerms().size();
     SmallVector<Value> args = adaptor.getOperands();
@@ -1045,7 +1197,10 @@ struct MeasureOpPattern : public OpConversionPattern<MeasureOp> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
-
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op, "MeasureOpPattern: could not resolve function declaration for '" +
+                  qirName + "'");
     // Create the postselect value. If not given, it defaults to NO_POSTSELECT
     LLVM::ConstantOp postselect = LLVM::ConstantOp::create(
         rewriter, loc,
@@ -1083,7 +1238,13 @@ protected:
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
-
+    if (!fnDecl) {
+      mlir::emitError(
+          loc,
+          "SampleBasedPattern: could not resolve function declaration for '" +
+              qirName + "'");
+      return Value();
+    }
     // We need to handle the C ABI convention of passing the result memref
     // as a struct pointer in the first argument to the C function.
     Value structPtr = catalyst::getStaticAlloca(loc, rewriter, structType, 1);
@@ -1091,7 +1252,15 @@ protected:
     // For now obtain the qubit values from an unrealized cast created by the
     // ComputationalBasisOp lowering. Improve this once the runtime interface
     // changes to accept observables for sample.
-    assert(isa<UnrealizedConversionCastOp>(adaptor.getObs().getDefiningOp()));
+    if (!adaptor.getObs()) {
+      mlir::emitError(loc, "performRewrite: getObs() returned nullptr");
+      return Value();
+    }
+    if (!isa<UnrealizedConversionCastOp>(adaptor.getObs().getDefiningOp())) {
+      mlir::emitError(loc, "performRewrite: could not "
+                           "create UnrealizedConversionCastOp");
+      return Value();
+    }
     ValueRange qubits = adaptor.getObs().getDefiningOp()->getOperands();
 
     Value numQubits = LLVM::ConstantOp::create(
@@ -1134,7 +1303,10 @@ struct SampleOpPattern : public SampleBasedPattern<SampleOp> {
         MemRefType::get({UNKNOWN, UNKNOWN}, Float64Type::get(ctx)));
 
     StringRef qirName = "__catalyst__qis__Sample";
-    performRewrite(rewriter, matrixType, qirName, op, adaptor);
+    auto result = performRewrite(rewriter, matrixType, qirName, op, adaptor);
+    if (!result) {
+      return failure();
+    }
     rewriter.eraseOp(op);
 
     return success();
@@ -1161,7 +1333,10 @@ struct CountsOpPattern : public SampleBasedPattern<CountsOp> {
         LLVM::LLVMStructType::getLiteral(ctx, {vector1Type, vector2Type});
 
     StringRef qirName = "__catalyst__qis__Counts";
-    performRewrite(rewriter, structType, qirName, op, adaptor);
+    auto result = performRewrite(rewriter, structType, qirName, op, adaptor);
+    if (!result) {
+      return failure();
+    }
     rewriter.eraseOp(op);
 
     return success();
@@ -1189,6 +1364,12 @@ template <typename T> struct StatsBasedPattern : public OpConversionPattern<T> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
+
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op,
+          "StatsBasedPattern: could not resolve function declaration for '" +
+              qirName + "'");
 
     rewriter.replaceOpWithNewOp<LLVM::CallOp>(op, fnDecl, adaptor.getObs());
 
@@ -1229,7 +1410,11 @@ template <typename T> struct StateBasedPattern : public OpConversionPattern<T> {
 
     LLVM::LLVMFuncOp fnDecl = ensureFunctionDeclaration<LLVM::LLVMFuncOp>(
         rewriter, op, qirName, qirSignature);
-
+    if (!fnDecl)
+      return rewriter.notifyMatchFailure(
+          op,
+          "StateBasedPattern: could not resolve function declaration for '" +
+              qirName + "'");
     // We need to handle the C ABI convention of passing the result memref
     // as a struct pointer in the first argument to the C function.
     Value structPtr = catalyst::getStaticAlloca(loc, rewriter, vectorType, 1);
@@ -1238,7 +1423,15 @@ template <typename T> struct StateBasedPattern : public OpConversionPattern<T> {
     // For now obtain the qubit values from an unrealized cast created by the
     // ComputationalBasisOp lowering. Improve this once the runtime interface
     // changes to accept observables for sample.
-    assert(isa<UnrealizedConversionCastOp>(adaptor.getObs().getDefiningOp()));
+    if (!adaptor.getObs()) {
+      return rewriter.notifyMatchFailure(
+          op, "StateBasedPattern: getObs() returned nullptr");
+    }
+    if (!isa<UnrealizedConversionCastOp>(adaptor.getObs().getDefiningOp())) {
+      return rewriter.notifyMatchFailure(op,
+                                         "StateBasedPattern: could not create "
+                                         "UnrealizedConversionCastOp");
+    }
     ValueRange qubits = adaptor.getObs().getDefiningOp()->getOperands();
 
     SmallVector<Value> args = {structPtr};
@@ -1275,10 +1468,15 @@ struct SetStateOpPattern : public OpConversionPattern<SetStateOp> {
     auto voidTy = LLVM::LLVMVoidType::get(ctx);
     auto ptrTy = LLVM::LLVMPointerType::get(rewriter.getContext());
     ModuleOp moduleOp = op->getParentOfType<ModuleOp>();
-    auto func = mlir::LLVM::lookupOrCreateFn(rewriter, moduleOp,
-                                             "__catalyst__qis__SetState",
-                                             {ptrTy, i64}, voidTy, isVarArg)
-                    .value();
+    auto funcResult = mlir::LLVM::lookupOrCreateFn(
+        rewriter, moduleOp, "__catalyst__qis__SetState", {ptrTy, i64}, voidTy,
+        isVarArg);
+    if (failed(funcResult)) {
+      return rewriter.notifyMatchFailure(
+          op, "SetStateOpPattern: could not resolve or create function "
+              "declaration for '__catalyst__qis__SetState'");
+    }
+    auto func = *funcResult;
 
     SmallVector<Value> args;
 
@@ -1319,10 +1517,15 @@ struct SetBasisStateOpPattern : public OpConversionPattern<SetBasisStateOp> {
     auto voidTy = LLVM::LLVMVoidType::get(ctx);
     auto ptrTy = LLVM::LLVMPointerType::get(rewriter.getContext());
     ModuleOp moduleOp = op->getParentOfType<ModuleOp>();
-    auto func = mlir::LLVM::lookupOrCreateFn(rewriter, moduleOp,
-                                             "__catalyst__qis__SetBasisState",
-                                             {ptrTy, i64}, voidTy, isVarArg)
-                    .value();
+
+    auto funcResult = mlir::LLVM::lookupOrCreateFn(
+        rewriter, moduleOp, "__catalyst__qis__SetBasisState", {ptrTy, i64},
+        voidTy, isVarArg);
+    if (failed(funcResult))
+      return rewriter.notifyMatchFailure(
+          op, "SetStateOpPattern: could not resolve or create function "
+              "declaration for '__catalyst__qis__SetBasisState'");
+    auto func = *funcResult;
 
     SmallVector<Value> args;
 
@@ -1351,10 +1554,9 @@ struct SetBasisStateOpPattern : public OpConversionPattern<SetBasisStateOp> {
   }
 };
 
-} // namespace
+} // namespace mqss::mqssci::codegen
 
-namespace catalyst {
-namespace quantum {
+namespace mqss::mqssci::codegen {
 
 void populateQIRConversionPatterns(TypeConverter &typeConverter,
                                    RewritePatternSet &patterns,
@@ -1404,5 +1606,4 @@ void populateQIRConversionPatterns(TypeConverter &typeConverter,
   patterns.add<SetBasisStateOpPattern>(typeConverter, patterns.getContext());
 }
 
-} // namespace quantum
-} // namespace catalyst
+} // namespace mqss::mqssci::codegen

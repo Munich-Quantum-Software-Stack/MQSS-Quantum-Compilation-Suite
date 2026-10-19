@@ -46,7 +46,20 @@ public:
     MQSS_DEBUG("\n[Applying Pass: QuakeToQASM2]\n");
     mlir::ModuleOp module = getOperation();
     MQSS_DEBUG("\nTranslated output:\n");
-    cudaq::translateToOpenQASM(module, os);
+    auto result = cudaq::translateToOpenQASM(module, os);
+    if (result.failed()) {
+      mlir::emitError(
+          module->getLoc(),
+          "QuakeDialectToQASM2: Failed to translate Quake to QASM2");
+      signalPassFailure();
+      return;
+    }
+    if (failed(module.verify())) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : MLIR Module verification failed\n";
+      signalPassFailure();
+      return;
+    }
   }
 
 private:

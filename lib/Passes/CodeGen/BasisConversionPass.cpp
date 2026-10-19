@@ -433,6 +433,8 @@ public:
         IRRewriter rewriter(op->getContext());
         auto result = wit->second->apply(DialectTy, rewriter, op);
         if (!result) {
+          mlir::emitError(kernel->getLoc(),
+                          "BasisConversion: Failed to apply pass!");
           signalPassFailure();
           return;
         }
@@ -470,6 +472,7 @@ public:
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
       signalPassFailure();
+      return;
     }
   }
 };

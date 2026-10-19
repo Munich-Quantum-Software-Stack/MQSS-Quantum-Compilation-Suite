@@ -37,12 +37,10 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 using namespace mlir;
 using namespace catalyst::quantum;
 
-namespace catalyst {
-namespace quantum {
-
-#define GEN_PASS_DECL_QUANTUMCONVERSIONPASS
+namespace mqss::mqssci::codegen {
 #define GEN_PASS_DEF_QUANTUMCONVERSIONPASS
 #include "Passes/CodeGen/CodeGen.h.inc"
+} // namespace mqss::mqssci::codegen
 
 struct QIRTypeConverter : public LLVMTypeConverter {
 
@@ -78,12 +76,14 @@ private:
   }
 };
 
-struct QuantumConversion : impl::QuantumConversionPassBase<QuantumConversion> {
+struct QuantumConversion
+    : public mqss::mqssci::codegen::impl::QuantumConversionPassBase<
+          QuantumConversion> {
   using QuantumConversionPassBase::QuantumConversionPassBase;
 
-  void runOnOperation() final {
+  void runOnOperation() override {
     MLIRContext *context = &getContext();
-    auto module = getOperation();
+    mlir::ModuleOp module = getOperation();
     QIRTypeConverter typeConverter(context);
 
     RewritePatternSet patterns(context);
@@ -92,8 +92,8 @@ struct QuantumConversion : impl::QuantumConversionPassBase<QuantumConversion> {
     populateFuncToLLVMConversionPatterns(typeConverter, patterns);
     cf::populateAssertToLLVMConversionPattern(typeConverter, patterns);
 
-    populateQIRConversionPatterns(typeConverter, patterns,
-                                  useArrayBackedRegisters);
+    mqss::mqssci::codegen::populateQIRConversionPatterns(
+        typeConverter, patterns, useArrayBackedRegisters);
 
     LLVMConversionTarget target(*context);
     target.addLegalOp<ModuleOp>();
@@ -101,13 +101,20 @@ struct QuantumConversion : impl::QuantumConversionPassBase<QuantumConversion> {
 
     if (failed(
             applyFullConversion(getOperation(), target, std::move(patterns)))) {
-      MQSSemitFatalError(module->getLoc(), "Failed to emit LLVM IR");
+      mlir::emitError(module->getLoc(),
+                      "QuantumDialectToLLVM: Failed to translate Catalyst "
+                      "Quantum dialect to LLVM IR!");
+      signalPassFailure();
+      return;
+    }
+    if (failed(module.verify())) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : MLIR Module verification failed\n";
+      signalPassFailure();
+      return;
     }
   }
 };
-
-} // namespace quantum
-} // namespace catalyst
 
 std::unique_ptr<mlir::Pass> mqss::mqssci::codegen::QuantumConversionPass() {
   return std::make_unique<QuantumConversion>();

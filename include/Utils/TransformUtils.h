@@ -587,7 +587,8 @@ static Operation *createNewGate(Location loc, QuantumDialect DialectTy,
                                 SmallVector<mlir::Value> ControlQubitOps,
                                 SmallVector<mlir::Value> TargetQubitOps,
                                 const mlir::ValueRange params,
-                                mlir::IRRewriter &builder, bool isAdj = false) {
+                                mlir::IRRewriter &builder, bool isAdj = false,
+                                const char *caller = __builtin_FUNCTION()) {
 
   Operation *NewOp;
 
@@ -603,7 +604,8 @@ static Operation *createNewGate(Location loc, QuantumDialect DialectTy,
                                params, builder, isAdj);
   }
   if (!NewOp) {
-    mlir::emitError(loc, "Could not create new GateOp");
+    mlir::emitError(loc) << caller
+                         << ": could not create new GateOp: " << NewGateTy;
     return nullptr;
   }
 
@@ -611,7 +613,8 @@ static Operation *createNewGate(Location loc, QuantumDialect DialectTy,
 }
 
 static mlir::Value createAllocOp(Location loc, QuantumDialect DialectTy,
-                                 mlir::IRRewriter &builder, size_t numQubits) {
+                                 mlir::IRRewriter &builder, size_t numQubits,
+                                 const char *caller = __builtin_FUNCTION()) {
 
   mlir::Value NewOp;
   if (DialectTy == QuantumDialect::Unknown) {
@@ -624,7 +627,7 @@ static mlir::Value createAllocOp(Location loc, QuantumDialect DialectTy,
     NewOp = createCatalystAlloca(loc, builder, numQubits);
   }
   if (!NewOp) {
-    mlir::emitError(loc, "Could not create new AllocOp");
+    mlir::emitError(loc) << caller << ": could not create new AllocaOp";
     return nullptr;
   }
 
@@ -633,8 +636,8 @@ static mlir::Value createAllocOp(Location loc, QuantumDialect DialectTy,
 
 static mlir::Value createExtractOp(Location loc, QuantumDialect DialectTy,
                                    mlir::IRRewriter &builder,
-                                   mlir::Value qubits,
-                                   unsigned int targetQubit) {
+                                   mlir::Value qubits, unsigned int targetQubit,
+                                   const char *caller = __builtin_FUNCTION()) {
 
   mlir::Value NewOp;
   if (DialectTy == QuantumDialect::Unknown) {
@@ -647,15 +650,16 @@ static mlir::Value createExtractOp(Location loc, QuantumDialect DialectTy,
     NewOp = createCatalystExtractRefOp(loc, builder, qubits, targetQubit);
   }
   if (!NewOp) {
-    mlir::emitError(loc, "Could not create new ExtractOp");
+    mlir::emitError(loc) << caller << ": could not create new ExtractOp";
     return nullptr;
   }
   return NewOp;
 }
 
-static mlir::Value createArithConstantOp(Location loc, QuantumDialect DialectTy,
-                                         mlir::IRRewriter &builder,
-                                         double constantValue) {
+static mlir::Value
+createArithConstantOp(Location loc, QuantumDialect DialectTy,
+                      mlir::IRRewriter &builder, double constantValue,
+                      const char *caller = __builtin_FUNCTION()) {
 
   mlir::Value NewOp;
   if (DialectTy == QuantumDialect::Unknown) {
@@ -670,7 +674,7 @@ static mlir::Value createArithConstantOp(Location loc, QuantumDialect DialectTy,
                                   builder.getF64Type());
   }
   if (!NewOp) {
-    mlir::emitError(loc, "Could not create new ArithConstOp");
+    mlir::emitError(loc) << caller << ": could not create new ArithConstOp";
     return nullptr;
   }
   return NewOp;
@@ -678,7 +682,8 @@ static mlir::Value createArithConstantOp(Location loc, QuantumDialect DialectTy,
 
 static mlir::Value createDivFOp(Location loc, QuantumDialect DialectTy,
                                 mlir::Value numerator, double denominator,
-                                mlir::IRRewriter &rewriter) {
+                                mlir::IRRewriter &rewriter,
+                                const char *caller = __builtin_FUNCTION()) {
 
   mlir::Value NewOp;
   if (DialectTy == QuantumDialect::Unknown) {
@@ -691,7 +696,7 @@ static mlir::Value createDivFOp(Location loc, QuantumDialect DialectTy,
     NewOp = createCatalystDivF(loc, numerator, denominator, rewriter);
   }
   if (!NewOp) {
-    mlir::emitError(loc, "Could not create new DivFOp");
+    mlir::emitError(loc) << caller << ": could not create new DivFOp";
     return nullptr;
   }
   return NewOp;
@@ -700,7 +705,8 @@ static mlir::Value createDivFOp(Location loc, QuantumDialect DialectTy,
 static SmallVector<mlir::Value>
 createMeasureOp(Location loc, QuantumDialect DialectTy,
                 mlir::IRRewriter &builder,
-                const SmallVector<mlir::Value> TargetQubits) {
+                const SmallVector<mlir::Value> TargetQubits,
+                const char *caller = __builtin_FUNCTION()) {
 
   SmallVector<mlir::Value> NewOp;
   if (DialectTy == QuantumDialect::Unknown) {
@@ -713,7 +719,7 @@ createMeasureOp(Location loc, QuantumDialect DialectTy,
     NewOp = createCatalystMeasureOp(loc, builder, TargetQubits);
   }
   if (NewOp.empty()) {
-    mlir::emitError(loc, "Could not create new MeasureOp");
+    mlir::emitError(loc) << caller << ": could not create new MeasureOp";
     return {};
   }
   return NewOp;

@@ -54,8 +54,18 @@ public:
     llvm::LLVMContext llvmContext;
     auto llvmModule = translateModuleToLLVMIR(module, llvmContext);
 
-    if (!llvmModule)
-      MQSSemitFatalError(module->getLoc(), "Failed to emit LLVM IR");
+    if (!llvmModule) {
+      mlir::emitError(module->getLoc(),
+                      "LLVMDialectToLLVMIR: Failed to emit LLVM IR");
+      signalPassFailure();
+      return;
+    }
+    if (failed(module.verify())) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : MLIR Module verification failed\n";
+      signalPassFailure();
+      return;
+    }
 
     llvmModule->print(os, nullptr);
   }

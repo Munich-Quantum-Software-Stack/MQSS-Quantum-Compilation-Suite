@@ -34,7 +34,7 @@ def QuakeDialectToIQMJSONPass : Pass<"quake-to-iqmJSON", "mlir::ModuleOp"> {
 
 }
 
-def QuantumConversionPass : Pass<"convert-quantum-to-llvm"> {
+def QuantumConversionPass : Pass<"convert-quantum-to-llvm", "mlir::ModuleOp"> {
     let summary = "Perform a dialect conversion from Quantum dialect to LLVM dialect.";
 
     let options = [
