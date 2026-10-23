@@ -33,6 +33,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <mlir/Pass/Pass.h>
 #include <mlir/Pass/PassManager.h>
 #include <optional>
+#include <regex>
 #include <sstream>
 #include <string>
 
@@ -41,6 +42,8 @@ namespace {
 // Path to tests/unittests/input, supplied by CMake
 std::filesystem::path kBellStateCircuit =
     MQSSCI_TEST_FIXTURE_DIR "/two_qubit_bell.qke";
+
+std::filesystem::path kGHZCircuit = MQSSCI_TEST_FIXTURE_DIR "/ghz.qke";
 
 // Measures a whole 2-qubit register in one `quake.mz` (rather than
 // per-qubit, like kBellStateCircuit) -- the shape that used to make
@@ -507,6 +510,111 @@ TEST(MQSSCIInterfacesTest, VerificationCatchesNonEquivalentPass) {
       << "EraseFirstCNOTPass removes a gate, which changes what the "
          "circuit computes; VerifyPassInstrumentation should detect the "
          "mismatch and call signalPassFailure(), making pm.run() fail";
+}
+
+TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
+  const mqss::mqssci::CompilerOptions opts{
+      .optimization_level = mqss::mqssci::OptLevel::O1,
+      .result_format = mqss::mqssci::OPENQASM2,
+  };
+
+  std::ifstream fixture(kGHZCircuit);
+  ASSERT_TRUE(fixture.is_open());
+  std::stringstream buffer;
+  buffer << fixture.rdbuf();
+  std::string source = buffer.str();
+
+  mqss::mqssci::MQSSCompiler compiler;
+  const std::vector<std::string> native_gates = {
+      "id", "measure", "r", "if_else", "reset", "cz",
+  };
+
+  const std::vector<std::pair<std::uint32_t, std::uint32_t>>
+      qubit_connectivity = {
+          {0, 1},   {0, 4},   {3, 2},   {3, 4},   {3, 9},   {5, 1},   {5, 4},
+          {5, 6},   {5, 11},  {8, 2},   {8, 7},   {8, 9},   {10, 4},  {10, 9},
+          {10, 11}, {10, 17}, {12, 6},  {12, 11}, {12, 13}, {12, 19}, {15, 7},
+          {15, 14}, {15, 22}, {16, 9},  {16, 17}, {16, 24}, {18, 11}, {18, 17},
+          {18, 19}, {18, 26}, {20, 13}, {20, 19}, {20, 28}, {21, 14}, {21, 22},
+          {23, 22}, {23, 24}, {23, 31}, {25, 17}, {25, 24}, {25, 26}, {25, 32},
+          {27, 19}, {27, 26}, {27, 28}, {27, 34}, {29, 28}, {29, 36}, {30, 22},
+          {30, 31}, {30, 37}, {33, 26}, {33, 32}, {33, 34}, {33, 41}, {35, 28},
+          {35, 34}, {35, 36}, {35, 43}, {38, 31}, {38, 37}, {38, 39}, {38, 44},
+          {40, 32}, {40, 39}, {40, 41}, {40, 46}, {42, 34}, {42, 41}, {42, 43},
+          {42, 48}, {45, 39}, {45, 44}, {45, 46}, {45, 49}, {47, 41}, {47, 46},
+          {47, 48}, {47, 51}, {50, 46}, {50, 49}, {50, 51},
+      };
+
+  auto compiled = compiler.compileSource(source, "", native_gates,
+                                         qubit_connectivity, opts);
+
+  ASSERT_TRUE(compiled.has_value())
+      << "compileSource() returned nullopt; expected a valid OpenQASM2 "
+         "program for the 3-qubit GHZ circuit mapped onto the 52-qubit "
+         "device";
+  EXPECT_FALSE(compiled->empty());
+
+  EXPECT_NE(compiled->find("OPENQASM 2.0;"), std::string::npos);
+
+  // qubit_connectivity's highest-numbered qubit is 51, so the allocated
+  // register must be sized 52 -- not the logical circuit's 3 qubits, and not
+  // the count of *distinct* qubits mentioned in the coupling map (which
+  // would undercount whenever indices aren't contiguous, e.g. this map never
+  // mentions qubit 2 on its own -- only paired with 3 and 8).
+  EXPECT_NE(compiled->find("qreg var0[52];"), std::string::npos);
+
+  // None of "id", "measure", "r", "if_else", "reset" are mnemonics
+  // BasisConversionPass recognizes, and "cz" alone doesn't let it legalize
+  // "h"/"cx" (no decomposition rule for either bottoms out in "cz" by
+  // itself), so ghz.qke's H and both CNOTs are expected to survive
+  // unresolved, left exactly as the mapper routed them.
+  EXPECT_NE(compiled->find("h var0[0];"), std::string::npos)
+      << "expected ghz.qke's H gate, unresolved, on its mapped qubit";
+
+  int cxCount = 0;
+  for (size_t pos = compiled->find("cx "); pos != std::string::npos;
+       pos = compiled->find("cx ", pos + 1))
+    ++cxCount;
+  EXPECT_EQ(cxCount, 2)
+      << "expected one cx per entangling gate in ghz.qke's CX(q0,q1), "
+         "CX(q1,q2) chain";
+
+  int measureCount = 0;
+  for (size_t pos = compiled->find("measure "); pos != std::string::npos;
+       pos = compiled->find("measure ", pos + 1))
+    ++measureCount;
+  EXPECT_EQ(measureCount, 3)
+      << "expected one measurement per logical qubit in the GHZ circuit";
+
+  // Every two-qubit operation (cx or swap) the mapper emits must land on an
+  // actual edge of qubit_connectivity -- this is what makes the mapping
+  // physically valid, not just logically equivalent to ghz.qke. Checked
+  // generically (rather than pinning the exact swap sequence) so this
+  // doesn't break if HeuristicMapper's routing choice legitimately changes
+  // between mqt-core versions.
+  auto isConnected = [&](uint32_t a, uint32_t b) {
+    for (const auto &[x, y] : qubit_connectivity)
+      if ((x == a && y == b) || (x == b && y == a))
+        return true;
+    return false;
+  };
+
+  std::regex twoQubitOpRe(R"((?:cx|swap) var0\[(\d+)\], var0\[(\d+)\];)");
+  auto matchesBegin =
+      std::sregex_iterator(compiled->begin(), compiled->end(), twoQubitOpRe);
+  int twoQubitOpCount = 0;
+  for (auto it = matchesBegin; it != std::sregex_iterator(); ++it) {
+    uint32_t a = std::stoul((*it)[1].str());
+    uint32_t b = std::stoul((*it)[2].str());
+    EXPECT_TRUE(isConnected(a, b)) << "two-qubit op on (" << a << ", " << b
+                                   << ") is not an edge in qubit_connectivity";
+    ++twoQubitOpCount;
+  }
+  // 2 cx (one per entangling gate) + however many swaps routing required;
+  // the manually-verified mapping for this fixture uses 3, but the main
+  // invariant is connectivity, checked above -- this just confirms the
+  // regex actually found every two-qubit op the earlier counts expect.
+  EXPECT_GE(twoQubitOpCount, cxCount);
 }
 
 } // namespace

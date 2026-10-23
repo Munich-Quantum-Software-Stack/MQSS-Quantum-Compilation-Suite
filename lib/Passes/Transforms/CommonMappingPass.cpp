@@ -96,7 +96,9 @@ struct PipelineConfig {
       qubits.insert(a);
       qubits.insert(b);
     }
-    std::size_t numQubits = qubits.size();
+    const std::size_t numQubits =
+        qubits.empty() ? 0 : static_cast<std::size_t>(*qubits.rbegin()) + 1;
+
     config.arch.loadCouplingMap(numQubits, cm);
     // Defining the settings of the mqt-mapper
     config.settings = getDefaultSettings();
@@ -553,8 +555,10 @@ tuple<bool, llvm::StringRef> performMapping(MyModuleAnalysis &analysis,
     builder.setInsertionPointToStart(&entry); // CRITICAL
 
     // Location loc = kernel.getLoc();
-    auto newAllocOp =
-        createAllocOp(loc, DialectTy, builder, info.AllocatedQubits);
+    const auto mappedQubitCount = qcMapped.getNqubits();
+
+    auto newAllocOp = createAllocOp(loc, DialectTy, builder, mappedQubitCount);
+
     if (!newAllocOp) {
       mlir::emitError(loc, "Mapping: Could not create AllocOp");
       return {false, kernel.getSymName()};
