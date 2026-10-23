@@ -525,9 +525,19 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   std::string source = buffer.str();
 
   mqss::mqssci::MQSSCompiler compiler;
-  const std::vector<std::string> native_gates = {
-      "id", "measure", "r", "if_else", "reset", "cz",
-  };
+  // This device's native gates, per IQM's own documentation: "arbitrary X
+  // and Y rotations" as the single-qubit native gate -- i.e. a rotation by
+  // angle theta about an axis that's an arbitrary combination of X and Y,
+  // parameterized by phi. That's exactly phased_rx's definition
+  // (R(theta, phi) = exp(-i*theta/2*(cos(phi)*X + sin(phi)*Y))), the same
+  // gate already used for the "iqm" backend elsewhere in this codebase, so
+  // it's "prx" here, not the device's own name for it. "id"/"if_else"/
+  // "reset" are real device capabilities BasisConversionPass has no case
+  // for yet (the same gap already flagged for WMI's "id"), but are inert
+  // for this particular circuit since ghz.qke never produces ops that
+  // would classify as any of them.
+  const std::vector<std::string> native_gates = {"id",      "measure", "r",
+                                                 "if_else", "reset",   "cz"};
 
   const std::vector<std::pair<std::uint32_t, std::uint32_t>>
       qubit_connectivity = {
@@ -563,21 +573,29 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   // mentions qubit 2 on its own -- only paired with 3 and 8).
   EXPECT_NE(compiled->find("qreg var0[52];"), std::string::npos);
 
-  // None of "id", "measure", "r", "if_else", "reset" are mnemonics
-  // BasisConversionPass recognizes, and "cz" alone doesn't let it legalize
-  // "h"/"cx" (no decomposition rule for either bottoms out in "cz" by
-  // itself), so ghz.qke's H and both CNOTs are expected to survive
-  // unresolved, left exactly as the mapper routed them.
-  EXPECT_NE(compiled->find("h var0[0];"), std::string::npos)
-      << "expected ghz.qke's H gate, unresolved, on its mapped qubit";
+  // "prx" (IQM's "arbitrary X and Y rotations", i.e. phased_rx) and "cz" are
+  // mnemonics BasisConversionPass does understand, and together they fully
+  // legalize ghz.qke's H and both CNOTs (H -> prx; CX -> H-CZ-H -> prx/cz),
+  // so no "h"/"cx"/"swap" should remain in the output -- everything must
+  // have been rewritten into this native set.
+  EXPECT_EQ(compiled->find("\nh "), std::string::npos)
+      << "found a non-native 'h' gate; the requested native set is "
+         "{id, measure, prx, if_else, reset, cz}";
+  EXPECT_EQ(compiled->find("\ncx "), std::string::npos)
+      << "found a non-native 'cx' gate";
+  EXPECT_EQ(compiled->find("\nswap "), std::string::npos)
+      << "found a non-native 'swap' gate";
 
-  int cxCount = 0;
-  for (size_t pos = compiled->find("cx "); pos != std::string::npos;
-       pos = compiled->find("cx ", pos + 1))
-    ++cxCount;
-  EXPECT_EQ(cxCount, 2)
-      << "expected one cx per entangling gate in ghz.qke's CX(q0,q1), "
-         "CX(q1,q2) chain";
+  EXPECT_NE(compiled->find("phased_rx("), std::string::npos)
+      << "expected ghz.qke's H gate, legalized into phased_rx";
+
+  int czCount = 0;
+  for (size_t pos = compiled->find("cz "); pos != std::string::npos;
+       pos = compiled->find("cz ", pos + 1))
+    ++czCount;
+  EXPECT_GT(czCount, 0)
+      << "expected at least one native cz gate from legalizing ghz.qke's "
+         "CX(q0,q1), CX(q1,q2) chain";
 
   int measureCount = 0;
   for (size_t pos = compiled->find("measure "); pos != std::string::npos;
@@ -586,12 +604,13 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   EXPECT_EQ(measureCount, 3)
       << "expected one measurement per logical qubit in the GHZ circuit";
 
-  // Every two-qubit operation (cx or swap) the mapper emits must land on an
-  // actual edge of qubit_connectivity -- this is what makes the mapping
-  // physically valid, not just logically equivalent to ghz.qke. Checked
-  // generically (rather than pinning the exact swap sequence) so this
-  // doesn't break if HeuristicMapper's routing choice legitimately changes
-  // between mqt-core versions.
+  // Every two-qubit operation (cz, the only native two-qubit mnemonic
+  // requested) the mapper's routing produces must land on an actual edge of
+  // qubit_connectivity -- this is what makes the mapping physically valid,
+  // not just logically equivalent to ghz.qke. Checked generically (rather
+  // than pinning the exact routing/decomposition sequence) so this doesn't
+  // break if HeuristicMapper's routing choice legitimately changes between
+  // mqt-core versions.
   auto isConnected = [&](uint32_t a, uint32_t b) {
     for (const auto &[x, y] : qubit_connectivity)
       if ((x == a && y == b) || (x == b && y == a))
@@ -599,7 +618,7 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
     return false;
   };
 
-  std::regex twoQubitOpRe(R"((?:cx|swap) var0\[(\d+)\], var0\[(\d+)\];)");
+  std::regex twoQubitOpRe(R"(cz var0\[(\d+)\], var0\[(\d+)\];)");
   auto matchesBegin =
       std::sregex_iterator(compiled->begin(), compiled->end(), twoQubitOpRe);
   int twoQubitOpCount = 0;
@@ -610,11 +629,9 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
                                    << ") is not an edge in qubit_connectivity";
     ++twoQubitOpCount;
   }
-  // 2 cx (one per entangling gate) + however many swaps routing required;
-  // the manually-verified mapping for this fixture uses 3, but the main
-  // invariant is connectivity, checked above -- this just confirms the
-  // regex actually found every two-qubit op the earlier counts expect.
-  EXPECT_GE(twoQubitOpCount, cxCount);
+  // Confirms the regex actually found every "cz " occurrence the earlier
+  // substring count did, so the connectivity check above wasn't vacuous.
+  EXPECT_EQ(twoQubitOpCount, czCount);
 }
 
 } // namespace
