@@ -204,7 +204,9 @@ public:
   }
 
 private:
-  static std::string stripSpuriousGateDefs(const std::string &qasm);
+  static std::string stripSpuriousGateDefs(
+      const std::string &qasm,
+      std::vector<std::pair<std::string, std::string>> appliedAliases);
 
   // Shared pipeline core: runs optimization, qubit mapping, basis
   // conversion, and lowering on an already-parsed module. compile() and

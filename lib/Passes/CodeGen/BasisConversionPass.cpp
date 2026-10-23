@@ -335,7 +335,8 @@ getNativeGateSetFromQDMI(const std::string &conf, const std::string &deviceName,
   const auto &arity = getMnemonicArity();
   llvm::StringSet<> native;
   for (const GateOperationInfo &gate : *gateSet) {
-    auto it = arity.find(gate.gate_name);
+    llvm::StringRef mnemonic = resolveMnemonicAlias(gate.gate_name);
+    auto it = arity.find(mnemonic.str()); // was: arity.find(gate.gate_name)
     if (it != arity.end() && gate.num_qubits && gate.num_parameters &&
         (*gate.num_qubits != it->second.first ||
          *gate.num_parameters != it->second.second)) {
@@ -344,11 +345,12 @@ getNativeGateSetFromQDMI(const std::string &conf, const std::string &deviceName,
           << "' (" << *gate.num_qubits << " qubit(s), " << *gate.num_parameters
           << " parameter(s)) does not match this pass's expected shape "
              "for '"
-          << gate.gate_name << "', ignoring it as a native gate.";
+          << mnemonic << "', ignoring it as a native gate.";
       continue;
     }
-    native.insert(gate.gate_name);
+    native.insert(mnemonic); // was: native.insert(gate.gate_name)
   }
+
   if (native.empty())
     return llvm::createStringError(
         llvm::inconvertibleErrorCode(),
@@ -396,7 +398,7 @@ public:
     } else {
       auto split_gates = split(gates, ",");
       for (const auto &gate : split_gates)
-        native.insert(gate);
+        native.insert(resolveMnemonicAlias(gate));
     }
 
     const auto &table = getDecompositionTable(DialectTy);
@@ -425,9 +427,13 @@ public:
         if (wit == witnesses.end()) {
           if (table.count(*mnemonic) &&
               warnedUnresolvable.insert(*mnemonic).second)
-            mlir::emitWarning(kernel.getLoc())
+            mlir::emitError(kernel.getLoc())
                 << "BasisConversion Op: '" << *mnemonic
-                << "' cannot be legalized, leaving it as-is...";
+                << "' cannot be decomposed into the requested native gate set"
+                << (table.count(*mnemonic)
+                        ? ""
+                        : " (no decomposition rule exists for it)");
+          signalPassFailure();
           return;
         }
         IRRewriter rewriter(op->getContext());
