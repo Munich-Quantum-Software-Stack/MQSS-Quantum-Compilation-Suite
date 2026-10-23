@@ -1,0 +1,559 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="MQSS-Quantum Compilation Suite Transpiler" href="transpiler.html"><link rel="prev" title="Verifying Circuit Correctness" href="verification.html">
+
+    <!-- Generated with Sphinx 8.1.3 and Furo 2025.12.19 -->
+        <title>Using MQSSCI as a Library - MQSS Quantum Compilation Suite documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">MQSS Quantum Compilation Suite  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">MQSS Quantum Compilation Suite  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-versions">
+  <p class="caption">Documentation version: v2.3.2</p>
+  <ul>
+    <li><a href="../../v1.0.0/index.html">v1.0.0</a></li>
+    <li><a href="../../v2.0.0/index.html">v2.0.0</a></li>
+    <li><a href="../../v2.1.0/index.html">v2.1.0</a></li>
+    <li><a href="../../v2.2.0/index.html">v2.2.0</a></li>
+    <li><a href="../../v2.2.1/index.html">v2.2.1</a></li>
+    <li><a href="../../v2.3.0/index.html">v2.3.0</a></li>
+    <li><a href="../../v2.3.1/index.html">v2.3.1</a></li>
+    <li><a href="library.html">v2.3.2</a></li>
+  </ul>
+</div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="build.html">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Running test circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="passes.html">Passes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html">Verifying Circuit Correctness</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Using MQSSCI as a Library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../develop-guide/index.html">Development Guide</a><input aria-label="Toggle navigation of Development Guide" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/develop-guide.html">Development Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/templates.html">Writing Passes for the MQSS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/integrate.html">Integrating the MQSS Quantum Compilation Suite within your project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/verification.html">Verification Infrastructure</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../faqs/index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../faqs/mqss-faq.html">MQSS FAQs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../faqs/mlir-faq.html">MLIR FAQs</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/user_guide/library.md.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <!--------------------------------------------------------------------------------------------------
+Copyright 2024 Munich Quantum Software Stack Project
+
+Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
+"License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+----------------------------------------------------------------------------------------------------->
+<section id="using-mqssci-as-a-library">
+<h1>Using MQSSCI as a Library<a class="headerlink" href="#using-mqssci-as-a-library" title="Link to this heading">¶</a></h1>
+<p>The <a class="reference internal" href="passes.html"><span class="std std-doc">Passes</span></a> page shows how to run passes through the <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>/<code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code> command-line
+tools. This page is for the case where you don’t want a separate command-line step at all — you want
+your own C++ program to compile a circuit directly.</p>
+<section id="before-you-start">
+<h2>Before You Start<a class="headerlink" href="#before-you-start" title="Link to this heading">¶</a></h2>
+<p>Your project needs to link against the MQSSCI library first. That’s a one-time CMake setup step —
+see
+<a class="reference internal" href="../develop-guide/integrate.html"><span class="std std-doc">Integrating the MQSS Quantum Compilation Suite within your project</span></a>
+for how to fetch MQSSCI with <code class="docutils literal notranslate"><span class="pre">FetchContent</span></code> and link your target against <code class="docutils literal notranslate"><span class="pre">mqss-ci::mqss-ci</span></code>. The
+rest of this page assumes that step is done and focuses purely on the C++ side.</p>
+</section>
+<section id="a-minimal-example">
+<h2>A Minimal Example<a class="headerlink" href="#a-minimal-example" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">mqss::mqssci::MQSSCompiler</span></code> is the simplest way to compile a circuit: one header, one class, one
+call. It hides dialect registration, MLIR context setup, and pipeline assembly behind a single
+<code class="docutils literal notranslate"><span class="pre">compile</span></code> call.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">"MQSSCIInterfaces/MQSSCompiler.h"</span>
+
+<span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">MQSSCompiler</span><span class="w"> </span><span class="n">compiler</span><span class="p">;</span>
+
+<span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">CompilerOptions</span><span class="w"> </span><span class="n">opts</span><span class="p">;</span>
+<span class="n">opts</span><span class="p">.</span><span class="n">optimization_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">OptLevel</span><span class="o">::</span><span class="n">O1</span><span class="p">;</span><span class="w">        </span><span class="c1">// O1, O2, or O3 — selects the preset pipeline</span>
+<span class="n">opts</span><span class="p">.</span><span class="n">result_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">ResultFormat</span><span class="o">::</span><span class="n">OPENQASM2</span><span class="p">;</span><span class="w">  </span><span class="c1">// or QIR, QIRBASE, QIRADAPTIVE, QIRFULL, IQMJSON</span>
+<span class="n">opts</span><span class="p">.</span><span class="n">verify</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w">                                         </span><span class="c1">// optional; see Verifying the Compiled Output below</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">qasm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="s">"planqc"</span><span class="p">,</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span><span class="w"> </span><span class="c1">// Use compileSource() to parse source string</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">qasm</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Compilation failed. MQSSCompiler has already reported a diagnostic through</span>
+<span class="w">  </span><span class="c1">// MLIR's diagnostic engine — it never throws or aborts the process.</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">llvm</span><span class="o">::</span><span class="n">outs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="o">*</span><span class="n">qasm</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Walking through it:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">#include</span> <span class="pre">&quot;MQSSCIInterfaces/MQSSCompiler.h&quot;</span></code> is the only header you need for this path.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mqss::mqssci::CompilerOptions</span></code> configures the run: <code class="docutils literal notranslate"><span class="pre">optimization_level</span></code> selects the
+<code class="docutils literal notranslate"><span class="pre">O1</span></code>/<code class="docutils literal notranslate"><span class="pre">O2</span></code>/<code class="docutils literal notranslate"><span class="pre">O3</span></code> preset pipeline (see <a class="reference internal" href="passes.html#pass-pipelines"><span class="std std-ref">Pass Pipelines</span></a> for what each
+includes), and <code class="docutils literal notranslate"><span class="pre">result_format</span></code> selects the output format — one of the
+<code class="docutils literal notranslate"><span class="pre">mqss::mqssci::ResultFormat</span></code> enumerators: <code class="docutils literal notranslate"><span class="pre">OPENQASM2</span></code>, <code class="docutils literal notranslate"><span class="pre">QIR</span></code>, <code class="docutils literal notranslate"><span class="pre">QIRBASE</span></code>, <code class="docutils literal notranslate"><span class="pre">QIRADAPTIVE</span></code>,
+<code class="docutils literal notranslate"><span class="pre">QIRFULL</span></code>, or <code class="docutils literal notranslate"><span class="pre">IQMJSON</span></code>.</p></li>
+<li><p>The second argument to <code class="docutils literal notranslate"><span class="pre">compile</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;planqc&quot;</span></code> above) is a known backend name that selects a
+built-in native-gate set for decomposition. See <a class="reference internal" href="#choosing-a-backend"><span class="xref myst">Choosing a Backend</span></a> below
+for the alternatives.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">compile</span></code> returns <code class="docutils literal notranslate"><span class="pre">std::optional&lt;std::string&gt;</span></code>, not the compiled circuit directly. On success, it
+holds the compiled output; on failure it’s <code class="docutils literal notranslate"><span class="pre">std::nullopt</span></code>, and the reason has already been
+reported via <code class="docutils literal notranslate"><span class="pre">mlir::emitError</span></code> — MQSSCI is built without C++ exceptions, so a failed compile
+never throws or crashes your program, it just returns an empty optional.</p></li>
+</ol>
+</section>
+<section id="verifying-the-compiled-output">
+<h2>Verifying the Compiled Output<a class="headerlink" href="#verifying-the-compiled-output" title="Link to this heading">¶</a></h2>
+<p>Set <code class="docutils literal notranslate"><span class="pre">opts.verify</span> <span class="pre">=</span> <span class="pre">true</span></code> to have <code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> check that native-gate decomposition didn’t change
+what the circuit computes — the same circuit-equivalence checking described in
+<a class="reference internal" href="verification.html"><span class="std std-doc">Verifying Circuit Correctness</span></a>, applied automatically during <code class="docutils literal notranslate"><span class="pre">compile</span></code>/
+<code class="docutils literal notranslate"><span class="pre">compileSource</span></code> rather than as a separate <code class="docutils literal notranslate"><span class="pre">--mqssci-verify</span></code> flag on <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">CompilerOptions</span><span class="w"> </span><span class="n">opts</span><span class="p">;</span>
+<span class="n">opts</span><span class="p">.</span><span class="n">optimization_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">OptLevel</span><span class="o">::</span><span class="n">O1</span><span class="p">;</span>
+<span class="n">opts</span><span class="p">.</span><span class="n">result_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">ResultFormat</span><span class="o">::</span><span class="n">OPENQASM2</span><span class="p">;</span>
+<span class="n">opts</span><span class="p">.</span><span class="n">verify</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">qasm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="s">"planqc"</span><span class="p">,</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>This is a hard gate, not just a warning: if verification finds that decomposition broke equivalence,
+<code class="docutils literal notranslate"><span class="pre">compile</span></code>/<code class="docutils literal notranslate"><span class="pre">compileSource</span></code> return <code class="docutils literal notranslate"><span class="pre">std::nullopt</span></code> — same as any other failure — rather than handing
+you output that silently computes the wrong thing. The default is <code class="docutils literal notranslate"><span class="pre">opts.verify</span> <span class="pre">=</span> <span class="pre">false</span></code>, so turning
+it on is opt-in and costs nothing unless you ask for it.</p>
+</section>
+<section id="choosing-a-backend">
+<h2>Choosing a Backend<a class="headerlink" href="#choosing-a-backend" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">compile</span></code> has overloads for three ways to select the native-gate set used for decomposition: by a
+known backend name, by an explicit gate list, or not at all:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// By backend name: iqm, planqc, and wmi are recognized out of the box.</span>
+<span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="s">"iqm"</span><span class="p">,</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
+
+<span class="c1">// By an explicit native-gate set, when your target isn't one of the built-in backends.</span>
+<span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"rz"</span><span class="p">,</span><span class="w"> </span><span class="s">"rx"</span><span class="p">,</span><span class="w"> </span><span class="s">"cz"</span><span class="p">},</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
+
+<span class="c1">// Neither: skip native-gate decomposition entirely.</span>
+<span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">backend_name</span></code></p></th>
+<th class="head"><p>Native-gate set</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;iqm&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">prx</span></code>, <code class="docutils literal notranslate"><span class="pre">cz</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;planqc&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rx</span></code>, <code class="docutils literal notranslate"><span class="pre">cz</span></code>, <code class="docutils literal notranslate"><span class="pre">rz</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;wmi&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cz</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">rz</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The gate mnemonics used here — both in these built-in sets and in an explicit native-gate set you
+supply yourself — are the same ones the <code class="docutils literal notranslate"><span class="pre">BasisConversionPass</span></code> recognizes. See
+<a class="reference internal" href="passes.html#supported-gate-mnemonics"><span class="std std-ref">Supported Gate Mnemonics</span></a> for the full list of mnemonics, the
+Quake operation each one maps to, and their constraints (parameter count, controls, adjointness).</p>
+<p>The full signature (used in the examples above via its three shorthand overloads) also accepts a
+<code class="docutils literal notranslate"><span class="pre">qubit_connectivity</span></code> map alongside the native-gate set, for targets with restricted qubit
+connectivity. See <code class="docutils literal notranslate"><span class="pre">MQSSCIInterfaces/MQSSCompiler.h</span></code> for all four <code class="docutils literal notranslate"><span class="pre">compile</span></code> overloads.</p>
+</section>
+<section id="discovering-supported-input-formats">
+<h2>Discovering Supported Input Formats<a class="headerlink" href="#discovering-supported-input-formats" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">MQSSCompiler::getSupportedInputFormats()</span></code> is a static method that returns the display name of every
+input format MQSSCI’s <code class="docutils literal notranslate"><span class="pre">mqss::mqssci::InputFormat</span></code> enum defines:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string_view</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">MQSSCompiler</span><span class="o">::</span><span class="n">getSupportedInputFormats</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">outs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>It returns a <code class="docutils literal notranslate"><span class="pre">std::vector&lt;std::string_view&gt;</span></code> (currently <code class="docutils literal notranslate"><span class="pre">{&quot;cudaq-quake&quot;,</span> <span class="pre">&quot;catalyst-quantum&quot;}</span></code>) —
+useful for validating a user-supplied format name or listing the options in a CLI’s <code class="docutils literal notranslate"><span class="pre">--help</span></code> output.
+Note that <code class="docutils literal notranslate"><span class="pre">compile</span></code>/<code class="docutils literal notranslate"><span class="pre">compileSource</span></code> currently only accept the <code class="docutils literal notranslate"><span class="pre">cudaq-quake</span></code> dialect regardless of
+what this list reports; see the note at the top of <code class="docutils literal notranslate"><span class="pre">MQSSCompiler.cpp</span></code>.</p>
+</section>
+<section id="advanced-building-a-custom-pipeline-yourself">
+<h2>Advanced: Building a Custom Pipeline Yourself<a class="headerlink" href="#advanced-building-a-custom-pipeline-yourself" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> covers the common case: a preset optimization level, a fixed native-gate set, and one
+of two output formats. If you need to run individual passes, pass pass-specific options (e.g.
+<code class="docutils literal notranslate"><span class="pre">CommonGateCancellationPassOptions</span></code>), or assemble a pipeline <code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> doesn’t support, drop
+down to the same <code class="docutils literal notranslate"><span class="pre">mlir::OpPassManager</span></code>-based API <code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> itself is built on:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">"Passes/Transforms/Dialects.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"Passes/Transforms/Pipelines.h"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"Passes/CodeGen/CodeGenPasses.h"</span>
+
+<span class="c1">// 1. Get an MLIRContext with every dialect MQSSCI's passes need already loaded.</span>
+<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">mlir</span><span class="o">::</span><span class="n">MLIRContext</span><span class="o">&gt;</span><span class="w"> </span><span class="n">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">opt</span><span class="o">::</span><span class="n">createMQSSContext</span><span class="p">();</span>
+
+<span class="c1">// 2. Parse your MLIR file into a module</span>
+<span class="k">auto</span><span class="w"> </span><span class="k">module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mlir</span><span class="o">::</span><span class="n">parseSourceFile</span><span class="o">&lt;</span><span class="n">mlir</span><span class="o">::</span><span class="n">ModuleOp</span><span class="o">&gt;</span><span class="p">(</span><span class="s">"path/to/file"</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="k">module</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">errs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">"failed to parse MLIR file</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// 3. Build a pass manager and add passes to the pipeline</span>
+<span class="n">mlir</span><span class="o">::</span><span class="n">PassManager</span><span class="w"> </span><span class="n">pm</span><span class="p">(</span><span class="n">context</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+<span class="n">CommonGateCancellationPassOptions</span><span class="w"> </span><span class="n">CancelOpts</span><span class="p">;</span>
+<span class="n">CommonCommutePassOptions</span><span class="w"> </span><span class="n">CommuteOpts</span><span class="p">;</span>
+<span class="n">CancelOpts</span><span class="p">.</span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"CancelGate"</span><span class="p">;</span>
+<span class="n">CommuteOpts</span><span class="p">.</span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"CX-RX"</span><span class="p">;</span>
+
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">CommonGateCancellationPass</span><span class="p">(</span><span class="n">CancelOpts</span><span class="p">));</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">CommonCommutePass</span><span class="p">(</span><span class="n">CommuteOpts</span><span class="p">));</span>
+
+<span class="c1">// Run the Pass Pipeline</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mlir</span><span class="o">::</span><span class="n">failed</span><span class="p">(</span><span class="n">pm</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="o">*</span><span class="k">module</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">errs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">"Compiler: Pipeline failed</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// 4. Lower the optimized module to OpenQASM 2</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">codegen</span><span class="o">::</span><span class="n">QuakeToQASM2Pass</span><span class="p">());</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mlir</span><span class="o">::</span><span class="n">failed</span><span class="p">(</span><span class="n">pm</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="o">*</span><span class="k">module</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">llvm</span><span class="o">::</span><span class="n">errs</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">"Compiler: Conversion of Quake to QASM2 failed</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">mqss::mqssci::opt::createMQSSContext()</span></code> is a convenience that registers every MQSSCI dialect and
+returns a ready-to-use <code class="docutils literal notranslate"><span class="pre">MLIRContext</span></code> in one call — equivalent to building a <code class="docutils literal notranslate"><span class="pre">DialectRegistry</span></code> with
+<code class="docutils literal notranslate"><span class="pre">registerMQSSDialects</span></code>, constructing an <code class="docutils literal notranslate"><span class="pre">MLIRContext</span></code> from it, and calling
+<code class="docutils literal notranslate"><span class="pre">loadAllAvailableDialects()</span></code> yourself.</p>
+<p>If you’d rather capture the OpenQASM output in a string instead of printing it, <code class="docutils literal notranslate"><span class="pre">QuakeToQASM2Pass</span></code>
+also accepts an <code class="docutils literal notranslate"><span class="pre">llvm::raw_ostream&amp;</span></code>:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">qasm</span><span class="p">;</span>
+<span class="n">llvm</span><span class="o">::</span><span class="n">raw_string_ostream</span><span class="w"> </span><span class="nf">os</span><span class="p">(</span><span class="n">qasm</span><span class="p">);</span>
+<span class="n">pm</span><span class="p">.</span><span class="n">addPass</span><span class="p">(</span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">codegen</span><span class="o">::</span><span class="n">QuakeToQASM2Pass</span><span class="p">(</span><span class="n">os</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>For the full list of available passes, their options, and valid option values, see
+<a class="reference internal" href="passes.html"><span class="std std-doc">Passes</span></a>.</p>
+</section>
+<section id="testing-the-interface">
+<h2>Testing the Interface<a class="headerlink" href="#testing-the-interface" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> has its own testing framework at
+<code class="docutils literal notranslate"><span class="pre">tests/unittests/MQSSCIInterfaces/test_Interface.cpp</span></code>. It builds automatically as part of the normal
+build (via <code class="docutils literal notranslate"><span class="pre">scripts/build.sh</span></code> / <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">target</span></code>) — run it with:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>test-interfaces
+</pre></div>
+</div>
+<p>For what the interfaces testing framework covers and how to extend it, see
+<a class="reference internal" href="../develop-guide/integrate.html#testing-the-interface"><span class="std std-ref">Testing the Interface</span></a> in the developer guide.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="transpiler.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">MQSS-Quantum Compilation Suite Transpiler</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="verification.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Verifying Circuit Correctness</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Using MQSSCI as a Library</a><ul>
+<li><a class="reference internal" href="#before-you-start">Before You Start</a></li>
+<li><a class="reference internal" href="#a-minimal-example">A Minimal Example</a></li>
+<li><a class="reference internal" href="#verifying-the-compiled-output">Verifying the Compiled Output</a></li>
+<li><a class="reference internal" href="#choosing-a-backend">Choosing a Backend</a></li>
+<li><a class="reference internal" href="#discovering-supported-input-formats">Discovering Supported Input Formats</a></li>
+<li><a class="reference internal" href="#advanced-building-a-custom-pipeline-yourself">Advanced: Building a Custom Pipeline Yourself</a></li>
+<li><a class="reference internal" href="#testing-the-interface">Testing the Interface</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

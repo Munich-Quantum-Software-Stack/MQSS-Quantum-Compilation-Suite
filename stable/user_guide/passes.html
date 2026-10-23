@@ -190,7 +190,7 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-versions">
-  <p class="caption">Documentation version: v2.3.1</p>
+  <p class="caption">Documentation version: v2.3.2</p>
   <ul>
     <li><a href="../../v1.0.0/index.html">v1.0.0</a></li>
     <li><a href="../../v2.0.0/index.html">v2.0.0</a></li>
@@ -198,7 +198,8 @@
     <li><a href="../../v2.2.0/index.html">v2.2.0</a></li>
     <li><a href="../../v2.2.1/index.html">v2.2.1</a></li>
     <li><a href="../../v2.3.0/index.html">v2.3.0</a></li>
-    <li><a href="passes.html">v2.3.1</a></li>
+    <li><a href="../../v2.3.1/index.html">v2.3.1</a></li>
+    <li><a href="passes.html">v2.3.2</a></li>
   </ul>
 </div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
@@ -332,8 +333,8 @@ opportunities (for example, bringing two cancellable gates adjacent to each othe
 <li><p><code class="docutils literal notranslate"><span class="pre">--CommonDecompositionPass=mode=CxToHCzH</span></code></p></li>
 </ul>
 <p>Note: This is a representative dialect-agnostic decomposition pass. It will be superseded by the
-<code class="docutils literal notranslate"><span class="pre">BasisConversionPass</span></code> in the future, which performs recursive, device-aware decomposition rather
-than a fixed set of rewrites.</p>
+<code class="docutils literal notranslate"><span class="pre">BasisConversionPass</span></code>, which performs recursive, device-aware decomposition rather than a fixed set
+of rewrites, and can query the target’s native gate set from a QDMI device.</p>
 </section>
 <section id="commongatecancellationpass">
 <h3>CommonGateCancellationPass<a class="headerlink" href="#commongatecancellationpass" title="Link to this heading">¶</a></h3>
@@ -430,13 +431,13 @@ target’s coupling map can be supplied either as a JSON file or queried directl
 <p>Pass Options:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--input=&lt;string&gt;</span></code> — Path to JSON input (Coupling Map of target device)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--qdmi=&lt;QDMI</span> <span class="pre">Device</span> <span class="pre">Name&gt;</span></code> - Query QDMI Device for Coupling Map (Needs Device .so file).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--qdmi=&lt;path</span> <span class="pre">to</span> <span class="pre">.conf</span> <span class="pre">file&gt;</span></code> — Query the coupling map from a QDMI device.</p></li>
 </ul>
 <p>Example invocation:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">--CommonMappingPass=qdmi=cxx_qdmi.conf</span></code></br> where <code class="docutils literal notranslate"><span class="pre">cxx_qdmi.conf</span></code> contains the path to the qdmi
-device shared object file and the device name prefix. See <code class="docutils literal notranslate"><span class="pre">tests/dialects/quake/cxx_qdmi.conf</span></code> for
-more details.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonMappingPass=qdmi=tests/input/cxx_qdmi.conf</span></code></br> run from the repository root. The
+<code class="docutils literal notranslate"><span class="pre">.conf</span></code> file contains one line with the path to the QDMI device shared object file and the device
+prefix. See <code class="docutils literal notranslate"><span class="pre">tests/input/cxx_qdmi.conf</span></code> and <code class="docutils literal notranslate"><span class="pre">tests/input/mqt_qdmi.conf</span></code> for examples.</p></li>
 </ul>
 </section>
 <section id="basisconversionpass">
@@ -448,11 +449,32 @@ no further decomposition rule applies).</p>
 <p>Note: Currently only available for the <code class="docutils literal notranslate"><span class="pre">Quake</span></code> MLIR dialect.</p>
 <p>Pass Options:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">gates=&lt;comma-separated</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">gates&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gates=&lt;comma-separated</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">gates&gt;</span></code> — The native gate set to decompose to. Defaults to
+<code class="docutils literal notranslate"><span class="pre">h,cx,rz</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">qdmi=&lt;path</span> <span class="pre">to</span> <span class="pre">.conf</span> <span class="pre">file&gt;</span></code> — Query the native gate set from a QDMI device instead of using
+<code class="docutils literal notranslate"><span class="pre">gates</span></code>. The <code class="docutils literal notranslate"><span class="pre">.conf</span></code> file has the same format as for <a class="reference internal" href="#commonmappingpass"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">CommonMappingPass</span></code></span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">device=&lt;device</span> <span class="pre">name&gt;</span></code> — Select a QDMI device by the name it reports, when the session has more
+than one. Defaults to the first device. If no device matches, the error message lists the
+available names. Wrap names containing spaces in braces or quotes. For example, the mock device in
+<code class="docutils literal notranslate"><span class="pre">tests/input/cxx_qdmi.conf</span></code> is named <code class="docutils literal notranslate"><span class="pre">C++</span> <span class="pre">Device</span> <span class="pre">with</span> <span class="pre">5</span> <span class="pre">qubits</span></code>, selected with
+<code class="docutils literal notranslate"><span class="pre">device={C++</span> <span class="pre">Device</span> <span class="pre">with</span> <span class="pre">5</span> <span class="pre">qubits}</span></code>.</p></li>
 </ul>
 <p>Example Invocation:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--BasisConversionPass=gates=rx,cz,rz</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--BasisConversionPass=qdmi=tests/input/cxx_qdmi.conf</span></code>, run from the repository root</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--BasisConversionPass=&quot;qdmi=tests/input/cxx_qdmi.conf</span> <span class="pre">device=&lt;device</span> <span class="pre">name&gt;&quot;</span></code></p></li>
+</ul>
+<p>When <code class="docutils literal notranslate"><span class="pre">qdmi</span></code> is set:</p>
+<ul class="simple">
+<li><p>The device’s operations are queried once per pass run. Each operation name is used as a gate
+mnemonic as is, so it must match the <a class="reference internal" href="#supported-gate-mnemonics"><span class="xref myst">Supported Gate Mnemonics</span></a> table
+below. For example, IQM devices report <code class="docutils literal notranslate"><span class="pre">prx</span></code>. Names the pass does not recognize have no effect.</p></li>
+<li><p>An operation whose number of qubits or parameters does not match the table is ignored with a
+warning.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">gates</span></code> is also given, the QDMI gate set is used and a warning is emitted.</p></li>
+<li><p>The pass fails with an error if the device cannot be loaded, no device matches <code class="docutils literal notranslate"><span class="pre">device</span></code>, or every
+reported operation was ignored (or none was reported).</p></li>
 </ul>
 <section id="supported-gate-mnemonics">
 <h4>Supported Gate Mnemonics<a class="headerlink" href="#supported-gate-mnemonics" title="Link to this heading">¶</a></h4>
