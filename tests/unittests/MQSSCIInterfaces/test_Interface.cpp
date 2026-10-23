@@ -565,7 +565,7 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   EXPECT_FALSE(compiled->empty());
 
   EXPECT_NE(compiled->find("OPENQASM 2.0;"), std::string::npos);
-
+  std::cout << *compiled << "\n";
   // qubit_connectivity's highest-numbered qubit is 51, so the allocated
   // register must be sized 52 -- not the logical circuit's 3 qubits, and not
   // the count of *distinct* qubits mentioned in the coupling map (which
@@ -574,20 +574,30 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   EXPECT_NE(compiled->find("qreg var0[52];"), std::string::npos);
 
   // "prx" (IQM's "arbitrary X and Y rotations", i.e. phased_rx) and "cz" are
-  // mnemonics BasisConversionPass does understand, and together they fully
+  // mnemonics BasisConversionPass does understand ("r" aliases to its own
+  // "prx" mnemonic -- see resolveMnemonicAlias), and together they fully
   // legalize ghz.qke's H and both CNOTs (H -> prx; CX -> H-CZ-H -> prx/cz),
   // so no "h"/"cx"/"swap" should remain in the output -- everything must
   // have been rewritten into this native set.
   EXPECT_EQ(compiled->find("\nh "), std::string::npos)
       << "found a non-native 'h' gate; the requested native set is "
-         "{id, measure, prx, if_else, reset, cz}";
+         "{id, measure, r, if_else, reset, cz}";
   EXPECT_EQ(compiled->find("\ncx "), std::string::npos)
       << "found a non-native 'cx' gate";
   EXPECT_EQ(compiled->find("\nswap "), std::string::npos)
       << "found a non-native 'swap' gate";
 
-  EXPECT_NE(compiled->find("phased_rx("), std::string::npos)
-      << "expected ghz.qke's H gate, legalized into phased_rx";
+  // The device reports this gate as "r", not BasisConversionPass's own
+  // "prx"/cudaq's "phased_rx" -- the emitted QASM2 must round-trip back to
+  // the caller's own spelling, not leak the pass's internal mnemonic or
+  // cudaq's op name.
+  EXPECT_NE(compiled->find("\nr("), std::string::npos)
+      << "expected ghz.qke's H gate, legalized and rendered back as 'r', "
+         "the device's own name for this gate";
+  EXPECT_EQ(compiled->find("phased_rx("), std::string::npos)
+      << "found cudaq's internal 'phased_rx' spelling instead of the "
+         "device's own 'r' name -- the alias didn't round-trip to the "
+         "output";
 
   int czCount = 0;
   for (size_t pos = compiled->find("cz "); pos != std::string::npos;
