@@ -43,16 +43,36 @@ public:
   void runOnOperation() override {
 
     auto &selector = getAnalysis<DialectAnalysisSelector>();
+    if (!selector.get()) {
+
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid MLIR Dialect\n";
+      signalPassFailure();
+      return;
+    }
     auto &analysis = *selector.get();
+    if (!analysis.isValid()) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid Module Analysis\n";
+      signalPassFailure();
+      return;
+    }
+
     auto DialectTy = selector.getDialect();
 
-    MQSS_DEBUG("\n[Applying Pass: CommonDecomposition]\n");
-
-    performCNOTReversal(analysis, DialectTy);
+    MQSS_DEBUG("\n[Applying Pass: CommonCNOTReversal]\n");
+    auto [success, failedKernel] = performCNOTReversal(analysis, DialectTy);
+    if (!success) {
+      llvm::errs() << "CNOT Reversal: Failed to apply Pass on: " << failedKernel
+                   << "\n";
+      signalPassFailure();
+      return;
+    }
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
+      signalPassFailure();
     }
   }
 };

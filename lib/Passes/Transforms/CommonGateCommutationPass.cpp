@@ -45,7 +45,8 @@ enum class PassMode {
 
 struct SharedPassLogic {
 
-  void run(MyModuleAnalysis &analysis, PassMode Mode) {
+  std::tuple<bool, llvm::StringRef> run(MyModuleAnalysis &analysis,
+                                        PassMode Mode) {
 
     PassInfoty PassInfo;
     if (Mode == PassMode::CommuteCxRx) {
@@ -73,7 +74,9 @@ struct SharedPassLogic {
       PassInfo.SecondGateTy.push_back(Gate::CNOT);
       PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     }
-    performCommutation(analysis, PassInfo);
+    auto [result, kernelName, commutedCandidates] =
+        performCommutation(analysis, PassInfo);
+    return {result, kernelName};
   }
 };
 
@@ -102,31 +105,62 @@ public:
   void runOnOperation() override {
 
     auto &selector = getAnalysis<DialectAnalysisSelector>();
+    if (!selector.get()) {
+
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid MLIR Dialect\n";
+      signalPassFailure();
+      return;
+    }
     auto &analysis = *selector.get();
+    if (!analysis.isValid()) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid Module Analysis\n";
+      signalPassFailure();
+      return;
+    }
 
     MQSS_DEBUG("\n[Applying Pass: CommonCommute]\n");
 
     SharedPassLogic PassLogic;
+    llvm::StringRef kernelName = "";
+    bool success = false;
     if (mode == "CX-RX")
-      PassLogic.run(analysis, PassMode::CommuteCxRx);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::CommuteCxRx);
     else if (mode == "RX-CX")
-      PassLogic.run(analysis, PassMode::CommuteRxCx);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::CommuteRxCx);
     else if (mode == "CX-X")
-      PassLogic.run(analysis, PassMode::CommuteCxX);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::CommuteCxX);
     else if (mode == "X-CX")
-      PassLogic.run(analysis, PassMode::CommuteXCx);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::CommuteXCx);
     else if (mode == "CX-Z")
-      PassLogic.run(analysis, PassMode::CommuteCxZ);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::CommuteCxZ);
     else if (mode == "Z-CX")
-      PassLogic.run(analysis, PassMode::CommuteZCx);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::CommuteZCx);
     else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
+      return;
+    }
+
+    if (!success) {
+      llvm::errs() << "CommonCommutation: Failed to apply Pass on: "
+                   << kernelName << "\n";
+      signalPassFailure();
+      return;
     }
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
+      signalPassFailure();
+      return;
     }
   }
 };

@@ -6,6 +6,7 @@
  * the terms of the Apache License 2.0 which accompanies this distribution.    *
  ******************************************************************************/
 
+#include "Utils/DebugUtils.h"
 #include "Utils/TransformUtils.h"
 #include "cudaq/Optimizer/Builder/Intrinsics.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -15,6 +16,7 @@
 #include "mlir/Transforms/Passes.h"
 
 #include <llvm/IR/Type.h>
+#include <llvm/Support/LogicalResult.h>
 #include <mlir/Pass/Pass.h>
 
 namespace cudaq::opt {
@@ -340,14 +342,20 @@ public:
     unsigned counter = 0;
     patterns.insert<ReifySpanPattern, ConstantArrayPattern>(ctx, module,
                                                             counter);
-    LLVM_DEBUG(llvm::dbgs() << "Before globalizing array values:\n"
-                            << module << '\n');
+    MQSS_DEBUG("Before globalizing array values:\n" << module << '\n');
     if (failed(applyPatternsGreedily(module, std::move(patterns)))) {
+      mlir::emitError(module->getLoc(),
+                      "GlobalizeArrayValues: Failed to apply pass!");
       signalPassFailure();
       return;
     }
-    LLVM_DEBUG(llvm::dbgs() << "After globalizing array values:\n"
-                            << module << '\n');
+    if (failed(module.verify())) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : MLIR Module verification failed\n";
+      signalPassFailure();
+      return;
+    }
+    MQSS_DEBUG("After globalizing array values:\n" << module << '\n');
   }
 };
 

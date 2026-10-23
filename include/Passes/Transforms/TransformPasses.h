@@ -78,9 +78,6 @@ std::unique_ptr<mlir::Pass>
 CommonSwitchPass(const CommonSwitchPassOptions &options);
 
 std::unique_ptr<mlir::Pass>
-CommonDecompositionPass(const CommonDecompositionPassOptions &options);
-
-std::unique_ptr<mlir::Pass>
 CommonReductionPass(const CommonReductionPassOptions &options);
 
 std::unique_ptr<mlir::Pass> CommonMappingPass(

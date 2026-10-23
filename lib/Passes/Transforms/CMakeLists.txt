@@ -4,7 +4,6 @@ add_mlir_library(
   CommonGateCancellationPass.cpp
   CommonGateCommutationPass.cpp
   CommonCommuteAndSwitchPass.cpp
-  CommonDecompositionPass.cpp
   CommonPatternReductionPass.cpp
   CommonMappingPass.cpp
   CommonNormalizeArgAnglePass.cpp

@@ -1,9 +1,14 @@
 
-// RUN: %mqss-opt %s --CommonDecompositionPass=mode=CxToHCzH --CommonGateCancellationPass=mode=CancelGate 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCNOTReversePass --CommonGateCancellationPass=mode=CancelGate 2>&1 | FileCheck %s
 
-// CommonDecompositionPass expands the CNOT into H-CZ-H; the trailing H it introduces
-// then becomes directly adjacent to the circuit's own Hadamard-Hadamard pair, which
-// CommonGateCancellationPass removes as a redundant back-to-back gate.
+// CommonCNOTReversePass expands the CNOT into an H-CX-H sandwich with control and
+// target swapped. CommonGateCancellationPass's search stops at the *first* op of
+// the same gate type it finds, whether or not it actually matches -- so the
+// sandwich's own two boundary H's each stop at the next H without matching (they
+// sit on different qubit chains), and it's only the circuit's own pre-existing
+// Hadamard-Hadamard pair (chained directly off the control-output boundary H)
+// that finds its own match and cancels, leaving both of the sandwich's boundary
+// H's untouched.
 module @circuit_DecomposeThenCancel {
   func.func public @jit_circuit_DecomposeThenCancel() -> (tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {
     %0:2 = call @circuit_DecomposeThenCancel_0() : () -> (tensor<4xi64>, tensor<4xi64>)
@@ -43,7 +48,9 @@ module @circuit_DecomposeThenCancel {
 }
 
 // CHECK: %out_qubits = quantum.custom "H"() %2 : !quantum.bit
-// CHECK: %out_qubits_0:2 = quantum.custom "CZ"() %1, %out_qubits : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_1 = quantum.custom "H"() %out_qubits_0#1 : !quantum.bit
-// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_0#0 : !quantum.reg, !quantum.bit
-// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_1 : !quantum.reg, !quantum.bit
+// CHECK: %out_qubits_0 = quantum.custom "H"() %1 : !quantum.bit
+// CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0 : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_2 = quantum.custom "H"() %out_qubits_1#0 : !quantum.bit
+// CHECK: %out_qubits_3 = quantum.custom "H"() %out_qubits_1#1 : !quantum.bit
+// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_2 : !quantum.reg, !quantum.bit
+// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_3 : !quantum.reg, !quantum.bit

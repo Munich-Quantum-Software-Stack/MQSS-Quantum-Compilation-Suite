@@ -1,5 +1,6 @@
 
 
+#include "DebugUtils.h"
 #include "Passes/Analysis/DialectAnalysisSelector.h"
 #include "Quantum/IR/QuantumOps.h"
 #include "cudaq/Optimizer/Dialect/Quake/QuakeDialect.h"
@@ -9,8 +10,11 @@
 
 #include <mlir/IR/Attributes.h>
 #include <mlir/IR/BuiltinTypeInterfaces.h>
+#include <mlir/IR/Diagnostics.h>
+#include <mlir/IR/Location.h>
 #include <mlir/IR/Types.h>
 #include <mlir/IR/Value.h>
+#include <mlir/IR/ValueRange.h>
 #include <vector>
 
 using namespace mlir;
@@ -42,6 +46,7 @@ struct ReductionPassInfoty {
 };
 
 struct CommuteTy {
+  llvm::StringRef kernelName = "";
   Operation *Op1 = nullptr;
   Operation *Op2 = nullptr;
   QuantumOpView Op1QView;
@@ -51,13 +56,10 @@ struct CommuteTy {
 struct CommuteInfoTy {
 
 public:
-  void gather(Operation *Op1, Operation *Op2) {
-    CommuteTy Commute{Op1, Op2};
-    CommuteCandidates.push_back(Commute);
-  }
-  void gather(Operation *Op1, Operation *Op2, QuantumOpView Op1QView,
-              QuantumOpView Op2QView) {
-    CommuteTy Commute{Op1, Op2, Op1QView, Op2QView};
+  void gather(llvm::StringRef kernelName, Operation *Op1 = nullptr,
+              Operation *Op2 = nullptr, QuantumOpView Op1QView = {},
+              QuantumOpView Op2QView = {}) {
+    CommuteTy Commute{kernelName, Op1, Op2, Op1QView, Op2QView};
     CommuteCandidates.push_back(Commute);
   }
 
@@ -114,8 +116,8 @@ static mlir::Value normalizeValue(double param, mlir::IRRewriter &builder,
   return constantOp.getResult();
 }
 
-static bool equivalence_check(SmallVector<QubitID, 2> &Op1,
-                              SmallVector<QubitID, 2> &Op2) {
+static bool equivalence_check(SmallVector<QubitID> &Op1,
+                              SmallVector<QubitID> &Op2) {
   if (Op1.size() != Op2.size())
     return false;
 
@@ -134,8 +136,8 @@ static bool equivalence_check(SmallVector<QubitID, 2> &Op1,
   return true;
 }
 
-static bool equivalence_check(const SmallVector<mlir::Value, 2> &Op1,
-                              const SmallVector<mlir::Value, 2> &Op2) {
+static bool equivalence_check(const SmallVector<mlir::Value> &Op1,
+                              const SmallVector<mlir::Value> &Op2) {
   if (Op1.size() != Op2.size())
     return false;
 
@@ -200,7 +202,7 @@ static bool SameQubitValues(tupleVectorsValues Gate1CtrlTarget,
           equivalence_check(Gate1Targets, Gate2Targets));
 }
 
-static bool isContained(QubitID KeyQubit, SmallVector<QubitID, 2> QubitList) {
+static bool isContained(QubitID KeyQubit, SmallVector<QubitID> QubitList) {
 
   for (auto ctrl : QubitList) {
     if (ctrl.base == KeyQubit.base && ctrl.index == KeyQubit.index)
@@ -209,7 +211,7 @@ static bool isContained(QubitID KeyQubit, SmallVector<QubitID, 2> QubitList) {
   return false;
 }
 
-static bool touchesAny(Operation *Op2, SmallVector<QubitID, 2> Op1QubitIDs,
+static bool touchesAny(Operation *Op2, SmallVector<QubitID> Op1QubitIDs,
                        MapVector<Operation *, QuantumOpView> OpQuantumView) {
 
   for (auto Op1Qubit : Op1QubitIDs) {
@@ -239,8 +241,7 @@ static bool touchesAny(Operation *Op2, SmallVector<QubitID, 2> Op1QubitIDs,
   return false;
 }
 
-static bool touchesAny(Operation *Op2,
-                       SmallVector<mlir::Value, 2> Op1OutQubits) {
+static bool touchesAny(Operation *Op2, SmallVector<mlir::Value> Op1OutQubits) {
 
   for (auto OutQubit : Op1OutQubits) {
 
@@ -253,39 +254,43 @@ static bool touchesAny(Operation *Op2,
   return false;
 }
 
+static bool canCreateQuakeGate(llvm::StringRef GateTy) {
+  auto QubitRoles = getGateOpRoles(GateTy);
+  return !QubitRoles.empty();
+}
+
 inline quake::OperatorInterface
-createQuakeGate(Location loc, llvm::StringRef NewGateTy,
-                const SmallVector<mlir::Value, 2> ControlQubits,
-                const SmallVector<mlir::Value, 2> TargetQubitOps,
+createQuakeGate(Location loc, llvm::StringRef &NewGateTy,
+                const SmallVector<mlir::Value> &ControlQubits,
+                const SmallVector<mlir::Value> &TargetQubitOps,
                 const mlir::ValueRange params, mlir::IRRewriter &builder,
                 bool isAdj = false) {
 
+  auto QubitRoles = getGateOpRoles(NewGateTy);
+  if (QubitRoles.empty()) {
+    return nullptr;
+  }
   if (NewGateTy == "RX") {
-    // TODO: Can this create an gate?
-    return builder.create<quake::RxOp>(loc, isAdj, params, ControlQubits,
+    return builder.create<quake::RxOp>(loc, isAdj, params, ValueRange{},
                                        TargetQubitOps);
   }
   if (NewGateTy == "RY") {
-    // TODO: Can this create an gate?
-    return builder.create<quake::RyOp>(loc, isAdj, params, ControlQubits,
+    return builder.create<quake::RyOp>(loc, isAdj, params, ValueRange{},
                                        TargetQubitOps);
   }
   if (NewGateTy == "RZ") {
-    // TODO: Can this create an gate?
-    return builder.create<quake::RzOp>(loc, isAdj, params, ControlQubits,
+    return builder.create<quake::RzOp>(loc, isAdj, params, ValueRange{},
                                        TargetQubitOps);
   }
   if (NewGateTy == "S") {
-    return builder.create<quake::SOp>(loc, isAdj, params, ControlQubits,
-                                      TargetQubitOps);
+    return builder.create<quake::SOp>(loc, false, TargetQubitOps);
   }
   if (NewGateTy == "T") {
-    return builder.create<quake::TOp>(loc, isAdj, params, ControlQubits,
+    return builder.create<quake::TOp>(loc, false, params, ControlQubits,
                                       TargetQubitOps);
   }
   if (NewGateTy == "SAdj") {
-    return builder.create<quake::SOp>(loc, true, params, ControlQubits,
-                                      TargetQubitOps);
+    return builder.create<quake::SOp>(loc, true, TargetQubitOps);
   }
   if (NewGateTy == "TAdj") {
     return builder.create<quake::TOp>(loc, true, params, ControlQubits,
@@ -321,6 +326,14 @@ createQuakeGate(Location loc, llvm::StringRef NewGateTy,
     return builder.create<quake::SwapOp>(loc, params, ControlQubits,
                                          TargetQubitOps);
   }
+  if (NewGateTy == "U3") {
+    return builder.create<quake::U3Op>(loc, params, ControlQubits,
+                                       TargetQubitOps);
+  }
+  if (NewGateTy == "PhasedRx") {
+    return builder.create<quake::PhasedRxOp>(loc, params, ControlQubits,
+                                             TargetQubitOps);
+  }
   return nullptr;
 }
 
@@ -340,6 +353,7 @@ inline mlir::arith::ConstantOp createQuakeConstOp(Location loc,
     auto valueAttr = builder.getFloatAttr(type, constantValue);
     return createConstant(loc, builder, valueAttr);
   }
+  return nullptr;
 }
 
 inline mlir::Value createQuakeDivF(Location loc, mlir::Value numerator,
@@ -365,9 +379,9 @@ inline quake::ExtractRefOp createQuakeExtractRefOp(Location loc,
   return builder.create<quake::ExtractRefOp>(loc, qubits, targetQubit);
 }
 
-inline SmallVector<mlir::Value, 2>
+inline SmallVector<mlir::Value>
 createQuakeMeasureOp(Location loc, mlir::IRRewriter &builder,
-                     const SmallVector<mlir::Value, 2> TargetQubits) {
+                     const SmallVector<mlir::Value> TargetQubits) {
 
   SmallVector<mlir::Value, 2> results;
   mlir::Type measTy = quake::MeasureType::get(builder.getContext());
@@ -382,12 +396,11 @@ createQuakeMeasureOp(Location loc, mlir::IRRewriter &builder,
 
 inline quantum::CustomOp
 createCatalystGate(Location loc, llvm::StringRef NewGateTy,
-                   const SmallVector<mlir::Value, 2> ControlQubitsOps,
-                   const SmallVector<mlir::Value, 2> TargetQubitOps,
+                   const SmallVector<mlir::Value> &ControlQubitsOps,
+                   const SmallVector<mlir::Value> &TargetQubitOps,
                    const mlir::ValueRange params, mlir::IRRewriter &builder,
                    bool isAdj = false) {
 
-  quantum::CustomOp NewOp = nullptr;
   if (ControlQubitsOps.empty()) {
     std::vector<mlir::Type> TargetQubitTys;
 
@@ -417,14 +430,6 @@ createCatalystGate(Location loc, llvm::StringRef NewGateTy,
     // OpToReplace->getResult(0).replaceAllUsesWith(NewOp->getResult(0));
   }
 
-  StringAttr GateTy;
-  if (NewGateTy == "CNOT") {
-    GateTy = builder.getStringAttr("CNOT");
-  }
-  if (NewGateTy == "CZ") {
-    GateTy = builder.getStringAttr("CZ");
-  }
-
   mlir::Value control = ControlQubitsOps[0];
   mlir::Value target = TargetQubitOps[0];
 
@@ -434,8 +439,8 @@ createCatalystGate(Location loc, llvm::StringRef NewGateTy,
       /*out_ctrl_qubits=*/mlir::TypeRange{},
       /*params=*/mlir::ValueRange{},
       /*in_qubits=*/mlir::ValueRange{control, target},
-      /*gate_name=*/GateTy, // or gateName if API
-                            // accepts StringRef
+      /*gate_name=*/NewGateTy, // or gateName if API
+                               // accepts StringRef
       /*adjoint=*/isAdj,
       /*in_ctrl_qubits=*/mlir::ValueRange{},
       /*in_ctrl_values=*/mlir::ValueRange{});
@@ -453,6 +458,7 @@ inline mlir::arith::ConstantOp createCatalystConstOp(Location loc,
     auto valueAttr = builder.getFloatAttr(type, constantValue);
     return createConstant(loc, builder, valueAttr);
   }
+  return nullptr;
 }
 
 inline mlir::Value createCatalystDivF(Location loc, mlir::Value numerator,
@@ -469,7 +475,10 @@ inline quantum::AllocOp createCatalystAlloca(Location loc,
 
   auto regTy = quantum::ResultType::get(builder.getContext());
   mlir::Type qregTy = mlir::parseType("!quantum.reg", builder.getContext());
-  assert(qregTy && "failed to parse !quantum.reg");
+  if (!qregTy) {
+    mlir::emitError(loc, "failed to parse !quantum.reg");
+    return nullptr;
+  }
 
   return builder.create<quantum::AllocOp>(
       loc, qregTy,
@@ -484,7 +493,10 @@ inline quantum::ExtractOp createCatalystExtractRefOp(Location loc,
 
   mlir::Type qbitTy = mlir::parseType("!quantum.bit", builder.getContext());
 
-  assert(qbitTy && "failed to parse !quantum.bit");
+  if (!qbitTy) {
+    mlir::emitError(loc, "failed to parse !quantum.bit");
+    return nullptr;
+  }
 
   auto indexAttr = builder.getI64IntegerAttr(targetQubit);
 
@@ -493,9 +505,9 @@ inline quantum::ExtractOp createCatalystExtractRefOp(Location loc,
                                             /*index_attr=*/indexAttr);
 }
 
-inline SmallVector<mlir::Value, 2>
+inline SmallVector<mlir::Value>
 createCatalystMeasureOp(mlir::Location loc, mlir::IRRewriter &builder,
-                        const SmallVector<mlir::Value, 2> TargetQubitOps) {
+                        const SmallVector<mlir::Value> TargetQubitOps) {
 
   SmallVector<mlir::Value> results;
   auto i1Ty = builder.getI1Type();
@@ -517,7 +529,8 @@ createCatalystMeasureOp(mlir::Location loc, mlir::IRRewriter &builder,
   return results;
 }
 
-static void eraseOpsSafely(llvm::SmallPtrSetImpl<mlir::Operation *> &eraseSet) {
+static bool eraseOpsSafely(mlir::Location loc,
+                           llvm::SmallPtrSetImpl<mlir::Operation *> &eraseSet) {
   llvm::SmallVector<mlir::Operation *> ordered;
 
   llvm::SmallVector<mlir::Value> operandsToCleanup;
@@ -536,7 +549,7 @@ static void eraseOpsSafely(llvm::SmallPtrSetImpl<mlir::Operation *> &eraseSet) {
 
     for (auto it = ordered.begin(); it != ordered.end();) {
       mlir::Operation *op = *it;
-      llvm::outs() << "Controlled DCE for: " << *op << "\n";
+      MQSS_DEBUG("Controlled DCE for: " << *op << "\n");
 
       bool hasInternalUsersLeft = false;
       for (mlir::Value result : op->getResults()) {
@@ -562,20 +575,27 @@ static void eraseOpsSafely(llvm::SmallPtrSetImpl<mlir::Operation *> &eraseSet) {
 
   // cleanupDeadDefs(operandsToCleanup);
 
-  assert(ordered.empty() && "cycle or invalid erase dependency");
+  if (!ordered.empty()) {
+    mlir::emitError(loc, "cycle or invalid erase dependency");
+    return false;
+  }
+  return true;
 }
 
 static Operation *createNewGate(Location loc, QuantumDialect DialectTy,
                                 llvm::StringRef NewGateTy,
-                                SmallVector<mlir::Value, 2> ControlQubitOps,
-                                SmallVector<mlir::Value, 2> TargetQubitOps,
+                                SmallVector<mlir::Value> ControlQubitOps,
+                                SmallVector<mlir::Value> TargetQubitOps,
                                 const mlir::ValueRange params,
-                                mlir::IRRewriter &builder, bool isAdj = false) {
+                                mlir::IRRewriter &builder, bool isAdj = false,
+                                const char *caller = __builtin_FUNCTION()) {
 
   Operation *NewOp;
 
-  assert(DialectTy != QuantumDialect::Unknown &&
-         "Cannot create Op for Unknown Dialect Type");
+  if (DialectTy == QuantumDialect::Unknown) {
+    mlir::emitError(loc, "Cannot create Op for Unknown Dialect Type");
+    return nullptr;
+  }
   if (DialectTy == QuantumDialect::Quake) {
     NewOp = createQuakeGate(loc, NewGateTy, ControlQubitOps, TargetQubitOps,
                             params, builder, isAdj);
@@ -583,20 +603,32 @@ static Operation *createNewGate(Location loc, QuantumDialect DialectTy,
     NewOp = createCatalystGate(loc, NewGateTy, ControlQubitOps, TargetQubitOps,
                                params, builder, isAdj);
   }
+  if (!NewOp) {
+    mlir::emitError(loc) << caller
+                         << ": could not create new GateOp: " << NewGateTy;
+    return nullptr;
+  }
 
   return NewOp;
 }
 
 static mlir::Value createAllocOp(Location loc, QuantumDialect DialectTy,
-                                 mlir::IRRewriter &builder, size_t numQubits) {
+                                 mlir::IRRewriter &builder, size_t numQubits,
+                                 const char *caller = __builtin_FUNCTION()) {
 
   mlir::Value NewOp;
-  assert(DialectTy != QuantumDialect::Unknown &&
-         "Cannot create AllocOp for Unknown Dialect Type");
+  if (DialectTy == QuantumDialect::Unknown) {
+    mlir::emitError(loc, "Cannot create Op for Unknown Dialect Type");
+    return nullptr;
+  }
   if (DialectTy == QuantumDialect::Quake) {
     NewOp = createQuakeAlloca(loc, builder, numQubits);
   } else {
     NewOp = createCatalystAlloca(loc, builder, numQubits);
+  }
+  if (!NewOp) {
+    mlir::emitError(loc) << caller << ": could not create new AllocaOp";
+    return nullptr;
   }
 
   return NewOp;
@@ -604,27 +636,36 @@ static mlir::Value createAllocOp(Location loc, QuantumDialect DialectTy,
 
 static mlir::Value createExtractOp(Location loc, QuantumDialect DialectTy,
                                    mlir::IRRewriter &builder,
-                                   mlir::Value qubits,
-                                   unsigned int targetQubit) {
+                                   mlir::Value qubits, unsigned int targetQubit,
+                                   const char *caller = __builtin_FUNCTION()) {
 
   mlir::Value NewOp;
-  assert(DialectTy != QuantumDialect::Unknown &&
-         "Cannot create ExtractRefOp for Unknown Dialect Type");
+  if (DialectTy == QuantumDialect::Unknown) {
+    mlir::emitError(loc, "Cannot create Op for Unknown Dialect Type");
+    return nullptr;
+  }
   if (DialectTy == QuantumDialect::Quake) {
     NewOp = createQuakeExtractRefOp(loc, builder, qubits, targetQubit);
   } else {
     NewOp = createCatalystExtractRefOp(loc, builder, qubits, targetQubit);
   }
+  if (!NewOp) {
+    mlir::emitError(loc) << caller << ": could not create new ExtractOp";
+    return nullptr;
+  }
   return NewOp;
 }
 
-static mlir::Value createArithConstantOp(Location loc, QuantumDialect DialectTy,
-                                         mlir::IRRewriter &builder,
-                                         double constantValue) {
+static mlir::Value
+createArithConstantOp(Location loc, QuantumDialect DialectTy,
+                      mlir::IRRewriter &builder, double constantValue,
+                      const char *caller = __builtin_FUNCTION()) {
 
   mlir::Value NewOp;
-  assert(DialectTy != QuantumDialect::Unknown &&
-         "Cannot create ArithConstantOp for Unknown Dialect Type");
+  if (DialectTy == QuantumDialect::Unknown) {
+    mlir::emitError(loc, "Cannot create Op for Unknown Dialect Type");
+    return nullptr;
+  }
   if (DialectTy == QuantumDialect::Quake) {
     NewOp =
         createQuakeConstOp(loc, builder, constantValue, builder.getF64Type());
@@ -632,36 +673,54 @@ static mlir::Value createArithConstantOp(Location loc, QuantumDialect DialectTy,
     NewOp = createCatalystConstOp(loc, builder, constantValue,
                                   builder.getF64Type());
   }
+  if (!NewOp) {
+    mlir::emitError(loc) << caller << ": could not create new ArithConstOp";
+    return nullptr;
+  }
   return NewOp;
 }
 
 static mlir::Value createDivFOp(Location loc, QuantumDialect DialectTy,
                                 mlir::Value numerator, double denominator,
-                                mlir::IRRewriter &rewriter) {
+                                mlir::IRRewriter &rewriter,
+                                const char *caller = __builtin_FUNCTION()) {
 
   mlir::Value NewOp;
-  assert(DialectTy != QuantumDialect::Unknown &&
-         "Cannot create DivFOp for Unknown Dialect Type");
+  if (DialectTy == QuantumDialect::Unknown) {
+    mlir::emitError(loc, "Cannot create Op for Unknown Dialect Type");
+    return nullptr;
+  }
   if (DialectTy == QuantumDialect::Quake) {
     NewOp = createQuakeDivF(loc, numerator, denominator, rewriter);
   } else {
     NewOp = createCatalystDivF(loc, numerator, denominator, rewriter);
   }
+  if (!NewOp) {
+    mlir::emitError(loc) << caller << ": could not create new DivFOp";
+    return nullptr;
+  }
   return NewOp;
 }
 
-static SmallVector<mlir::Value, 2>
+static SmallVector<mlir::Value>
 createMeasureOp(Location loc, QuantumDialect DialectTy,
                 mlir::IRRewriter &builder,
-                const SmallVector<mlir::Value, 2> TargetQubits) {
+                const SmallVector<mlir::Value> TargetQubits,
+                const char *caller = __builtin_FUNCTION()) {
 
-  SmallVector<mlir::Value, 2> NewOp;
-  assert(DialectTy != QuantumDialect::Unknown &&
-         "Cannot create DivFOp for Unknown Dialect Type");
+  SmallVector<mlir::Value> NewOp;
+  if (DialectTy == QuantumDialect::Unknown) {
+    mlir::emitError(loc, "Cannot create Op for Unknown Dialect Type");
+    return {};
+  }
   if (DialectTy == QuantumDialect::Quake) {
     NewOp = createQuakeMeasureOp(loc, builder, TargetQubits);
   } else {
     NewOp = createCatalystMeasureOp(loc, builder, TargetQubits);
+  }
+  if (NewOp.empty()) {
+    mlir::emitError(loc) << caller << ": could not create new MeasureOp";
+    return {};
   }
   return NewOp;
 }

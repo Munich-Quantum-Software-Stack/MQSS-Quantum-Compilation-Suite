@@ -1,0 +1,18 @@
+// Copyright (c) 2026 MQSS Maintainers
+// All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+// Three-qubit GHZ state. Wider than the example QDMI device's smallest
+// register, with a chain of entangling gates rather than a single pair.
+func.func @__nvqpp__mlirgen__ghz() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
+  %0 = quake.alloca !quake.veq<3>
+  %q0 = quake.extract_ref %0[0] : (!quake.veq<3>) -> !quake.ref
+  %q1 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
+  %q2 = quake.extract_ref %0[2] : (!quake.veq<3>) -> !quake.ref
+  quake.h %q0 : (!quake.ref) -> ()
+  quake.x [%q0] %q1 : (!quake.ref, !quake.ref) -> ()
+  quake.x [%q1] %q2 : (!quake.ref, !quake.ref) -> ()
+  %meas = quake.mz %0 : (!quake.veq<3>) -> !cc.stdvec<!quake.measure>
+  return
+}

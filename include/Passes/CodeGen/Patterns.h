@@ -29,9 +29,20 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "llvm/ADT/StringSet.h"
 #include "llvm/Support/AllocatorBase.h"
 
-namespace catalyst {
-namespace quantum {
+namespace mqss::mqssci::codegen {
 void populateQIRConversionPatterns(mlir::TypeConverter &,
                                    mlir::RewritePatternSet &, bool);
-} // namespace quantum
-} // namespace catalyst
+
+// Create a Pauli product string ptr holding the Pauli word.
+mlir::Value getPauliProductPtrStr(mlir::Location loc, mlir::OpBuilder &rewriter,
+                                  mlir::ModuleOp mod,
+                                  mlir::ArrayAttr pauliProduct);
+
+// Helper for creating a call to `__catalyst__qis__PauliRot`.
+mlir::LogicalResult
+createPauliRotCall(mlir::Location loc,
+                   mlir::ConversionPatternRewriter &rewriter,
+                   mlir::Operation *opForDecl, mlir::Value pauliWordPtr,
+                   mlir::Value thetaValue, mlir::Value modifiersPtr,
+                   mlir::Value cond, mlir::ValueRange inQubits);
+} // namespace mqss::mqssci::codegen

@@ -21,6 +21,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Utils/DialectUtils.h"
 
 #include <llvm/Support/raw_ostream.h>
+#include <mlir/Dialect/Utils/StaticValueUtils.h>
 
 class QuakeAnalysis : public MyModuleAnalysis {
 
@@ -53,8 +54,13 @@ public:
 
           if (auto allocaOp = dyn_cast<quake::AllocaOp>(Op)) {
             kernelInfo.AllocatedQubits += getAllocatedQubits(allocaOp);
-            assert(!kernelInfo.AllocOp &&
-                   "Can only have 1 alloc instruction in a quantum kernel!");
+            if (kernelInfo.AllocOp) {
+              mlir::emitError(allocaOp->getLoc(),
+                              "QuakeExtractor: gaterOpInfo: Can Only have 1 "
+                              "allocaOp in a kernel");
+              _valid = false;
+              return;
+            }
             kernelInfo.AllocOp = allocaOp;
             return;
           }
@@ -68,22 +74,40 @@ public:
 
   mlir::LogicalResult verifyModule() override { return module.verify(); }
 
-  void addOperation(Operation *NewOp) override {
+  bool addOperation(Operation *NewOp) override {
     auto funcOp = NewOp->getParentOfType<mlir::func::FuncOp>();
-    assert(funcOp && "Adding New Op: Parent Function not found!");
-    assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
+    if (!funcOp) {
+      mlir::emitError(
+          NewOp->getLoc(),
+          "QuakeExtractor: Adding New Op: Parent Function not found!");
+      return false;
+    }
+    if (!KernelDialectInfo.count(funcOp)) {
+      mlir::emitError(
+          NewOp->getLoc(),
+          "QuakeExtractor: Adding New Op: No QuantumOpInfo for funcOp");
+      return false;
+    }
     auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
-    assert(!QInfo.count(NewOp) &&
-           "Adding New Op: Op already present in QuantumInfoMap");
+    if (QInfo.count(NewOp)) {
+      mlir::emitError(NewOp->getLoc(), "QuakeExtractor: Adding New Op: Op "
+                                       "already present in QuantumInfoMap");
+      return false;
+    }
     auto view =
         createQuantumView(NewOp, KernelDialectInfo[funcOp].NumMeasureQubits);
     QInfo[NewOp] = view;
+    return true;
   }
 
-  void clearKernelBody(func::FuncOp &kernel,
+  bool clearKernelBody(func::FuncOp &kernel,
                        std::set<Operation *> notToErase) override {
     // cleaning the mlir::funcOp corresponding to the quake circuit
-    assert(KernelDialectInfo.count(kernel) && "No QuantumOpInfo for funcOp");
+    if (!KernelDialectInfo.count(kernel)) {
+      mlir::emitError(kernel->getLoc(),
+                      "QuakeExtractor: No QuantumOpInfo for funcOp");
+      return false;
+    }
     auto &QInfo = KernelDialectInfo[kernel].OpQViewMap;
     for (auto &[Op, qview] : QInfo) {
       if (notToErase.count(Op))
@@ -91,14 +115,23 @@ public:
       QInfo.erase(Op);
       Op->erase();
     }
+    return true;
   }
 
   bool UpdateOperands(Operation *Op, QubitRole Role, mlir::Value OrigValue,
                       mlir::Value NewValue) {
     auto funcOp = getOpParentFunc(Op);
-    assert(KernelDialectInfo.count(funcOp) && "No QuantumOpInfo for funcOp");
+    if (!KernelDialectInfo.count(funcOp)) {
+      mlir::emitError(Op->getLoc(),
+                      "QuakeExtractor: No QuantumOpInfo for funcOp");
+      return false;
+    }
     auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
-    assert(QInfo.count(Op) && "Updating Op: Op not present in QuantumInfoMap");
+    if (!QInfo.count(Op)) {
+      mlir::emitError(Op->getLoc(),
+                      "QuakeExtractor: Op not present in QuantumInfoMap");
+      return false;
+    }
     QuantumOpView OpQView = QInfo[Op];
     auto &Operands = OpQView.getQubits(Role).in;
     auto it = std::find(Operands.begin(), Operands.end(), OrigValue);
@@ -113,27 +146,49 @@ public:
     return KernelDialectInfo;
   }
 
-  const QuantumOpView getOpInfo(Operation *Op) override {
+  const std::optional<QuantumOpView> getOpInfo(Operation *Op) override {
     auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
-    assert(KernelDialectInfo.count(funcOp) &&
-           "Get Op Info: No QuantumOpInfo for funcOp");
+    if (!KernelDialectInfo.count(funcOp)) {
+      mlir::emitError(
+          Op->getLoc(),
+          "QuakeExtractor: Get Op Info: No QuantumOpInfo for funcOp");
+      return std::nullopt;
+    }
+
     auto QInfo = KernelDialectInfo[funcOp].OpQViewMap;
-    assert(QInfo.count(Op) && "Get Op Info: Op not present QuantumInfoMap");
+    if (!QInfo.count(Op)) {
+      mlir::emitError(
+          Op->getLoc(),
+          "QuakeExtractor: Get Op Info: Op not present QuantumInfoMap");
+      return std::nullopt;
+    }
     return QInfo[Op];
   }
+
+  [[nodiscard]] bool isValid() const override { return _valid; }
 
 private:
   ModuleOp module;
   MapVector<func::FuncOp, QuantumKernelInfo> KernelDialectInfo;
   int nextClassicalBit = 0;
+  bool _valid = true;
 
   std::tuple<QubitID, mlir::Value> extractQubits(Operation *Operand) {
     QubitID ID;
+    if (!Operand) {
+      return {ID, nullptr};
+    }
     if (auto ext_ref = dyn_cast<quake::ExtractRefOp>(Operand)) {
-      auto base = ext_ref.getVeq();
-      auto index = ext_ref.getConstantIndex();
-      ID.base = base;
-      ID.index = index;
+      ID.base = ext_ref.getVeq();
+
+      if (ext_ref.hasConstantIndex()) {
+        ID.index = mlir::getAsIndexOpFoldResult(
+            ext_ref->getContext(),
+            ext_ref.getConstantIndex()); // std::size_t -> IntegerAttr ->
+                                         // OpFoldResult
+      } else {
+        ID.index = ext_ref.getIndex(); // already a Value -> OpFoldResult
+      }
       return {ID, ext_ref};
     }
     return {ID, nullptr};
@@ -174,7 +229,12 @@ private:
       // Do something
       QubitID ID;
       ID.base = extract_refop.getVeq();
-      ID.index = extract_refop.getConstantIndex();
+      if (extract_refop.hasConstantIndex()) {
+        ID.index = mlir::getAsIndexOpFoldResult(
+            extract_refop->getContext(), extract_refop.getConstantIndex());
+      } else {
+        ID.index = extract_refop.getIndex(); // already a Value -> OpFoldResult
+      }
       view.getQubits(QubitRole::Target).ids.push_back(ID);
     } else if (auto quakemeasop = dyn_cast<quake::MeasurementInterface>(Op)) {
       NumMeasureQubits +=
@@ -188,7 +248,7 @@ private:
         auto gop = quakemeasop->getOperand(i);
 
         ID.base = gop;
-        ID.index = -1;
+        ID.index = nullptr;
         view.getQubits(QubitRole::Target).ids.push_back(ID);
         view.getQubits(QubitRole::Target).in.push_back(gop);
         view.getQubits(QubitRole::Target).out.push_back(resop);
@@ -199,7 +259,6 @@ private:
 
   mlir::func::FuncOp getOpParentFunc(Operation *Op) {
     auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
-    assert(funcOp && "Adding New O: Parent Function not found!");
     return funcOp;
   }
 
@@ -211,10 +270,16 @@ private:
       return 0;
 
     auto operand = meas->getOperand(0);
+    if (!operand.getDefiningOp()) {
+      mlir::emitError(operand.getLoc(),
+                      "QuakeExtractor: No defining Op for Measurement Operand");
+      return 0;
+    }
 
     if (auto RefOp = dyn_cast<quake::ExtractRefOp>(operand.getDefiningOp())) {
       auto q = static_cast<int64_t>(RefOp.getConstantIndex());
-      measurements.push_back({q, nextClassicalBit++});
+      auto qofr = mlir::getAsIndexOpFoldResult(RefOp.getContext(), q);
+      measurements.push_back({qofr, nextClassicalBit++});
       return 1;
     }
 
@@ -222,7 +287,8 @@ private:
     if (auto veqTy = dyn_cast<quake::VeqType>(measuredTy)) {
       if (veqTy.hasSpecifiedSize()) {
         for (auto q = 0; q < veqTy.getSize(); ++q) {
-          measurements.push_back({q, nextClassicalBit++});
+          auto qofr = mlir::getAsIndexOpFoldResult(veqTy.getContext(), q);
+          measurements.push_back({qofr, nextClassicalBit++});
         }
         return static_cast<int64_t>(veqTy.getSize());
       }

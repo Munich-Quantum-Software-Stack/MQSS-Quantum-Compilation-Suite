@@ -1,20 +1,25 @@
 
-// RUN: %mqss-opt %s --CommonDecompositionPass=mode=CzToHCxH  2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonGateCancellationPass=mode=CancelGate  2>&1 | FileCheck %s
 
-module @circuit_CzToHCxH {
-  func.func public @jit_circuit_CzToHCxH() -> (tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {
-    %0:2 = call @circuit_CzToHCxH_0() : () -> (tensor<4xi64>, tensor<4xi64>)
+// Two consecutive Hadamards on the same value-semantics chain are an identity
+// pair; CommonGateCancellationPass should splice both out and rewire every
+// downstream use straight back to the original qubit. This is the first
+// coverage of gate cancellation on the catalyst-quantum dialect.
+module @circuit_CancelHH {
+  func.func public @jit_circuit_CancelHH() -> (tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {
+    %0:2 = call @circuit_CancelHH_0() : () -> (tensor<4xi64>, tensor<4xi64>)
     return %0#0, %0#1 : tensor<4xi64>, tensor<4xi64>
   }
-  func.func public @circuit_CzToHCxH_0() -> (tensor<4xi64>, tensor<4xi64>) attributes {diff_method = "parameter-shift", llvm.linkage = #llvm.linkage<internal>, qnode} {
+  func.func public @circuit_CancelHH_0() -> (tensor<4xi64>, tensor<4xi64>) attributes {diff_method = "parameter-shift", llvm.linkage = #llvm.linkage<internal>, qnode} {
     %c1000_i64 = arith.constant 1000 : i64
     quantum.device shots(%c1000_i64) ["/workspaces/MQSS-Passes-Suite/build/_deps/venv/lib/python3.11/site-packages/pennylane_lightning/liblightning_qubit_catalyst.so", "LightningSimulator", "{'mcmc': False, 'num_burnin': 0, 'kernel_name': None}"]
     %0 = quantum.alloc( 2) : !quantum.reg
     %1 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
     %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-    %out_qubits:2 = quantum.custom "CZ"() %1, %2 : !quantum.bit, !quantum.bit
-    %3 = quantum.insert %0[ 0], %out_qubits#0 : !quantum.reg, !quantum.bit
-    %4 = quantum.insert %3[ 1], %out_qubits#1 : !quantum.reg, !quantum.bit
+    %out_qubits = quantum.custom "Hadamard"() %1 : !quantum.bit
+    %out_qubits_0 = quantum.custom "Hadamard"() %out_qubits : !quantum.bit
+    %3 = quantum.insert %0[ 0], %out_qubits_0 : !quantum.reg, !quantum.bit
+    %4 = quantum.insert %3[ 1], %2 : !quantum.reg, !quantum.bit
     %5 = quantum.compbasis qreg %4 : !quantum.obs
     %eigvals, %counts = quantum.counts %5 : tensor<4xf64>, tensor<4xi64>
     %6 = tensor.empty() : tensor<4xi64>
@@ -37,8 +42,5 @@ module @circuit_CzToHCxH {
   }
 }
 
-// CHECK:  %out_qubits = quantum.custom "H"() %2 : !quantum.bit
-// CHECK:  %out_qubits_0:2 = quantum.custom "CNOT"() %1, %out_qubits : !quantum.bit, !quantum.bit
-// CHECK:  %out_qubits_1 = quantum.custom "H"() %out_qubits_0#1 : !quantum.bit
-// CHECK:  %3 = quantum.insert %0[ 0], %out_qubits_0#0 : !quantum.reg, !quantum.bit
-// CHECK:  %4 = quantum.insert %3[ 1], %out_qubits_1 : !quantum.reg, !quantum.bit
+// CHECK:  %3 = quantum.insert %0[ 0], %1 : !quantum.reg, !quantum.bit
+// CHECK:  %4 = quantum.insert %3[ 1], %2 : !quantum.reg, !quantum.bit

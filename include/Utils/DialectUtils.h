@@ -23,6 +23,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "mlir/AsmParser/AsmParser.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 
+#include <llvm/Support/Casting.h>
 #include <mlir/IR/Attributes.h>
 #include <mlir/IR/BuiltinTypeInterfaces.h>
 #include <mlir/IR/Types.h>
@@ -73,7 +74,9 @@ inline std::tuple<bool, StringLiteral> isQuakeQuantumGate(Operation *op) {
   if (auto x = dyn_cast<quake::SwapOp>(op)) {
     return {true, "SWAP"};
   }
-
+  if (auto x = dyn_cast<quake::U3Op>(op)) {
+    return {true, "U3"};
+  }
   if (auto x = dyn_cast<quake::SOp>(op)) {
     if (x.isAdj())
       return {true, "SAdj"};

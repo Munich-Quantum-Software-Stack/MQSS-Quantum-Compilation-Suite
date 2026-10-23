@@ -68,7 +68,20 @@ public:
     MQSS_DEBUG("[Applying Pass: CommonGateCancellationPass]\n");
 
     auto &selector = getAnalysis<DialectAnalysisSelector>();
+    if (!selector.get()) {
+
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid MLIR Dialect\n";
+      signalPassFailure();
+      return;
+    }
     auto &analysis = *selector.get();
+    if (!analysis.isValid()) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid Module Analysis\n";
+      signalPassFailure();
+      return;
+    }
     auto KernelDialectInfo = analysis.getKernelDialectInfo();
 
     // Empty CompareKey meaning - both control and target qubit operands
@@ -93,11 +106,14 @@ public:
     } else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
+      return;
     }
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
+      signalPassFailure();
+      return;
     }
   }
 };

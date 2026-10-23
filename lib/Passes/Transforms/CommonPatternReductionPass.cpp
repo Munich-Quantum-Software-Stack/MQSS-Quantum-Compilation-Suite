@@ -37,8 +37,8 @@ enum class PassMode { HXHToZ, HZHToX, SAdjZToS, SZToSAdj, NA };
 
 struct SharedPassLogic {
 
-  void run(MyModuleAnalysis &analysis, PassMode Mode,
-           QuantumDialect DialectTy) {
+  tuple<bool, llvm::StringRef> run(MyModuleAnalysis &analysis, PassMode Mode,
+                                   QuantumDialect DialectTy) {
 
     ReductionPassInfoty PassInfo;
     if (Mode == PassMode::HXHToZ) {
@@ -66,7 +66,7 @@ struct SharedPassLogic {
       PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     }
 
-    performReduction(analysis, PassInfo, DialectTy);
+    return performReduction(analysis, PassInfo, DialectTy);
   }
 };
 
@@ -86,29 +86,58 @@ public:
   void runOnOperation() override {
 
     auto &selector = getAnalysis<DialectAnalysisSelector>();
+    if (!selector.get()) {
+
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid MLIR Dialect\n";
+      signalPassFailure();
+      return;
+    }
     auto &analysis = *selector.get();
+    if (!analysis.isValid()) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid Module Analysis\n";
+      signalPassFailure();
+      return;
+    }
     auto DialectTy = selector.getDialect();
 
     MQSS_DEBUG("\n[Applying Pass: CommonReduction]\n");
 
     SharedPassLogic PassLogic;
 
+    bool success = false;
+    llvm::StringRef kernelName = "";
     if (mode == "HZHToX") {
-      PassLogic.run(analysis, PassMode::HZHToX, DialectTy);
-    } else if (mode == "HXHToZ")
-      PassLogic.run(analysis, PassMode::HXHToZ, DialectTy);
-    else if (mode == "SAdjZToS")
-      PassLogic.run(analysis, PassMode::SAdjZToS, DialectTy);
-    else if (mode == "SZToSAdj")
-      PassLogic.run(analysis, PassMode::SZToSAdj, DialectTy);
-    else {
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::HZHToX, DialectTy);
+    } else if (mode == "HXHToZ") {
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::HXHToZ, DialectTy);
+    } else if (mode == "SAdjZToS") {
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::SAdjZToS, DialectTy);
+    } else if (mode == "SZToSAdj") {
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::SZToSAdj, DialectTy);
+    } else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
+      return;
+    }
+
+    if (!success) {
+      llvm::errs() << "PatternReduction: Failed to apply Pass on : "
+                   << kernelName << "\n";
+      signalPassFailure();
+      return;
     }
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
+      signalPassFailure();
+      return;
     }
   }
 };

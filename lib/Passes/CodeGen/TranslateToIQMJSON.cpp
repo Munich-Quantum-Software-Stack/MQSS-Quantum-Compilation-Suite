@@ -46,7 +46,14 @@ public:
     MQSS_DEBUG("\n[Applying Pass: QuakeDialectToIQMJSON]\n");
     mlir::ModuleOp module = getOperation();
     MQSS_DEBUG("\nTranslated output:\n");
-    cudaq::translateToIQMJson(module, os);
+    auto result = cudaq::translateToIQMJson(module, os);
+    if (result.failed()) {
+      mlir::emitError(
+          module->getLoc(),
+          "QuakeDialectToIQMJSON: Failed to translate Quake to IQM JSON");
+      signalPassFailure();
+      return;
+    }
   }
 
 private:

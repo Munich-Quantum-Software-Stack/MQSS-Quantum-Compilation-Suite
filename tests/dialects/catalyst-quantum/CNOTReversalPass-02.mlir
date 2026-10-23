@@ -1,6 +1,11 @@
 
 
-// RUN: %mqss-opt %s --CommonDecompositionPass=mode=CxToHCzH  2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCNOTReversePass 2>&1 | FileCheck %s
+
+// CommonCNOTReversePass rewrites the CNOT into an H-CX-H sandwich with control
+// and target swapped, correctly SSA-threading the value-semantics qubit chain
+// (unlike the Quake/reference-semantics case, this is the path that actually
+// rewires every new gate's operands to the previous gate's result).
 
 module @circuit_CxToHCzH {
   func.func public @jit_circuit_CxToHCzH() -> (tensor<4xi64>, tensor<4xi64>) attributes {llvm.emit_c_interface} {
@@ -39,7 +44,9 @@ module @circuit_CxToHCzH {
 }
 
 // CHECK: %out_qubits = quantum.custom "H"() %2 : !quantum.bit
-// CHECK: %out_qubits_0:2 = quantum.custom "CZ"() %1, %out_qubits : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_1 = quantum.custom "H"() %out_qubits_0#1 : !quantum.bit
-// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_0#0 : !quantum.reg, !quantum.bit
-// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_1 : !quantum.reg, !quantum.bit
+// CHECK: %out_qubits_0 = quantum.custom "H"() %1 : !quantum.bit
+// CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0 : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_2 = quantum.custom "H"() %out_qubits_1#0 : !quantum.bit
+// CHECK: %out_qubits_3 = quantum.custom "H"() %out_qubits_1#1 : !quantum.bit
+// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_2 : !quantum.reg, !quantum.bit
+// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_3 : !quantum.reg, !quantum.bit

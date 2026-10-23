@@ -27,7 +27,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "qdmi_example_driver.h"
 #include "sc/utils.hpp"
 
-#include <cassert>
 #include <cstring>
 #include <filesystem>
 #include <fstream>

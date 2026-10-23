@@ -33,12 +33,12 @@ using namespace llvm;
 
 namespace {
 
-enum class PassMode { SwitchXYZH, SwitchHXYZ, NA };
+enum class PassMode { SwitchXYZH, SwitchHXYZ };
 
 struct SharedPassLogic {
 
-  void run(MyModuleAnalysis &analysis, PassMode Mode,
-           QuantumDialect DialectTy) {
+  tuple<bool, llvm::StringRef> run(MyModuleAnalysis &analysis, PassMode Mode,
+                                   QuantumDialect DialectTy) {
 
     PassInfoty PassInfo;
 
@@ -64,7 +64,7 @@ struct SharedPassLogic {
       PassInfo.CompareKey = {QubitRole::Target, QubitRole::Target};
     }
 
-    performCommuteAndSwitch(analysis, PassInfo, DialectTy);
+    return performCommuteAndSwitch(analysis, PassInfo, DialectTy);
   }
 };
 
@@ -83,24 +83,50 @@ public:
 
   void runOnOperation() override {
     auto &selector = getAnalysis<DialectAnalysisSelector>();
+    if (!selector.get()) {
+
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid MLIR Dialect\n";
+      signalPassFailure();
+      return;
+    }
     auto &analysis = *selector.get();
+    if (!analysis.isValid()) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid Module Analysis\n";
+      signalPassFailure();
+      return;
+    }
     auto DialectTy = selector.getDialect();
 
     MQSS_DEBUG("\n[Applying Pass: CommonGateSwitch]\n");
 
     SharedPassLogic PassLogic;
+    bool success = false;
+    llvm::StringRef kernelName = "";
     if (mode == "XYZHtoHXYZ")
-      PassLogic.run(analysis, PassMode::SwitchXYZH, DialectTy);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::SwitchXYZH, DialectTy);
     else if (mode == "HXYZtoXYZH")
-      PassLogic.run(analysis, PassMode::SwitchHXYZ, DialectTy);
+      std::tie(success, kernelName) =
+          PassLogic.run(analysis, PassMode::SwitchHXYZ, DialectTy);
     else {
       getOperation()->emitError() << "invalid mode: " << mode;
       signalPassFailure();
+      return;
+    }
+
+    if (!success) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Failed to apply Pass on: " << kernelName << "\n";
+      signalPassFailure();
+      return;
     }
 
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
+      signalPassFailure();
     }
   }
 };

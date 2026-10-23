@@ -24,6 +24,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "sc/configuration/Configuration.hpp"
 
 #include <llvm/Support/raw_ostream.h>
+#include <mlir/IR/Diagnostics.h>
+#include <mlir/IR/Location.h>
 #include <utility>
 
 namespace mqss::mqssci::opt {
@@ -55,7 +57,7 @@ struct PipelineConfig {
     return DefaultSettings;
   }
 
-  static PipelineConfig defaults() {
+  static llvm::Expected<PipelineConfig> defaults() {
     PipelineConfig config;
     // Defining test architecture
     /*
@@ -72,7 +74,7 @@ struct PipelineConfig {
     return config;
   };
 
-  static PipelineConfig fromCustomCouplingMap(
+  static llvm::Expected<PipelineConfig> fromCustomCouplingMap(
       const std::vector<std::pair<std::uint32_t, std::uint32_t>>
           &coupling_map) {
     PipelineConfig config;
@@ -85,72 +87,115 @@ struct PipelineConfig {
       0---1
     */
     const CouplingMap cm = getCouplingMap(coupling_map);
+    if (cm.empty()) {
+      return llvm::createStringError(
+          "Mapping: Could not load coupling map from JSON!");
+    }
     std::set<std::uint32_t> qubits;
     for (const auto &[a, b] : cm) {
       qubits.insert(a);
       qubits.insert(b);
     }
-    std::size_t numQubits = qubits.size();
+    const std::size_t numQubits =
+        qubits.empty() ? 0 : static_cast<std::size_t>(*qubits.rbegin()) + 1;
+
     config.arch.loadCouplingMap(numQubits, cm);
     // Defining the settings of the mqt-mapper
     config.settings = getDefaultSettings();
     return config;
   };
 
-  static PipelineConfig fromJSON(const std::string &path) {
-    std::ifstream file(path);
-    if (!file.is_open())
-      throw std::runtime_error("Could not open config file: " + path);
-
-    nlohmann::json j;
-    file >> j;
-
+  static llvm::Expected<PipelineConfig> fromJSON(const std::string &path) {
     PipelineConfig config;
+    std::ifstream file(path);
+    if (!file.is_open()) {
+      return llvm::createStringError("Mapping: Could not open config file: " +
+                                     path);
+    }
 
-    // --- Architecture ---
-    const auto &arch = j.at("architecture");
-    auto cm = getCouplingMap(j);
-    config.arch.loadCouplingMap(arch.at("num_qubits").get<int>(), cm);
+    try {
 
-    // --- Mapper Settings ---
-    const auto &ms = j.at("mapper_settings");
-    config.settings.heuristic = heuristicFromString(ms.at("heuristic"));
-    config.settings.layering = layeringFromString(ms.at("layering"));
-    config.settings.initialLayout =
-        initialLayoutFromString(ms.at("initial_layout"));
-    config.settings.preMappingOptimizations =
-        ms.at("pre_mapping_optimizations").get<bool>();
-    config.settings.postMappingOptimizations =
-        ms.at("post_mapping_optimizations").get<bool>();
-    config.settings.lookaheadHeuristic =
-        lookaheadFromString(ms.at("lookahead_heuristic"));
-    config.settings.debug = ms.at("debug").get<bool>();
-    config.settings.addMeasurementsToMappedCircuit =
-        ms.at("add_measurements_to_mapped_circuit").get<bool>();
+      nlohmann::json j;
+      file >> j;
 
-    return config;
+      // --- Mapper Settings ---
+      const auto &ms = j.at("mapper_settings");
+      if (ms.empty()) {
+        return llvm::createStringError(
+            "Could not load Mapper Settings from JSON");
+      }
+      auto heuristicOrErr = heuristicFromString(ms.at("heuristic"));
+      if (!heuristicOrErr) {
+        return heuristicOrErr.takeError();
+      }
+
+      auto layeringOrErr = layeringFromString(ms.at("layering"));
+      if (!layeringOrErr) {
+        return layeringOrErr.takeError();
+      }
+      auto layoutOrErr = initialLayoutFromString(ms.at("initial_layout"));
+      if (!layoutOrErr) {
+        return layoutOrErr.takeError();
+      }
+      auto lookaheadOrErr = lookaheadFromString(ms.at("lookahead_heuristic"));
+      if (!lookaheadOrErr) {
+        return lookaheadOrErr.takeError();
+      }
+      config.settings.preMappingOptimizations =
+          ms.at("pre_mapping_optimizations").get<bool>();
+      config.settings.postMappingOptimizations =
+          ms.at("post_mapping_optimizations").get<bool>();
+
+      config.settings.debug = ms.at("debug").get<bool>();
+      config.settings.addMeasurementsToMappedCircuit =
+          ms.at("add_measurements_to_mapped_circuit").get<bool>();
+
+      config.settings.heuristic = *heuristicOrErr;
+      config.settings.lookaheadHeuristic = *lookaheadOrErr;
+      config.settings.layering = *layeringOrErr;
+      config.settings.initialLayout = *layoutOrErr;
+      // --- Architecture ---
+      const auto &arch = j.at("architecture");
+      auto cm = getCouplingMap(j);
+      if (cm.empty()) {
+        return llvm::createStringError(
+            "Mapping: Could not load coupling map from JSON!");
+      }
+      config.arch.loadCouplingMap(arch.at("num_qubits").get<int>(), cm);
+
+      return config;
+    } catch (const nlohmann::json::exception &e) {
+      return llvm::createStringError("Mapping: Malformed JSON config: " +
+                                     std::string(e.what()));
+    }
   }
 
-  static PipelineConfig fromQDMI(string device_conf) {
+  static llvm::Expected<PipelineConfig> fromQDMI(string device_conf) {
 
     PipelineConfig config;
 
     MQSS_DEBUG("-->Device conf is: " << device_conf << "\n");
     auto dev = createQDMIDevice(device_conf.c_str());
-    if (!dev)
-      llvm::report_fatal_error(dev.takeError());
+    if (!dev) {
+      return llvm::createStringError("Mapping: Could not create QDMI device!");
+    }
 
     auto device_properties = getDeviceProperties(*dev);
-    if (!device_properties)
-      llvm::report_fatal_error(device_properties.takeError());
+    if (!device_properties) {
+      return llvm::createStringError(
+          "Mapping: Could not fetch QDMI device properties!");
+    }
 
     auto numQubits = device_properties->numQubits;
     auto device_coupling_map = device_properties->cm;
-    assert(!device_coupling_map.empty() &&
-           "Could not fetch the coupling map of QDMI device!");
+
+    if (device_coupling_map.empty()) {
+      return llvm::createStringError(
+          "Mapping: Could not fetch the coupling map of QDMI device!");
+    }
 
     config.arch.loadCouplingMap(numQubits, device_coupling_map);
-    MQSS_DEBUG("Device Coupling Map loaded!!");
+    MQSS_DEBUG("Mapping: Device Coupling Map loaded!!");
     // Defining the settings of the mqt-mapper
     config.settings = getDefaultSettings();
     return config;
@@ -183,25 +228,27 @@ private:
   }
 
   // -- String -> Enum helpers --
-  static Heuristic heuristicFromString(const std::string &s) {
+  static llvm::Expected<Heuristic> heuristicFromString(const std::string &s) {
     if (s == "GateCountMaxDistance")
       return Heuristic::GateCountMaxDistance;
     if (s == "GateCountSumDistance")
       return Heuristic::GateCountSumDistance;
     // ... other variants
-    throw std::invalid_argument("Unknown heuristic: " + s);
+    return llvm::createStringError("Mapping: Unknown heuristic: " + s);
   }
 
-  static Layering layeringFromString(const std::string &s) {
+  static llvm::Expected<Layering> layeringFromString(const std::string &s) {
     if (s == "DisjointQubits")
       return Layering::DisjointQubits;
     if (s == "OddGates")
       return Layering::OddGates;
     // ... other variants
-    throw std::invalid_argument("Unknown layering: " + s);
+
+    return llvm::createStringError("Mapping: Unknown heuristic: " + s);
   }
 
-  static InitialLayout initialLayoutFromString(const std::string &s) {
+  static llvm::Expected<InitialLayout>
+  initialLayoutFromString(const std::string &s) {
     if (s == "Identity")
       return InitialLayout::Identity;
     if (s == "Static")
@@ -209,28 +256,31 @@ private:
     if (s == "Dynamic")
       return InitialLayout::Dynamic;
     // ... other variants
-    throw std::invalid_argument("Unknown initial layout: " + s);
+
+    return llvm::createStringError("Mapping: Unknown heuristic: " + s);
   }
 
-  static LookaheadHeuristic lookaheadFromString(const std::string &s) {
+  static llvm::Expected<LookaheadHeuristic>
+  lookaheadFromString(const std::string &s) {
     if (s == "None")
       return LookaheadHeuristic::None;
     if (s == "GateCountMaxDistance")
       return LookaheadHeuristic::GateCountMaxDistance;
     // ... other variants
-    throw std::invalid_argument("Unknown lookahead heuristic: " + s);
+
+    return llvm::createStringError("Mapping: Unknown heuristic: " + s);
   }
 };
 
 struct MeasureMeantOpInfoTy {
   const qc::Operation *MeasOp;
-  SmallVector<mlir::Value, 2> Results;
+  SmallVector<mlir::Value> Results;
 };
 
 // Performs a controlled Dead-Code elimination optimization.
 // It is less aggressive than MLIR's canonicalize and cse optimizations.
 // canonicalize and cse can remove newly introduced gates.
-void controlledDCE(SmallPtrSet<mlir::Operation *, 16> OpsToErase,
+bool controlledDCE(SmallPtrSet<mlir::Operation *, 16> OpsToErase,
                    mlir::Value OldAllocaOp, mlir::Value newAllocOp) {
   llvm::SmallPtrSet<mlir::Operation *, 16> operandsToCleanup;
 
@@ -243,19 +293,32 @@ void controlledDCE(SmallPtrSet<mlir::Operation *, 16> OpsToErase,
     }
   }
 
-  eraseOpsSafely(OpsToErase);
-  eraseOpsSafely(operandsToCleanup);
+  if (!eraseOpsSafely(OldAllocaOp.getLoc(), OpsToErase)) {
+    mlir::emitError(OldAllocaOp.getLoc(),
+                    "Controlled DCE: Ops not erased safely");
+    return false;
+  }
+  if (!eraseOpsSafely(OldAllocaOp.getLoc(), operandsToCleanup)) {
+    mlir::emitError(OldAllocaOp.getLoc(),
+                    "Controlled DCE: Ops not erased safely");
+    return false;
+  }
 
   OldAllocaOp.replaceAllUsesWith(newAllocOp);
-  assert(OldAllocaOp.use_empty() &&
-         "Old alloca cannot have uses before being erased!");
+  if (!OldAllocaOp.use_empty()) {
+    mlir::emitError(
+        OldAllocaOp.getLoc(),
+        "Mapping: Old alloca cannot have uses before being erased!");
+    return false;
+  }
   OldAllocaOp.getDefiningOp()->erase();
+  return true;
 }
 
-void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
-                         QuantumDialect DialectTy, mlir::Value newAllocOp,
+bool createMappedCircuit(mlir::IRRewriter &builder, Location &loc,
+                         QuantumDialect &DialectTy, mlir::Value newAllocOp,
                          QuantumComputation &qcMapped,
-                         MapVector<mlir::Operation *, int> MeasureOps) {
+                         MapVector<mlir::Operation *, int> &MeasureOps) {
 
   std::vector<MeasureMeantOpInfoTy> NewMeasureOps;
 
@@ -267,24 +330,36 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
     auto parameter = op->getParameter();
 
     // defining the list of controls, targets and parameters
-    SmallVector<mlir::Value, 2> params = {};
-    SmallVector<mlir::Value, 2> controlValues = {};
-    SmallVector<mlir::Value, 2> targetValues = {};
+    SmallVector<mlir::Value> params = {};
+    SmallVector<mlir::Value> controlValues = {};
+    SmallVector<mlir::Value> targetValues = {};
 
     for (auto target : targets) {
       auto targetRefOp =
           createExtractOp(loc, DialectTy, builder, newAllocOp, target);
+      if (!targetRefOp) {
+        mlir::emitError(loc, "Mapping: Could not create targetRefOp");
+        return false;
+      }
       targetValues.push_back(targetRefOp);
     }
     for (auto ctrl : controls) {
       auto controlRef =
           createExtractOp(loc, DialectTy, builder, newAllocOp, ctrl.qubit);
+      if (!controlRef) {
+        mlir::emitError(loc, "Mapping: Could not create ExtractRefOp");
+        return false;
+      }
       controlValues.push_back(controlRef);
     }
     for (auto p : parameter) {
       // TODO: Apparently all the parameters are floats in QC, may be the case
       //       this is not always true
       auto constantOp = createArithConstantOp(loc, DialectTy, builder, p);
+      if (!constantOp) {
+        mlir::emitError(loc, "Mapping: Could not create ConstantOp");
+        return false;
+      }
       params.push_back(constantOp);
     }
 
@@ -330,15 +405,33 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
     case qc::RZ:
       Gatety = Gate::RZ;
       break;
+    case qc::Sdg:
+      Gatety = Gate::SAdj;
+      break;
+    case qc::Tdg:
+      Gatety = Gate::TAdj;
+      break;
     }
 
     if (Gatety != Gate::UNKNOWN) {
 
       newop = createNewGate(loc, DialectTy, parseGateTy(Gatety), controlValues,
                             targetValues, params, builder);
+      if (!newop) {
+        mlir::emitError(loc, "Mapping: Could not create new GateOp");
+        return false;
+      }
     } else if (op->getType() == qc::Measure) {
       auto newResults = createMeasureOp(loc, DialectTy, builder, targetValues);
+      if (newResults.empty()) {
+        mlir::emitError(loc, "Mapping: Could not create MeasureOp");
+        return false;
+      }
       NewMeasureOps.push_back({op.get(), newResults});
+    } else {
+      mlir::emitError(loc,
+                      "Mapping: Unsupported gate type produced by the mapper");
+      return false;
     }
   }
 
@@ -353,7 +446,11 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
   for (auto &[oldMeasOp, numMeasurements] : MeasureOps) {
     if (numMeasurements == 1) {
       auto newResults = NewMeasureOps[0].Results;
-      resolveSSAformForMeasureOps(oldMeasOp, newResults);
+      if (!resolveSSAformForMeasureOps(oldMeasOp, newResults)) {
+        mlir::emitError(loc,
+                        "Mapping: Could not resolve SSA form for MeasureOp");
+        return false;
+      }
     }
   }
   // builder.create<func::ReturnOp>(loc);
@@ -361,10 +458,13 @@ void createMappedCircuit(mlir::IRRewriter &builder, Location loc,
   MQSS_DEBUG("Dumping QC after mapping:\n");
   qcMapped.print(std::cout);
 #endif
+  return true;
 }
 
-void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
-                    Configuration settings, QuantumDialect DialectTy) {
+tuple<bool, llvm::StringRef> performMapping(MyModuleAnalysis &analysis,
+                                            Architecture architecture,
+                                            Configuration &settings,
+                                            QuantumDialect &DialectTy) {
 
   for (auto &[kernel, info] : analysis.getKernelDialectInfo()) {
 
@@ -393,12 +493,20 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
 
     for (auto &[Op, qview] : info.OpQViewMap) {
       if (qview.GateTy != Gate::UNKNOWN) {
-        loadGateOpsIntoQC(Op, qview, qc, qview.isControlled());
+        if (!loadGateOpsIntoQC(Op, qview, qc, qview.isControlled())) {
+          mlir::emitError(Op->getLoc(), "Mapping: Error when loading GateOp "
+                                        "into MQT's QuantumComputation");
+          return {false, kernel.getSymName()};
+        }
         OpsToErase.insert(Op);
       }
 
       if (qview.isMeasureOp) {
-        loadMeasureOpIntoQC(qview, qc);
+        if (!loadMeasureOpIntoQC(qview, qc, Op->getLoc())) {
+          mlir::emitError(Op->getLoc(), "Mapping: Error when loading MeasureOp "
+                                        "into MQT's QuantumComputation");
+          return {false, kernel.getSymName()};
+        }
         MeasureOps[Op] = qview.measurements.size();
         if (qview.measurements.size() != 1)
           OpsToErase.insert(
@@ -411,16 +519,32 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
 #endif
 
     // Map the circuit
-    const auto mapper = std::make_unique<HeuristicMapper>(qc, architecture);
-
-    mapper->map(settings);
+    unique_ptr<HeuristicMapper> mapper;
+    try {
+      mapper = std::make_unique<HeuristicMapper>(qc, architecture);
+    } catch (const std::exception &e) {
+      mlir::emitError(kernel->getLoc(),
+                      "Mapping: Could not create Heuristic Mapper Obj")
+          << e.what();
+      return {false, kernel.getSymName()};
+    }
+    try {
+      mapper->map(settings);
+    } catch (const std::exception &e) {
+      mlir::emitError(kernel->getLoc(),
+                      "Mapping: Could not map the circuit to the architecture!")
+          << e.what();
+      return {false, kernel.getSymName()};
+    }
 
     auto qcMapped = qc::QuantumComputation();
     qcMapped = mapper->moveMappedCircuit();
 
-    if (qcMapped.empty())
-      llvm::errs() << "Could not Map circuit!"
-                   << "\n";
+    if (qcMapped.empty()) {
+      mlir::emitError(kernel->getLoc(), "Mapping: Could not move circuit to "
+                                        "MQT-Core's qc::QuantumComputation!");
+      return {false, kernel.getSymName()};
+    }
 
     mlir::IRRewriter builder(kernel->getContext());
     mlir::Location loc = kernel.getLoc();
@@ -431,17 +555,30 @@ void performMapping(MyModuleAnalysis &analysis, Architecture architecture,
     builder.setInsertionPointToStart(&entry); // CRITICAL
 
     // Location loc = kernel.getLoc();
-    auto newAllocOp =
-        createAllocOp(loc, DialectTy, builder, info.AllocatedQubits);
+    const auto mappedQubitCount = qcMapped.getNqubits();
+
+    auto newAllocOp = createAllocOp(loc, DialectTy, builder, mappedQubitCount);
+
+    if (!newAllocOp) {
+      mlir::emitError(loc, "Mapping: Could not create AllocOp");
+      return {false, kernel.getSymName()};
+    }
 
     // cleaning the mlir::funcOp corresponding to the quake circuit
     // analysis.clearKernelBody(kernel, ToErase);
 
-    createMappedCircuit(builder, loc, DialectTy, newAllocOp, qcMapped,
-                        MeasureOps);
+    if (!createMappedCircuit(builder, loc, DialectTy, newAllocOp, qcMapped,
+                             MeasureOps)) {
+      mlir::emitError(loc, "Could not create Mapping for Circuit!");
+      return {false, kernel.getSymName()};
+    }
 
-    controlledDCE(OpsToErase, info.AllocOp, newAllocOp);
+    if (!controlledDCE(OpsToErase, info.AllocOp, newAllocOp)) {
+      mlir::emitError(loc, "Could not perform Controlled DCE!");
+      return {false, kernel.getSymName()};
+    }
   }
+  return {true, ""};
 }
 
 struct CommonMapping
@@ -470,31 +607,78 @@ public:
 
     MQSS_DEBUG("\n[Applying Pass: MappingPass]\n");
 
+    auto fail = [&](llvm::Error err) {
+      mlir::emitError(getOperation().getLoc())
+          << llvm::toString(std::move(err));
+      signalPassFailure();
+    };
+
     PipelineConfig config;
+
     if (!input.empty()) {
       MQSS_DEBUG("-->Reading Coupling Map from JSON input...\n");
-      config = PipelineConfig::fromJSON(input);
+      auto configOrErr = PipelineConfig::fromJSON(input);
+      if (!configOrErr) {
+        fail(configOrErr.takeError());
+        return;
+      }
+      config = *configOrErr;
     } else if (!qdmi.empty()) {
       MQSS_DEBUG("-->Selected QDMI device Mapping...\n");
-      config = PipelineConfig::fromQDMI(qdmi);
+      auto configOrErr = PipelineConfig::fromQDMI(qdmi);
+      if (!configOrErr) {
+        fail(configOrErr.takeError());
+        return;
+      }
+      config = *configOrErr;
     } else if (!coupling_map.empty()) {
       MQSS_DEBUG("-->Reading Custom Coupling Map...\n");
-      config = PipelineConfig::fromCustomCouplingMap(coupling_map);
+      auto configOrErr = PipelineConfig::fromCustomCouplingMap(coupling_map);
+      if (!configOrErr) {
+        fail(configOrErr.takeError());
+        return;
+      }
+      config = *configOrErr;
     } else {
       MQSS_DEBUG("--> No JSON or QDMI input, using pass defaults!" << "\n");
-      config = PipelineConfig::defaults();
+      auto configOrErr = PipelineConfig::defaults();
+      if (!configOrErr) {
+        fail(configOrErr.takeError());
+        return;
+      }
+      config = *configOrErr;
     }
+
     auto architecture = config.arch;
     auto settings = config.settings;
 
     auto &selector = getAnalysis<DialectAnalysisSelector>();
-    auto &analysis = *selector.get();
-    auto DialectTy = selector.getDialect();
+    if (!selector.get()) {
 
-    performMapping(analysis, architecture, settings, DialectTy);
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid MLIR Dialect\n";
+      signalPassFailure();
+      return;
+    }
+    auto &analysis = *selector.get();
+    if (!analysis.isValid()) {
+      llvm::errs() << "[" << getArgument() << "]"
+                   << " : Invalid Module Analysis\n";
+      signalPassFailure();
+      return;
+    }
+    auto DialectTy = selector.getDialect();
+    auto [success, kernelName] =
+        performMapping(analysis, architecture, settings, DialectTy);
+    if (!success) {
+      llvm::errs() << "Mapping: Failed to apply Pass: " << kernelName << "\n";
+      signalPassFailure();
+      return;
+    }
     if (failed(analysis.verifyModule())) {
       llvm::errs() << "[" << getArgument() << "]"
                    << " : MLIR Module verification failed\n";
+      signalPassFailure();
     }
   }
 
