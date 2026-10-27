@@ -565,7 +565,7 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   EXPECT_FALSE(compiled->empty());
 
   EXPECT_NE(compiled->find("OPENQASM 2.0;"), std::string::npos);
-  std::cout << *compiled << "\n";
+
   // qubit_connectivity's highest-numbered qubit is 51, so the allocated
   // register must be sized 52 -- not the logical circuit's 3 qubits, and not
   // the count of *distinct* qubits mentioned in the coupling map (which
