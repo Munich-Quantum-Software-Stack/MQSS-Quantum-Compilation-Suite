@@ -35,6 +35,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Parser/Parser.h>
 #include <optional>
+#include <regex>
 #include <sstream>
 #include <string>
 
@@ -122,9 +123,18 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   mlir::PassManager pmConvert(&context);
   BasisConversionPassOptions conv_opts;
   conv_opts.gates = "";
+  std::vector<std::pair<std::string, std::string>>
+      appliedAliases; // (caller spelling, canonical)
   if (!backend_name.empty()) {
     if (backend_name == "iqm") {
       conv_opts.gates = "prx,cz";
+      for (const auto &gate : native_gates) {
+        llvm::StringRef resolvedMnemonic = resolveMnemonicAlias(gate);
+        if (resolvedMnemonic != gate)
+          appliedAliases.push_back(
+              {gate, mnemonicToQasmGateName(resolvedMnemonic).str()});
+      }
+
     } else if (backend_name == "planqc") {
       conv_opts.gates = "rx,cz,rz";
     } else if (backend_name == "wmi") {
@@ -139,6 +149,13 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
         mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
 
   } else if (!native_gates.empty()) {
+    for (const auto &gate : native_gates) {
+      llvm::StringRef resolvedMnemonic = resolveMnemonicAlias(gate);
+      if (resolvedMnemonic != gate)
+        appliedAliases.push_back(
+            {gate, mnemonicToQasmGateName(resolvedMnemonic).str()});
+    }
+
     for (unsigned i = 0; i < native_gates.size(); i++) {
       conv_opts.gates += native_gates[i];
       if (i != native_gates.size() - 1)
@@ -194,7 +211,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
                       "Compiler: Conversion of Quake to QASM2 failed");
       return std::nullopt;
     }
-    result = stripSpuriousGateDefs(result);
+    result = stripSpuriousGateDefs(result, appliedAliases);
     break;
   case IQMJSON:
     pmLower.addPass(mqss::mqssci::opt::createExpandMeasurementsPass());
@@ -300,8 +317,9 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileSource(
 // Removes any "gate ... { ... }" block from OpenQASM2 text emitted by
 // cudaq::translateToOpenQASM (see TranslateToOpenQASM.cpp) — see the comment
 // at the call site in compileImpl() for why these blocks can be present.
-std::string
-mqss::mqssci::MQSSCompiler::stripSpuriousGateDefs(const std::string &qasm) {
+std::string mqss::mqssci::MQSSCompiler::stripSpuriousGateDefs(
+    const std::string &qasm,
+    std::vector<std::pair<std::string, std::string>> appliedAliases) {
   std::istringstream stream(qasm);
   std::ostringstream result;
   std::string line;
@@ -320,5 +338,15 @@ mqss::mqssci::MQSSCompiler::stripSpuriousGateDefs(const std::string &qasm) {
     }
     result << line << "\n";
   }
-  return result.str();
+
+  auto result_str = result.str();
+  for (const auto &[callerSpelling, canonical] : appliedAliases) {
+    // literal token replace: "prx(" -> "r(" -- only for aliases this
+    // specific compile actually used, so a backend that genuinely calls
+    // the gate "prx" is never touched.
+    result_str = std::regex_replace(result_str, std::regex(canonical + R"(\()"),
+                                    callerSpelling + "(");
+  }
+
+  return result_str;
 }

@@ -17,6 +17,8 @@ the License.
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
+#pragma once
+
 #include "cudaq/Optimizer/CodeGen/Passes.h"
 #include "mlir/Pass/PassManager.h"
 
@@ -25,6 +27,39 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <string>
 
 using namespace mlir;
+
+// Some devices report their native gates under a different name than this
+// pass's own mnemonic for the same physical gate -- e.g. IQM's own
+// documentation describes its native single-qubit gate as "arbitrary X and
+// Y rotations," reported by at least one device as "r", which is exactly
+// this pass's "prx" (R(theta, phi) = exp(-i*theta/2*(cos(phi)*X +
+// sin(phi)*Y))). Translate known aliases to this pass's own mnemonic before
+// anything else treats the string as one, so a device (or a --gates=
+// string) using "r" is understood the same way as "prx".
+// Shared, single source of truth for device-name -> canonical mnemonic.
+inline const llvm::StringMap<llvm::StringRef> &getMnemonicAliasTable() {
+  static const llvm::StringMap<llvm::StringRef> aliases = {
+      {"r", "prx"},
+  };
+  return aliases;
+}
+
+// BasisConversionPass's own mnemonic -> the literal gate name
+// cudaq::translateToOpenQASM writes for it. Only needed for mnemonics
+// whose QASM2 spelling differs from the mnemonic string itself.
+inline llvm::StringRef mnemonicToQasmGateName(llvm::StringRef mnemonic) {
+  static const llvm::StringMap<llvm::StringRef> qasmNames = {
+      {"prx", "phased_rx"},
+  };
+  auto it = qasmNames.find(mnemonic);
+  return it == qasmNames.end() ? mnemonic : it->second;
+}
+
+inline llvm::StringRef resolveMnemonicAlias(llvm::StringRef gate) {
+  auto aliases = getMnemonicAliasTable();
+  auto it = aliases.find(gate);
+  return it == aliases.end() ? gate : it->second;
+}
 
 static void addQIRConversionPipeline(mlir::OpPassManager &pm,
                                      llvm::StringRef convertTo) {

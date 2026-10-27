@@ -1,5 +1,5 @@
 
-// RUN: %mqss-opt %s --BasisConversionPass=gates=rz,rx 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --BasisConversionPass=gates=rz,rx,cx 2>&1 | FileCheck %s
 
 func.func @__nvqpp__mlirgen__ghzILm2EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
   %0 = quake.alloca !quake.veq<2>
