@@ -199,6 +199,19 @@ TEST(MQSSCIInterfacesTest, RestoresCallerGateNameForLRZBackend) {
   EXPECT_LT(defPos, qasm->find("\nr("))
       << "the 'r' definition must come before the first call to r";
 
+  // The definition must be built on OpenQASM2's built-in U, not qelib1.inc's
+  // lowercase u: the original qelib1.inc (used by strict parsers such as
+  // qiskit.qasm2.loads) doesn't define u.
+  const std::string defLine =
+      qasm->substr(defPos + 1, qasm->find('\n', defPos + 1) - (defPos + 1));
+  EXPECT_NE(defLine.find("{ U("), std::string::npos)
+      << "expected the 'r' definition to use the built-in U gate, got: "
+      << defLine;
+  EXPECT_EQ(defLine.find("u("), std::string::npos)
+      << "the 'r' definition uses lowercase u, which strict OpenQASM2 "
+         "parsers reject; got: "
+      << defLine;
+
   // cz is already defined by qelib1.inc; redefining it is invalid OpenQASM2.
   EXPECT_EQ(qasm->find("gate cz"), std::string::npos)
       << "found a 'gate cz' definition; cz is already defined in qelib1.inc";
