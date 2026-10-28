@@ -46,7 +46,8 @@ opts.optimization_level = mqss::mqssci::OptLevel::O1;        // O1, O2, or O3 �
 opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;  // or QIR, QIRBASE, QIRADAPTIVE, QIRFULL, IQMJSON
 opts.verify = false;                                         // optional; see Verifying the Compiled Output below
 
-std::optional<std::string> qasm = compiler.compile("path/to/circuit.qke", "planqc", opts); // Use compileSource() to parse source string
+std::optional<std::string> qasm =
+    compiler.compile("path/to/circuit.qke", {"rx", "cz", "rz"}, opts); // Use compileSource() to parse source string
 if (!qasm) {
   // Compilation failed. MQSSCompiler has already reported a diagnostic through
   // MLIR's diagnostic engine — it never throws or aborts the process.
@@ -64,9 +65,10 @@ Walking through it:
    includes), and `result_format` selects the output format — one of the
    `mqss::mqssci::ResultFormat` enumerators: `OPENQASM2`, `QIR`, `QIRBASE`, `QIRADAPTIVE`,
    `QIRFULL`, or `IQMJSON`.
-3. The second argument to `compile` (`"planqc"` above) is a known backend name that selects a
-   built-in native-gate set for decomposition. See [Choosing a Backend](#choosing-a-backend) below
-   for the alternatives.
+3. The second argument to `compile` (`{"rx", "cz", "rz"}` above) is the target's native-gate set,
+   which the circuit is decomposed into. See
+   [Choosing a Native-Gate Set and Backend](#choosing-a-native-gate-set-and-backend) below for the
+   alternatives.
 4. `compile` returns `std::optional<std::string>`, not the compiled circuit directly. On success, it
    holds the compiled output; on failure it's `std::nullopt`, and the reason has already been
    reported via `mlir::emitError` — MQSSCI is built without C++ exceptions, so a failed compile
@@ -85,7 +87,8 @@ opts.optimization_level = mqss::mqssci::OptLevel::O1;
 opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
 opts.verify = true;
 
-std::optional<std::string> qasm = compiler.compile("path/to/circuit.qke", "planqc", opts);
+std::optional<std::string> qasm =
+    compiler.compile("path/to/circuit.qke", {"rx", "cz", "rz"}, opts);
 ```
 
 This is a hard gate, not just a warning: if verification finds that decomposition broke equivalence,
@@ -93,36 +96,51 @@ This is a hard gate, not just a warning: if verification finds that decompositio
 you output that silently computes the wrong thing. The default is `opts.verify = false`, so turning
 it on is opt-in and costs nothing unless you ask for it.
 
-## Choosing a Backend
+## Choosing a Native-Gate Set and Backend
 
-`compile` has overloads for three ways to select the native-gate set used for decomposition: by a
-known backend name, by an explicit gate list, or not at all:
+`MQSSCompiler` has no built-in gate sets: you always pass the target's native-gate set yourself, or
+none at all to skip decomposition:
 
 ```cpp
-// By backend name: iqm, planqc, and wmi are recognized out of the box.
-compiler.compile("path/to/circuit.qke", "iqm", opts);
+// Decompose into an explicit native-gate set.
+compiler.compile("path/to/circuit.qke", {"rx", "cz", "rz"}, opts);
 
-// By an explicit native-gate set, when your target isn't one of the built-in backends.
-compiler.compile("path/to/circuit.qke", {"rz", "rx", "cz"}, opts);
-
-// Neither: skip native-gate decomposition entirely.
+// Skip native-gate decomposition entirely.
 compiler.compile("path/to/circuit.qke", opts);
 ```
 
-| `backend_name` | Native-gate set      |
-| -------------- | -------------------- |
-| `"iqm"`        | `prx`, `cz`          |
-| `"planqc"`     | `rx`, `cz`, `rz`     |
-| `"wmi"`        | `cz`, `x`, `y`, `rz` |
+For reference, these are the native-gate sets of some common targets:
 
-The gate mnemonics used here — both in these built-in sets and in an explicit native-gate set you
-supply yourself — are the same ones the `BasisConversionPass` recognizes. See
+| Target | Native-gate set            |
+| ------ | -------------------------- |
+| IQM    | `prx`, `cz`                |
+| planqc | `rx`, `cz`, `rz`           |
+| WMI    | `cz`, `x`, `y`, `rz`, `sx` |
+
+The gate mnemonics in a native-gate set are the ones the `BasisConversionPass` recognizes. See
 [Supported Gate Mnemonics](passes.md#supported-gate-mnemonics) for the full list of mnemonics, the
-Quake operation each one maps to, and their constraints (parameter count, controls, adjointness).
+Quake operation each one maps to, and their constraints (parameter count, controls, adjointness). A
+few device-specific names are accepted as aliases for a mnemonic, e.g. `r` for `prx`.
 
-The full signature (used in the examples above via its three shorthand overloads) also accepts a
-`qubit_connectivity` map alongside the native-gate set, for targets with restricted qubit
-connectivity. See `MQSSCIInterfaces/MQSSCompiler.h` for all four `compile` overloads.
+### The `backend_name` argument
+
+The full signature also takes a `backend_name` and a `qubit_connectivity` map:
+
+```cpp
+compiler.compile("path/to/circuit.qke", "LRZ", {"r", "cz"}, qubit_connectivity, opts);
+```
+
+`backend_name` only changes anything when it is `"LRZ"` (case-sensitive); any other value, including
+`""`, compiles exactly the same way.
+
+With `"LRZ"`, OpenQASM2 output uses your own spelling for any aliased gate in the native-gate set.
+For example, passing `r` produces `r(...)` calls in the output, not `phased_rx(...)`, which is the
+name `prx` is otherwise emitted under. With any other backend name, the output keeps `phased_rx`.
+This renaming only applies to `OPENQASM2` output.
+
+`qubit_connectivity` lists the coupled qubit pairs of a target with restricted connectivity; the
+circuit is mapped onto it before decomposition. See `MQSSCIInterfaces/MQSSCompiler.h` for all four
+`compile` overloads and their `compileSource` counterparts.
 
 ## Discovering Supported Input Formats
 
@@ -143,9 +161,9 @@ what this list reports; see the note at the top of `MQSSCompiler.cpp`.
 ## Advanced: Building a Custom Pipeline Yourself
 
 `MQSSCompiler` covers the common case: a preset optimization level, a fixed native-gate set, and one
-of two output formats. If you need to run individual passes, pass pass-specific options (e.g.
-`CommonGateCancellationPassOptions`), or assemble a pipeline `MQSSCompiler` doesn't support, drop
-down to the same `mlir::OpPassManager`-based API `MQSSCompiler` itself is built on:
+of its supported output formats. If you need to run individual passes, pass pass-specific options
+(e.g. `CommonGateCancellationPassOptions`), or assemble a pipeline `MQSSCompiler` doesn't support,
+drop down to the same `mlir::OpPassManager`-based API `MQSSCompiler` itself is built on:
 
 ```cpp
 #include "Passes/Transforms/Dialects.h"
