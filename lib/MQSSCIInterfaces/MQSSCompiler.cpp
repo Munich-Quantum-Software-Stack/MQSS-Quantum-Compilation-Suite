@@ -117,7 +117,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   }
 
   // 5. Perform native gate decomposition using the caller's native-gate
-  // set. For the EQE1 backend, also record which of the caller's gate names
+  // set. For the LRZ backend, also record which of the caller's gate names
   // BasisConversionPass will resolve to its own mnemonic (e.g. "r" ->
   // "prx"), so the QASM2 output can be renamed back to the caller's
   // spelling afterwards (see restoreCallerGateNames).
@@ -126,7 +126,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   conv_opts.gates = "";
   std::vector<std::pair<std::string, std::string>>
       appliedAliases; // (caller spelling, QASM2 gate name)
-  if (backend_name == "EQE1") {
+  if (backend_name == "LRZ") {
     for (const auto &gate : native_gates) {
       llvm::StringRef resolvedMnemonic = resolveMnemonicAlias(gate);
       if (resolvedMnemonic != gate)
@@ -194,7 +194,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     }
     result =
         restoreCallerGateNames(stripSpuriousGateDefs(result), appliedAliases);
-    if (backend_name == "EQE1") {
+    if (backend_name == "LRZ") {
       result = insertCallerGateDefinitions(result, appliedAliases);
     }
     break;

@@ -127,13 +127,13 @@ few device-specific names are accepted as aliases for a mnemonic, e.g. `r` for `
 The full signature also takes a `backend_name` and a `qubit_connectivity` map:
 
 ```cpp
-compiler.compile("path/to/circuit.qke", "EQE1", {"r", "cz"}, qubit_connectivity, opts);
+compiler.compile("path/to/circuit.qke", "LRZ", {"r", "cz"}, qubit_connectivity, opts);
 ```
 
-`backend_name` only changes anything when it is `"EQE1"` (case-sensitive); any other value,
-including `""`, compiles exactly the same way.
+`backend_name` only changes anything when it is `"LRZ"` (case-sensitive); any other value, including
+`""`, compiles exactly the same way.
 
-With `"EQE1"`, OpenQASM2 output uses your own spelling for any aliased gate in the native-gate set.
+With `"LRZ"`, OpenQASM2 output uses your own spelling for any aliased gate in the native-gate set.
 For example, passing `r` produces `r(...)` calls in the output, not `phased_rx(...)`, which is the
 name `prx` is otherwise emitted under. With any other backend name, the output keeps `phased_rx`.
 This renaming only applies to `OPENQASM2` output.

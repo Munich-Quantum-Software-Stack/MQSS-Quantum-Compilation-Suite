@@ -155,10 +155,10 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForSameCircuit) {
   EXPECT_EQ(*qasm_from_path, *qasm_from_source);
 }
 
-TEST(MQSSCIInterfacesTest, RestoresCallerGateNameForEQE1Backend) {
+TEST(MQSSCIInterfacesTest, RestoresCallerGateNameForLRZBackend) {
   // "r" is an alias for BasisConversionPass's own "prx" mnemonic (see
   // resolveMnemonicAlias), which cudaq's QASM2 emitter writes as
-  // "phased_rx". For the EQE1 backend, the output must be renamed back to
+  // "phased_rx". For the LRZ backend, the output must be renamed back to
   // the caller's own "r" spelling, and "r" -- which qelib1.inc doesn't
   // define -- must be declared with a "gate r(...)" definition.
   mqss::mqssci::MQSSCompiler compiler;
@@ -173,7 +173,7 @@ TEST(MQSSCIInterfacesTest, RestoresCallerGateNameForEQE1Backend) {
   // "r" is listed twice to check it's still only declared once.
   const std::vector<std::string> nativeGates{"r", "cz", "r"};
   std::optional<std::string> qasm =
-      compiler.compileSource(source, "EQE1", nativeGates, {}, opts);
+      compiler.compileSource(source, "LRZ", nativeGates, {}, opts);
 
   ASSERT_TRUE(qasm.has_value())
       << "compileSource() returned nullopt; expected a valid OpenQASM2 "
@@ -204,10 +204,10 @@ TEST(MQSSCIInterfacesTest, RestoresCallerGateNameForEQE1Backend) {
       << "found a 'gate cz' definition; cz is already defined in qelib1.inc";
 }
 
-TEST(MQSSCIInterfacesTest, KeepsQasmGateNameForNonEQE1Backend) {
-  // Same circuit and native-gate set as RestoresCallerGateNameForEQE1Backend,
-  // but with any backend name other than EQE1 (including none, and a
-  // wrongly-cased "eqe1"): the compile still succeeds and "r" is still
+TEST(MQSSCIInterfacesTest, KeepsQasmGateNameForNonLRZBackend) {
+  // Same circuit and native-gate set as RestoresCallerGateNameForLRZBackend,
+  // but with any backend name other than LRZ (including none, and a
+  // wrongly-cased "lrz"): the compile still succeeds and "r" is still
   // resolved to "prx" for decomposition, but the output is left with cudaq's
   // own "phased_rx" spelling rather than renamed back to "r".
   mqss::mqssci::MQSSCompiler compiler;
@@ -220,7 +220,7 @@ TEST(MQSSCIInterfacesTest, KeepsQasmGateNameForNonEQE1Backend) {
   ASSERT_FALSE(source.empty());
 
   const std::vector<std::string> nativeGates{"r", "cz"};
-  for (const std::string backend : {"", "iqm", "eqe1", "not-a-real-backend"}) {
+  for (const std::string backend : {"", "iqm", "lrz", "not-a-real-backend"}) {
     std::optional<std::string> qasm =
         compiler.compileSource(source, backend, nativeGates, {}, opts);
 
@@ -233,7 +233,7 @@ TEST(MQSSCIInterfacesTest, KeepsQasmGateNameForNonEQE1Backend) {
         << backend << "'";
     EXPECT_EQ(qasm->find("\nr("), std::string::npos)
         << "found 'r' for backend '" << backend
-        << "'; aliases should only be renamed back for EQE1";
+        << "'; aliases should only be renamed back for LRZ";
   }
 }
 
@@ -624,7 +624,7 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   // angle theta about an axis that's an arbitrary combination of X and Y,
   // parameterized by phi. That's exactly phased_rx's definition
   // (R(theta, phi) = exp(-i*theta/2*(cos(phi)*X + sin(phi)*Y))), i.e.
-  // BasisConversionPass's "prx". The device calls it "r", which the EQE1
+  // BasisConversionPass's "prx". The device calls it "r", which the LRZ
   // backend resolves to "prx" and renames back to "r" in the output.
   // "id"/"if_else"/ "reset" are real device capabilities BasisConversionPass
   // has no case for yet (the same gap already flagged for WMI's "id"), but are
@@ -649,7 +649,7 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
           {47, 48}, {47, 51}, {50, 46}, {50, 49}, {50, 51},
       };
 
-  auto compiled = compiler.compileSource(source, "EQE1", native_gates,
+  auto compiled = compiler.compileSource(source, "LRZ", native_gates,
                                          qubit_connectivity, opts);
 
   ASSERT_TRUE(compiled.has_value())
