@@ -28,6 +28,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Utils/Error.h"
 #include "mlir/IR/DialectRegistry.h"
 
+#include <cctype>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/ADT/Twine.h>
 #include <llvm/Support/raw_ostream.h>
@@ -35,9 +36,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Parser/Parser.h>
 #include <optional>
-#include <regex>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 
 namespace {
 // Builds the DialectRegistry MQSSCompiler needs. Kept separate from
@@ -111,51 +112,29 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   // 4. Perform Qubit Mapping
   pmMap.addPass(mqss::mqssci::opt::CommonMappingPass(qubit_connectivity));
   if (mlir::failed(pmMap.run(*module))) {
-    mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "Compiler: Qubit Mapping failed!");
+    mlir::emitError(module->getLoc(), "Compiler: Qubit Mapping failed!");
     return std::nullopt;
   }
 
-  // 5. Perform native gate decomposition
-  // If a supported/known back-end is provided, perform
-  // decomposition using the known native-gate set. Else,
-  // use the user provided native-gate set.
+  // 5. Perform native gate decomposition using the caller's native-gate
+  // set. For the EQE1 backend, also record which of the caller's gate names
+  // BasisConversionPass will resolve to its own mnemonic (e.g. "r" ->
+  // "prx"), so the QASM2 output can be renamed back to the caller's
+  // spelling afterwards (see restoreCallerGateNames).
   mlir::PassManager pmConvert(&context);
   BasisConversionPassOptions conv_opts;
   conv_opts.gates = "";
   std::vector<std::pair<std::string, std::string>>
-      appliedAliases; // (caller spelling, canonical)
-  if (!backend_name.empty()) {
-    if (backend_name == "iqm") {
-      conv_opts.gates = "prx,cz";
-      for (const auto &gate : native_gates) {
-        llvm::StringRef resolvedMnemonic = resolveMnemonicAlias(gate);
-        if (resolvedMnemonic != gate)
-          appliedAliases.push_back(
-              {gate, mnemonicToQasmGateName(resolvedMnemonic).str()});
-      }
-
-    } else if (backend_name == "planqc") {
-      conv_opts.gates = "rx,cz,rz";
-    } else if (backend_name == "wmi") {
-      conv_opts.gates = "cz,x,y,rz,sx";
-    } else {
-      mlir::emitError(
-          module->getLoc(),
-          "Unsupported backend name! Only iqm, planqc, wmi supported!");
-      return std::nullopt;
-    }
-    pmConvert.addPass(
-        mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
-
-  } else if (!native_gates.empty()) {
+      appliedAliases; // (caller spelling, QASM2 gate name)
+  if (backend_name == "EQE1") {
     for (const auto &gate : native_gates) {
       llvm::StringRef resolvedMnemonic = resolveMnemonicAlias(gate);
       if (resolvedMnemonic != gate)
-        appliedAliases.push_back(
-            {gate, mnemonicToQasmGateName(resolvedMnemonic).str()});
+        appliedAliases.emplace_back(
+            gate, mnemonicToQasmGateName(resolvedMnemonic).str());
     }
-
+  }
+  if (!native_gates.empty()) {
     for (unsigned i = 0; i < native_gates.size(); i++) {
       conv_opts.gates += native_gates[i];
       if (i != native_gates.size() - 1)
@@ -164,8 +143,10 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     pmConvert.addPass(
         mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
   } else {
-    MQSS_DEBUG("No back-end name or native gate-set provided! Skipping "
-               "BasisConversion!");
+    mlir::emitError(module->getLoc(),
+                    "Compiler: No native gate-set provided! BasisConversion "
+                    "and or Verification failed!");
+    return nullopt;
   }
 
   // Some BasisConversionPass rewrite rules build a gate's angle out of an
@@ -190,7 +171,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   }
 
   if (mlir::failed(pmConvert.run(*module))) {
-    mlir::emitError(mlir::UnknownLoc::get(&context),
+    mlir::emitError(module->getLoc(),
                     "Compiler: BasisConversion and or Verification failed!");
     return std::nullopt;
   }
@@ -207,21 +188,24 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   case OPENQASM2:
     pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pmLower.run(*module))) {
-      mlir::emitError(mlir::UnknownLoc::get(&context),
+      mlir::emitError(module->getLoc(),
                       "Compiler: Conversion of Quake to QASM2 failed");
       return std::nullopt;
     }
-    result = stripSpuriousGateDefs(result, appliedAliases);
+    result =
+        restoreCallerGateNames(stripSpuriousGateDefs(result), appliedAliases);
+    if (backend_name == "EQE1") {
+      result = insertCallerGateDefinitions(result, appliedAliases);
+    }
     break;
   case IQMJSON:
     pmLower.addPass(mqss::mqssci::opt::createExpandMeasurementsPass());
     pmLower.addPass(mqss::mqssci::codegen::QuakeDialectToIQMJSONPass(os));
     if (mlir::failed(pmLower.run(*module))) {
-      mlir::emitError(mlir::UnknownLoc::get(&context),
+      mlir::emitError(module->getLoc(),
                       "Compiler: Conversion of Quake to IQMJSON failed");
       return std::nullopt;
     }
-    llvm::outs() << result << "\n";
     break;
   case QIR:
   case QIRBASE:
@@ -236,9 +220,8 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     }
     mqss::mqssci::opt::QIRConversionPipeline(pmLower, *convertto, os);
     if (mlir::failed(pmLower.run(*module))) {
-      mlir::emitError(mlir::UnknownLoc::get(&context),
-                      "Compiler: Conversion of Quake to " + result_type_string +
-                          " failed");
+      mlir::emitError(module->getLoc(), "Compiler: Conversion of Quake to " +
+                                            result_type_string + " failed");
       return std::nullopt;
     }
     break;
@@ -317,9 +300,8 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileSource(
 // Removes any "gate ... { ... }" block from OpenQASM2 text emitted by
 // cudaq::translateToOpenQASM (see TranslateToOpenQASM.cpp) — see the comment
 // at the call site in compileImpl() for why these blocks can be present.
-std::string mqss::mqssci::MQSSCompiler::stripSpuriousGateDefs(
-    const std::string &qasm,
-    std::vector<std::pair<std::string, std::string>> appliedAliases) {
+std::string
+mqss::mqssci::MQSSCompiler::stripSpuriousGateDefs(const std::string &qasm) {
   std::istringstream stream(qasm);
   std::ostringstream result;
   std::string line;
@@ -338,15 +320,61 @@ std::string mqss::mqssci::MQSSCompiler::stripSpuriousGateDefs(
     }
     result << line << "\n";
   }
+  return result.str();
+}
 
-  auto result_str = result.str();
-  for (const auto &[callerSpelling, canonical] : appliedAliases) {
-    // literal token replace: "prx(" -> "r(" -- only for aliases this
-    // specific compile actually used, so a backend that genuinely calls
-    // the gate "prx" is never touched.
-    result_str = std::regex_replace(result_str, std::regex(canonical + R"(\()"),
-                                    callerSpelling + "(");
+// Renames each gate call in OpenQASM2 text from its QASM2 gate name back to
+// the caller's own spelling, e.g. "phased_rx(" -> "r(". Only aliases this
+// specific compile actually used are applied, so a caller that genuinely
+// calls the gate "prx" is never touched. A match is only replaced when it
+// starts a gate name, so e.g. a hypothetical "cphased_rx(" is left alone.
+std::string mqss::mqssci::MQSSCompiler::restoreCallerGateNames(
+    std::string qasm,
+    const std::vector<std::pair<std::string, std::string>> &appliedAliases) {
+  auto isIdentChar = [](char c) {
+    return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
+  };
+  for (const auto &[callerSpelling, qasmName] : appliedAliases) {
+    const std::string needle = qasmName + "(";
+    const std::string replacement = callerSpelling + "(";
+    for (size_t pos = qasm.find(needle); pos != std::string::npos;
+         pos = qasm.find(needle, pos)) {
+      if (pos > 0 && isIdentChar(qasm[pos - 1])) {
+        pos += needle.size();
+        continue;
+      }
+      qasm.replace(pos, needle.size(), replacement);
+      pos += replacement.size();
+    }
   }
+  return qasm;
+}
 
-  return result_str;
+// Declares each caller-spelled gate that restoreCallerGateNames introduced
+// (e.g. "r") right after the qelib1.inc include, since those names aren't
+// defined there. Gates qelib1.inc already defines (e.g. "cz") have no entry
+// and are left alone; each gate is declared at most once.
+std::string mqss::mqssci::MQSSCompiler::insertCallerGateDefinitions(
+    std::string qasm,
+    const std::vector<std::pair<std::string, std::string>> &appliedAliases) {
+  std::string defs;
+  std::unordered_set<std::string> alreadyDefined;
+  for (const auto &[callerSpelling, qasmName] : appliedAliases) {
+    auto body = qasmGateDefinitionBody(qasmName);
+    if (body.empty() || !alreadyDefined.insert(callerSpelling).second)
+      continue;
+    defs += "gate " + callerSpelling + body.str() + "\n";
+  }
+  if (defs.empty())
+    return qasm;
+
+  // Insert after the include line if present, else after the version line.
+  size_t pos = qasm.find("include \"qelib1.inc\";");
+  if (pos == std::string::npos)
+    pos = qasm.find("OPENQASM 2.0;");
+  if (pos == std::string::npos)
+    return defs + qasm;
+  size_t eol = qasm.find('\n', pos);
+  qasm.insert(eol == std::string::npos ? qasm.size() : eol + 1, defs);
+  return qasm;
 }

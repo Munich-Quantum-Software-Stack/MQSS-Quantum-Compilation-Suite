@@ -54,6 +54,21 @@ std::filesystem::path kGHZCircuit = MQSSCI_TEST_FIXTURE_DIR "/ghz.qke";
 std::filesystem::path kMultiRotationCircuit =
     MQSSCI_TEST_FIXTURE_DIR "/multi_rotation_circuit.qke";
 
+// Native-gate sets of the devices exercised below. MQSSCompiler no longer
+// maps backend names to gate sets, so callers pass these explicitly.
+const std::vector<std::string> kIqmNativeGates{"prx", "cz"};
+const std::vector<std::string> kPlanqcNativeGates{"rx", "cz", "rz"};
+const std::vector<std::string> kWmiNativeGates{"cz", "x", "y", "rz", "sx"};
+
+// Returns the contents of a fixture file, or an empty string if it can't be
+// opened.
+std::string readFixture(const std::filesystem::path &path) {
+  std::ifstream fixture(path);
+  std::stringstream buffer;
+  buffer << fixture.rdbuf();
+  return buffer.str();
+}
+
 TEST(MQSSCIInterfacesTest, CompilesToOpenQASM2ForPlanqcBackend) {
   mqss::mqssci::MQSSCompiler compiler;
 
@@ -61,11 +76,15 @@ TEST(MQSSCIInterfacesTest, CompilesToOpenQASM2ForPlanqcBackend) {
   opts.optimization_level = mqss::mqssci::OptLevel::O1;
   opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
 
+  const std::string source = readFixture(kBellStateCircuit);
+  ASSERT_FALSE(source.empty());
+
   std::optional<std::string> qasm =
-      compiler.compile(kBellStateCircuit, "planqc", opts);
+      compiler.compileSource(source, kPlanqcNativeGates, opts);
 
   ASSERT_TRUE(qasm.has_value())
-      << "compile() returned nullopt; expected a valid OpenQASM2 program";
+      << "compileSource() returned nullopt; expected a valid OpenQASM2 "
+         "program";
   EXPECT_FALSE(qasm->empty());
 
   // Header emitted by cudaq::translateToOpenQASM for every OpenQASM2 program.
@@ -79,9 +98,8 @@ TEST(MQSSCIInterfacesTest, CompilesToOpenQASM2ForPlanqcBackend) {
   // definition blocks, leaving only the entry point's circuit body.
   EXPECT_EQ(qasm->find("gate "), std::string::npos);
 
-  // "planqc" maps to the {rx, cz, rz} native-gate set (see library.md).
-  // BasisConversionPass should have decomposed the whole circuit into
-  // exactly that basis.
+  // planqc's native-gate set is {rx, cz, rz}. BasisConversionPass should
+  // have decomposed the whole circuit into exactly that basis.
   EXPECT_NE(qasm->find("rz("), std::string::npos)
       << "expected at least one native rz rotation";
   EXPECT_NE(qasm->find("rx("), std::string::npos)
@@ -123,9 +141,9 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForSameCircuit) {
   std::string source = buffer.str();
 
   std::optional<std::string> qasm_from_path =
-      compiler.compile(kBellStateCircuit, "planqc", opts);
+      compiler.compile(kBellStateCircuit, kPlanqcNativeGates, opts);
   std::optional<std::string> qasm_from_source =
-      compiler.compileSource(source, "planqc", opts);
+      compiler.compileSource(source, kPlanqcNativeGates, opts);
 
   ASSERT_TRUE(qasm_from_path.has_value());
   ASSERT_TRUE(qasm_from_source.has_value())
@@ -137,19 +155,86 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForSameCircuit) {
   EXPECT_EQ(*qasm_from_path, *qasm_from_source);
 }
 
-TEST(MQSSCIInterfacesTest, CompileReturnsNulloptForUnsupportedBackend) {
+TEST(MQSSCIInterfacesTest, RestoresCallerGateNameForEQE1Backend) {
+  // "r" is an alias for BasisConversionPass's own "prx" mnemonic (see
+  // resolveMnemonicAlias), which cudaq's QASM2 emitter writes as
+  // "phased_rx". For the EQE1 backend, the output must be renamed back to
+  // the caller's own "r" spelling, and "r" -- which qelib1.inc doesn't
+  // define -- must be declared with a "gate r(...)" definition.
   mqss::mqssci::MQSSCompiler compiler;
 
   mqss::mqssci::CompilerOptions opts;
   opts.optimization_level = mqss::mqssci::OptLevel::O1;
   opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
 
-  std::optional<std::string> qasm =
-      compiler.compile(kBellStateCircuit, "not-a-real-backend", opts);
+  const std::string source = readFixture(kBellStateCircuit);
+  ASSERT_FALSE(source.empty());
 
-  EXPECT_FALSE(qasm.has_value())
-      << "compile() should reject a backend name that isn't one of "
-         "iqm, planqc, or wmi";
+  // "r" is listed twice to check it's still only declared once.
+  const std::vector<std::string> nativeGates{"r", "cz", "r"};
+  std::optional<std::string> qasm =
+      compiler.compileSource(source, "EQE1", nativeGates, {}, opts);
+
+  ASSERT_TRUE(qasm.has_value())
+      << "compileSource() returned nullopt; expected a valid OpenQASM2 "
+         "program";
+  EXPECT_NE(qasm->find("\nr("), std::string::npos)
+      << "expected the legalized H gate rendered as 'r', the caller's own "
+         "name for it";
+  EXPECT_EQ(qasm->find("phased_rx("), std::string::npos)
+      << "found cudaq's internal 'phased_rx' spelling; the alias didn't "
+         "round-trip to the output";
+
+  // Exactly one definition of "r", placed after the qelib1.inc include and
+  // before the first call to it.
+  const std::string gateDef = "\ngate r(";
+  const size_t defPos = qasm->find(gateDef);
+  ASSERT_NE(defPos, std::string::npos)
+      << "expected a 'gate r(...)' definition, since qelib1.inc doesn't "
+         "define r";
+  EXPECT_EQ(qasm->find(gateDef, defPos + 1), std::string::npos)
+      << "'r' is defined more than once";
+  EXPECT_LT(qasm->find("include \"qelib1.inc\";"), defPos)
+      << "the 'r' definition must come after the qelib1.inc include";
+  EXPECT_LT(defPos, qasm->find("\nr("))
+      << "the 'r' definition must come before the first call to r";
+
+  // cz is already defined by qelib1.inc; redefining it is invalid OpenQASM2.
+  EXPECT_EQ(qasm->find("gate cz"), std::string::npos)
+      << "found a 'gate cz' definition; cz is already defined in qelib1.inc";
+}
+
+TEST(MQSSCIInterfacesTest, KeepsQasmGateNameForNonEQE1Backend) {
+  // Same circuit and native-gate set as RestoresCallerGateNameForEQE1Backend,
+  // but with any backend name other than EQE1 (including none, and a
+  // wrongly-cased "eqe1"): the compile still succeeds and "r" is still
+  // resolved to "prx" for decomposition, but the output is left with cudaq's
+  // own "phased_rx" spelling rather than renamed back to "r".
+  mqss::mqssci::MQSSCompiler compiler;
+
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
+
+  const std::string source = readFixture(kBellStateCircuit);
+  ASSERT_FALSE(source.empty());
+
+  const std::vector<std::string> nativeGates{"r", "cz"};
+  for (const std::string backend : {"", "iqm", "eqe1", "not-a-real-backend"}) {
+    std::optional<std::string> qasm =
+        compiler.compileSource(source, backend, nativeGates, {}, opts);
+
+    ASSERT_TRUE(qasm.has_value())
+        << "compileSource() returned nullopt for backend '" << backend
+        << "'; expected a valid OpenQASM2 program";
+    EXPECT_NE(qasm->find("phased_rx("), std::string::npos)
+        << "expected the legalized H gate rendered as 'phased_rx' for "
+           "backend '"
+        << backend << "'";
+    EXPECT_EQ(qasm->find("\nr("), std::string::npos)
+        << "found 'r' for backend '" << backend
+        << "'; aliases should only be renamed back for EQE1";
+  }
 }
 
 TEST(MQSSCIInterfacesTest, CompilesToQIRBaseForWmiBackend) {
@@ -159,11 +244,14 @@ TEST(MQSSCIInterfacesTest, CompilesToQIRBaseForWmiBackend) {
   opts.optimization_level = mqss::mqssci::OptLevel::O1;
   opts.result_format = mqss::mqssci::ResultFormat::QIRBASE;
 
+  const std::string source = readFixture(kBellStateCircuit);
+  ASSERT_FALSE(source.empty());
+
   std::optional<std::string> qir =
-      compiler.compile(kBellStateCircuit, "wmi", opts);
+      compiler.compileSource(source, kWmiNativeGates, opts);
 
   ASSERT_TRUE(qir.has_value())
-      << "compile() returned nullopt; expected a valid QIR base-profile "
+      << "compileSource() returned nullopt; expected a valid QIR base-profile "
          "program";
   EXPECT_FALSE(qir->empty());
 
@@ -174,9 +262,9 @@ TEST(MQSSCIInterfacesTest, CompilesToQIRBaseForWmiBackend) {
   EXPECT_NE(qir->find("define void @"), std::string::npos);
   EXPECT_NE(qir->find("\"qir_profiles\"=\"base_profile\""), std::string::npos);
 
-  // "wmi" maps to the {cz, x, y, rz} native-gate set (see library.md).
-  // BasisConversionPass should have decomposed the whole circuit into
-  // exactly that basis before QIR lowering.
+  // wmi's native-gate set is {cz, x, y, rz, sx}. BasisConversionPass should
+  // have decomposed the whole circuit into exactly that basis before QIR
+  // lowering.
   EXPECT_NE(qir->find("call void @__quantum__qis__rz__body"), std::string::npos)
       << "expected at least one native rz rotation";
   EXPECT_NE(qir->find("call void @__quantum__qis__rx__body"), std::string::npos)
@@ -216,9 +304,9 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForQIRBase) {
   std::string source = buffer.str();
 
   std::optional<std::string> qir_from_path =
-      compiler.compile(kBellStateCircuit, "wmi", opts);
+      compiler.compile(kBellStateCircuit, kWmiNativeGates, opts);
   std::optional<std::string> qir_from_source =
-      compiler.compileSource(source, "wmi", opts);
+      compiler.compileSource(source, kWmiNativeGates, opts);
 
   ASSERT_TRUE(qir_from_path.has_value());
   ASSERT_TRUE(qir_from_source.has_value())
@@ -239,11 +327,14 @@ TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForIqmBackend) {
   opts.optimization_level = mqss::mqssci::OptLevel::O1;
   opts.result_format = mqss::mqssci::ResultFormat::IQMJSON;
 
+  const std::string source = readFixture(kBellStateCircuit);
+  ASSERT_FALSE(source.empty());
+
   std::optional<std::string> json =
-      compiler.compile(kBellStateCircuit, "iqm", opts);
+      compiler.compileSource(source, kIqmNativeGates, opts);
 
   ASSERT_TRUE(json.has_value())
-      << "compile() returned nullopt; expected a valid IQM JSON program";
+      << "compileSource() returned nullopt; expected a valid IQM JSON program";
   EXPECT_FALSE(json->empty());
 
   // The circuit's entry-point function name should be carried through as the
@@ -251,9 +342,9 @@ TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForIqmBackend) {
   EXPECT_NE(json->find("\"name\": \"__nvqpp__mlirgen__testILm2EE\""),
             std::string::npos);
 
-  // "iqm" maps to the {prx, cz} native-gate set (see library.md).
-  // BasisConversionPass should have decomposed the whole circuit into
-  // exactly that basis, which IQM's JSON emitter renders as "prx"/"cz".
+  // IQM's native-gate set is {prx, cz}. BasisConversionPass should have
+  // decomposed the whole circuit into exactly that basis, which IQM's JSON
+  // emitter renders as "prx"/"cz".
   // See tests/dialects/quake/IQMTranspileToIQMJSON.qke for the same
   // decomposition pattern checked at the pass level.
   EXPECT_NE(json->find("\"name\": \"prx\""), std::string::npos)
@@ -283,11 +374,10 @@ TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForIqmBackend) {
 }
 
 TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForExplicitNativeGateSet) {
-  // Same circuit/assertions as CompilesToIQMJSONForIqmBackend, but exercises
-  // compileImpl()'s other branch (MQSSCompiler.cpp's native_gates path, not
-  // its backend_name path): instead of a known backend name resolving to a
-  // hardcoded gate list internally, the caller supplies the {prx, cz}
-  // native-gate set directly.
+  // Same circuit/assertions as CompilesToIQMJSONForIqmBackend, but goes
+  // through compile() (path) rather than compileSource(), and adds a
+  // native gate ("prx_12") BasisConversionPass has no case for, which must
+  // be tolerated rather than failing the compile.
   mqss::mqssci::MQSSCompiler compiler;
 
   mqss::mqssci::CompilerOptions opts;
@@ -309,9 +399,7 @@ TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForExplicitNativeGateSet) {
 
   // BasisConversionPass should have decomposed the whole circuit into
   // exactly the {prx, cz} set passed in, which IQM's JSON emitter renders as
-  // "prx"/"cz" -- identical output to CompilesToIQMJSONForIqmBackend, since
-  // that test's "iqm" backend name resolves to this same gate set internally
-  // (see MQSSCompiler.cpp's backend_name branch).
+  // "prx"/"cz" -- identical output to CompilesToIQMJSONForIqmBackend.
   EXPECT_NE(json->find("\"name\": \"prx\""), std::string::npos)
       << "expected at least one native prx (\"prx\") gate";
   EXPECT_NE(json->find("\"name\": \"cz\""), std::string::npos)
@@ -353,11 +441,14 @@ TEST(MQSSCIInterfacesTest, CompilesToIQMJSONForWholeRegisterMeasurement) {
   opts.optimization_level = mqss::mqssci::OptLevel::O1;
   opts.result_format = mqss::mqssci::ResultFormat::IQMJSON;
 
+  const std::string source = readFixture(kMultiRotationCircuit);
+  ASSERT_FALSE(source.empty());
+
   std::optional<std::string> json =
-      compiler.compile(kMultiRotationCircuit, "iqm", opts);
+      compiler.compileSource(source, kIqmNativeGates, opts);
 
   ASSERT_TRUE(json.has_value())
-      << "compile() returned nullopt; expected a valid IQM JSON program";
+      << "compileSource() returned nullopt; expected a valid IQM JSON program";
   EXPECT_FALSE(json->empty());
 
   EXPECT_NE(json->find("\"name\": \"__nvqpp__mlirgen__rotations\""),
@@ -438,11 +529,14 @@ TEST(MQSSCIInterfacesTest, CompileSucceedsWithVerificationEnabled) {
   opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
   opts.verify = true;
 
+  const std::string source = readFixture(kBellStateCircuit);
+  ASSERT_FALSE(source.empty());
+
   std::optional<std::string> qasm =
-      compiler.compile(kBellStateCircuit, "planqc", opts);
+      compiler.compileSource(source, kPlanqcNativeGates, opts);
 
   ASSERT_TRUE(qasm.has_value())
-      << "compile() returned nullopt with opts.verify = true; "
+      << "compileSource() returned nullopt with opts.verify = true; "
          "BasisConversionPass's output should be equivalent to the input "
          "circuit, so verification should not fail the compile";
   EXPECT_FALSE(qasm->empty());
@@ -529,12 +623,12 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   // and Y rotations" as the single-qubit native gate -- i.e. a rotation by
   // angle theta about an axis that's an arbitrary combination of X and Y,
   // parameterized by phi. That's exactly phased_rx's definition
-  // (R(theta, phi) = exp(-i*theta/2*(cos(phi)*X + sin(phi)*Y))), the same
-  // gate already used for the "iqm" backend elsewhere in this codebase, so
-  // it's "prx" here, not the device's own name for it. "id"/"if_else"/
-  // "reset" are real device capabilities BasisConversionPass has no case
-  // for yet (the same gap already flagged for WMI's "id"), but are inert
-  // for this particular circuit since ghz.qke never produces ops that
+  // (R(theta, phi) = exp(-i*theta/2*(cos(phi)*X + sin(phi)*Y))), i.e.
+  // BasisConversionPass's "prx". The device calls it "r", which the EQE1
+  // backend resolves to "prx" and renames back to "r" in the output.
+  // "id"/"if_else"/ "reset" are real device capabilities BasisConversionPass
+  // has no case for yet (the same gap already flagged for WMI's "id"), but are
+  // inert for this particular circuit since ghz.qke never produces ops that
   // would classify as any of them.
   const std::vector<std::string> native_gates = {"id",      "measure", "r",
                                                  "if_else", "reset",   "cz"};
@@ -555,7 +649,7 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
           {47, 48}, {47, 51}, {50, 46}, {50, 49}, {50, 51},
       };
 
-  auto compiled = compiler.compileSource(source, "", native_gates,
+  auto compiled = compiler.compileSource(source, "EQE1", native_gates,
                                          qubit_connectivity, opts);
 
   ASSERT_TRUE(compiled.has_value())

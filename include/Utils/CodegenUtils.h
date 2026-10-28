@@ -44,6 +44,14 @@ inline const llvm::StringMap<llvm::StringRef> &getMnemonicAliasTable() {
   return aliases;
 }
 
+inline const llvm::StringRef qasmGateDefinitionBody(llvm::StringRef mnemonic) {
+  static const llvm::StringMap<llvm::StringRef> qasmgateDef = {
+      {"phased_rx",
+       "(param0,param1) q0 { u(param0,-pi/2 + param1,pi/2 - param1) q0; }"}};
+  auto it = qasmgateDef.find(mnemonic);
+  return it == qasmgateDef.end() ? "" : it->second;
+}
+
 // BasisConversionPass's own mnemonic -> the literal gate name
 // cudaq::translateToOpenQASM writes for it. Only needed for mnemonics
 // whose QASM2 spelling differs from the mnemonic string itself.
@@ -56,7 +64,7 @@ inline llvm::StringRef mnemonicToQasmGateName(llvm::StringRef mnemonic) {
 }
 
 inline llvm::StringRef resolveMnemonicAlias(llvm::StringRef gate) {
-  auto aliases = getMnemonicAliasTable();
+  const auto &aliases = getMnemonicAliasTable();
   auto it = aliases.find(gate);
   return it == aliases.end() ? gate : it->second;
 }
