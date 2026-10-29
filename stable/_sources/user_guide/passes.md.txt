@@ -218,10 +218,10 @@ When `qdmi` is set:
 
 #### Supported Gate Mnemonics
 
-The `gates` option (and the corresponding `native_gate_set` argument of `MQSSCompiler::compile`, see
-[Choosing a Backend](library.md#choosing-a-backend)) takes a comma-separated list of gate mnemonics.
-These are the mnemonics the pass recognizes, both as members of the requested native set and as
-gates it knows how to decompose:
+The `gates` option (and the corresponding `native_gates` argument of `MQSSCompiler::compile`, see
+[Choosing a Native-Gate Set and Backend](library.md#choosing-a-native-gate-set-and-backend)) takes a
+comma-separated list of gate mnemonics. These are the mnemonics the pass recognizes, both as members
+of the requested native set and as gates it knows how to decompose:
 
 | Mnemonic | Gate                            | Quake Operation   | Notes                                                                     |
 | -------- | ------------------------------- | ----------------- | ------------------------------------------------------------------------- |

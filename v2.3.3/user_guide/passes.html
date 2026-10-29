@@ -1,0 +1,908 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Verifying Circuit Correctness" href="verification.html"><link rel="prev" title="Running test circuits" href="running.html">
+
+    <!-- Generated with Sphinx 8.1.3 and Furo 2025.12.19 -->
+        <title>Passes - MQSS Quantum Compilation Suite documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">MQSS Quantum Compilation Suite  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">MQSS Quantum Compilation Suite  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-versions">
+  <p class="caption">Documentation version: v2.3.3</p>
+  <ul>
+    <li><a href="../../v1.0.0/index.html">v1.0.0</a></li>
+    <li><a href="../../v2.0.0/index.html">v2.0.0</a></li>
+    <li><a href="../../v2.1.0/index.html">v2.1.0</a></li>
+    <li><a href="../../v2.2.0/index.html">v2.2.0</a></li>
+    <li><a href="../../v2.2.1/index.html">v2.2.1</a></li>
+    <li><a href="../../v2.3.0/index.html">v2.3.0</a></li>
+    <li><a href="../../v2.3.1/index.html">v2.3.1</a></li>
+    <li><a href="../../v2.3.2/index.html">v2.3.2</a></li>
+    <li><a href="passes.html">v2.3.3</a></li>
+  </ul>
+</div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="build.html">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html">Running test circuits</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Passes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html">Verifying Circuit Correctness</a></li>
+<li class="toctree-l2"><a class="reference internal" href="library.html">Using MQSSCI as a Library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transpiler.html">MQSS-Quantum Compilation Suite Transpiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qdmi.html">QDMI in MQSS Quantum Compilation Suite</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../develop-guide/index.html">Development Guide</a><input aria-label="Toggle navigation of Development Guide" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/develop-guide.html">Development Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/templates.html">Writing Passes for the MQSS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/integrate.html">Integrating the MQSS Quantum Compilation Suite within your project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop-guide/verification.html">Verification Infrastructure</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../faqs/index.html">FAQs</a><input aria-label="Toggle navigation of FAQs" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../faqs/mqss-faq.html">MQSS FAQs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../faqs/mlir-faq.html">MLIR FAQs</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/user_guide/passes.md.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <!--------------------------------------------------------------------------------------------------
+Copyright 2024 Munich Quantum Software Stack Project
+
+Licensed under the Apache License, Version 2.0 with LLVM Exceptions (the
+"License"); you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://github.com/Munich-Quantum-Software-Stack/MQSS-Quantum-Compilation-Suite/blob/develop/LICENSE
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+----------------------------------------------------------------------------------------------------->
+<section id="passes">
+<h1>Passes<a class="headerlink" href="#passes" title="Link to this heading">¶</a></h1>
+<p>The MLIR passes available within the MQSS Quantum Compilation Suite are described here. Passes are
+grouped into three categories:</p>
+<ul class="simple">
+<li><p>target-agnostic optimization passes that clean up and simplify a circuit regardless of the
+intended hardware,</p></li>
+<li><p>target-specific transpilation passes that adapt a circuit to a concrete device, and</p></li>
+<li><p>code-generation passes that lower the MLIR dialect down toward an executable representation (QIR,
+OpenQASM etc.).</p></li>
+</ul>
+<p>Before using the passes, please take note of the following:</p>
+<ol class="arabic simple">
+<li><p>Passes prefixed with <code class="docutils literal notranslate"><span class="pre">Common</span></code> operate on both the <code class="docutils literal notranslate"><span class="pre">Quake</span></code> and <code class="docutils literal notranslate"><span class="pre">Catalyst-quantum</span></code> MLIR dialects.
+This lets a single implementation serve multiple front-end SDKs without duplicating the
+optimization logic per dialect.</p></li>
+<li><p>Transpilation — that is native-gate-set mapping and basis conversion — is currently only enabled
+for the <code class="docutils literal notranslate"><span class="pre">Quake</span></code> dialect.</p></li>
+<li><p>Refer to the <a class="reference internal" href="#example-usage"><span class="xref myst">Example Usage</span></a> section below for instructions on how to enable and
+invoke a pass.</p></li>
+</ol>
+<section id="standard-optimization-passes-target-device-agnostic">
+<h2>Standard Optimization Passes (Target Device Agnostic)<a class="headerlink" href="#standard-optimization-passes-target-device-agnostic" title="Link to this heading">¶</a></h2>
+<p>These passes rewrite the circuit into an equivalent but simpler or more canonical form. Because they
+do not depend on any device characteristics, they can be run at any stage of the pipeline and in any
+combination.</p>
+<section id="commoncommutepass">
+<h3>CommonCommutePass<a class="headerlink" href="#commoncommutepass" title="Link to this heading">¶</a></h3>
+<p>This pass searches for and commutes gates that match a specific pattern. Commuting gates past one
+another does not change the circuit’s semantics, but it can expose further optimization
+opportunities (for example, bringing two cancellable gates adjacent to each other).</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pattern to commute: <code class="docutils literal notranslate"><span class="pre">CX-RX</span></code>, <code class="docutils literal notranslate"><span class="pre">RX-CX</span></code>, <code class="docutils literal notranslate"><span class="pre">CX-X</span></code>, <code class="docutils literal notranslate"><span class="pre">X-CX</span></code>, <code class="docutils literal notranslate"><span class="pre">CX-Z</span></code>, <code class="docutils literal notranslate"><span class="pre">Z-CX</span></code></p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonCommutePass=mode=CX-RX</span></code></p></li>
+</ul>
+</section>
+<section id="commondecompositionpass">
+<h3>CommonDecompositionPass<a class="headerlink" href="#commondecompositionpass" title="Link to this heading">¶</a></h3>
+<p>Performs gate decomposition: <code class="docutils literal notranslate"><span class="pre">{Cx}</span></code> → <code class="docutils literal notranslate"><span class="pre">HCzH</span></code>, <code class="docutils literal notranslate"><span class="pre">{Cz}</span></code> → <code class="docutils literal notranslate"><span class="pre">HCxH</span></code>, <code class="docutils literal notranslate"><span class="pre">{H}</span></code> → <code class="docutils literal notranslate"><span class="pre">Rz-X-Rz</span></code>, or <code class="docutils literal notranslate"><span class="pre">{CH}</span></code> →
+<code class="docutils literal notranslate"><span class="pre">S-H-T-CNOT-TAdj-H-SAdj</span></code>.</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pass mode: <code class="docutils literal notranslate"><span class="pre">CxToHCzH</span></code>, <code class="docutils literal notranslate"><span class="pre">CzToHCxH</span></code>, <code class="docutils literal notranslate"><span class="pre">HToRzXRz</span></code>, or <code class="docutils literal notranslate"><span class="pre">CHToCX</span></code></p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonDecompositionPass=mode=CxToHCzH</span></code></p></li>
+</ul>
+<p>Note: This is a representative dialect-agnostic decomposition pass. It will be superseded by the
+<code class="docutils literal notranslate"><span class="pre">BasisConversionPass</span></code>, which performs recursive, device-aware decomposition rather than a fixed set
+of rewrites, and can query the target’s native gate set from a QDMI device.</p>
+</section>
+<section id="commongatecancellationpass">
+<h3>CommonGateCancellationPass<a class="headerlink" href="#commongatecancellationpass" title="Link to this heading">¶</a></h3>
+<p>Performs cancellation of gates that follow a specific pattern. The behavior depends on <code class="docutils literal notranslate"><span class="pre">mode</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CancelGate</span></code> looks for gate operations of the same type and cancels them when they act on the same
+qubit operands (for example, two adjacent <code class="docutils literal notranslate"><span class="pre">CNOT</span></code>s on the same control and target, which together
+form the identity). Supported gate types: <code class="docutils literal notranslate"><span class="pre">CNOT</span></code>, <code class="docutils literal notranslate"><span class="pre">PauliX</span></code>, <code class="docutils literal notranslate"><span class="pre">PauliZ</span></code>, <code class="docutils literal notranslate"><span class="pre">PauliY</span></code>, and <code class="docutils literal notranslate"><span class="pre">Hadamard</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CancelNullRotation</span></code> removes <code class="docutils literal notranslate"><span class="pre">RX</span></code>, <code class="docutils literal notranslate"><span class="pre">RY</span></code>, or <code class="docutils literal notranslate"><span class="pre">RZ</span></code> gates whose rotation angle is a constant multiple
+of 2π (i.e. an effective no-op rotation), regardless of adjacency to another gate.</p></li>
+</ul>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pattern to cancel: <code class="docutils literal notranslate"><span class="pre">CancelGate</span></code> or <code class="docutils literal notranslate"><span class="pre">CancelNullRotation</span></code></p></li>
+</ul>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonGateCancellationPass=mode=CancelGate</span></code></p></li>
+</ul>
+</section>
+<section id="commonnormalizearganglepass">
+<h3>CommonNormalizeArgAnglePass<a class="headerlink" href="#commonnormalizearganglepass" title="Link to this heading">¶</a></h3>
+<p>Normalizes the angle argument of the rotation gates <code class="docutils literal notranslate"><span class="pre">RX</span></code>, <code class="docutils literal notranslate"><span class="pre">RY</span></code>, and <code class="docutils literal notranslate"><span class="pre">RZ</span></code> — for instance, wrapping
+angles into a canonical range so that equivalent rotations are represented identically. This makes
+downstream cancellation and folding more effective.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonNormalizeArgAnglePass</span></code></p></li>
+</ul>
+</section>
+<section id="commonreductionpass">
+<h3>CommonReductionPass<a class="headerlink" href="#commonreductionpass" title="Link to this heading">¶</a></h3>
+<p>Performs circuit reduction: <code class="docutils literal notranslate"><span class="pre">H-Z-H</span></code> → <code class="docutils literal notranslate"><span class="pre">X</span></code>, <code class="docutils literal notranslate"><span class="pre">H-X-H</span></code> → <code class="docutils literal notranslate"><span class="pre">Z</span></code>, <code class="docutils literal notranslate"><span class="pre">SAdj-Z</span></code> → <code class="docutils literal notranslate"><span class="pre">S</span></code>, or <code class="docutils literal notranslate"><span class="pre">S-Z</span></code> → <code class="docutils literal notranslate"><span class="pre">SAdj</span></code>.</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pass mode: <code class="docutils literal notranslate"><span class="pre">HXHToZ</span></code>, <code class="docutils literal notranslate"><span class="pre">HZHToX</span></code>, <code class="docutils literal notranslate"><span class="pre">SAdjZToS</span></code>, or <code class="docutils literal notranslate"><span class="pre">SZToSAdj</span></code></p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonReductionPass=mode=HXHToZ</span></code></p></li>
+</ul>
+<p>Note: Here <code class="docutils literal notranslate"><span class="pre">H</span></code> (or <code class="docutils literal notranslate"><span class="pre">Hadamard</span></code>) refers to the Hadamard gate operation, <code class="docutils literal notranslate"><span class="pre">S</span></code> to the phase gate, and
+<code class="docutils literal notranslate"><span class="pre">SAdj</span></code> to its adjoint.</p>
+</section>
+<section id="commonswitchpass">
+<h3>CommonSwitchPass<a class="headerlink" href="#commonswitchpass" title="Link to this heading">¶</a></h3>
+<p>Commutes and switches gates. The pass first runs the <code class="docutils literal notranslate"><span class="pre">CommonCommutePass</span></code> and then replaces a
+specified gate operation, effectively reordering a gate sequence into a preferred canonical form.</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mode=&lt;string&gt;</span></code> — Select pattern to switch: <code class="docutils literal notranslate"><span class="pre">XYZHtoHXYZ</span></code> or <code class="docutils literal notranslate"><span class="pre">HXYZtoXYZH</span></code></p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonSwitchPass=mode=HXYZtoXYZH</span></code></p></li>
+</ul>
+</section>
+<section id="commoncnotreversepass">
+<h3>CommonCNOTReversePass<a class="headerlink" href="#commoncnotreversepass" title="Link to this heading">¶</a></h3>
+<p>Reverse the control and targets of each CNot gate in a circuit.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonCNOTReversePass</span></code></p></li>
+</ul>
+</section>
+<section id="canonicalize">
+<h3>canonicalize<a class="headerlink" href="#canonicalize" title="Link to this heading">¶</a></h3>
+<p>Canonicalizes dialect operations. This is the standard MLIR canonicalization pass, which applies the
+canonicalization patterns registered by each operation to fold constants and normalize the IR.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--canonicalize</span></code></p></li>
+</ul>
+</section>
+<section id="cse">
+<h3>cse<a class="headerlink" href="#cse" title="Link to this heading">¶</a></h3>
+<p>Eliminates common sub-expressions, removing redundant computations that produce the same value.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--cse</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="transpilation-passes-target-device-specific">
+<h2>Transpilation Passes (Target Device Specific)<a class="headerlink" href="#transpilation-passes-target-device-specific" title="Link to this heading">¶</a></h2>
+<p>These passes adapt a circuit to a specific quantum device by respecting its connectivity and native
+gate set. Unlike the optimization passes above, their output depends on the target hardware
+description supplied to the pass.</p>
+<section id="commonmappingpass">
+<h3>CommonMappingPass<a class="headerlink" href="#commonmappingpass" title="Link to this heading">¶</a></h3>
+<p>A dialect-agnostic qubit mapping pass. It maps logical (algorithmic) qubits to physical (device)
+qubits, inserting the operations needed to satisfy the target device’s connectivity constraints. The
+target’s coupling map can be supplied either as a JSON file or queried directly from a QDMI device.</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--input=&lt;string&gt;</span></code> — Path to JSON input (Coupling Map of target device)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--qdmi=&lt;path</span> <span class="pre">to</span> <span class="pre">.conf</span> <span class="pre">file&gt;</span></code> — Query the coupling map from a QDMI device.</p></li>
+</ul>
+<p>Example invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--CommonMappingPass=qdmi=tests/input/cxx_qdmi.conf</span></code></br> run from the repository root. The
+<code class="docutils literal notranslate"><span class="pre">.conf</span></code> file contains one line with the path to the QDMI device shared object file and the device
+prefix. See <code class="docutils literal notranslate"><span class="pre">tests/input/cxx_qdmi.conf</span></code> and <code class="docutils literal notranslate"><span class="pre">tests/input/mqt_qdmi.conf</span></code> for examples.</p></li>
+</ul>
+</section>
+<section id="basisconversionpass">
+<h3>BasisConversionPass<a class="headerlink" href="#basisconversionpass" title="Link to this heading">¶</a></h3>
+<p>This pass decomposes all gate operations in the input MLIR dialect into the native gate set of the
+target quantum device. It incorporates numerous decomposition patterns and operates recursively,
+repeatedly rewriting non-native gates until every operation belongs to the requested native set (or
+no further decomposition rule applies).</p>
+<p>Note: Currently only available for the <code class="docutils literal notranslate"><span class="pre">Quake</span></code> MLIR dialect.</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gates=&lt;comma-separated</span> <span class="pre">list</span> <span class="pre">of</span> <span class="pre">gates&gt;</span></code> — The native gate set to decompose to. Defaults to
+<code class="docutils literal notranslate"><span class="pre">h,cx,rz</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">qdmi=&lt;path</span> <span class="pre">to</span> <span class="pre">.conf</span> <span class="pre">file&gt;</span></code> — Query the native gate set from a QDMI device instead of using
+<code class="docutils literal notranslate"><span class="pre">gates</span></code>. The <code class="docutils literal notranslate"><span class="pre">.conf</span></code> file has the same format as for <a class="reference internal" href="#commonmappingpass"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">CommonMappingPass</span></code></span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">device=&lt;device</span> <span class="pre">name&gt;</span></code> — Select a QDMI device by the name it reports, when the session has more
+than one. Defaults to the first device. If no device matches, the error message lists the
+available names. Wrap names containing spaces in braces or quotes. For example, the mock device in
+<code class="docutils literal notranslate"><span class="pre">tests/input/cxx_qdmi.conf</span></code> is named <code class="docutils literal notranslate"><span class="pre">C++</span> <span class="pre">Device</span> <span class="pre">with</span> <span class="pre">5</span> <span class="pre">qubits</span></code>, selected with
+<code class="docutils literal notranslate"><span class="pre">device={C++</span> <span class="pre">Device</span> <span class="pre">with</span> <span class="pre">5</span> <span class="pre">qubits}</span></code>.</p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--BasisConversionPass=gates=rx,cz,rz</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--BasisConversionPass=qdmi=tests/input/cxx_qdmi.conf</span></code>, run from the repository root</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--BasisConversionPass=&quot;qdmi=tests/input/cxx_qdmi.conf</span> <span class="pre">device=&lt;device</span> <span class="pre">name&gt;&quot;</span></code></p></li>
+</ul>
+<p>When <code class="docutils literal notranslate"><span class="pre">qdmi</span></code> is set:</p>
+<ul class="simple">
+<li><p>The device’s operations are queried once per pass run. Each operation name is used as a gate
+mnemonic as is, so it must match the <a class="reference internal" href="#supported-gate-mnemonics"><span class="xref myst">Supported Gate Mnemonics</span></a> table
+below. For example, IQM devices report <code class="docutils literal notranslate"><span class="pre">prx</span></code>. Names the pass does not recognize have no effect.</p></li>
+<li><p>An operation whose number of qubits or parameters does not match the table is ignored with a
+warning.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">gates</span></code> is also given, the QDMI gate set is used and a warning is emitted.</p></li>
+<li><p>The pass fails with an error if the device cannot be loaded, no device matches <code class="docutils literal notranslate"><span class="pre">device</span></code>, or every
+reported operation was ignored (or none was reported).</p></li>
+</ul>
+<section id="supported-gate-mnemonics">
+<h4>Supported Gate Mnemonics<a class="headerlink" href="#supported-gate-mnemonics" title="Link to this heading">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">gates</span></code> option (and the corresponding <code class="docutils literal notranslate"><span class="pre">native_gates</span></code> argument of <code class="docutils literal notranslate"><span class="pre">MQSSCompiler::compile</span></code>, see
+<a class="reference internal" href="library.html#choosing-a-native-gate-set-and-backend"><span class="std std-ref">Choosing a Native-Gate Set and Backend</span></a>) takes a
+comma-separated list of gate mnemonics. These are the mnemonics the pass recognizes, both as members
+of the requested native set and as gates it knows how to decompose:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Mnemonic</p></th>
+<th class="head"><p>Gate</p></th>
+<th class="head"><p>Quake Operation</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">h</span></code></p></td>
+<td><p>Hadamard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.h</span></code></p></td>
+<td><p>Uncontrolled, single target.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">x</span></code></p></td>
+<td><p>Pauli-X</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.x</span></code></p></td>
+<td><p>Uncontrolled, single target.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cx</span></code></p></td>
+<td><p>Controlled-X (CNOT)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.x</span></code></p></td>
+<td><p>Exactly one control.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">y</span></code></p></td>
+<td><p>Pauli-Y</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.y</span></code></p></td>
+<td><p>Uncontrolled, non-adjoint.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cy</span></code></p></td>
+<td><p>Controlled-Y</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.y</span></code></p></td>
+<td><p>Exactly one control, non-adjoint.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">z</span></code></p></td>
+<td><p>Pauli-Z</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.z</span></code></p></td>
+<td><p>Uncontrolled, single target.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cz</span></code></p></td>
+<td><p>Controlled-Z</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.z</span></code></p></td>
+<td><p>Exactly one control.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s</span></code></p></td>
+<td><p>S (√Z phase gate)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.s</span></code></p></td>
+<td><p>Non-adjoint.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sdg</span></code></p></td>
+<td><p>S† (adjoint of S)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.s</span></code></p></td>
+<td><p>Adjoint form.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">t</span></code></p></td>
+<td><p>T (⁴√Z phase gate)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.t</span></code></p></td>
+<td><p>Non-adjoint.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tdg</span></code></p></td>
+<td><p>T† (adjoint of T)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.t</span></code></p></td>
+<td><p>Adjoint form.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r1</span></code></p></td>
+<td><p>R1(θ) phase rotation</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.r1</span></code></p></td>
+<td><p>One parameter, non-adjoint, uncontrolled.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rx</span></code></p></td>
+<td><p>Rx(θ)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.rx</span></code></p></td>
+<td><p>One parameter, non-adjoint, uncontrolled.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sx</span></code></p></td>
+<td><p>√X — fixed π/2 rotation about X</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.rx</span></code></p></td>
+<td><p>Recognized only when the parameter is the constant <code class="docutils literal notranslate"><span class="pre">π/2</span></code>; see note below.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">crx</span></code></p></td>
+<td><p>Controlled-Rx(θ)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.rx</span></code></p></td>
+<td><p>Exactly one control, one parameter.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ry</span></code></p></td>
+<td><p>Ry(θ)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.ry</span></code></p></td>
+<td><p>One parameter, uncontrolled.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cry</span></code></p></td>
+<td><p>Controlled-Ry(θ)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.ry</span></code></p></td>
+<td><p>Exactly one control, one parameter.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rz</span></code></p></td>
+<td><p>Rz(θ)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.rz</span></code></p></td>
+<td><p>One parameter, non-adjoint, uncontrolled.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">crz</span></code></p></td>
+<td><p>Controlled-Rz(θ)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.rz</span></code></p></td>
+<td><p>Exactly one control, one parameter.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">u2</span></code></p></td>
+<td><p>U2(φ, λ)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.u2</span></code></p></td>
+<td><p>Two parameters, uncontrolled.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">u3</span></code></p></td>
+<td><p>U3(θ, φ, λ)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.u3</span></code></p></td>
+<td><p>Three parameters, uncontrolled.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">swap</span></code></p></td>
+<td><p>SWAP</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.swap</span></code></p></td>
+<td><p>Two targets, uncontrolled.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">prx</span></code></p></td>
+<td><p>PhasedRx(θ, φ)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quake.phased_rx</span></code></p></td>
+<td><p>Two parameters, non-adjoint, uncontrolled.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Notes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sx</span></code> is not a distinct Quake operation — it is the special case of <code class="docutils literal notranslate"><span class="pre">quake.rx</span></code> whose angle is the
+compile-time constant π/2. An <code class="docutils literal notranslate"><span class="pre">rx</span></code> with any other (or non-constant) angle is classified as plain
+<code class="docutils literal notranslate"><span class="pre">rx</span></code>, not <code class="docutils literal notranslate"><span class="pre">sx</span></code>. Because any device with a generic <code class="docutils literal notranslate"><span class="pre">rx</span></code> can trivially perform its π/2 special case,
+requesting <code class="docutils literal notranslate"><span class="pre">rx</span></code> in the native set also satisfies <code class="docutils literal notranslate"><span class="pre">sx</span></code> without listing it explicitly.</p></li>
+<li><p>Gates outside this table (e.g. adjoint <code class="docutils literal notranslate"><span class="pre">rx</span></code>/<code class="docutils literal notranslate"><span class="pre">ry</span></code>/<code class="docutils literal notranslate"><span class="pre">rz</span></code>/<code class="docutils literal notranslate"><span class="pre">r1</span></code>, or operations like <code class="docutils literal notranslate"><span class="pre">quake.measure</span></code>)
+are not recognized by this pass and are left untouched.</p></li>
+<li><p>If a gate present in the circuit cannot be legalized into the requested native set — no chain of
+decomposition rules bottoms out in only native mnemonics — the pass emits a warning and leaves
+that gate as-is rather than looping forever.</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="codegen-passes">
+<h2>CodeGen Passes<a class="headerlink" href="#codegen-passes" title="Link to this heading">¶</a></h2>
+<p>These passes lower the optimized and transpiled MLIR down toward a target transport format,
+ultimately producing QIR or OpenQASM.</p>
+<section id="lower-quake-to-qir">
+<h3>lower-quake-to-qir<a class="headerlink" href="#lower-quake-to-qir" title="Link to this heading">¶</a></h3>
+<p>The MQSS Quake-to-QIR conversion pass pipeline.</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">profile=&lt;string&gt;</span></code> - Target transport layer format or QIR-Profile, &lt;name[:version]&gt;. Valid names:
+<code class="docutils literal notranslate"><span class="pre">qir</span></code>, <code class="docutils literal notranslate"><span class="pre">qir-base</span></code>, <code class="docutils literal notranslate"><span class="pre">qir-adaptive</span></code>, <code class="docutils literal notranslate"><span class="pre">qir-full</span></code>. version: <code class="docutils literal notranslate"><span class="pre">2.0</span></code>, <code class="docutils literal notranslate"><span class="pre">2.1</span></code>. [Default: <code class="docutils literal notranslate"><span class="pre">qir-base:2.0</span></code>]</p></li>
+</ul>
+<p>Example Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--lower-quake-to-qir=profile=qir-base:2.0</span></code></p></li>
+</ul>
+</section>
+<section id="quake-to-qasm2">
+<h3>quake-to-qasm2<a class="headerlink" href="#quake-to-qasm2" title="Link to this heading">¶</a></h3>
+<p>Transforms a Quake MLIR module into OpenQASM 2. Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--quake-to-qasm2</span></code></p></li>
+</ul>
+</section>
+<section id="expand-measurements">
+<h3>expand-measurements<a class="headerlink" href="#expand-measurements" title="Link to this heading">¶</a></h3>
+<p>Expands a <code class="docutils literal notranslate"><span class="pre">quake.mz</span></code> that measures a whole qubit register (<code class="docutils literal notranslate"><span class="pre">quake.mz</span> <span class="pre">%veq</span> <span class="pre">:</span> <span class="pre">(!quake.veq&lt;N&gt;)</span> <span class="pre">-&gt;</span> <span class="pre">...</span></code>)
+into one <code class="docutils literal notranslate"><span class="pre">quake.mz</span></code> per qubit.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--expand-measurements</span></code></p></li>
+</ul>
+<p>Note: Some lowering paths have no concept of “measure this whole register in one instruction” — IQM
+JSON in particular, where every <code class="docutils literal notranslate"><span class="pre">&quot;measure&quot;</span></code> instruction names exactly one qubit. Without this pass,
+lowering a whole-register measurement to such a format can silently drop every qubit but one, or (if
+the same op is otherwise duplicated elsewhere in the pipeline) produce multiple measurements that
+collide on the same key — IQM’s own circuit validator rejects that outright. Every <code class="docutils literal notranslate"><span class="pre">!quake.veq&lt;N&gt;</span></code>
+this pass encounters must have a statically-known size (true for any circuit produced by this
+pipeline), so it unrolls directly into <code class="docutils literal notranslate"><span class="pre">N</span></code> individual <code class="docutils literal notranslate"><span class="pre">quake.extract_ref</span></code>/<code class="docutils literal notranslate"><span class="pre">quake.mz</span></code> pairs at
+rewrite time — no runtime loop is introduced. A <code class="docutils literal notranslate"><span class="pre">quake.mz</span></code> that’s already per-qubit is left
+untouched; any unsupported shape (a dynamically-sized register, or a consumer other than
+<code class="docutils literal notranslate"><span class="pre">quake.discriminate</span></code>) fails the pass with a diagnostic rather than silently mistranslating it.</p>
+<p>See <code class="docutils literal notranslate"><span class="pre">tests/unittests/input/multi_rotation_circuit.qke</span></code> (used by
+<code class="docutils literal notranslate"><span class="pre">MQSSCIInterfacesTest.CompilesToIQMJSONForWholeRegisterMeasurement</span></code> in <code class="docutils literal notranslate"><span class="pre">test_Interface.cpp</span></code>) for a
+circuit that measures a whole register and the resulting IQM JSON, one measurement per qubit.</p>
+</section>
+<section id="quake-to-iqmjson">
+<h3>quake-to-iqmJSON<a class="headerlink" href="#quake-to-iqmjson" title="Link to this heading">¶</a></h3>
+<p>Transforms a Quake MLIR module into IQM’s JSON circuit format.</p>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--quake-to-iqmJSON</span></code></p></li>
+</ul>
+<p>Note: This pass emits gate names and arguments as understood by IQM’s native gate set (<code class="docutils literal notranslate"><span class="pre">prx</span></code>, <code class="docutils literal notranslate"><span class="pre">cz</span></code>)
+and expects the input module to already be expressed in that gate set. Run
+<a class="reference internal" href="#basisconversionpass"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">BasisConversionPass</span></code></span></a> with <code class="docutils literal notranslate"><span class="pre">gates=prx,cz</span></code> beforehand to legalize the
+circuit, <code class="docutils literal notranslate"><span class="pre">cse</span></code> and <code class="docutils literal notranslate"><span class="pre">canonicalize</span></code> to clean up the result, and
+<a class="reference internal" href="#expand-measurements"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">expand-measurements</span></code></span></a> to flatten any whole-register measurement into
+per-qubit ones this pass can translate. For example:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mqss-opt<span class="w"> </span>test.qke<span class="w"> </span>--BasisConversionPass<span class="o">=</span><span class="nv">gates</span><span class="o">=</span>prx,cz<span class="w"> </span>--cse<span class="w"> </span>--canonicalize<span class="w"> </span>--expand-measurements<span class="w"> </span>--quake-to-iqmJSON
+</pre></div>
+</div>
+<p>See <code class="docutils literal notranslate"><span class="pre">tests/dialects/quake/IQMTranspileToIQMJSON.qke</span></code> for a full example, including the expected JSON
+output.</p>
+</section>
+<section id="convert-quantum-to-llvm">
+<h3>convert-quantum-to-llvm<a class="headerlink" href="#convert-quantum-to-llvm" title="Link to this heading">¶</a></h3>
+<p>Performs a dialect conversion from the Catalyst-quantum dialect to the LLVM dialect.</p>
+<p>Pass Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--use-array-backed-registers=&lt;bool&gt;</span></code> — Use the array-backed-registers conversion pattern for
+<code class="docutils literal notranslate"><span class="pre">quantum.insert</span></code> ops. [Default: <code class="docutils literal notranslate"><span class="pre">false</span></code>]</p></li>
+</ul>
+<p>Invocation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--convert-quantum-to-llvm</span></code></br></p></li>
+</ul>
+<p>Note: This pass emits the LLVM MLIR dialect and <strong>not</strong> LLVM IR. To emit LLVM IR, this pass should
+be followed by the <code class="docutils literal notranslate"><span class="pre">mlir-to-llvmIR</span></code> pass.</p>
+</section>
+<section id="mlir-to-llvmir">
+<h3>mlir-to-llvmIR<a class="headerlink" href="#mlir-to-llvmir" title="Link to this heading">¶</a></h3>
+<p>Transforms the LLVM dialect into LLVM IR.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mlir-to-llvmIR</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="pass-pipelines">
+<h2>Pass Pipelines<a class="headerlink" href="#pass-pipelines" title="Link to this heading">¶</a></h2>
+<p>Pass pipelines bundle several passes together under a single flag, providing preset optimization
+levels analogous to a compiler’s <code class="docutils literal notranslate"><span class="pre">-O</span></code> flags.</p>
+<p>Note: The pass pipelines are under active development and their exact composition may change.</p>
+<section id="o1">
+<h3>–O1<a class="headerlink" href="#o1" title="Link to this heading">¶</a></h3>
+<p>The MQSS-O1 optimization pipeline.</br> Passes enabled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cse</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">canonicalize</span></code></p></li>
+</ul>
+</section>
+<section id="o2">
+<h3>–O2<a class="headerlink" href="#o2" title="Link to this heading">¶</a></h3>
+<p>MQSS-O2 optimization pipeline</br> Passes enabled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CommonGateCancellationPass</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CommonCNOTReversePass</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CommonCommutePass</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cse</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">canonicalize</span></code></p></li>
+</ul>
+</section>
+<section id="o3">
+<h3>–O3<a class="headerlink" href="#o3" title="Link to this heading">¶</a></h3>
+<p>MQSS-O3 optimization pipeline</br> Passes enabled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cse</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">canonicalize</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="verifying-a-pipeline-s-correctness">
+<h2>Verifying a Pipeline’s Correctness<a class="headerlink" href="#verifying-a-pipeline-s-correctness" title="Link to this heading">¶</a></h2>
+<p>Any pass or pipeline above can be checked for correctness with the <code class="docutils literal notranslate"><span class="pre">--mqssci-verify</span></code> flag, which
+confirms that a transformation didn’t change what the circuit computes. See
+<a class="reference internal" href="verification.html"><span class="std std-doc">Verifying Circuit Correctness</span></a> for details.</p>
+</section>
+<section id="example-usage">
+<h2>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading">¶</a></h2>
+<section id="using-mqss-opt">
+<h3>Using mqss-opt<a class="headerlink" href="#using-mqss-opt" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> operates directly on an MLIR file, applying the passes specified on the command-line in
+order.</p>
+<p><strong>1. Quake</strong></p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mqss-opt<span class="w"> </span>test.qke<span class="w"> </span>--cse<span class="w"> </span>--canonicalize<span class="w"> </span>--BasisConversionPass<span class="o">=</span><span class="nv">gates</span><span class="o">=</span>rx,cz,rz
+</pre></div>
+</div>
+<p><strong>2. Catalyst-quantum</strong></p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mqss-opt<span class="w"> </span>test.mlir<span class="w"> </span>--CommonMappingPass<span class="o">=</span><span class="nv">input</span><span class="o">=</span>/workspaces/MQSS-Quantum-Compilation-Suite/tests/input/qmap.json
+</pre></div>
+</div>
+<p>Note: Check the directory <code class="docutils literal notranslate"><span class="pre">tests/dialects</span></code> for more test cases using <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> and example pass
+invocations.</p>
+</section>
+<section id="using-mqss-cc">
+<h3>Using mqss-cc<a class="headerlink" href="#using-mqss-cc" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code> is a wrapper script that takes <code class="docutils literal notranslate"><span class="pre">C++</span></code>/<code class="docutils literal notranslate"><span class="pre">Python</span></code> source code as input, converts the source to
+the appropriate MLIR dialect, and then runs <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> on that dialect. It is the convenient entry
+point when you want to start from kernel source rather than from an existing MLIR file.</p>
+<p>Note: Currently, the script checks the extension of the source <code class="docutils literal notranslate"><span class="pre">.cpp</span></code> or <code class="docutils literal notranslate"><span class="pre">.py</span></code> and then performs the
+appropriate translation. If a <code class="docutils literal notranslate"><span class="pre">.cpp</span></code> is detected, it is assumed that the source is a cudaq kernel.
+If the source is a <code class="docutils literal notranslate"><span class="pre">.py</span></code> then it is assumed to be a <code class="docutils literal notranslate"><span class="pre">catalyst</span></code> kernel.</p>
+<p><strong>1. For cudaq-quake</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.cpp<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
+</pre></div>
+</div>
+<p><strong>2. For catalyst-quantum</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mqss-cc<span class="w"> </span>test.py<span class="w"> </span>--function<span class="w"> </span>circuit<span class="w"> </span>--out-dir<span class="w"> </span>output/<span class="w"> </span>--passes<span class="o">=</span><span class="nv">CommonGateCancellationPass</span><span class="o">=</span><span class="nv">mode</span><span class="o">=</span>CancelGate
+</pre></div>
+</div>
+<p>Note: Check the directory <code class="docutils literal notranslate"><span class="pre">tests/code</span></code> for more test cases using <code class="docutils literal notranslate"><span class="pre">mqss-cc</span></code> and example pass
+invocations.</p>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="verification.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Verifying Circuit Correctness</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="running.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Running test circuits</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Passes</a><ul>
+<li><a class="reference internal" href="#standard-optimization-passes-target-device-agnostic">Standard Optimization Passes (Target Device Agnostic)</a><ul>
+<li><a class="reference internal" href="#commoncommutepass">CommonCommutePass</a></li>
+<li><a class="reference internal" href="#commondecompositionpass">CommonDecompositionPass</a></li>
+<li><a class="reference internal" href="#commongatecancellationpass">CommonGateCancellationPass</a></li>
+<li><a class="reference internal" href="#commonnormalizearganglepass">CommonNormalizeArgAnglePass</a></li>
+<li><a class="reference internal" href="#commonreductionpass">CommonReductionPass</a></li>
+<li><a class="reference internal" href="#commonswitchpass">CommonSwitchPass</a></li>
+<li><a class="reference internal" href="#commoncnotreversepass">CommonCNOTReversePass</a></li>
+<li><a class="reference internal" href="#canonicalize">canonicalize</a></li>
+<li><a class="reference internal" href="#cse">cse</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#transpilation-passes-target-device-specific">Transpilation Passes (Target Device Specific)</a><ul>
+<li><a class="reference internal" href="#commonmappingpass">CommonMappingPass</a></li>
+<li><a class="reference internal" href="#basisconversionpass">BasisConversionPass</a><ul>
+<li><a class="reference internal" href="#supported-gate-mnemonics">Supported Gate Mnemonics</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#codegen-passes">CodeGen Passes</a><ul>
+<li><a class="reference internal" href="#lower-quake-to-qir">lower-quake-to-qir</a></li>
+<li><a class="reference internal" href="#quake-to-qasm2">quake-to-qasm2</a></li>
+<li><a class="reference internal" href="#expand-measurements">expand-measurements</a></li>
+<li><a class="reference internal" href="#quake-to-iqmjson">quake-to-iqmJSON</a></li>
+<li><a class="reference internal" href="#convert-quantum-to-llvm">convert-quantum-to-llvm</a></li>
+<li><a class="reference internal" href="#mlir-to-llvmir">mlir-to-llvmIR</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pass-pipelines">Pass Pipelines</a><ul>
+<li><a class="reference internal" href="#o1">–O1</a></li>
+<li><a class="reference internal" href="#o2">–O2</a></li>
+<li><a class="reference internal" href="#o3">–O3</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#verifying-a-pipeline-s-correctness">Verifying a Pipeline’s Correctness</a></li>
+<li><a class="reference internal" href="#example-usage">Example Usage</a><ul>
+<li><a class="reference internal" href="#using-mqss-opt">Using mqss-opt</a></li>
+<li><a class="reference internal" href="#using-mqss-cc">Using mqss-cc</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

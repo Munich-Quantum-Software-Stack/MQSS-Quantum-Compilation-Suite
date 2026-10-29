@@ -190,7 +190,7 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-versions">
-  <p class="caption">Documentation version: v2.3.2</p>
+  <p class="caption">Documentation version: v2.3.3</p>
   <ul>
     <li><a href="../../v1.0.0/index.html">v1.0.0</a></li>
     <li><a href="../../v2.0.0/index.html">v2.0.0</a></li>
@@ -199,7 +199,8 @@
     <li><a href="../../v2.2.1/index.html">v2.2.1</a></li>
     <li><a href="../../v2.3.0/index.html">v2.3.0</a></li>
     <li><a href="../../v2.3.1/index.html">v2.3.1</a></li>
-    <li><a href="library.html">v2.3.2</a></li>
+    <li><a href="../../v2.3.2/index.html">v2.3.2</a></li>
+    <li><a href="library.html">v2.3.3</a></li>
   </ul>
 </div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
@@ -307,7 +308,8 @@ call. It hides dialect registration, MLIR context setup, and pipeline assembly b
 <span class="n">opts</span><span class="p">.</span><span class="n">result_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">ResultFormat</span><span class="o">::</span><span class="n">OPENQASM2</span><span class="p">;</span><span class="w">  </span><span class="c1">// or QIR, QIRBASE, QIRADAPTIVE, QIRFULL, IQMJSON</span>
 <span class="n">opts</span><span class="p">.</span><span class="n">verify</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w">                                         </span><span class="c1">// optional; see Verifying the Compiled Output below</span>
 
-<span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">qasm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="s">"planqc"</span><span class="p">,</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span><span class="w"> </span><span class="c1">// Use compileSource() to parse source string</span>
+<span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">qasm</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"rx"</span><span class="p">,</span><span class="w"> </span><span class="s">"cz"</span><span class="p">,</span><span class="w"> </span><span class="s">"rz"</span><span class="p">},</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span><span class="w"> </span><span class="c1">// Use compileSource() to parse source string</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">qasm</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="c1">// Compilation failed. MQSSCompiler has already reported a diagnostic through</span>
 <span class="w">  </span><span class="c1">// MLIR's diagnostic engine — it never throws or aborts the process.</span>
@@ -325,9 +327,10 @@ call. It hides dialect registration, MLIR context setup, and pipeline assembly b
 includes), and <code class="docutils literal notranslate"><span class="pre">result_format</span></code> selects the output format — one of the
 <code class="docutils literal notranslate"><span class="pre">mqss::mqssci::ResultFormat</span></code> enumerators: <code class="docutils literal notranslate"><span class="pre">OPENQASM2</span></code>, <code class="docutils literal notranslate"><span class="pre">QIR</span></code>, <code class="docutils literal notranslate"><span class="pre">QIRBASE</span></code>, <code class="docutils literal notranslate"><span class="pre">QIRADAPTIVE</span></code>,
 <code class="docutils literal notranslate"><span class="pre">QIRFULL</span></code>, or <code class="docutils literal notranslate"><span class="pre">IQMJSON</span></code>.</p></li>
-<li><p>The second argument to <code class="docutils literal notranslate"><span class="pre">compile</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;planqc&quot;</span></code> above) is a known backend name that selects a
-built-in native-gate set for decomposition. See <a class="reference internal" href="#choosing-a-backend"><span class="xref myst">Choosing a Backend</span></a> below
-for the alternatives.</p></li>
+<li><p>The second argument to <code class="docutils literal notranslate"><span class="pre">compile</span></code> (<code class="docutils literal notranslate"><span class="pre">{&quot;rx&quot;,</span> <span class="pre">&quot;cz&quot;,</span> <span class="pre">&quot;rz&quot;}</span></code> above) is the target’s native-gate set,
+which the circuit is decomposed into. See
+<a class="reference internal" href="#choosing-a-native-gate-set-and-backend"><span class="xref myst">Choosing a Native-Gate Set and Backend</span></a> below for the
+alternatives.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">compile</span></code> returns <code class="docutils literal notranslate"><span class="pre">std::optional&lt;std::string&gt;</span></code>, not the compiled circuit directly. On success, it
 holds the compiled output; on failure it’s <code class="docutils literal notranslate"><span class="pre">std::nullopt</span></code>, and the reason has already been
 reported via <code class="docutils literal notranslate"><span class="pre">mlir::emitError</span></code> — MQSSCI is built without C++ exceptions, so a failed compile
@@ -345,7 +348,8 @@ what the circuit computes — the same circuit-equivalence checking described in
 <span class="n">opts</span><span class="p">.</span><span class="n">result_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqss</span><span class="o">::</span><span class="n">mqssci</span><span class="o">::</span><span class="n">ResultFormat</span><span class="o">::</span><span class="n">OPENQASM2</span><span class="p">;</span>
 <span class="n">opts</span><span class="p">.</span><span class="n">verify</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
 
-<span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">qasm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="s">"planqc"</span><span class="p">,</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
+<span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">qasm</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"rx"</span><span class="p">,</span><span class="w"> </span><span class="s">"cz"</span><span class="p">,</span><span class="w"> </span><span class="s">"rz"</span><span class="p">},</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>This is a hard gate, not just a warning: if verification finds that decomposition broke equivalence,
@@ -353,47 +357,58 @@ what the circuit computes — the same circuit-equivalence checking described in
 you output that silently computes the wrong thing. The default is <code class="docutils literal notranslate"><span class="pre">opts.verify</span> <span class="pre">=</span> <span class="pre">false</span></code>, so turning
 it on is opt-in and costs nothing unless you ask for it.</p>
 </section>
-<section id="choosing-a-backend">
-<h2>Choosing a Backend<a class="headerlink" href="#choosing-a-backend" title="Link to this heading">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">compile</span></code> has overloads for three ways to select the native-gate set used for decomposition: by a
-known backend name, by an explicit gate list, or not at all:</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// By backend name: iqm, planqc, and wmi are recognized out of the box.</span>
-<span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="s">"iqm"</span><span class="p">,</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
+<section id="choosing-a-native-gate-set-and-backend">
+<h2>Choosing a Native-Gate Set and Backend<a class="headerlink" href="#choosing-a-native-gate-set-and-backend" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> has no built-in gate sets: you always pass the target’s native-gate set yourself, or
+none at all to skip decomposition:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// Decompose into an explicit native-gate set.</span>
+<span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"rx"</span><span class="p">,</span><span class="w"> </span><span class="s">"cz"</span><span class="p">,</span><span class="w"> </span><span class="s">"rz"</span><span class="p">},</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
 
-<span class="c1">// By an explicit native-gate set, when your target isn't one of the built-in backends.</span>
-<span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"rz"</span><span class="p">,</span><span class="w"> </span><span class="s">"rx"</span><span class="p">,</span><span class="w"> </span><span class="s">"cz"</span><span class="p">},</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
-
-<span class="c1">// Neither: skip native-gate decomposition entirely.</span>
+<span class="c1">// Skip native-gate decomposition entirely.</span>
 <span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
 </pre></div>
 </div>
+<p>For reference, these are the native-gate sets of some common targets:</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">backend_name</span></code></p></th>
+<tr class="row-odd"><th class="head"><p>Target</p></th>
 <th class="head"><p>Native-gate set</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;iqm&quot;</span></code></p></td>
+<tr class="row-even"><td><p>IQM</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">prx</span></code>, <code class="docutils literal notranslate"><span class="pre">cz</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;planqc&quot;</span></code></p></td>
+<tr class="row-odd"><td><p>planqc</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">rx</span></code>, <code class="docutils literal notranslate"><span class="pre">cz</span></code>, <code class="docutils literal notranslate"><span class="pre">rz</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;wmi&quot;</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">cz</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">rz</span></code></p></td>
+<tr class="row-even"><td><p>WMI</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cz</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">rz</span></code>, <code class="docutils literal notranslate"><span class="pre">sx</span></code></p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>The gate mnemonics used here — both in these built-in sets and in an explicit native-gate set you
-supply yourself — are the same ones the <code class="docutils literal notranslate"><span class="pre">BasisConversionPass</span></code> recognizes. See
+<p>The gate mnemonics in a native-gate set are the ones the <code class="docutils literal notranslate"><span class="pre">BasisConversionPass</span></code> recognizes. See
 <a class="reference internal" href="passes.html#supported-gate-mnemonics"><span class="std std-ref">Supported Gate Mnemonics</span></a> for the full list of mnemonics, the
-Quake operation each one maps to, and their constraints (parameter count, controls, adjointness).</p>
-<p>The full signature (used in the examples above via its three shorthand overloads) also accepts a
-<code class="docutils literal notranslate"><span class="pre">qubit_connectivity</span></code> map alongside the native-gate set, for targets with restricted qubit
-connectivity. See <code class="docutils literal notranslate"><span class="pre">MQSSCIInterfaces/MQSSCompiler.h</span></code> for all four <code class="docutils literal notranslate"><span class="pre">compile</span></code> overloads.</p>
+Quake operation each one maps to, and their constraints (parameter count, controls, adjointness). A
+few device-specific names are accepted as aliases for a mnemonic, e.g. <code class="docutils literal notranslate"><span class="pre">r</span></code> for <code class="docutils literal notranslate"><span class="pre">prx</span></code>.</p>
+<section id="the-backend-name-argument">
+<h3>The <code class="docutils literal notranslate"><span class="pre">backend_name</span></code> argument<a class="headerlink" href="#the-backend-name-argument" title="Link to this heading">¶</a></h3>
+<p>The full signature also takes a <code class="docutils literal notranslate"><span class="pre">backend_name</span></code> and a <code class="docutils literal notranslate"><span class="pre">qubit_connectivity</span></code> map:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="s">"LRZ"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"r"</span><span class="p">,</span><span class="w"> </span><span class="s">"cz"</span><span class="p">},</span><span class="w"> </span><span class="n">qubit_connectivity</span><span class="p">,</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">backend_name</span></code> only changes anything when it is <code class="docutils literal notranslate"><span class="pre">&quot;LRZ&quot;</span></code> (case-sensitive); any other value, including
+<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code>, compiles exactly the same way.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">&quot;LRZ&quot;</span></code>, OpenQASM2 output uses your own spelling for any aliased gate in the native-gate set.
+For example, passing <code class="docutils literal notranslate"><span class="pre">r</span></code> produces <code class="docutils literal notranslate"><span class="pre">r(...)</span></code> calls in the output, not <code class="docutils literal notranslate"><span class="pre">phased_rx(...)</span></code>, which is the
+name <code class="docutils literal notranslate"><span class="pre">prx</span></code> is otherwise emitted under. With any other backend name, the output keeps <code class="docutils literal notranslate"><span class="pre">phased_rx</span></code>.
+This renaming only applies to <code class="docutils literal notranslate"><span class="pre">OPENQASM2</span></code> output.</p>
+<p><code class="docutils literal notranslate"><span class="pre">qubit_connectivity</span></code> lists the coupled qubit pairs of a target with restricted connectivity; the
+circuit is mapped onto it before decomposition. See <code class="docutils literal notranslate"><span class="pre">MQSSCIInterfaces/MQSSCompiler.h</span></code> for all four
+<code class="docutils literal notranslate"><span class="pre">compile</span></code> overloads and their <code class="docutils literal notranslate"><span class="pre">compileSource</span></code> counterparts.</p>
+</section>
 </section>
 <section id="discovering-supported-input-formats">
 <h2>Discovering Supported Input Formats<a class="headerlink" href="#discovering-supported-input-formats" title="Link to this heading">¶</a></h2>
@@ -412,9 +427,9 @@ what this list reports; see the note at the top of <code class="docutils literal
 <section id="advanced-building-a-custom-pipeline-yourself">
 <h2>Advanced: Building a Custom Pipeline Yourself<a class="headerlink" href="#advanced-building-a-custom-pipeline-yourself" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> covers the common case: a preset optimization level, a fixed native-gate set, and one
-of two output formats. If you need to run individual passes, pass pass-specific options (e.g.
-<code class="docutils literal notranslate"><span class="pre">CommonGateCancellationPassOptions</span></code>), or assemble a pipeline <code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> doesn’t support, drop
-down to the same <code class="docutils literal notranslate"><span class="pre">mlir::OpPassManager</span></code>-based API <code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> itself is built on:</p>
+of its supported output formats. If you need to run individual passes, pass pass-specific options
+(e.g. <code class="docutils literal notranslate"><span class="pre">CommonGateCancellationPassOptions</span></code>), or assemble a pipeline <code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> doesn’t support,
+drop down to the same <code class="docutils literal notranslate"><span class="pre">mlir::OpPassManager</span></code>-based API <code class="docutils literal notranslate"><span class="pre">MQSSCompiler</span></code> itself is built on:</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">"Passes/Transforms/Dialects.h"</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">"Passes/Transforms/Pipelines.h"</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">"Passes/CodeGen/CodeGenPasses.h"</span>
@@ -536,7 +551,10 @@ build (via <code class="docutils literal notranslate"><span class="pre">scripts/
 <li><a class="reference internal" href="#before-you-start">Before You Start</a></li>
 <li><a class="reference internal" href="#a-minimal-example">A Minimal Example</a></li>
 <li><a class="reference internal" href="#verifying-the-compiled-output">Verifying the Compiled Output</a></li>
-<li><a class="reference internal" href="#choosing-a-backend">Choosing a Backend</a></li>
+<li><a class="reference internal" href="#choosing-a-native-gate-set-and-backend">Choosing a Native-Gate Set and Backend</a><ul>
+<li><a class="reference internal" href="#the-backend-name-argument">The <code class="docutils literal notranslate"><span class="pre">backend_name</span></code> argument</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#discovering-supported-input-formats">Discovering Supported Input Formats</a></li>
 <li><a class="reference internal" href="#advanced-building-a-custom-pipeline-yourself">Advanced: Building a Custom Pipeline Yourself</a></li>
 <li><a class="reference internal" href="#testing-the-interface">Testing the Interface</a></li>

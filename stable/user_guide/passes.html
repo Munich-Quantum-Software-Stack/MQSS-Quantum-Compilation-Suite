@@ -190,7 +190,7 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-versions">
-  <p class="caption">Documentation version: v2.3.2</p>
+  <p class="caption">Documentation version: v2.3.3</p>
   <ul>
     <li><a href="../../v1.0.0/index.html">v1.0.0</a></li>
     <li><a href="../../v2.0.0/index.html">v2.0.0</a></li>
@@ -199,7 +199,8 @@
     <li><a href="../../v2.2.1/index.html">v2.2.1</a></li>
     <li><a href="../../v2.3.0/index.html">v2.3.0</a></li>
     <li><a href="../../v2.3.1/index.html">v2.3.1</a></li>
-    <li><a href="passes.html">v2.3.2</a></li>
+    <li><a href="../../v2.3.2/index.html">v2.3.2</a></li>
+    <li><a href="passes.html">v2.3.3</a></li>
   </ul>
 </div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
@@ -478,10 +479,10 @@ reported operation was ignored (or none was reported).</p></li>
 </ul>
 <section id="supported-gate-mnemonics">
 <h4>Supported Gate Mnemonics<a class="headerlink" href="#supported-gate-mnemonics" title="Link to this heading">¶</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">gates</span></code> option (and the corresponding <code class="docutils literal notranslate"><span class="pre">native_gate_set</span></code> argument of <code class="docutils literal notranslate"><span class="pre">MQSSCompiler::compile</span></code>, see
-<a class="reference internal" href="library.html#choosing-a-backend"><span class="std std-ref">Choosing a Backend</span></a>) takes a comma-separated list of gate mnemonics.
-These are the mnemonics the pass recognizes, both as members of the requested native set and as
-gates it knows how to decompose:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">gates</span></code> option (and the corresponding <code class="docutils literal notranslate"><span class="pre">native_gates</span></code> argument of <code class="docutils literal notranslate"><span class="pre">MQSSCompiler::compile</span></code>, see
+<a class="reference internal" href="library.html#choosing-a-native-gate-set-and-backend"><span class="std std-ref">Choosing a Native-Gate Set and Backend</span></a>) takes a
+comma-separated list of gate mnemonics. These are the mnemonics the pass recognizes, both as members
+of the requested native set and as gates it knows how to decompose:</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
