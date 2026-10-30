@@ -30,6 +30,7 @@ root is the one that invokes these scripts. Please check the following pages for
 
 build
 running
+qasm2-input
 passes
 verification
 library

@@ -36,7 +36,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 namespace mqss::mqssci {
 
 // Enum of supported input formats.
-enum InputFormat { QUAKE, CATALYSTQUANTUM };
+enum InputFormat { QUAKE, CATALYSTQUANTUM, QASM2 };
 
 struct InputFormatInfo {
   InputFormat input_format;
@@ -45,9 +45,10 @@ struct InputFormatInfo {
 
 // Pairs each InputType with its display name; iterated by
 // getSupportedInputFormats() so the two can't drift apart.
-inline constexpr std::array<InputFormatInfo, 2> kInputFormats = {{
+inline constexpr std::array<InputFormatInfo, 3> kInputFormats = {{
     {QUAKE, "cudaq-quake"},
     {CATALYSTQUANTUM, "catalyst-quantum"},
+    {QASM2, "OpenQASM2"},
 }};
 
 enum ResultFormat { OPENQASM2, QIR, QIRBASE, QIRADAPTIVE, QIRFULL, IQMJSON };
@@ -192,6 +193,12 @@ public:
     return compileSource(input_circuit, "", {}, {}, opts);
   }
 
+  // Translates an OpenQASM 2 program into the CUDA-Q Quake dialect.
+  // @param qasm2 OpenQASM 2 source text.
+  // @return The Quake module as MLIR text, or std::nullopt if the program
+  // could not be translated (diagnostics are emitted to the MLIR context).
+  std::optional<std::string> translateQASM2ToQuake(const std::string &qasm2);
+
   // Return a vector of the names of supported input formats
   static std::vector<std::string_view> getSupportedInputFormats() {
 
@@ -230,8 +237,13 @@ private:
   parseModuleFromFile(const std::filesystem::path &path,
                       mlir::MLIRContext &context);
 
+  // Parses in-memory circuit text; OpenQASM 2 is translated to Quake, anything
+  // else is parsed as MLIR.
   static mlir::OwningOpRef<mlir::ModuleOp>
-  parseModuleFromSource(llvm::StringRef source, mlir::MLIRContext &context);
+  parseModuleString(llvm::StringRef source, mlir::MLIRContext &context);
+
+  static mlir::OwningOpRef<mlir::ModuleOp>
+  parseMLIRSource(llvm::StringRef source, mlir::MLIRContext &context);
 };
 
 } // namespace mqss::mqssci

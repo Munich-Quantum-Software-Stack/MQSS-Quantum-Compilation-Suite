@@ -24,6 +24,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/Pipelines.h"
 #include "Passes/Transforms/TransformPasses.h"
 #include "Passes/Verification/Instrumentation.h"
+#include "Translation/QASM2ToQuake.h"
 #include "Utils/DebugUtils.h"
 #include "Utils/Error.h"
 #include "mlir/IR/DialectRegistry.h"
@@ -31,6 +32,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <cctype>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/ADT/Twine.h>
+#include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/IR/Diagnostics.h>
 #include <mlir/IR/MLIRContext.h>
@@ -57,20 +59,51 @@ const mlir::DialectRegistry &mqssDialectRegistry() {
   return registry;
 }
 
+// True if `text` is an OpenQASM program, i.e. its first token (after
+// whitespace and `//` comments) is the `OPENQASM` version header. MLIR text
+// can never start that way, so this doesn't misfire on Quake/Catalyst input.
+bool isQASM2(llvm::StringRef text) {
+  for (text = text.ltrim(); text.starts_with("//"); text = text.ltrim())
+    text = text.drop_until([](char c) { return c == '\n'; });
+  return text.starts_with("OPENQASM");
+}
+
 } // namespace
 
-// Parses the MLIR file at `path` into a module.
+// Parses the circuit file at `path` into a module: OpenQASM 2 is translated
+// to Quake, anything else is parsed as MLIR.
 mlir::OwningOpRef<mlir::ModuleOp>
 mqss::mqssci::MQSSCompiler::parseModuleFromFile(
     const std::filesystem::path &path, mlir::MLIRContext &context) {
+  auto buffer = llvm::MemoryBuffer::getFile(path.string());
+  if (!buffer) {
+    mlir::emitError(mlir::UnknownLoc::get(&context))
+        << "cannot read '" << path.string()
+        << "': " << buffer.getError().message();
+    return nullptr;
+  }
+  if (isQASM2((*buffer)->getBuffer()))
+    return translation::translateQASM2ToQuake((*buffer)->getBuffer(), context);
+  // Parsed from the path (not the buffer above) so MLIR diagnostics keep the
+  // file name.
   return mlir::parseSourceFile<mlir::ModuleOp>(path.string(), &context);
 }
 
 // Parses `source` (raw MLIR text already in memory) into a module.
 mlir::OwningOpRef<mlir::ModuleOp>
-mqss::mqssci::MQSSCompiler::parseModuleFromSource(llvm::StringRef source,
-                                                  mlir::MLIRContext &context) {
+mqss::mqssci::MQSSCompiler::parseMLIRSource(llvm::StringRef source,
+                                            mlir::MLIRContext &context) {
   return mlir::parseSourceString<mlir::ModuleOp>(source, &context);
+}
+
+// Parses `source` (circuit text already in memory) into a module: OpenQASM 2
+// is translated to Quake, anything else is parsed as MLIR.
+mlir::OwningOpRef<mlir::ModuleOp>
+mqss::mqssci::MQSSCompiler::parseModuleString(llvm::StringRef source,
+                                              mlir::MLIRContext &context) {
+  if (isQASM2(source))
+    return translation::translateQASM2ToQuake(source, context);
+  return parseMLIRSource(source, context);
 }
 
 // Shared pipeline core used by both compile() and compileSource(): runs
@@ -255,11 +288,11 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compile(
   mlir::MLIRContext context(registry);
   context.loadAllAvailableDialects();
 
-  // 2. Parse the MLIR file into a module.
+  // 2. Parse the circuit file (MLIR or OpenQASM 2) into a module.
   auto module = parseModuleFromFile(input_circuit_path, context);
   if (!module) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "failed to parse MLIR file");
+                    "failed to parse input circuit file");
     return std::nullopt;
   }
 
@@ -285,16 +318,35 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileSource(
   mlir::MLIRContext context(registry);
   context.loadAllAvailableDialects();
 
-  // 2. Parse the MLIR source text into a module.
-  auto module = parseModuleFromSource(input_circuit, context);
+  // 2. Parse the source text (MLIR or OpenQASM 2) into a module.
+  auto module = parseModuleString(input_circuit, context);
   if (!module) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "failed to parse MLIR source");
+                    "failed to parse input circuit source");
     return std::nullopt;
   }
 
   return compileImpl(std::move(module), context, backend_name, native_gates,
                      qubit_connectivity, opts);
+}
+
+// Translates OpenQASM 2 source text into Quake and returns the module's
+// textual MLIR form.
+std::optional<std::string>
+mqss::mqssci::MQSSCompiler::translateQASM2ToQuake(const std::string &qasm2) {
+  auto &registry = mqssDialectRegistry();
+  mlir::MLIRContext context(registry);
+  context.loadAllAvailableDialects();
+
+  auto module =
+      mqss::mqssci::translation::translateQASM2ToQuake(qasm2, context);
+  if (!module || mlir::failed(module->verify()))
+    return std::nullopt;
+
+  std::string result;
+  llvm::raw_string_ostream os(result);
+  module->print(os);
+  return result;
 }
 
 // Removes any "gate ... { ... }" block from OpenQASM2 text emitted by
