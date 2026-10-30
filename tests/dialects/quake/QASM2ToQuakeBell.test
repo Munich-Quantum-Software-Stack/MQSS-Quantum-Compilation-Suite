@@ -1,0 +1,10 @@
+// RUN: %mqss-translate --import-qasm2 %S/../../unittests/input/two_qubit_bell.qasm | FileCheck %s
+
+// CHECK: func.func @__nvqpp__mlirgen__qasm2_kernel() attributes {"cudaq-entrypoint", "cudaq-kernel"}
+// CHECK: %[[VEQ:.*]] = quake.alloca !quake.veq<2>
+// CHECK: %[[Q0:.*]] = quake.extract_ref %[[VEQ]][0]
+// CHECK: %[[Q1:.*]] = quake.extract_ref %[[VEQ]][1]
+// CHECK: quake.h %[[Q0]]
+// CHECK: quake.x [%[[Q0]]] %[[Q1]]
+// CHECK: quake.mz %[[Q0]] : (!quake.ref) -> !quake.measure
+// CHECK: quake.mz %[[Q1]] : (!quake.ref) -> !quake.measure

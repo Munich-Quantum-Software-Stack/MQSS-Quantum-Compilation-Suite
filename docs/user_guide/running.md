@@ -67,6 +67,17 @@ replacing the quake dialect input with the catalyst-quantum input.
 Add `--mqssci-verify` to the command above to automatically check that the decomposition preserved
 the circuit's behavior. See [Verifying Circuit Correctness](verification.md) for details.
 
+## Using mqss-translate
+
+The binary `mqss-translate` converts OpenQASM 2 circuits into the Quake dialect, so they can be fed
+to `mqss-opt`:
+
+```sh
+mqss-translate --import-qasm2 bell.qasm | mqss-opt --BasisConversionPass=gates=prx,cz
+```
+
+See [OpenQASM 2 as Input](qasm2-input.md) for the supported subset and the C++ interface.
+
 ## Using mqss-cc script (Frontend test)
 
 Note: Before running a Frontend test, make sure you follow the installation instructions within
