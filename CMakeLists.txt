@@ -127,3 +127,12 @@ if(BUILD_INTERFACES_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
+
+# QASM2 -> Quake frontend, built next to mqss-opt.
+add_executable(mqss-translate mqss-translate.cpp)
+target_include_directories(
+  mqss-translate PRIVATE ${MQSSCI_ROOT_DIR}/include
+                         ${MQSSCI_ROOT_DIR_BINARY}/include)
+target_link_libraries(mqss-translate PUBLIC MQSSCITranslation MLIRTranslateLib)
+set_target_properties(mqss-translate PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+                                                "${INSTALL_DIR}")

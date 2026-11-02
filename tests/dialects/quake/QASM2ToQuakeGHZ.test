@@ -1,0 +1,7 @@
+// RUN: %mqss-translate --import-qasm2 %S/../../unittests/input/ghz.qasm | FileCheck %s
+
+// CHECK: %[[VEQ:.*]] = quake.alloca !quake.veq<3>
+// CHECK: quake.h
+// CHECK: quake.x
+// CHECK: quake.x
+// CHECK: quake.mz %[[VEQ]] : (!quake.veq<3>) -> !cc.stdvec<!quake.measure>

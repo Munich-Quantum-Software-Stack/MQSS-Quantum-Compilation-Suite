@@ -45,6 +45,11 @@ std::filesystem::path kBellStateCircuit =
 
 std::filesystem::path kGHZCircuit = MQSSCI_TEST_FIXTURE_DIR "/ghz.qke";
 
+std::filesystem::path kBellStateQASM2 =
+    MQSSCI_TEST_FIXTURE_DIR "/two_qubit_bell.qasm";
+
+std::filesystem::path kGHZQASM2 = MQSSCI_TEST_FIXTURE_DIR "/ghz.qasm";
+
 // Measures a whole 2-qubit register in one `quake.mz` (rather than
 // per-qubit, like kBellStateCircuit) -- the shape that used to make
 // QuakeDialectToIQMJSONPass silently drop every qubit but the first, since
@@ -749,6 +754,81 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   // Confirms the regex actually found every "cz " occurrence the earlier
   // substring count did, so the connectivity check above wasn't vacuous.
   EXPECT_EQ(twoQubitOpCount, czCount);
+}
+
+// Counts non-overlapping occurrences of `needle` in `haystack`.
+int countOccurrences(const std::string &haystack, const std::string &needle) {
+  int count = 0;
+  for (size_t pos = haystack.find(needle); pos != std::string::npos;
+       pos = haystack.find(needle, pos + needle.size()))
+    ++count;
+  return count;
+}
+
+// Compiles `qasm2` source for the planqc native-gate set to OpenQASM 2.
+std::optional<std::string> compileQASM2ForPlanqc(const std::string &qasm2) {
+  mqss::mqssci::MQSSCompiler compiler;
+
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
+
+  return compiler.compileSource(qasm2, kPlanqcNativeGates, opts);
+}
+
+TEST(MQSSCIInterfacesTest, CompilesBellStateQASM2Input) {
+  const std::string source = readFixture(kBellStateQASM2);
+  ASSERT_FALSE(source.empty());
+
+  std::optional<std::string> qasm = compileQASM2ForPlanqc(source);
+  ASSERT_TRUE(qasm.has_value())
+      << "compileSource() returned nullopt for an OpenQASM2 input";
+
+  EXPECT_NE(qasm->find("qreg"), std::string::npos);
+  EXPECT_EQ(countOccurrences(*qasm, "measure "), 2);
+
+  // The Bell circuit's single cx must end up as the native cz, and its h as
+  // rz/rx rotations: planqc's native set is {rx, cz, rz}.
+  EXPECT_EQ(countOccurrences(*qasm, "cz "), 1);
+  EXPECT_EQ(qasm->find("\nh "), std::string::npos);
+  EXPECT_EQ(qasm->find("\ncx "), std::string::npos);
+}
+
+TEST(MQSSCIInterfacesTest, CompilesGHZQASM2Input) {
+  const std::string source = readFixture(kGHZQASM2);
+  ASSERT_FALSE(source.empty());
+
+  std::optional<std::string> qasm = compileQASM2ForPlanqc(source);
+  ASSERT_TRUE(qasm.has_value())
+      << "compileSource() returned nullopt for an OpenQASM2 input";
+
+  EXPECT_NE(qasm->find("qreg"), std::string::npos);
+  // `measure q -> c;` is one measurement per qubit.
+  EXPECT_EQ(countOccurrences(*qasm, "measure "), 3);
+  // Two cx gates in the GHZ chain become two native cz gates.
+  EXPECT_EQ(countOccurrences(*qasm, "cz "), 2);
+  EXPECT_EQ(qasm->find("\nh "), std::string::npos);
+  EXPECT_EQ(qasm->find("\ncx "), std::string::npos);
+}
+
+TEST(MQSSCIInterfacesTest, QASM2InputRejectsUnsupportedGate) {
+  EXPECT_FALSE(compileQASM2ForPlanqc("OPENQASM 2.0;\n"
+                                     "qreg q[1];\n"
+                                     "foo q[0];\n")
+                   .has_value());
+}
+
+TEST(MQSSCIInterfacesTest, QASM2InputRejectsOutOfRangeQubit) {
+  EXPECT_FALSE(compileQASM2ForPlanqc("OPENQASM 2.0;\n"
+                                     "qreg q[1];\n"
+                                     "h q[1];\n")
+                   .has_value());
+}
+
+TEST(MQSSCIInterfacesTest, QASM2InputRejectsOtherQASMVersions) {
+  EXPECT_FALSE(compileQASM2ForPlanqc("OPENQASM 3.0;\n"
+                                     "qubit[1] q;\n")
+                   .has_value());
 }
 
 } // namespace

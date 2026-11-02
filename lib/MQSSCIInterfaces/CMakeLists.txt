@@ -1,5 +1,11 @@
-add_mlir_library(MQSSCIInterfaces MQSSCompiler.cpp LINK_LIBS PUBLIC
-                 MQSSCITransformPasses MQSSCIVerificationPasses)
+add_mlir_library(
+  MQSSCIInterfaces
+  MQSSCompiler.cpp
+  LINK_LIBS
+  PUBLIC
+  MQSSCITransformPasses
+  MQSSCIVerificationPasses
+  MQSSCITranslation)
 
 target_compile_options(MQSSCIInterfaces PRIVATE -fexceptions)
 if(TARGET obj.MQSSCIInterfaces)

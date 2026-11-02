@@ -90,8 +90,8 @@ make target
 ```
 
 This builds the targets using the `ninja` build system and if the build succeeds, generates the
-executable `mqss-opt`. You can change the installation directory by modifying the `INSTALL_DIR`
-variable within the MakeFile.
+executables `mqss-opt` and `mqss-translate`. You can change the installation directory by modifying
+the `INSTALL_DIR` variable within the MakeFile.
 
 Next, we need to set paths to the directories where the executables are generated i.e. `build/bin`.
 RUN command:

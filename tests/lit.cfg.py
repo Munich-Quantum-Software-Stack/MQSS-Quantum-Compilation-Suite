@@ -15,6 +15,10 @@ config.substitutions.append(
     ('%mqss-opt', os.path.join(repo_root, 'build/bin/mqss-opt'))
 )
 
+config.substitutions.append(
+    ('%mqss-translate', os.path.join(repo_root, 'build/bin/mqss-translate'))
+)
+
 #TODO: Following path should be updated to point to the correct location of the mqss-cc binary.
 # Currently, it is set to a placeholder path that may not exist in your environment.
 config.substitutions.append(

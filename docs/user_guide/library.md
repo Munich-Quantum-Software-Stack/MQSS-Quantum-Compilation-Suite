@@ -48,6 +48,7 @@ opts.verify = false;                                         // optional; see Ve
 
 std::optional<std::string> qasm =
     compiler.compile("path/to/circuit.qke", {"rx", "cz", "rz"}, opts); // Use compileSource() to parse source string
+    // The input may also be an OpenQASM 2 file/string; see "OpenQASM 2 as Input".
 if (!qasm) {
   // Compilation failed. MQSSCompiler has already reported a diagnostic through
   // MLIR's diagnostic engine — it never throws or aborts the process.
@@ -153,10 +154,12 @@ for (std::string_view name : mqss::mqssci::MQSSCompiler::getSupportedInputFormat
 }
 ```
 
-It returns a `std::vector<std::string_view>` (currently `{"cudaq-quake", "catalyst-quantum"}`) —
-useful for validating a user-supplied format name or listing the options in a CLI's `--help` output.
-Note that `compile`/`compileSource` currently only accept the `cudaq-quake` dialect regardless of
-what this list reports; see the note at the top of `MQSSCompiler.cpp`.
+It returns a `std::vector<std::string_view>` (currently
+`{"cudaq-quake", "catalyst-quantum", "OpenQASM2"}`) — useful for validating a user-supplied format
+name or listing the options in a CLI's `--help` output. Note that `compile`/`compileSource`
+currently only accept the `cudaq-quake` dialect and OpenQASM 2 (see
+[OpenQASM 2 as Input](qasm2-input.md)), regardless of what this list reports; see the note at the
+top of `MQSSCompiler.cpp`.
 
 ## Advanced: Building a Custom Pipeline Yourself
 
