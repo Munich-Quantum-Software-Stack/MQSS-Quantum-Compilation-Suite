@@ -190,7 +190,7 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-versions">
-  <p class="caption">Documentation version: v2.3.3</p>
+  <p class="caption">Documentation version: v2.3.4</p>
   <ul>
     <li><a href="../../v1.0.0/index.html">v1.0.0</a></li>
     <li><a href="../../v2.0.0/index.html">v2.0.0</a></li>
@@ -200,7 +200,8 @@
     <li><a href="../../v2.3.0/index.html">v2.3.0</a></li>
     <li><a href="../../v2.3.1/index.html">v2.3.1</a></li>
     <li><a href="../../v2.3.2/index.html">v2.3.2</a></li>
-    <li><a href="build.html">v2.3.3</a></li>
+    <li><a href="../../v2.3.3/index.html">v2.3.3</a></li>
+    <li><a href="build.html">v2.3.4</a></li>
   </ul>
 </div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
@@ -208,6 +209,7 @@
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="running.html">Running test circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qasm2-input.html">OpenQASM 2 as Input</a></li>
 <li class="toctree-l2"><a class="reference internal" href="passes.html">Passes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="verification.html">Verifying Circuit Correctness</a></li>
 <li class="toctree-l2"><a class="reference internal" href="library.html">Using MQSSCI as a Library</a></li>
@@ -349,8 +351,8 @@ configure the project.</p>
 </pre></div>
 </div>
 <p>This builds the targets using the <code class="docutils literal notranslate"><span class="pre">ninja</span></code> build system and if the build succeeds, generates the
-executable <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>. You can change the installation directory by modifying the <code class="docutils literal notranslate"><span class="pre">INSTALL_DIR</span></code>
-variable within the MakeFile.</p>
+executables <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code> and <code class="docutils literal notranslate"><span class="pre">mqss-translate</span></code>. You can change the installation directory by modifying
+the <code class="docutils literal notranslate"><span class="pre">INSTALL_DIR</span></code> variable within the MakeFile.</p>
 <p>Next, we need to set paths to the directories where the executables are generated i.e. <code class="docutils literal notranslate"><span class="pre">build/bin</span></code>.
 RUN command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">eval</span><span class="w"> </span><span class="s2">"</span><span class="k">$(</span>make<span class="w"> </span>set-target-paths<span class="k">)</span><span class="s2">"</span>

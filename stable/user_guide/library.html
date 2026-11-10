@@ -190,7 +190,7 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-versions">
-  <p class="caption">Documentation version: v2.3.3</p>
+  <p class="caption">Documentation version: v2.3.4</p>
   <ul>
     <li><a href="../../v1.0.0/index.html">v1.0.0</a></li>
     <li><a href="../../v2.0.0/index.html">v2.0.0</a></li>
@@ -200,7 +200,8 @@
     <li><a href="../../v2.3.0/index.html">v2.3.0</a></li>
     <li><a href="../../v2.3.1/index.html">v2.3.1</a></li>
     <li><a href="../../v2.3.2/index.html">v2.3.2</a></li>
-    <li><a href="library.html">v2.3.3</a></li>
+    <li><a href="../../v2.3.3/index.html">v2.3.3</a></li>
+    <li><a href="library.html">v2.3.4</a></li>
   </ul>
 </div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
@@ -208,6 +209,7 @@
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="build.html">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="running.html">Running test circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qasm2-input.html">OpenQASM 2 as Input</a></li>
 <li class="toctree-l2"><a class="reference internal" href="passes.html">Passes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="verification.html">Verifying Circuit Correctness</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Using MQSSCI as a Library</a></li>
@@ -310,6 +312,7 @@ call. It hides dialect registration, MLIR context setup, and pipeline assembly b
 
 <span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">qasm</span><span class="w"> </span><span class="o">=</span>
 <span class="w">    </span><span class="n">compiler</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">"path/to/circuit.qke"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"rx"</span><span class="p">,</span><span class="w"> </span><span class="s">"cz"</span><span class="p">,</span><span class="w"> </span><span class="s">"rz"</span><span class="p">},</span><span class="w"> </span><span class="n">opts</span><span class="p">);</span><span class="w"> </span><span class="c1">// Use compileSource() to parse source string</span>
+<span class="w">    </span><span class="c1">// The input may also be an OpenQASM 2 file/string; see "OpenQASM 2 as Input".</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">qasm</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="c1">// Compilation failed. MQSSCompiler has already reported a diagnostic through</span>
 <span class="w">  </span><span class="c1">// MLIR's diagnostic engine — it never throws or aborts the process.</span>
@@ -419,10 +422,12 @@ input format MQSSCI’s <code class="docutils literal notranslate"><span class="
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>It returns a <code class="docutils literal notranslate"><span class="pre">std::vector&lt;std::string_view&gt;</span></code> (currently <code class="docutils literal notranslate"><span class="pre">{&quot;cudaq-quake&quot;,</span> <span class="pre">&quot;catalyst-quantum&quot;}</span></code>) —
-useful for validating a user-supplied format name or listing the options in a CLI’s <code class="docutils literal notranslate"><span class="pre">--help</span></code> output.
-Note that <code class="docutils literal notranslate"><span class="pre">compile</span></code>/<code class="docutils literal notranslate"><span class="pre">compileSource</span></code> currently only accept the <code class="docutils literal notranslate"><span class="pre">cudaq-quake</span></code> dialect regardless of
-what this list reports; see the note at the top of <code class="docutils literal notranslate"><span class="pre">MQSSCompiler.cpp</span></code>.</p>
+<p>It returns a <code class="docutils literal notranslate"><span class="pre">std::vector&lt;std::string_view&gt;</span></code> (currently
+<code class="docutils literal notranslate"><span class="pre">{&quot;cudaq-quake&quot;,</span> <span class="pre">&quot;catalyst-quantum&quot;,</span> <span class="pre">&quot;OpenQASM2&quot;}</span></code>) — useful for validating a user-supplied format
+name or listing the options in a CLI’s <code class="docutils literal notranslate"><span class="pre">--help</span></code> output. Note that <code class="docutils literal notranslate"><span class="pre">compile</span></code>/<code class="docutils literal notranslate"><span class="pre">compileSource</span></code>
+currently only accept the <code class="docutils literal notranslate"><span class="pre">cudaq-quake</span></code> dialect and OpenQASM 2 (see
+<a class="reference internal" href="qasm2-input.html"><span class="std std-doc">OpenQASM 2 as Input</span></a>), regardless of what this list reports; see the note at the
+top of <code class="docutils literal notranslate"><span class="pre">MQSSCompiler.cpp</span></code>.</p>
 </section>
 <section id="advanced-building-a-custom-pipeline-yourself">
 <h2>Advanced: Building a Custom Pipeline Yourself<a class="headerlink" href="#advanced-building-a-custom-pipeline-yourself" title="Link to this heading">¶</a></h2>

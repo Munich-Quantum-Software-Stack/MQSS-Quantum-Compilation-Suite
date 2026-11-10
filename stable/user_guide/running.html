@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Passes" href="passes.html"><link rel="prev" title="Getting Started" href="build.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="OpenQASM 2 as Input" href="qasm2-input.html"><link rel="prev" title="Getting Started" href="build.html">
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2025.12.19 -->
         <title>Running test circuits - MQSS Quantum Compilation Suite documentation</title>
@@ -190,7 +190,7 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-versions">
-  <p class="caption">Documentation version: v2.3.3</p>
+  <p class="caption">Documentation version: v2.3.4</p>
   <ul>
     <li><a href="../../v1.0.0/index.html">v1.0.0</a></li>
     <li><a href="../../v2.0.0/index.html">v2.0.0</a></li>
@@ -200,7 +200,8 @@
     <li><a href="../../v2.3.0/index.html">v2.3.0</a></li>
     <li><a href="../../v2.3.1/index.html">v2.3.1</a></li>
     <li><a href="../../v2.3.2/index.html">v2.3.2</a></li>
-    <li><a href="running.html">v2.3.3</a></li>
+    <li><a href="../../v2.3.3/index.html">v2.3.3</a></li>
+    <li><a href="running.html">v2.3.4</a></li>
   </ul>
 </div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
@@ -208,6 +209,7 @@
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">User Guide</a><input aria-label="Toggle navigation of User Guide" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="build.html">Getting Started</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Running test circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qasm2-input.html">OpenQASM 2 as Input</a></li>
 <li class="toctree-l2"><a class="reference internal" href="passes.html">Passes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="verification.html">Verifying Circuit Correctness</a></li>
 <li class="toctree-l2"><a class="reference internal" href="library.html">Using MQSSCI as a Library</a></li>
@@ -325,6 +327,15 @@ replacing the quake dialect input with the catalyst-quantum input.</p>
 the circuit’s behavior. See <a class="reference internal" href="verification.html"><span class="std std-doc">Verifying Circuit Correctness</span></a> for details.</p>
 </section>
 </section>
+<section id="using-mqss-translate">
+<h2>Using mqss-translate<a class="headerlink" href="#using-mqss-translate" title="Link to this heading">¶</a></h2>
+<p>The binary <code class="docutils literal notranslate"><span class="pre">mqss-translate</span></code> converts OpenQASM 2 circuits into the Quake dialect, so they can be fed
+to <code class="docutils literal notranslate"><span class="pre">mqss-opt</span></code>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mqss-translate<span class="w"> </span>--import-qasm2<span class="w"> </span>bell.qasm<span class="w"> </span><span class="p">|</span><span class="w"> </span>mqss-opt<span class="w"> </span>--BasisConversionPass<span class="o">=</span><span class="nv">gates</span><span class="o">=</span>prx,cz
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="qasm2-input.html"><span class="std std-doc">OpenQASM 2 as Input</span></a> for the supported subset and the C++ interface.</p>
+</section>
 <section id="using-mqss-cc-script-frontend-test">
 <h2>Using mqss-cc script (Frontend test)<a class="headerlink" href="#using-mqss-cc-script-frontend-test" title="Link to this heading">¶</a></h2>
 <p>Note: Before running a Frontend test, make sure you follow the installation instructions within
@@ -426,12 +437,12 @@ case will be QIR since the <code class="docutils literal notranslate"><span clas
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="passes.html">
+          <a class="next-page" href="qasm2-input.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Passes</div>
+                <div class="title">OpenQASM 2 as Input</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -481,6 +492,7 @@ case will be QIR since the <code class="docutils literal notranslate"><span clas
 <li><a class="reference internal" href="#mlir-dialect-input-quake-or-catalyst-quantum">MLIR dialect input (quake or catalyst-quantum)</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#using-mqss-translate">Using mqss-translate</a></li>
 <li><a class="reference internal" href="#using-mqss-cc-script-frontend-test">Using mqss-cc script (Frontend test)</a><ul>
 <li><a class="reference internal" href="#c-test-circuits">C++ test circuits</a></li>
 <li><a class="reference internal" href="#python-test-circuits">Python test circuits</a></li>
