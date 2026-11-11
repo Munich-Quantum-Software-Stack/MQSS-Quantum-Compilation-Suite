@@ -17,6 +17,7 @@ the License.
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
+#include "Passes/Analysis/Extractor.h"
 #include "Passes/CodeGen/BasisConversionPatterns.h"
 #include "Passes/CodeGen/CodeGenPasses.h"
 #include "Utils/DebugUtils.h"
@@ -34,6 +35,37 @@ namespace mqss::mqssci::codegen {
 } // namespace mqss::mqssci::codegen
 
 using namespace mlir;
+
+namespace {
+class AnalysisSyncListener : public mlir::RewriterBase::Listener {
+public:
+  explicit AnalysisSyncListener(MyModuleAnalysis &analysis)
+      : analysis(analysis) {}
+
+  void notifyOperationInserted(Operation *op,
+                               OpBuilder::InsertPoint previous) override {
+    if (previous.isSet()) { // a move, not a new op: already in the map
+      return;
+    }
+    if (!analysis.addOperation(
+            op)) { // callbacks return void, so record failure
+      failed = true;
+    }
+  }
+
+  void notifyOperationErased(Operation *op) override {
+    analysis.removeOperation(op); // the new API; must not touch the op after
+  }
+  void notifyOperationModified(Operation *op) override {
+    analysis.refreshOperation(op); // new API
+  }
+
+  bool failed = false;
+
+private:
+  MyModuleAnalysis &analysis;
+};
+} // namespace
 
 namespace {
 
@@ -126,68 +158,99 @@ getDecompositionTable(const QuantumDialect &DialectTy) {
 // the individual passes they were copied from).
 //===----------------------------------------------------------------------===//
 
-std::optional<std::string> classifyOp(Operation *op) {
-  if (auto g = dyn_cast<quake::HOp>(op)) {
-    if (g.getControls().empty() && g.getTargets().size() == 1)
+std::optional<std::string>
+classifyOp(Operation *op, const Gate &GateTy,
+           const SmallVector<mlir::Value> &control_qubits,
+           const SmallVector<mlir::Value> &target_qubits,
+           const SmallVector<mlir::Value, 2> &params, bool isAdj = false) {
+  if (GateTy == Gate::H || GateTy == Gate::Hadamard) {
+    if (control_qubits.empty() && target_qubits.size() == 1) {
       return std::string("h");
+    }
     return std::nullopt;
   }
-  if (auto g = dyn_cast<quake::XOp>(op)) {
-    if (g.getTargets().size() != 1)
-      return std::nullopt;
-    if (g.getControls().empty())
-      return std::string("x");
-    if (g.getControls().size() == 1)
+  if (GateTy == Gate::CNOT) {
+    if (control_qubits.size() == 1 && target_qubits.size() == 1) {
       return std::string("cx");
+    }
     return std::nullopt;
   }
-  if (auto g = dyn_cast<quake::YOp>(op)) {
-    if (g.isAdj() || g.getTargets().size() != 1)
-      return std::nullopt;
-    if (g.getControls().empty())
+  if (GateTy == Gate::PauliX) {
+    if (control_qubits.empty() && target_qubits.size() == 1) {
+      return std::string("x");
+    }
+    return std::nullopt;
+  }
+  if (GateTy == Gate::PauliY) {
+    if (control_qubits.empty() && target_qubits.size() == 1) {
       return std::string("y");
-    if (g.getControls().size() == 1)
-      return std::string("cy");
+    }
     return std::nullopt;
   }
-  if (auto g = dyn_cast<quake::ZOp>(op)) {
-    if (g.getTargets().size() != 1)
-      return std::nullopt;
-    if (g.getControls().empty())
+  if (GateTy == Gate::PauliZ) {
+    if (control_qubits.empty() && target_qubits.size() == 1) {
       return std::string("z");
-    if (g.getControls().size() == 1)
-      return std::string("cz");
+    }
     return std::nullopt;
   }
-  if (auto g = dyn_cast<quake::SOp>(op)) {
-    if (!g.getControls().empty() || g.getTargets().size() != 1)
-      return std::nullopt;
-    return std::string(g.isAdj() ? "sdg" : "s");
+  if (GateTy == Gate::CY) {
+    if (control_qubits.size() == 1 && target_qubits.size() == 1) {
+      return std::string("cy");
+    }
+    return std::nullopt;
   }
-  if (auto g = dyn_cast<quake::TOp>(op)) {
-    if (!g.getControls().empty() || g.getTargets().size() != 1)
-      return std::nullopt;
-    return std::string(g.isAdj() ? "tdg" : "t");
+  if (GateTy == Gate::CZ) {
+    if (control_qubits.size() == 1 && target_qubits.size() == 1) {
+      return std::string("cz");
+    }
+    return std::nullopt;
   }
+  if (GateTy == Gate::S) {
+    if (control_qubits.empty() && target_qubits.size() == 1) {
+      return std::string("s");
+    }
+    return std::nullopt;
+  }
+  if (GateTy == Gate::SAdj) {
+    if (control_qubits.empty() && target_qubits.size() == 1) {
+      return std::string("sdg");
+    }
+    return std::nullopt;
+  }
+  if (GateTy == Gate::T) {
+    if (control_qubits.empty() && target_qubits.size() == 1) {
+      return std::string("t");
+    }
+    return std::nullopt;
+  }
+  if (GateTy == Gate::TAdj) {
+    if (control_qubits.empty() && target_qubits.size() == 1) {
+      return std::string("tdg");
+    }
+    return std::nullopt;
+  }
+
+  // TODO: R1 not captured in enum Gate in Extractor.h
   if (auto g = dyn_cast<quake::R1Op>(op)) {
     if (g.isAdj() || !g.getControls().empty() || g.getTargets().size() != 1 ||
         g.getParameters().size() != 1)
       return std::nullopt;
     return std::string("r1");
   }
-  if (auto g = dyn_cast<quake::RxOp>(op)) {
-    if (g.isAdj() || g.getTargets().size() != 1 ||
-        g.getParameters().size() != 1)
+  if (GateTy == Gate::RX) {
+    if (isAdj || target_qubits.size() != 1 || params.size() != 1)
       return std::nullopt;
-    if (!g.getControls().empty())
-      return g.getControls().size() == 1 ? std::optional<std::string>("crx")
-                                         : std::nullopt;
+
+    if (!control_qubits.empty())
+      return std::nullopt;
+
+    auto param = params.back();
     // A fixed pi/2 rotation about X is "sx" (sqrt-X): its own native gate on
     // hardware whose basis doesn't include an arbitrary-angle Rx (e.g. WMI's
     // {cz, x, y, rz, sx}). Distinguish it from a genuinely parameterized
     // "rx" so it isn't left unresolved on such targets, and doesn't get
     // bounced back and forth with the "h" rule that produces it.
-    if (auto cst = g.getParameter().getDefiningOp<mlir::arith::ConstantOp>()) {
+    if (auto cst = param.getDefiningOp<mlir::arith::ConstantOp>()) {
       if (auto fp = dyn_cast<FloatAttr>(cst.getValue())) {
         if (std::abs(fp.getValueAsDouble() - M_PI_2) < 1e-9)
           return std::string("sx");
@@ -195,46 +258,62 @@ std::optional<std::string> classifyOp(Operation *op) {
     }
     return std::string("rx");
   }
-  if (auto g = dyn_cast<quake::RyOp>(op)) {
-    if (g.isAdj() || g.getTargets().size() != 1 ||
-        g.getParameters().size() != 1)
+  if (GateTy == Gate::CRX) {
+    if (isAdj || target_qubits.size() != 1 || params.size() != 1)
       return std::nullopt;
-    if (g.getControls().empty())
+    if (!control_qubits.empty())
+      return control_qubits.size() == 1 ? std::optional<std::string>("crx")
+                                        : std::nullopt;
+  }
+  if (GateTy == Gate::RY) {
+    if (isAdj || target_qubits.size() != 1 || params.size() != 1)
+      return std::nullopt;
+    if (control_qubits.empty())
       return std::string("ry");
-    if (g.getControls().size() == 1)
-      return std::string("cry");
     return std::nullopt;
   }
-  if (auto g = dyn_cast<quake::RzOp>(op)) {
-    if (g.isAdj() || g.getTargets().size() != 1 ||
-        g.getParameters().size() != 1)
+  if (GateTy == Gate::CRY) {
+    if (isAdj || target_qubits.size() != 1 || params.size() != 1)
       return std::nullopt;
-    if (g.getControls().empty())
+    if (!control_qubits.empty())
+      return control_qubits.size() == 1 ? std::optional<std::string>("crx")
+                                        : std::nullopt;
+  }
+
+  if (GateTy == Gate::RZ) {
+    if (isAdj || target_qubits.size() != 1 || params.size() != 1)
+      return std::nullopt;
+    if (control_qubits.empty())
       return std::string("rz");
-    if (g.getControls().size() == 1)
-      return std::string("crz");
     return std::nullopt;
   }
-  if (auto g = dyn_cast<quake::U2Op>(op)) {
-    if (!g.getControls().empty() || g.getTargets().size() != 1 ||
-        g.getParameters().size() != 2)
+  if (GateTy == Gate::CRZ) {
+    if (isAdj || target_qubits.size() != 1 || params.size() != 1)
+      return std::nullopt;
+    if (!control_qubits.empty())
+      return control_qubits.size() == 1 ? std::optional<std::string>("crx")
+                                        : std::nullopt;
+  }
+  if (GateTy == Gate::U2) {
+    if (!control_qubits.empty() || target_qubits.size() != 1 ||
+        params.size() != 2)
       return std::nullopt;
     return std::string("u2");
   }
-  if (auto g = dyn_cast<quake::U3Op>(op)) {
-    if (!g.getControls().empty() || g.getTargets().size() != 1 ||
-        g.getParameters().size() != 3)
+  if (GateTy == Gate::U3) {
+    if (!control_qubits.empty() || target_qubits.size() != 1 ||
+        params.size() != 3)
       return std::nullopt;
     return std::string("u3");
   }
-  if (auto g = dyn_cast<quake::SwapOp>(op)) {
-    if (!g.getControls().empty() || g.getTargets().size() != 2)
+  if (GateTy == Gate::SWAP) {
+    if (!control_qubits.empty() || target_qubits.size() != 2)
       return std::nullopt;
     return std::string("swap");
   }
-  if (auto g = dyn_cast<quake::PhasedRxOp>(op)) {
-    if (!g.isAdj() && g.getControls().empty() &&
-        g.getParameters().size() == 2 && g.getTargets().size() == 1)
+  if (GateTy == Gate::PhasedRx) {
+    if (!isAdj && control_qubits.empty() && params.size() == 2 &&
+        target_qubits.size() == 1)
       return std::string("prx");
     return std::nullopt;
   }
@@ -375,12 +454,8 @@ public:
     bool wasApplied = false;
 
     MQSS_DEBUG("\n[Applying Pass: BasisConversion]\n");
-    auto &selector = getAnalysis<DialectAnalysisSelector>();
-    auto &analysis = *selector.get();
-    auto DialectTy = selector.getDialect();
 
     auto kernel = getOperation();
-
     llvm::StringSet<> native;
 
     if (!qdmi.empty()) {
@@ -401,6 +476,12 @@ public:
         native.insert(resolveMnemonicAlias(gate));
     }
 
+    auto &selector = getAnalysis<DialectAnalysisSelector>();
+    auto &analysis = *selector.get();
+    auto DialectTy = selector.getDialect();
+
+    auto &kernel_info = analysis.getKernelDialectInfo();
+
     const auto &table = getDecompositionTable(DialectTy);
     // Computed once, up front: for every non-native mnemonic that can
     // transitively bottom out in native gates, the rule that gets it there.
@@ -417,38 +498,63 @@ public:
     // unwinding an acyclic chain, so it always reaches a fixed point in at
     // most table.size() rounds. The cap is only a defensive backstop.
     constexpr int maxRounds = 64;
+    AnalysisSyncListener listener(analysis);
     for (int round = 0; round < maxRounds; ++round) {
       bool changed = false;
-      kernel.walk([&](Operation *op) {
-        std::optional<std::string> mnemonic = classifyOp(op);
-        if (!mnemonic || isNative(native, *mnemonic))
-          return;
-        auto wit = witnesses.find(*mnemonic);
-        if (wit == witnesses.end()) {
-          if (table.count(*mnemonic) &&
-              warnedUnresolvable.insert(*mnemonic).second)
-            mlir::emitError(kernel.getLoc())
-                << "BasisConversion Op: '" << *mnemonic
-                << "' cannot be decomposed into the requested native gate set"
-                << (table.count(*mnemonic)
-                        ? ""
-                        : " (no decomposition rule exists for it)");
-          signalPassFailure();
-          return;
+      // Iterate only the module's top-level functions (no recursion into
+      // their bodies), then walk each function's ops exactly once.
+      for (auto func : kernel.getOps<mlir::func::FuncOp>()) {
+        if (!kernel_info.count(func)) {
+          continue;
         }
-        IRRewriter rewriter(op->getContext());
-        auto result = wit->second->apply(DialectTy, rewriter, op);
-        if (!result) {
-          mlir::emitError(kernel->getLoc(),
-                          "BasisConversion: Failed to apply pass!");
-          signalPassFailure();
-          return;
-        }
-        changed = true;
-        wasApplied = true;
-      });
+
+        auto &funcInfo = kernel_info[func];
+        auto &funcQView = funcInfo.OpQViewMap;
+        func->walk([&](Operation *op) {
+          if (!funcQView.count(op)) {
+            return;
+          }
+          auto OpQView = funcQView[op];
+
+          std::optional<std::string> mnemonic = classifyOp(
+              op, OpQView.GateTy, OpQView.getQubits(QubitRole::Control).in,
+              OpQView.getQubits(QubitRole::Target).in, OpQView.params,
+              OpQView.isAdjoint);
+          if (!mnemonic || isNative(native, *mnemonic))
+            return;
+          auto wit = witnesses.find(*mnemonic);
+          if (wit == witnesses.end()) {
+            if (table.count(*mnemonic) &&
+                warnedUnresolvable.insert(*mnemonic).second)
+              mlir::emitError(kernel.getLoc())
+                  << "BasisConversion Op: '" << *mnemonic
+                  << "' cannot be decomposed into the requested native gate "
+                     "set"
+                  << (table.count(*mnemonic)
+                          ? ""
+                          : " (no decomposition rule exists for it)");
+            signalPassFailure();
+            return;
+          }
+          IRRewriter rewriter(op->getContext(), &listener);
+          auto result = wit->second->apply(DialectTy, rewriter, op);
+          if (!result) {
+            mlir::emitError(func->getLoc(),
+                            "BasisConversion: Failed to apply pass!");
+            signalPassFailure();
+            return;
+          }
+          if (listener.failed) {
+            mlir::emitError(func->getLoc(),
+                            "BasisConversion: Failed to add newly created Op!");
+            signalPassFailure();
+            return;
+          }
+          changed = true;
+        });
+      }
       if (!changed)
-        return;
+        break;
 
       // Some rules (e.g. CrzToRzCxRzCx) build a new op's angle out of an
       // arithmetic expression -- arith.negf/arith.divf on a prior operand --
@@ -466,8 +572,18 @@ public:
       // default, so this is purely a folding/DCE pass, not a general
       // canonicalization.
       mlir::RewritePatternSet emptyPatterns(kernel.getContext());
+      mlir::GreedyRewriteConfig config; // for the folding call
+      config.setListener(&listener);
       (void)mlir::applyPatternsGreedily(
-          kernel, mlir::FrozenRewritePatternSet(std::move(emptyPatterns)));
+          kernel, mlir::FrozenRewritePatternSet(std::move(emptyPatterns)),
+          config);
+
+      if (listener.failed) {
+        mlir::emitError(kernel->getLoc(),
+                        "BasisConversion: Failed to add newly created Op!");
+        signalPassFailure();
+        return;
+      }
 
       if (round == maxRounds - 1)
         mlir::emitWarning(kernel.getLoc())

@@ -75,6 +75,9 @@ public:
   mlir::LogicalResult verifyModule() override { return module.verify(); }
 
   bool addOperation(Operation *NewOp) override {
+    if (NewOp->getDialect()->getNamespace() != "quake") {
+      return true;
+    }
     auto funcOp = NewOp->getParentOfType<mlir::func::FuncOp>();
     if (!funcOp) {
       mlir::emitError(
@@ -97,6 +100,54 @@ public:
     auto view =
         createQuantumView(NewOp, KernelDialectInfo[funcOp].NumMeasureQubits);
     QInfo[NewOp] = view;
+    return true;
+  }
+
+  bool removeOperation(Operation *Op) override {
+    if (Op->getDialect()->getNamespace() != "quake") {
+      return true;
+    }
+    auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
+    if (!funcOp) {
+      mlir::emitError(
+          Op->getLoc(),
+          "QuakeExtractor: Removing Op: Parent Function not found!");
+      return false;
+    }
+    if (!KernelDialectInfo.count(funcOp)) {
+      mlir::emitError(
+          Op->getLoc(),
+          "QuakeExtractor: Removing Op: No QuantumOpInfo for funcOp");
+      return false;
+    }
+    auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
+    if (!QInfo.count(Op)) {
+      mlir::emitError(Op->getLoc(), "QuakeExtractor: Removing Op: Op "
+                                    "Not present in QuantumInfoMap");
+      return false;
+    }
+    QInfo.erase(Op);
+    return true;
+  }
+
+  bool refreshOperation(Operation *Op) override {
+    if (Op->getDialect()->getNamespace() != "quake")
+      return true;
+    auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
+    if (!funcOp)
+      return true;
+    auto kernelIt = KernelDialectInfo.find(funcOp);
+    if (kernelIt == KernelDialectInfo.end())
+      return true; // not a tracked kernel
+    auto &QInfo = kernelIt->second.OpQViewMap;
+    auto viewIt = QInfo.find(Op);
+    if (viewIt == QInfo.end())
+      return true; // op is not tracked (e.g. alloca)
+    // Rebuilding a measurement view would bump NumMeasureQubits and hand out
+    // fresh classical bit indices a second time, so keep the existing one.
+    if (viewIt->second.isMeasureOp)
+      return true;
+    viewIt->second = createQuantumView(Op, kernelIt->second.NumMeasureQubits);
     return true;
   }
 
@@ -142,7 +193,7 @@ public:
     return true;
   }
 
-  MapVector<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
+  MapVector<func::FuncOp, QuantumKernelInfo> &getKernelDialectInfo() override {
     return KernelDialectInfo;
   }
 

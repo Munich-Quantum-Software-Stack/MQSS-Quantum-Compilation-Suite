@@ -40,28 +40,37 @@ using namespace catalyst;
 inline std::tuple<bool, StringLiteral> isQuakeQuantumGate(Operation *op) {
 
   if (auto x = dyn_cast<quake::XOp>(op)) {
-    if (x.getControls().size() == 0)
+    if (x.getControls().empty())
       return {true, "PauliX"};
     return {true, "CNOT"};
   }
 
   if (auto x = dyn_cast<quake::YOp>(op)) {
-    if (x.getControls().size() == 0)
+    if (x.getControls().empty())
       return {true, "PauliY"};
     return {true, "CY"};
   }
   if (auto x = dyn_cast<quake::ZOp>(op)) {
-    if (x.getControls().size() == 0)
+    if (x.getControls().empty())
       return {true, "PauliZ"};
     return {true, "CZ"};
   }
 
-  if (auto x = dyn_cast<quake::RxOp>(op))
+  if (auto x = dyn_cast<quake::RxOp>(op)) {
+    if (!x.getControls().empty())
+      return {true, "CRX"};
     return {true, "RX"};
-  if (auto x = dyn_cast<quake::RyOp>(op))
+  }
+  if (auto x = dyn_cast<quake::RyOp>(op)) {
+    if (!x.getControls().empty())
+      return {true, "CRY"};
     return {true, "RY"};
-  if (auto x = dyn_cast<quake::RzOp>(op))
+  }
+  if (auto x = dyn_cast<quake::RzOp>(op)) {
+    if (!x.getControls().empty())
+      return {true, "CRZ"};
     return {true, "RZ"};
+  }
 
   if (auto x = dyn_cast<quake::HOp>(op)) {
     if (!x.getControls().empty())
@@ -73,6 +82,9 @@ inline std::tuple<bool, StringLiteral> isQuakeQuantumGate(Operation *op) {
   }
   if (auto x = dyn_cast<quake::SwapOp>(op)) {
     return {true, "SWAP"};
+  }
+  if (auto x = dyn_cast<quake::U2Op>(op)) {
+    return {true, "U2"};
   }
   if (auto x = dyn_cast<quake::U3Op>(op)) {
     return {true, "U3"};
