@@ -78,7 +78,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //===----------------------------------------------------------------------===//
 
 // The Rx here is always a fixed pi/2 rotation ("sx"/sqrt-X), never a
-// parameterized one -- BasisConversionPass's classifyOp() relies on that to
+// parameterized one -- BasisConversionPass's CheckforSXOp() relies on that to
 // tell this apart from a genuinely arbitrary-angle Rx.
 bool rewriteHToRzRxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
                       quake::HOp op) {
@@ -1037,7 +1037,7 @@ bool rewriteTToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 
 struct DecompositionRule {
   const char *name;
-  std::vector<std::string> produces;
+  std::vector<Gate> produces;
   std::function<bool(const QuantumDialect &, IRRewriter &, Operation *)> apply;
 };
 
@@ -1059,7 +1059,7 @@ template <typename OpT> struct RuleAdaptor {
 };
 
 template <typename OpT>
-DecompositionRule makeRule(const char *name, std::vector<std::string> produces,
+DecompositionRule makeRule(const char *name, std::vector<Gate> produces,
                            bool (*rewrite)(const QuantumDialect &, IRRewriter &,
                                            OpT)) {
   return DecompositionRule{name, std::move(produces),

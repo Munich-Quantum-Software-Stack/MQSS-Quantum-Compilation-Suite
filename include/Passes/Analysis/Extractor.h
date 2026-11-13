@@ -51,11 +51,13 @@ enum Gate {
   RX,
   RY,
   RZ,
+  R1,
   CRX,
   CRY,
   CRZ,
   S,
   SAdj,
+  SX,
   T,
   TAdj,
   U2,
@@ -193,6 +195,8 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return RY;
   if (GateTy == "RZ")
     return RZ;
+  if (GateTy == "R1")
+    return R1;
 
   if (GateTy == "CRX")
     return CRX;
@@ -200,12 +204,16 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return CRY;
   if (GateTy == "CRZ")
     return CRZ;
+  if (GateTy == "CY")
+    return CY;
   if (GateTy == "CZ")
     return CZ;
   if (GateTy == "S")
     return S;
   if (GateTy == "SAdj")
     return SAdj;
+  if (GateTy == "SX")
+    return SX;
   if (GateTy == "T")
     return T;
   if (GateTy == "CH")
@@ -238,6 +246,8 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "RY";
   if (GateTy == Gate::RZ)
     return "RZ";
+  if (GateTy == Gate::R1)
+    return "R1";
   if (GateTy == Gate::CRX)
     return "CRX";
   if (GateTy == Gate::CRY)
@@ -246,12 +256,17 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "CRZ";
   if (GateTy == Gate::PauliZ)
     return "PauliZ";
+  if (GateTy == Gate::CY)
+    return "CY";
+
   if (GateTy == Gate::CZ)
     return "CZ";
   if (GateTy == Gate::PauliY)
     return "PauliY";
   if (GateTy == Gate::S)
     return "S";
+  if (GateTy == Gate::SX)
+    return "SX";
   if (GateTy == Gate::T)
     return "T";
   if (GateTy == Gate::SAdj)
@@ -264,6 +279,8 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "U2";
   if (GateTy == Gate::U3)
     return "U3";
+  if (GateTy == Gate::PhasedRx)
+    return "PhasedRx";
   return "UNKNOWN";
 }
 

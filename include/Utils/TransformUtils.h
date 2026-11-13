@@ -282,6 +282,10 @@ createQuakeGate(Location loc, llvm::StringRef &NewGateTy,
     return builder.create<quake::RzOp>(loc, isAdj, params, ControlQubits,
                                        TargetQubitOps);
   }
+  if (NewGateTy == "R1") {
+    return builder.create<quake::R1Op>(loc, isAdj, params, ControlQubits,
+                                       TargetQubitOps);
+  }
   if (NewGateTy == "S") {
     return builder.create<quake::SOp>(loc, false, TargetQubitOps);
   }
@@ -331,7 +335,7 @@ createQuakeGate(Location loc, llvm::StringRef &NewGateTy,
                                        TargetQubitOps);
   }
   if (NewGateTy == "U2") {
-    return builder.create<quake::U3Op>(loc, params, ControlQubits,
+    return builder.create<quake::U2Op>(loc, params, ControlQubits,
                                        TargetQubitOps);
   }
   if (NewGateTy == "PhasedRx") {
