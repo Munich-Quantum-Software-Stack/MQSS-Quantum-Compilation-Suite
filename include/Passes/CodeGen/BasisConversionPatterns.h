@@ -27,7 +27,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "llvm/IR/Module.h"
 
 #include <cmath>
-#include <cudaq/Optimizer/Dialect/Quake/QuakeOps.h>
 #include <llvm/ADT/StringExtras.h>
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/IR/Value.h>
@@ -81,9 +80,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // parameterized one -- BasisConversionPass's CheckforSXOp() relies on that to
 // tell this apart from a genuinely arbitrary-angle Rx.
 bool rewriteHToRzRxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                      quake::HOp op) {
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+                      Operation *op, const QuantumOpView &view) {
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
 
   auto c1 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
@@ -107,9 +106,9 @@ bool rewriteHToRzRxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteHToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                  quake::HOp op) {
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                  Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto halfPi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
   auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
@@ -125,9 +124,9 @@ bool rewriteHToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteXToHZH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                   quake::XOp op) {
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                   Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
@@ -144,9 +143,9 @@ bool rewriteXToHZH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteXToRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                  quake::XOp op) {
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+                  Operation *op, const QuantumOpView &view) {
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto angle = createArithConstantOp(loc, DialectTy, rewriter, M_PI);
   if (!angle)
@@ -160,9 +159,9 @@ bool rewriteXToRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteYToRy(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                  quake::YOp op) {
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+                  Operation *op, const QuantumOpView &view) {
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto angle = createArithConstantOp(loc, DialectTy, rewriter, -M_PI);
   if (!angle)
@@ -176,9 +175,9 @@ bool rewriteYToRy(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteZToHXH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                   quake::ZOp op) {
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                   Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
@@ -195,9 +194,9 @@ bool rewriteZToHXH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteZToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                  quake::ZOp op) {
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+                  Operation *op, const QuantumOpView &view) {
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto angle = createArithConstantOp(loc, DialectTy, rewriter, M_PI);
   if (!angle)
@@ -211,9 +210,9 @@ bool rewriteZToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteSToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                  quake::SOp op) {
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+                  Operation *op, const QuantumOpView &view) {
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto angle = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
   if (!angle)
@@ -227,9 +226,9 @@ bool rewriteSToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteSToSdgSdgSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                         quake::SOp op) {
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                         Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "SAdj", {}, {target}, {}, rewriter);
@@ -246,9 +245,9 @@ bool rewriteSToSdgSdgSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteSToTT(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                  quake::SOp op) {
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                  Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "T", {}, {target}, {}, rewriter);
@@ -262,9 +261,9 @@ bool rewriteSToTT(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteSdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                    quake::SOp op) {
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+                    Operation *op, const QuantumOpView &view) {
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto angle = createArithConstantOp(loc, DialectTy, rewriter, -M_PI_2);
   if (!angle)
@@ -278,9 +277,9 @@ bool rewriteSdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteSdgToSSS(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                     quake::SOp op) {
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                     Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "S", {}, {target}, {}, rewriter);
@@ -297,9 +296,9 @@ bool rewriteSdgToSSS(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteTToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                  quake::TOp op) {
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+                  Operation *op, const QuantumOpView &view) {
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto angle = createArithConstantOp(loc, DialectTy, rewriter, M_PI_4);
   if (!angle)
@@ -313,9 +312,9 @@ bool rewriteTToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteTdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                    quake::TOp op) {
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+                    Operation *op, const QuantumOpView &view) {
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto angle = createArithConstantOp(loc, DialectTy, rewriter, -M_PI_4);
   if (!angle)
@@ -329,10 +328,10 @@ bool rewriteTdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteR1ToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                   quake::R1Op op) {
-  auto target = op.getTargets()[0];
-  auto param = op.getParameters()[0];
-  Location loc = op.getLoc();
+                   Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  auto param = view.params[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "RZ", {}, {target}, {param}, rewriter);
@@ -343,10 +342,10 @@ bool rewriteR1ToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteRxToHRzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                     quake::RxOp op) {
-  auto target = op.getTargets()[0];
-  auto param = op.getParameters()[0];
-  Location loc = op.getLoc();
+                     Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  auto param = view.params[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
 
   auto *newGate =
@@ -367,10 +366,10 @@ bool rewriteRxToHRzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 // TODO: Is this correct?
 //       c1 and c2 are both Pi/2
 bool rewriteRyToRzRxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                       quake::RyOp op) {
-  Location loc = op.getLoc();
-  auto rotation = op.getParameters()[0];
-  ValueRange target = op.getTargets();
+                       Operation *op, const QuantumOpView &view) {
+  Location loc = op->getLoc();
+  auto rotation = view.params[0];
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto c1 = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
   if (!c1)
@@ -394,10 +393,10 @@ bool rewriteRyToRzRxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteRzToHRxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                     quake::RzOp op) {
-  auto target = op.getTargets()[0];
-  auto param = op.getParameters()[0];
-  Location loc = op.getLoc();
+                     Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  auto param = view.params[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
@@ -415,10 +414,10 @@ bool rewriteRzToHRxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteRzToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                   quake::RzOp op) {
-  auto target = op.getTargets()[0];
-  auto param = op.getParameters()[0];
-  Location loc = op.getLoc();
+                   Operation *op, const QuantumOpView &view) {
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  auto param = view.params[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
   if (!zero)
@@ -432,12 +431,12 @@ bool rewriteRzToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteU2ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                       quake::U2Op op) {
-  auto params = op.getParameters();
+                       Operation *op, const QuantumOpView &view) {
+  const auto &params = view.params;
   auto phi = params[0];
   auto lambda = params[1];
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto halfPi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
 
@@ -461,12 +460,12 @@ bool rewriteU2ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteU2ToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                   quake::U2Op op) {
-  auto params = op.getParameters();
+                   Operation *op, const QuantumOpView &view) {
+  const auto &params = view.params;
   auto phi = params[0];
   auto lambda = params[1];
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto halfPi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
   if (!halfPi)
@@ -480,13 +479,13 @@ bool rewriteU2ToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteU3ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                       quake::U3Op op) {
-  auto params = op.getParameters();
+                       Operation *op, const QuantumOpView &view) {
+  const auto &params = view.params;
   auto theta = params[0];
   auto phi = params[1];
   auto lambda = params[2];
-  Location loc = op.getLoc();
-  ValueRange target = op.getTargets();
+  Location loc = op->getLoc();
+  const auto &target = view.getQubits(QubitRole::Target).in;
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "RZ", {}, {target}, {lambda}, rewriter);
@@ -504,10 +503,11 @@ bool rewriteU3ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteSwapToUpperCxCxCx(const QuantumDialect &DialectTy,
-                              IRRewriter &rewriter, quake::SwapOp op) {
-  auto q0 = op.getTargets()[0];
-  auto q1 = op.getTargets()[1];
-  Location loc = op.getLoc();
+                              IRRewriter &rewriter, Operation *op,
+                              const QuantumOpView &view) {
+  auto q0 = view.getQubits(QubitRole::Target).in[0];
+  auto q1 = view.getQubits(QubitRole::Target).in[1];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate = createNewGate(loc, DialectTy, "CX", {q0}, {q1}, {}, rewriter);
   if (!newGate)
@@ -523,10 +523,10 @@ bool rewriteSwapToUpperCxCxCx(const QuantumDialect &DialectTy,
 }
 
 bool rewriteCxToUpperHCzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                          quake::XOp op) {
-  auto control = op.getControls()[0];
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                          Operation *op, const QuantumOpView &view) {
+  auto control = view.getQubits(QubitRole::Control).in[0];
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
 
   auto *newGate =
@@ -545,10 +545,10 @@ bool rewriteCxToUpperHCzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteCzToUpperHCxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                          quake::ZOp op) {
-  auto control = op.getControls()[0];
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                          Operation *op, const QuantumOpView &view) {
+  auto control = view.getQubits(QubitRole::Control).in[0];
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
@@ -566,10 +566,10 @@ bool rewriteCzToUpperHCxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteCyToSCxSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                       quake::YOp op) {
-  auto control = op.getControls()[0];
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                       Operation *op, const QuantumOpView &view) {
+  auto control = view.getQubits(QubitRole::Control).in[0];
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "S", {}, {target}, {}, rewriter);
@@ -587,11 +587,11 @@ bool rewriteCyToSCxSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteCrxToHCrzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                       quake::RxOp op) {
-  auto control = op.getControls()[0];
-  auto target = op.getTargets()[0];
-  auto param = op.getParameters()[0];
-  Location loc = op.getLoc();
+                       Operation *op, const QuantumOpView &view) {
+  auto control = view.getQubits(QubitRole::Control).in[0];
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  auto param = view.params[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
@@ -609,11 +609,11 @@ bool rewriteCrxToHCrzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteCrzToHCrxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                       quake::RzOp op) {
-  auto control = op.getControls()[0];
-  auto target = op.getTargets()[0];
-  auto param = op.getParameters()[0];
-  Location loc = op.getLoc();
+                       Operation *op, const QuantumOpView &view) {
+  auto control = view.getQubits(QubitRole::Control).in[0];
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  auto param = view.params[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
@@ -631,15 +631,15 @@ bool rewriteCrzToHCrxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteCrzToRzCu3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                       quake::RzOp op) {
-  auto control = op.getControls()[0];
-  auto target = op.getTargets()[0];
-  auto param = op.getParameters()[0];
-  Location loc = op.getLoc();
+                       Operation *op, const QuantumOpView &view) {
+  auto control = view.getQubits(QubitRole::Control).in[0];
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  auto param = view.params[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
 
-  mlir::Value angle = op.getParameter();
-  if (op.isAdj())
+  mlir::Value angle = view.params[0];
+  if (view.isAdjoint)
     angle = arith::NegFOp::create(rewriter, loc, angle);
   auto halfAngle = createDivFOp(loc, DialectTy, angle, 2.0, rewriter);
   auto zero = createArithConstantOp(loc, DialectTy, rewriter, 0.0);
@@ -659,13 +659,13 @@ bool rewriteCrzToRzCu3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteCrzToRzCxRzCx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                          quake::RzOp op) {
-  auto control = op.getControls()[0];
-  auto target = op.getTargets()[0];
-  Location loc = op.getLoc();
+                          Operation *op, const QuantumOpView &view) {
+  auto control = view.getQubits(QubitRole::Control).in[0];
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
-  mlir::Value angle = op.getParameter();
-  if (op.isAdj())
+  mlir::Value angle = view.params[0];
+  if (view.isAdjoint)
     angle = arith::NegFOp::create(rewriter, loc, angle);
   mlir::Value halfAngle = createDivFOp(loc, DialectTy, angle, 2.0, rewriter);
   if (!halfAngle)
@@ -694,11 +694,11 @@ bool rewriteCrzToRzCxRzCx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteCryToRzCrxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                         quake::RyOp op) {
-  auto control = op.getControls()[0];
-  auto target = op.getTargets()[0];
-  auto param = op.getParameters()[0];
-  Location loc = op.getLoc();
+                         Operation *op, const QuantumOpView &view) {
+  auto control = view.getQubits(QubitRole::Control).in[0];
+  auto target = view.getQubits(QubitRole::Target).in[0];
+  auto param = view.params[0];
+  Location loc = op->getLoc();
   rewriter.setInsertionPointAfter(op);
   auto negHalfPi = createArithConstantOp(loc, DialectTy, rewriter, -M_PI_2);
   auto halfPi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
@@ -723,13 +723,13 @@ bool rewriteCryToRzCrxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteHToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                        quake::HOp op) {
-  if (!op.getControls().empty())
+                        Operation *op, const QuantumOpView &view) {
+  if (!view.getQubits(QubitRole::Control).in.empty())
     return false;
 
   // Op info
   Location loc = op->getLoc();
-  mlir::Value target = op.getTarget();
+  mlir::Value target = view.getQubits(QubitRole::Target).in[0];
 
   rewriter.setInsertionPointAfter(op);
   // Necessary/Helpful constants
@@ -758,13 +758,13 @@ bool rewriteHToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteXToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                        cudaq::quake::XOp op) {
-  if (!op.getControls().empty())
+                        Operation *op, const QuantumOpView &view) {
+  if (!view.getQubits(QubitRole::Control).in.empty())
     return false;
 
   // Op info
   Location loc = op->getLoc();
-  mlir::Value target = op.getTarget();
+  mlir::Value target = view.getQubits(QubitRole::Target).in[0];
   rewriter.setInsertionPointAfter(op);
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
@@ -784,18 +784,18 @@ bool rewriteXToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteRxToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                         cudaq::quake::RxOp op) {
-  if (!op.getControls().empty())
+                         Operation *op, const QuantumOpView &view) {
+  if (!view.getQubits(QubitRole::Control).in.empty())
     return false;
 
   // Op info
   Location loc = op->getLoc();
-  mlir::Value target = op.getTarget();
-  mlir::Value angle = op.getParameter();
+  mlir::Value target = view.getQubits(QubitRole::Target).in[0];
+  mlir::Value angle = view.params[0];
   rewriter.setInsertionPointAfter(op);
-  if (op.isAdj())
+  if (view.isAdjoint)
     angle = arith::NegFOp::create(rewriter, loc, angle);
-  mlir::Type angleType = op.getParameter().getType();
+  mlir::Type angleType = view.params[0].getType();
 
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
@@ -815,18 +815,18 @@ bool rewriteRxToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteRzToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                         cudaq::quake::RzOp op) {
-  if (!op.getControls().empty())
+                         Operation *op, const QuantumOpView &view) {
+  if (!view.getQubits(QubitRole::Control).in.empty())
     return false;
 
   // Op info
   Location loc = op->getLoc();
-  mlir::Value target = op.getTarget();
-  mlir::Value angle = op.getParameter();
+  mlir::Value target = view.getQubits(QubitRole::Target).in[0];
+  mlir::Value angle = view.params[0];
   rewriter.setInsertionPointAfter(op);
-  if (op.isAdj())
+  if (view.isAdjoint)
     angle = arith::NegFOp::create(rewriter, loc, angle);
-  mlir::Type angleType = op.getParameter().getType();
+  mlir::Type angleType = view.params[0].getType();
 
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
@@ -863,17 +863,17 @@ bool rewriteRzToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteR1ToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                         cudaq::quake::R1Op op) {
-  if (!op.getControls().empty())
+                         Operation *op, const QuantumOpView &view) {
+  if (!view.getQubits(QubitRole::Control).in.empty())
     return false;
 
   // Op info
   Location loc = op->getLoc();
-  mlir::Value target = op.getTarget();
-  mlir::Value angle = op.getParameter();
-  if (op.isAdj())
+  mlir::Value target = view.getQubits(QubitRole::Target).in[0];
+  mlir::Value angle = view.params[0];
+  if (view.isAdjoint)
     angle = arith::NegFOp::create(rewriter, loc, angle);
-  auto angleType = op.getParameter().getType();
+  auto angleType = view.params[0].getType();
 
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
@@ -911,13 +911,13 @@ bool rewriteR1ToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteYToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                        cudaq::quake::YOp op) {
-  if (!op.getControls().empty())
+                        Operation *op, const QuantumOpView &view) {
+  if (!view.getQubits(QubitRole::Control).in.empty())
     return false;
 
   // Op info
   Location loc = op->getLoc();
-  mlir::Value target = op.getTarget();
+  mlir::Value target = view.getQubits(QubitRole::Target).in[0];
 
   // Necessary/Helpful constants
   auto pi = createArithConstantOp(loc, DialectTy, rewriter, M_PI_2);
@@ -939,13 +939,13 @@ bool rewriteYToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteSToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                        cudaq::quake::SOp op) {
-  if (!op.getControls().empty())
+                        Operation *op, const QuantumOpView &view) {
+  if (!view.getQubits(QubitRole::Control).in.empty())
     return false;
 
   // Op info
   Location loc = op->getLoc();
-  mlir::Value target = op.getTarget();
+  mlir::Value target = view.getQubits(QubitRole::Target).in[0];
 
   // Necessary/Helpful constants
   SmallVector<mlir::Value> noControls;
@@ -955,7 +955,7 @@ bool rewriteSToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   mlir::Value negPi_2 = arith::NegFOp::create(rewriter, loc, pi_2);
 
-  mlir::Value angle = op.isAdj() ? pi_2 : negPi_2;
+  mlir::Value angle = view.isAdjoint ? pi_2 : negPi_2;
 
   std::array<mlir::Value, 2> parameters = {pi_2, zero};
 
@@ -983,15 +983,15 @@ bool rewriteSToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 }
 
 bool rewriteTToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                        cudaq::quake::TOp op) {
-  if (!op.getControls().empty())
+                        Operation *op, const QuantumOpView &view) {
+  if (!view.getQubits(QubitRole::Control).in.empty())
     return false;
 
   // Op info
   Location loc = op->getLoc();
-  mlir::Value target = op.getTarget();
+  mlir::Value target = view.getQubits(QubitRole::Target).in[0];
   mlir::Value angle = createArithConstantOp(loc, DialectTy, rewriter, -M_PI_4);
-  if (op.isAdj())
+  if (view.isAdjoint)
     angle = arith::NegFOp::create(rewriter, loc, angle);
 
   // Necessary/Helpful constants
@@ -1035,33 +1035,22 @@ bool rewriteTToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
 // choices exist in lib/Passes/Decompositions/ for that gate.
 //===----------------------------------------------------------------------===//
 
+// A rewrite rule receives the op being replaced (needed for its location, the
+// insertion point and the final erase) together with its dialect-neutral
+// QuantumOpView (controls, targets, parameters, adjoint flag).
+using RewriteFn = bool (*)(const QuantumDialect &, IRRewriter &, Operation *,
+                           const QuantumOpView &);
+
 struct DecompositionRule {
   const char *name;
   std::vector<Gate> produces;
-  std::function<bool(const QuantumDialect &, IRRewriter &, Operation *)> apply;
+  RewriteFn apply;
 };
 
-// A named functor, rather than a lambda defined inside makeRule's body: a
-// lambda there is a *local type*, and some GCC versions mishandle
-// constructing std::function from it once the same makeRule<OpT>
-// instantiation is used more than once (e.g. makeRule<quake::R1Op> for both
-// rewriteR1ToRz and rewriteR1ToPhasedRx) -- `-fpermissive` lets it past the
-// local-type-as-template-argument rule but then fails to emit a definition
-// for that constructor instantiation ("used but never defined"). A functor
-// at namespace scope has ordinary external linkage, so this doesn't apply.
-template <typename OpT> struct RuleAdaptor {
-  bool (*rewrite)(const QuantumDialect &, IRRewriter &, OpT);
-
-  bool operator()(const QuantumDialect &DialectTy, IRRewriter &rewriter,
-                  Operation *op) const {
-    return rewrite(DialectTy, rewriter, cast<OpT>(op));
-  }
-};
-
-template <typename OpT>
-DecompositionRule makeRule(const char *name, std::vector<Gate> produces,
-                           bool (*rewrite)(const QuantumDialect &, IRRewriter &,
-                                           OpT)) {
-  return DecompositionRule{name, std::move(produces),
-                           RuleAdaptor<OpT>{rewrite}};
+// Rules are no longer typed on a dialect op, so there is nothing to adapt:
+// the table key (a Gate) already guarantees which kind of op a rule is
+// applied to.
+inline DecompositionRule makeRule(const char *name, std::vector<Gate> produces,
+                                  RewriteFn rewrite) {
+  return DecompositionRule{name, std::move(produces), rewrite};
 }

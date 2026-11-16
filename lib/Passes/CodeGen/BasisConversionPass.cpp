@@ -76,91 +76,75 @@ getDecompositionTable(const QuantumDialect &DialectTy) {
   static const std::unordered_map<Gate, std::vector<DecompositionRule>> table =
       [] {
         std::unordered_map<Gate, std::vector<DecompositionRule>> t;
-        t[Gate::H] = {// Always emits a fixed pi/2 Rx, i.e. "sx" (sqrt-X), not a
-                      // generic parameterized one -- see the comment on
-                      // rewriteHToRzRxRz.
-                      makeRule<quake::HOp>("HToRzSxRz", {Gate::RZ, Gate::SX},
-                                           rewriteHToRzRxRz),
-                      makeRule<quake::HOp>("HToU3", {Gate::U3}, rewriteHToU3),
-                      makeRule<quake::HOp>("HToPhasedRx", {Gate::PhasedRx},
-                                           rewriteHToPhasedRx)};
+        t[Gate::H] = {
+            // Always emits a fixed pi/2 Rx, i.e. "sx" (sqrt-X), not a
+            // generic parameterized one -- see the comment on
+            // rewriteHToRzRxRz.
+            makeRule("HToRzSxRz", {Gate::RZ, Gate::SX}, rewriteHToRzRxRz),
+            makeRule("HToU3", {Gate::U3}, rewriteHToU3),
+            makeRule("HToPhasedRx", {Gate::PhasedRx}, rewriteHToPhasedRx)};
         t[Gate::PauliX] = {
-            makeRule<quake::XOp>("XToHZH", {Gate::H, Gate::PauliZ},
-                                 rewriteXToHZH),
-            makeRule<quake::XOp>("XToRx", {Gate::RX}, rewriteXToRx),
-            makeRule<quake::XOp>("XToPhasedRx", {Gate::PhasedRx},
-                                 rewriteXToPhasedRx)};
+            makeRule("XToHZH", {Gate::H, Gate::PauliZ}, rewriteXToHZH),
+            makeRule("XToRx", {Gate::RX}, rewriteXToRx),
+            makeRule("XToPhasedRx", {Gate::PhasedRx}, rewriteXToPhasedRx)};
         t[Gate::PauliY] = {
-            makeRule<quake::YOp>("YToRy", {Gate::RY}, rewriteYToRy),
-            makeRule<quake::YOp>("YToPhasedRx", {Gate::PhasedRx},
-                                 rewriteYToPhasedRx)};
+            makeRule("YToRy", {Gate::RY}, rewriteYToRy),
+            makeRule("YToPhasedRx", {Gate::PhasedRx}, rewriteYToPhasedRx)};
         t[Gate::PauliZ] = {
-            makeRule<quake::ZOp>("ZToHXH", {Gate::H, Gate::PauliX},
-                                 rewriteZToHXH),
-            makeRule<quake::ZOp>("ZToRz", {Gate::RZ}, rewriteZToRz)};
-        t[Gate::S] = {makeRule<quake::SOp>("SToRz", {Gate::RZ}, rewriteSToRz),
-                      makeRule<quake::SOp>("SToSdgSdgSdg", {Gate::SAdj},
-                                           rewriteSToSdgSdgSdg),
-                      makeRule<quake::SOp>("SToTT", {Gate::T}, rewriteSToTT),
-                      makeRule<quake::SOp>("SToPhasedRx", {Gate::PhasedRx},
-                                           rewriteSToPhasedRx)};
-        t[Gate::SAdj] = {
-            makeRule<quake::SOp>("SdgToRz", {Gate::RZ}, rewriteSdgToRz),
-            makeRule<quake::SOp>("SdgToSSS", {Gate::S}, rewriteSdgToSSS)};
-        t[Gate::T] = {makeRule<quake::TOp>("TToRz", {Gate::RZ}, rewriteTToRz),
-                      makeRule<quake::TOp>("TToPhasedRx", {Gate::PhasedRx},
-                                           rewriteTToPhasedRx)};
-        t[Gate::TAdj] = {
-            makeRule<quake::TOp>("TdgToRz", {Gate::RZ}, rewriteTdgToRz)};
+            makeRule("ZToHXH", {Gate::H, Gate::PauliX}, rewriteZToHXH),
+            makeRule("ZToRz", {Gate::RZ}, rewriteZToRz)};
+        t[Gate::S] = {
+            makeRule("SToRz", {Gate::RZ}, rewriteSToRz),
+            makeRule("SToSdgSdgSdg", {Gate::SAdj}, rewriteSToSdgSdgSdg),
+            makeRule("SToTT", {Gate::T}, rewriteSToTT),
+            makeRule("SToPhasedRx", {Gate::PhasedRx}, rewriteSToPhasedRx)};
+        t[Gate::SAdj] = {makeRule("SdgToRz", {Gate::RZ}, rewriteSdgToRz),
+                         makeRule("SdgToSSS", {Gate::S}, rewriteSdgToSSS)};
+        t[Gate::T] = {
+            makeRule("TToRz", {Gate::RZ}, rewriteTToRz),
+            makeRule("TToPhasedRx", {Gate::PhasedRx}, rewriteTToPhasedRx)};
+        t[Gate::TAdj] = {makeRule("TdgToRz", {Gate::RZ}, rewriteTdgToRz)};
         t[Gate::R1] = {
-            makeRule<quake::R1Op>("R1ToRz", {Gate::RZ}, rewriteR1ToRz),
-            makeRule<quake::R1Op>("R1ToPhasedRx", {Gate::PhasedRx},
-                                  rewriteR1ToPhasedRx)};
-        t[Gate::RX] = {makeRule<quake::RxOp>("RxToHRzH", {Gate::H, Gate::RZ},
-                                             rewriteRxToHRzH),
-                       makeRule<quake::RxOp>("RxToPhasedRx", {Gate::PhasedRx},
-                                             rewriteRxToPhasedRx)};
+            makeRule("R1ToRz", {Gate::RZ}, rewriteR1ToRz),
+            makeRule("R1ToPhasedRx", {Gate::PhasedRx}, rewriteR1ToPhasedRx)};
+        t[Gate::RX] = {
+            makeRule("RxToHRzH", {Gate::H, Gate::RZ}, rewriteRxToHRzH),
+            makeRule("RxToPhasedRx", {Gate::PhasedRx}, rewriteRxToPhasedRx)};
         // "sx" is the fixed pi/2 special case of "rx" (see CheckforSXOp); reuse
         // the same prx fallback rather than duplicating it. It has no
         // fallback through "h"/"rz" because that path is exactly how "h"
         // itself produces "sx" in the first place (HToRzSxRz above) -- a
         // rule the other way would just bounce the two back and forth.
-        t[Gate::SX] = {makeRule<quake::RxOp>("SxToPhasedRx", {Gate::PhasedRx},
-                                             rewriteRxToPhasedRx)};
-        t[Gate::RY] = {makeRule<quake::RyOp>("RyToRzRxRz", {Gate::RZ, Gate::RX},
-                                             rewriteRyToRzRxRz)};
+        t[Gate::SX] = {
+            makeRule("SxToPhasedRx", {Gate::PhasedRx}, rewriteRxToPhasedRx)};
+        t[Gate::RY] = {
+            makeRule("RyToRzRxRz", {Gate::RZ, Gate::RX}, rewriteRyToRzRxRz)};
         t[Gate::RZ] = {
-            makeRule<quake::RzOp>("RzToHRxH", {Gate::H, Gate::RX},
-                                  rewriteRzToHRxH),
-            makeRule<quake::RzOp>("RzToU3", {Gate::U3}, rewriteRzToU3),
-            makeRule<quake::RzOp>("RzToPhasedRx", {Gate::PhasedRx},
-                                  rewriteRzToPhasedRx)};
+            makeRule("RzToHRxH", {Gate::H, Gate::RX}, rewriteRzToHRxH),
+            makeRule("RzToU3", {Gate::U3}, rewriteRzToU3),
+            makeRule("RzToPhasedRx", {Gate::PhasedRx}, rewriteRzToPhasedRx)};
         t[Gate::U2] = {
-            makeRule<quake::U2Op>("U2ToRzRyRz", {Gate::RZ, Gate::RY},
-                                  rewriteU2ToRzRyRz),
-            makeRule<quake::U2Op>("U2ToU3", {Gate::U3}, rewriteU2ToU3)};
-        t[Gate::U3] = {makeRule<quake::U3Op>("U3ToRzRyRz", {Gate::RZ, Gate::RY},
-                                             rewriteU3ToRzRyRz)};
-        t[Gate::SWAP] = {makeRule<quake::SwapOp>(
-            "SwapToUpperCxCxCx", {Gate::CNOT}, rewriteSwapToUpperCxCxCx)};
-        t[Gate::CNOT] = {makeRule<quake::XOp>(
-            "CxToUpperHCzH", {Gate::H, Gate::CZ}, rewriteCxToUpperHCzH)};
-        t[Gate::CZ] = {makeRule<quake::ZOp>(
-            "CzToUpperHCxH", {Gate::H, Gate::CNOT}, rewriteCzToUpperHCxH)};
-        t[Gate::CY] = {makeRule<quake::YOp>("CyToSCxSdg",
-                                            {Gate::S, Gate::CNOT, Gate::SAdj},
-                                            rewriteCyToSCxSdg)};
-        t[Gate::CRX] = {makeRule<quake::RxOp>(
-            "CrxToHCrzH", {Gate::H, Gate::CRZ}, rewriteCrxToHCrzH)};
+            makeRule("U2ToRzRyRz", {Gate::RZ, Gate::RY}, rewriteU2ToRzRyRz),
+            makeRule("U2ToU3", {Gate::U3}, rewriteU2ToU3)};
+        t[Gate::U3] = {
+            makeRule("U3ToRzRyRz", {Gate::RZ, Gate::RY}, rewriteU3ToRzRyRz)};
+        t[Gate::SWAP] = {makeRule("SwapToUpperCxCxCx", {Gate::CNOT},
+                                  rewriteSwapToUpperCxCxCx)};
+        t[Gate::CNOT] = {makeRule("CxToUpperHCzH", {Gate::H, Gate::CZ},
+                                  rewriteCxToUpperHCzH)};
+        t[Gate::CZ] = {makeRule("CzToUpperHCxH", {Gate::H, Gate::CNOT},
+                                rewriteCzToUpperHCxH)};
+        t[Gate::CY] = {makeRule("CyToSCxSdg", {Gate::S, Gate::CNOT, Gate::SAdj},
+                                rewriteCyToSCxSdg)};
+        t[Gate::CRX] = {
+            makeRule("CrxToHCrzH", {Gate::H, Gate::CRZ}, rewriteCrxToHCrzH)};
         t[Gate::CRZ] = {
-            makeRule<quake::RzOp>("CrzToHCrxH", {Gate::H, Gate::CRX},
-                                  rewriteCrzToHCrxH),
-            makeRule<quake::RzOp>("CrzToRzCu3", {Gate::RZ, Gate::U3},
-                                  rewriteCrzToRzCu3),
-            makeRule<quake::RzOp>("CrzToRzCxRzCx", {Gate::RZ, Gate::CNOT},
-                                  rewriteCrzToRzCxRzCx)};
-        t[Gate::CRY] = {makeRule<quake::RyOp>(
-            "CryToRzCrxRz", {Gate::RZ, Gate::CRX}, rewriteCryToRzCrxRz)};
+            makeRule("CrzToHCrxH", {Gate::H, Gate::CRX}, rewriteCrzToHCrxH),
+            makeRule("CrzToRzCu3", {Gate::RZ, Gate::U3}, rewriteCrzToRzCu3),
+            makeRule("CrzToRzCxRzCx", {Gate::RZ, Gate::CNOT},
+                     rewriteCrzToRzCxRzCx)};
+        t[Gate::CRY] = {makeRule("CryToRzCrxRz", {Gate::RZ, Gate::CRX},
+                                 rewriteCryToRzCrxRz)};
         return t;
       }();
   return table;
@@ -446,6 +430,9 @@ public:
           if (!funcQView.count(op)) {
             return;
           }
+          // Deliberately a copy, not a reference into funcQView: applying a
+          // rule inserts ops, and the listener adds them to this vector-backed
+          // map, which would invalidate a reference into it.
           auto OpQView = funcQView[op];
 
           if (OpQView.isAdjoint && OpQView.isParameterized())
@@ -474,7 +461,7 @@ public:
             return;
           }
           IRRewriter rewriter(op->getContext(), &listener);
-          auto result = wit->second->apply(DialectTy, rewriter, op);
+          auto result = wit->second->apply(DialectTy, rewriter, op, OpQView);
           if (!result) {
             mlir::emitError(func->getLoc(),
                             "BasisConversion: Failed to apply pass!");
