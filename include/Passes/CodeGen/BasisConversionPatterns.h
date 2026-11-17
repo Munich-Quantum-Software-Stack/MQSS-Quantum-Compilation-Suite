@@ -19,6 +19,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
+#include "Utils/BasisConversionUtils.h"
 #include "Utils/DialectUtils.h"
 #include "Utils/Error.h"
 #include "Utils/TransformUtils.h"
@@ -99,10 +100,7 @@ bool rewriteHToRzRxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!c2)
     return false;
   newGate = createNewGate(loc, DialectTy, "RZ", {}, {target}, {c2}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteHToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -117,10 +115,7 @@ bool rewriteHToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate = createNewGate(loc, DialectTy, "U3", {}, {target},
                                 {halfPi, zero, pi}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteXToHZH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -136,10 +131,7 @@ bool rewriteXToHZH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteXToRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -152,10 +144,7 @@ bool rewriteXToRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate =
       createNewGate(loc, DialectTy, "RX", {}, {target}, {angle}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteYToRy(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -168,10 +157,7 @@ bool rewriteYToRy(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate =
       createNewGate(loc, DialectTy, "RY", {}, {target}, {angle}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteZToHXH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -187,10 +173,8 @@ bool rewriteZToHXH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+
+  return newGate != nullptr;
 }
 
 bool rewriteZToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -203,10 +187,7 @@ bool rewriteZToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate =
       createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteSToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -219,10 +200,7 @@ bool rewriteSToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate =
       createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteSToSdgSdgSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -238,10 +216,7 @@ bool rewriteSToSdgSdgSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "SAdj", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteSToTT(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -254,10 +229,7 @@ bool rewriteSToTT(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "T", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteSdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -270,10 +242,7 @@ bool rewriteSdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate =
       createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteSdgToSSS(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -289,10 +258,7 @@ bool rewriteSdgToSSS(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "S", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteTToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -305,10 +271,7 @@ bool rewriteTToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate =
       createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteTdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -321,10 +284,7 @@ bool rewriteTdgToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate =
       createNewGate(loc, DialectTy, "RZ", {}, {target}, {angle}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteR1ToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -335,10 +295,7 @@ bool rewriteR1ToRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   rewriter.setInsertionPointAfter(op);
   auto *newGate =
       createNewGate(loc, DialectTy, "RZ", {}, {target}, {param}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteRxToHRzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -357,10 +314,7 @@ bool rewriteRxToHRzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 // TODO: Is this correct?
@@ -386,10 +340,7 @@ bool rewriteRyToRzRxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!c2)
     return false;
   newGate = createNewGate(loc, DialectTy, "RZ", {}, {target}, {c2}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteRzToHRxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -407,10 +358,7 @@ bool rewriteRzToHRxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteRzToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -424,10 +372,7 @@ bool rewriteRzToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate = createNewGate(loc, DialectTy, "U3", {}, {target},
                                 {zero, zero, param}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteU2ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -453,10 +398,7 @@ bool rewriteU2ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   newGate =
       createNewGate(loc, DialectTy, "RZ", {}, {target}, {lambda}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteU2ToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -472,10 +414,7 @@ bool rewriteU2ToU3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   auto *newGate = createNewGate(loc, DialectTy, "U3", {}, {target},
                                 {halfPi, phi, lambda}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteU3ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -496,10 +435,7 @@ bool rewriteU3ToRzRyRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "RZ", {}, {target}, {phi}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteSwapToUpperCxCxCx(const QuantumDialect &DialectTy,
@@ -516,10 +452,7 @@ bool rewriteSwapToUpperCxCxCx(const QuantumDialect &DialectTy,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "CX", {q0}, {q1}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteCxToUpperHCzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -538,10 +471,7 @@ bool rewriteCxToUpperHCzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteCzToUpperHCxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -559,10 +489,7 @@ bool rewriteCzToUpperHCxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteCyToSCxSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -580,10 +507,7 @@ bool rewriteCyToSCxSdg(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "SAdj", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteCrxToHCrzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -602,10 +526,7 @@ bool rewriteCrxToHCrzH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteCrzToHCrxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -624,10 +545,7 @@ bool rewriteCrzToHCrxH(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   if (!newGate)
     return false;
   newGate = createNewGate(loc, DialectTy, "H", {}, {target}, {}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteCrzToRzCu3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -652,10 +570,7 @@ bool rewriteCrzToRzCu3(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   newGate = createNewGate(loc, DialectTy, "U3", {control}, {target},
                           {zero, zero, param}, rewriter);
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteCrzToRzCxRzCx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -687,10 +602,7 @@ bool rewriteCrzToRzCxRzCx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   newGate =
       createNewGate(loc, DialectTy, "CX", {control}, {target}, {}, rewriter);
 
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteCryToRzCrxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -715,11 +627,7 @@ bool rewriteCryToRzCrxRz(const QuantumDialect &DialectTy, IRRewriter &rewriter,
     return false;
   newGate = createNewGate(loc, DialectTy, "RZ", ValueRange{}, {target},
                           ValueRange{halfPi}, rewriter);
-
-  if (!newGate)
-    return false;
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteHToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -749,12 +657,7 @@ bool rewriteHToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   parameters[1] = zero;
   newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
                           parameters, rewriter);
-  if (!newGate)
-    return false;
-
-  // selectWiresAndReplaceUses(op, target);
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteXToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -776,11 +679,7 @@ bool rewriteXToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   SmallVector<mlir::Value> parameters = {pi, zero};
   auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
                                 {target}, parameters, rewriter);
-  if (!newGate)
-    return false;
-  // selectWiresAndReplaceUses(op, target);
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteRxToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -807,11 +706,7 @@ bool rewriteRxToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
                                 {target}, parameters, rewriter);
 
-  if (!newGate)
-    return false;
-  // selectWiresAndReplaceUses(op, target);
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteRzToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -854,12 +749,7 @@ bool rewriteRzToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   parameters[1] = zero;
   newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
                           parameters, rewriter);
-  if (!newGate)
-    return false;
-
-  // selectWiresAndReplaceUses(op, target);
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteR1ToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -903,11 +793,7 @@ bool rewriteR1ToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
                           parameters, rewriter);
 
-  if (!newGate) {
-    return false;
-  }
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteYToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -931,11 +817,7 @@ bool rewriteYToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   SmallVector<mlir::Value> noControls;
   auto *newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls,
                                 {target}, parameters, rewriter);
-  if (!newGate) {
-    return false;
-  }
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteSToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -975,11 +857,7 @@ bool rewriteSToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   parameters[1] = zero;
   newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
                           parameters, rewriter);
-  if (!newGate) {
-    return false;
-  }
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 bool rewriteTToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
@@ -1020,13 +898,7 @@ bool rewriteTToPhasedRx(const QuantumDialect &DialectTy, IRRewriter &rewriter,
   parameters[1] = zero;
   newGate = createNewGate(loc, DialectTy, "PhasedRx", noControls, {target},
                           parameters, rewriter);
-
-  if (!newGate) {
-    return false;
-  }
-
-  rewriter.eraseOp(op);
-  return true;
+  return newGate != nullptr;
 }
 
 //===----------------------------------------------------------------------===//

@@ -20,7 +20,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Passes/Transforms/TransformPasses.h"
 #include "Utils/MQTCoreUtils.h"
-#include "Utils/TranspilationPassUtils.h"
+#include "Utils/QDMI_Utils.h"
 #include "sc/configuration/Configuration.hpp"
 
 #include <llvm/Support/raw_ostream.h>

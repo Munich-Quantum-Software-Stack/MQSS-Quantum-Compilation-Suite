@@ -21,7 +21,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/CodeGen/BasisConversionPatterns.h"
 #include "Passes/CodeGen/CodeGenPasses.h"
 #include "Utils/DebugUtils.h"
-#include "Utils/TranspilationPassUtils.h"
+#include "Utils/QDMI_Utils.h"
 
 #include <llvm/ADT/StringSet.h>
 #include <llvm/Support/Error.h>
@@ -52,6 +52,11 @@ public:
     if (!analysis.addOperation(
             op)) { // callbacks return void, so record failure
       failed = true;
+      return;
+    }
+
+    if (recording && hasQubitOperands(op)) {
+      recordedGates.push_back(op);
     }
   }
 
@@ -62,10 +67,52 @@ public:
     analysis.refreshOperation(op); // new API
   }
 
+  // Recording is scoped to ONE rule application: call startRecording() right
+  // before applying a rule and stopRecording() right after it. The result is
+  // the qubit-consuming ops (gates) that rule created, in creation order --
+  // not constants, and not anything inserted outside that window (e.g. by
+  // the greedy folding between rounds).
+  void startRecording() {
+    recordedGates.clear();
+    recording = true;
+  }
+
+  [[nodiscard]] std::vector<Operation *> stopRecording() {
+    recording = false;
+    std::vector<Operation *> gates;
+    gates.swap(recordedGates);
+    return gates;
+  }
+
   bool failed = false;
 
 private:
+  // True if the analysis tracks `op` and it has control/target qubit operands
+  // (i.e. it is a gate-like op, not a constant). Looks the view up directly
+  // instead of calling getOpInfo(), which emits an error for untracked ops.
+  bool hasQubitOperands(Operation *op) {
+    auto func = op->getParentOfType<mlir::func::FuncOp>();
+    if (!func) {
+      return false;
+    }
+    auto &kernels = analysis.getKernelDialectInfo();
+    auto kernelIt = kernels.find(func);
+    if (kernelIt == kernels.end()) {
+      return false;
+    }
+    auto &views = kernelIt->second.OpQViewMap;
+    auto viewIt = views.find(op);
+    if (viewIt == views.end()) {
+      return false;
+    }
+    const QuantumOpView &view = viewIt->second; // const: don't create roles
+    return !view.getQubits(QubitRole::Control).in.empty() ||
+           !view.getQubits(QubitRole::Target).in.empty();
+  }
+
   MyModuleAnalysis &analysis;
+  bool recording = false;
+  std::vector<Operation *> recordedGates;
 };
 } // namespace
 
@@ -461,7 +508,17 @@ public:
             return;
           }
           IRRewriter rewriter(op->getContext(), &listener);
+
+          // New gates go right after the op being decomposed. Set once here
+          // so no individual rule has to (four of them used to forget, which
+          // left their new ops un-inserted and silently dropped the gate).
+          rewriter.setInsertionPointAfter(op);
+
+          // Record only the gates this one rule application creates, in
+          // creation order: the SSA fix-up below needs exactly that list.
+          listener.startRecording();
           auto result = wit->second->apply(DialectTy, rewriter, op, OpQView);
+          auto newGates = listener.stopRecording();
           if (!result) {
             mlir::emitError(func->getLoc(),
                             "BasisConversion: Failed to apply pass!");
@@ -474,6 +531,14 @@ public:
             signalPassFailure();
             return;
           }
+          if (!replaceGateResolvingSSA(analysis, rewriter, op, OpQView,
+                                       newGates)) {
+            mlir::emitError(func->getLoc(),
+                            "BasisConversion: Failed to restore SSA form!");
+            signalPassFailure();
+            return;
+          }
+
           changed = true;
         });
       }

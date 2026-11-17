@@ -93,6 +93,9 @@ public:
   }
 
   bool addOperation(Operation *NewOp) override {
+    if (NewOp->getDialect()->getNamespace() != "quantum") {
+      return true;
+    }
     auto funcOp = NewOp->getParentOfType<mlir::func::FuncOp>();
     if (!funcOp) {
       mlir::emitError(
@@ -125,7 +128,7 @@ public:
   }
 
   bool removeOperation(Operation *Op) override {
-    if (Op->getDialect()->getNamespace() != "quake") {
+    if (Op->getDialect()->getNamespace() != "quantum") {
       return true;
     }
     auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
@@ -205,7 +208,7 @@ public:
 
   bool clearKernelBody(func::FuncOp &kernel,
                        std::set<Operation *> notToErase) override {
-    // cleaning the mlir::funcOp corresponding to the quake circuit
+    // cleaning the mlir::funcOp corresponding to the quantum circuit
     if (!KernelDialectInfo.count(kernel)) {
       mlir::emitError(kernel->getLoc(),
                       "CatalystExtractor: No QuantumOpInfo for funcOp");

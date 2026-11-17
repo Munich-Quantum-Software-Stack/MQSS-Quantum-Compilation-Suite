@@ -113,7 +113,7 @@ inline const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         {"SWAP", {QubitRole::Target, QubitRole::Target}},
         // TODO:Add more Here
         {"U2", {QubitRole::Target}},
-        {"U3", {QubitRole::Control, QubitRole::Target}}};
+        {"U3", {QubitRole::Target}}};
 
 inline const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
   auto it = gateOperandRoleTable.find(gateName);
