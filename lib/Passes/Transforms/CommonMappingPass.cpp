@@ -21,7 +21,10 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/TransformPasses.h"
 #include "Utils/MQTCoreUtils.h"
 #include "Utils/QDMI_Utils.h"
+#include "ir/QuantumComputation.hpp"
 #include "sc/configuration/Configuration.hpp"
+#include "sc/exact/ExactMapper.hpp"
+#include "sc/heuristic/HeuristicMapper.hpp"
 
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/IR/Diagnostics.h>
@@ -489,7 +492,6 @@ tuple<bool, llvm::StringRef> performMapping(MyModuleAnalysis &analysis,
     qc::QuantumComputation qc{info.AllocatedQubits, info.NumMeasureQubits};
     MapVector<mlir::Operation *, int> MeasureOps;
     SmallPtrSet<mlir::Operation *, 16> OpsToErase;
-    SmallVector<SmallVector<mlir::Value, 2>> AllResults;
 
     for (auto &[Op, qview] : info.OpQViewMap) {
       if (qview.GateTy != Gate::UNKNOWN) {

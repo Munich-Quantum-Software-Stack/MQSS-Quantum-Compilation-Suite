@@ -22,9 +22,13 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "cudaq/Optimizer/CodeGen/Passes.h"
 #include "mlir/Pass/PassManager.h"
 
+#include <cctype>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Support/ErrorHandling.h>
 #include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 using namespace mlir;
 
@@ -67,6 +71,90 @@ inline llvm::StringRef resolveMnemonicAlias(llvm::StringRef gate) {
   const auto &aliases = getMnemonicAliasTable();
   auto it = aliases.find(gate);
   return it == aliases.end() ? gate : it->second;
+}
+
+//===----------------------------------------------------------------------===//
+// OpenQASM text post-processing, shared by the compiler (CUDA-Q's emitter for
+// Quake) and the Catalyst-to-QASM pass (MQT Core's emitter). Both emitters
+// write gates that qelib1.inc / stdgates.inc do not define (e.g. PhasedRx),
+// without declaring them.
+//
+// "appliedAliases" is a list of (caller spelling, QASM gate name) pairs, e.g.
+// ("r", "phased_rx"): the gate is called "r" in the final text and
+// qasmGateDefinitionBody("phased_rx") holds its definition.
+//===----------------------------------------------------------------------===//
+
+// True if `qasm` calls the gate `name` (i.e. contains "name(" at the start of a
+// gate name, so "r" does not match "rx(" or "cr(").
+inline bool qasmUsesGate(const std::string &qasm, llvm::StringRef name) {
+  const std::string needle = name.str() + "(";
+  for (size_t pos = qasm.find(needle); pos != std::string::npos;
+       pos = qasm.find(needle, pos + needle.size())) {
+    if (pos == 0 || !(std::isalnum(static_cast<unsigned char>(qasm[pos - 1])) ||
+                      qasm[pos - 1] == '_'))
+      return true;
+  }
+  return false;
+}
+
+// Renames each gate call in OpenQASM2 text from its QASM2 gate name back to
+// the caller's own spelling, e.g. "phased_rx(" -> "r(". Only aliases this
+// specific compile actually used are applied, so a caller that genuinely
+// calls the gate "prx" is never touched. A match is only replaced when it
+// starts a gate name, so e.g. a hypothetical "cphased_rx(" is left alone.
+inline std::string restoreCallerGateNames(
+    std::string qasm,
+    const std::vector<std::pair<std::string, std::string>> &appliedAliases) {
+  auto isIdentChar = [](char c) {
+    return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
+  };
+  for (const auto &[callerSpelling, qasmName] : appliedAliases) {
+    const std::string needle = qasmName + "(";
+    const std::string replacement = callerSpelling + "(";
+    for (size_t pos = qasm.find(needle); pos != std::string::npos;
+         pos = qasm.find(needle, pos)) {
+      if (pos > 0 && isIdentChar(qasm[pos - 1])) {
+        pos += needle.size();
+        continue;
+      }
+      qasm.replace(pos, needle.size(), replacement);
+      pos += replacement.size();
+    }
+  }
+  return qasm;
+}
+
+// Declares each caller-spelled gate (e.g. "r") right after the standard-gate
+// include, since those names aren't defined there. Gates the standard include
+// already defines (e.g. "cz") have no entry and are left alone; each gate is
+// declared at most once. Works for OpenQASM 2 (qelib1.inc) and 3
+// (stdgates.inc); the definition bodies only use the built-in U gate.
+inline std::string insertCallerGateDefinitions(
+    std::string qasm,
+    const std::vector<std::pair<std::string, std::string>> &appliedAliases) {
+  std::string defs;
+  std::unordered_set<std::string> alreadyDefined;
+  for (const auto &[callerSpelling, qasmName] : appliedAliases) {
+    auto body = qasmGateDefinitionBody(qasmName);
+    if (body.empty() || !alreadyDefined.insert(callerSpelling).second)
+      continue;
+    defs += "gate " + callerSpelling + body.str() + "\n";
+  }
+  if (defs.empty())
+    return qasm;
+
+  // Insert after the include line if present, else after the version line.
+  for (const char *anchor :
+       {"include \"qelib1.inc\";", "include \"stdgates.inc\";", "OPENQASM 2.0;",
+        "OPENQASM 3.0;"}) {
+    size_t pos = qasm.find(anchor);
+    if (pos == std::string::npos)
+      continue;
+    size_t eol = qasm.find('\n', pos);
+    qasm.insert(eol == std::string::npos ? qasm.size() : eol + 1, defs);
+    return qasm;
+  }
+  return defs + qasm;
 }
 
 static void addQIRConversionPipeline(mlir::OpPassManager &pm,

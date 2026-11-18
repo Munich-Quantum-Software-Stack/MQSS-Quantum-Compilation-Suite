@@ -212,6 +212,8 @@ struct MnemonicEntry {
   Gate gate;
 };
 
+// TODO: Can we get rid of this and instead move the mnemonics
+// to parseGateTy(const StringRef &GateTy) in Extractor.h?
 const MnemonicEntry (&getMnemonicTable())[23] {
   static const MnemonicEntry table[] = {
       {"h", Gate::H},          {"x", Gate::PauliX},  {"y", Gate::PauliY},

@@ -23,6 +23,22 @@ def QuakeToQASM2Pass : Pass<"quake-to-qasm2", "mlir::ModuleOp"> {
 
 }
 
+def CatalystToQASMPass : Pass<"catalyst-quantum-to-qasm", "mlir::ModuleOp"> {
+  let summary = "Transforms Catalyst Quantum MLIR module to OpenQASM2.";
+
+  let description = [{
+          Transforms Catalyst Quantum MLIR module to OpenQASM2 or OpenQASM3.
+  }];
+
+  let options = [
+    Option<"mode", "mode", "std::string",
+      /*default=*//*default=*/"\"qasm2\"", "Select output format: qasm2 or qasm3.">,
+  ];
+
+  let constructor = "mqss::mqssci::codegen::CatalystToQASMPass()";
+
+}
+
 def QuakeDialectToIQMJSONPass : Pass<"quake-to-iqmJSON", "mlir::ModuleOp"> {
   let summary = "Transforms Quake MLIR module to IQM's JSON format";
 

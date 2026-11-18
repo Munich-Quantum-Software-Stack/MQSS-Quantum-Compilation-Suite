@@ -25,38 +25,6 @@ using namespace llvm;
 // Create and Return a qc::QuantumComputation object (defined in MQT-Core).
 // MQT-QCEC runs equivalence checks on this object.
 
-llvm::Expected<qc::QuantumComputation>
-mqss::mqssci::verify::VerifyPassInstrumentation::createMQTQuantumComputation(
-    mlir::Location loc, std::size_t allocatedQubits,
-    std::size_t numMeasureQubits,
-    MapVector<Operation *, QuantumOpView> OpQView) {
-  qc::QuantumComputation qc{allocatedQubits, numMeasureQubits};
-
-  MapVector<mlir::Operation *, int> MeasureOps;
-  SmallPtrSet<mlir::Operation *, 16> OpsToErase;
-  SmallVector<SmallVector<mlir::Value, 2>> AllResults;
-
-  for (auto &[Op, qview] : OpQView) {
-    if (qview.GateTy != Gate::UNKNOWN) {
-      if (!loadGateOpsIntoQC(Op, qview, qc, qview.isControlled())) {
-        return llvm::createStringError("Mapping: Error when loading GateOp "
-                                       "into MQT's QuantumComputation");
-      }
-      OpsToErase.insert(Op);
-    }
-
-    if (qview.isMeasureOp) {
-      if (!loadMeasureOpIntoQC(qview, qc, loc)) {
-        return llvm::createStringError("Mapping: Error when loading MeasureOp "
-                                       "into MQT's QuantumComputation");
-      }
-      MeasureOps[Op] = qview.measurements.size();
-    }
-  }
-
-  return qc;
-}
-
 // Take a snapshot of the Quantum Circuit before the Pass(es)
 void mqss::mqssci::verify::VerifyPassInstrumentation::runBeforePass(
     Pass *pass, Operation *op) {
@@ -78,9 +46,7 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runBeforePass(
     VerifyQuantumComputationTy vqc_ty;
 
     // vqc_ty.qc1 is the quantum circuit before the pass is invoked.
-    auto qcOrErr =
-        createMQTQuantumComputation(kernel->getLoc(), info.AllocatedQubits,
-                                    info.NumMeasureQubits, info.OpQViewMap);
+    auto qcOrErr = createMQTQuantumComputation(kernel->getLoc(), info);
     if (!qcOrErr) {
       mlir::emitError(
           kernel->getLoc(),
@@ -116,9 +82,7 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
            "instrumentation: function does not exist in cached module "
            "snapshot!");
     auto &vqc_ty = cached_module_snapshot[name];
-    auto qcOrErr =
-        createMQTQuantumComputation(kernel->getLoc(), info.AllocatedQubits,
-                                    info.NumMeasureQubits, info.OpQViewMap);
+    auto qcOrErr = createMQTQuantumComputation(kernel->getLoc(), info);
     // vqc_ty.qc1 is the quantum circuit before the pass is invoked.
     if (!qcOrErr) {
       mlir::emitError(

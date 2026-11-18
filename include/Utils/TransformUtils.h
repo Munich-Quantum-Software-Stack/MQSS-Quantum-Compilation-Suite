@@ -1,5 +1,7 @@
 
 
+#pragma once
+
 #include "DebugUtils.h"
 #include "Passes/Analysis/DialectAnalysisSelector.h"
 #include "Quantum/IR/QuantumOps.h"

@@ -219,17 +219,34 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   // whether or not anything in the final circuit still calls it. Strip these
   // out so the returned OpenQASM2 is just the entry point's circuit body.
   case OPENQASM2:
-    pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
+    pmLower.addPass(mqss::mqssci::codegen::CatalystToQASMPass(os));
+    // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(module->getLoc(),
-                      "Compiler: Conversion of Quake to QASM2 failed");
+                      "Compiler: Conversion of MLIR dialect to QASM2 failed");
       return std::nullopt;
     }
-    result =
-        restoreCallerGateNames(stripSpuriousGateDefs(result), appliedAliases);
-    if (backend_name == "LRZ") {
-      result = insertCallerGateDefinitions(result, appliedAliases);
+    // result =
+    //     restoreCallerGateNames(stripSpuriousGateDefs(result),
+    //     appliedAliases);
+    // if (backend_name == "LRZ") {
+    //   result = insertCallerGateDefinitions(result, appliedAliases);
+    // }
+    break;
+  case OPENQASM3:
+    pmLower.addPass(mqss::mqssci::codegen::CatalystToQASMPass(os, true));
+    // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
+    if (mlir::failed(pmLower.run(*module))) {
+      mlir::emitError(module->getLoc(),
+                      "Compiler: Conversion of MLIR dialect to QASM2 failed");
+      return std::nullopt;
     }
+    // result =
+    //     restoreCallerGateNames(stripSpuriousGateDefs(result),
+    //     appliedAliases);
+    // if (backend_name == "LRZ") {
+    //   result = insertCallerGateDefinitions(result, appliedAliases);
+    // }
     break;
   case IQMJSON:
     pmLower.addPass(mqss::mqssci::opt::createExpandMeasurementsPass());
@@ -375,58 +392,6 @@ mqss::mqssci::MQSSCompiler::stripSpuriousGateDefs(const std::string &qasm) {
   return result.str();
 }
 
-// Renames each gate call in OpenQASM2 text from its QASM2 gate name back to
-// the caller's own spelling, e.g. "phased_rx(" -> "r(". Only aliases this
-// specific compile actually used are applied, so a caller that genuinely
-// calls the gate "prx" is never touched. A match is only replaced when it
-// starts a gate name, so e.g. a hypothetical "cphased_rx(" is left alone.
-std::string mqss::mqssci::MQSSCompiler::restoreCallerGateNames(
-    std::string qasm,
-    const std::vector<std::pair<std::string, std::string>> &appliedAliases) {
-  auto isIdentChar = [](char c) {
-    return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
-  };
-  for (const auto &[callerSpelling, qasmName] : appliedAliases) {
-    const std::string needle = qasmName + "(";
-    const std::string replacement = callerSpelling + "(";
-    for (size_t pos = qasm.find(needle); pos != std::string::npos;
-         pos = qasm.find(needle, pos)) {
-      if (pos > 0 && isIdentChar(qasm[pos - 1])) {
-        pos += needle.size();
-        continue;
-      }
-      qasm.replace(pos, needle.size(), replacement);
-      pos += replacement.size();
-    }
-  }
-  return qasm;
-}
-
-// Declares each caller-spelled gate that restoreCallerGateNames introduced
-// (e.g. "r") right after the qelib1.inc include, since those names aren't
-// defined there. Gates qelib1.inc already defines (e.g. "cz") have no entry
-// and are left alone; each gate is declared at most once.
-std::string mqss::mqssci::MQSSCompiler::insertCallerGateDefinitions(
-    std::string qasm,
-    const std::vector<std::pair<std::string, std::string>> &appliedAliases) {
-  std::string defs;
-  std::unordered_set<std::string> alreadyDefined;
-  for (const auto &[callerSpelling, qasmName] : appliedAliases) {
-    auto body = qasmGateDefinitionBody(qasmName);
-    if (body.empty() || !alreadyDefined.insert(callerSpelling).second)
-      continue;
-    defs += "gate " + callerSpelling + body.str() + "\n";
-  }
-  if (defs.empty())
-    return qasm;
-
-  // Insert after the include line if present, else after the version line.
-  size_t pos = qasm.find("include \"qelib1.inc\";");
-  if (pos == std::string::npos)
-    pos = qasm.find("OPENQASM 2.0;");
-  if (pos == std::string::npos)
-    return defs + qasm;
-  size_t eol = qasm.find('\n', pos);
-  qasm.insert(eol == std::string::npos ? qasm.size() : eol + 1, defs);
-  return qasm;
-}
+// restoreCallerGateNames and insertCallerGateDefinitions (the other OpenQASM
+// post-processing helpers) live in Utils/CodegenUtils.h, shared with the
+// Catalyst-to-QASM pass.

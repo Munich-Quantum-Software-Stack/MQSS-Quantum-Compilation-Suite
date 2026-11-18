@@ -9,6 +9,7 @@ add_mlir_library(
   GlobalizeArrayValuesPass.cpp
   StaticAllocas.cpp
   TranslateToIQMJSON.cpp
+  CatalystQuantumtoQASM.cpp
   DEPENDS
   MQSSMQSSCodeGenPassIncGen
   MQSSTransformsPassIncGen
@@ -17,6 +18,7 @@ add_mlir_library(
   MQSSSupportedDialects
   CUDAQ::CodeGen
   CUDAQ::Builder
+  MQT::CoreIR
   qdmi::qdmi
   qdmi::example_driver
   MLIRPass
