@@ -1,4 +1,4 @@
-// RUN: %mqss-opt %s --BasisConversionPass=gates=rx,cz,rz --cse --canonicalize --quake-to-qasm2 -o /dev/null 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --BasisConversionPass=gates=rx,cz,rz --cse --canonicalize | %mqss-translate --mlir-to-qasm2 | FileCheck %s
 
 module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128", llvm.triple = "aarch64-unknown-linux-gnu", quake.mangled_name_map = {__nvqpp__mlirgen__rotILm2EE = "_ZN3rotILm2EEclEv"}} {
   func.func @__nvqpp__mlirgen__rotILm2EE() attributes {"cudaq-entrypoint", "cudaq-kernel"} {
@@ -23,16 +23,21 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
-// CHECK: qreg var0[2];
-// CHECK: rz(1.570796e+00) var0[0];
-// CHECK: rx(1.570796e+00) var0[0];
-// CHECK: rz(1.570796e+00) var0[0];
-// CHECK: rz(7.853982e-01) var0[0];
-// CHECK: rx(3.141593e+00) var0[1];
-// CHECK: rz(1.570796e+00) var0[1];
-// CHECK: rx(1.570796e+00) var0[1];
-// CHECK: rz(1.570796e+00) var0[1];
-// CHECK: cz var0[0], var0[1];
-// CHECK: rz(1.570796e+00) var0[1];
-// CHECK: rx(1.570796e+00) var0[1];
-// CHECK: rz(1.570796e+00) var0[1];
+// CHECK: OPENQASM 2.0;
+// CHECK: include "qelib1.inc";
+// CHECK: qreg q[2];
+// CHECK: creg c[2];
+// CHECK: rz(1.5707963267949) q[0];
+// CHECK: rx(1.5707963267949) q[0];
+// CHECK: rz(1.5707963267949) q[0];
+// CHECK: rz(0.785398163397448) q[0];
+// CHECK: rx(3.14159265358979) q[1];
+// CHECK: rz(1.5707963267949) q[1];
+// CHECK: rx(1.5707963267949) q[1];
+// CHECK: rz(1.5707963267949) q[1];
+// CHECK: cz q[0], q[1];
+// CHECK: rz(1.5707963267949) q[1];
+// CHECK: rx(1.5707963267949) q[1];
+// CHECK: rz(1.5707963267949) q[1];
+// CHECK: measure q[0] -> c[0];
+// CHECK: measure q[1] -> c[1];

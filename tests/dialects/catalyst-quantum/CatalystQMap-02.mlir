@@ -40,27 +40,22 @@ func.func @circuit_qmap2() attributes {qnode} {
   func.return
 }
 
-// CHECK: %0 = quantum.alloc( 5) : !quantum.reg
-// CHECK: %1 = quantum.extract %0[ 3] : !quantum.reg -> !quantum.bit
-// CHECK: %2 = quantum.extract %0[ 4] : !quantum.reg -> !quantum.bit
 // CHECK: %out_qubits:2 = quantum.custom "CNOT"() %2, %1 : !quantum.bit, !quantum.bit
 // CHECK: %3 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
 // CHECK: %4 = quantum.extract %0[ 2] : !quantum.reg -> !quantum.bit
 // CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %4, %3 : !quantum.bit, !quantum.bit
 // CHECK: %5 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %6 = quantum.extract %0[ 4] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_1:2 = quantum.custom "SWAP"() %5, %6 : !quantum.bit, !quantum.bit
-// CHECK: %7 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %8 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %8, %7 : !quantum.bit, !quantum.bit
-// CHECK: %9 = quantum.extract %0[ 3] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_1:2 = quantum.custom "SWAP"() %5, %out_qubits#0 : !quantum.bit, !quantum.bit
+// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %out_qubits_1#0, %out_qubits_0#1 : !quantum.bit, !quantum.bit
 // CHECK: %cst = arith.constant 3.141600e+00 : f64
-// CHECK: %out_qubits_3 = quantum.custom "RY"(%cst) %9 : !quantum.bit
-// CHECK: %10 = quantum.extract %0[ 2] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_3 = quantum.custom "RY"(%cst) %out_qubits#1 : !quantum.bit
 // CHECK: %cst_4 = arith.constant 2.250000e+00 : f64
-// CHECK: %out_qubits_5 = quantum.custom "RZ"(%cst_4) %10 : !quantum.bit
-// CHECK: %11 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %out_qubits_5 = quantum.custom "RZ"(%cst_4) %out_qubits_0#0 : !quantum.bit
 // CHECK: %cst_6 = arith.constant 1.500000e+00 : f64
-// CHECK: %out_qubits_7 = quantum.custom "RX"(%cst_6) %11 : !quantum.bit
-// CHECK: %12 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_8 = quantum.custom "T"() %12 : !quantum.bit
+// CHECK: %out_qubits_7 = quantum.custom "RX"(%cst_6) %out_qubits_2#1 : !quantum.bit
+// CHECK: %out_qubits_8 = quantum.custom "T"() %out_qubits_2#0 : !quantum.bit
+// CHECK: %mres, %out_qubit = quantum.measure %out_qubits_8 : i1, !quantum.bit
+// CHECK: %mres_9, %out_qubit_10 = quantum.measure %out_qubits_7 : i1, !quantum.bit
+// CHECK: %mres_11, %out_qubit_12 = quantum.measure %out_qubits_5 : i1, !quantum.bit
+// CHECK: %mres_13, %out_qubit_14 = quantum.measure %out_qubits_3 : i1, !quantum.bit
+// CHECK: %mres_15, %out_qubit_16 = quantum.measure %out_qubits_1#1 : i1, !quantum.bit

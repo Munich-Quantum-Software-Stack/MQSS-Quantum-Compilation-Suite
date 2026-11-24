@@ -60,12 +60,8 @@ public:
 
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quantum") {
-          // if (auto measop = dyn_cast<catalyst::quantum::MeasureOp>(Op)) {
-          //     kernelInfo.NumMeasureQubits += getMeasuredQubitCount(measop);
-          //     return;
-          // }
+
           if (auto allocaOp = dyn_cast<catalyst::quantum::AllocOp>(Op)) {
-            kernelInfo.AllocatedQubits = allocaOp.getNqubitsAttr().value();
             if (kernelInfo.AllocOp) {
               mlir::emitError(allocaOp->getLoc(),
                               "CatalystExtractor: gaterOpInfo: Can Only have 1 "
@@ -73,6 +69,15 @@ public:
               _valid = false;
               return;
             }
+            auto NumQubits = allocaOp.getNqubitsAttr();
+            if (!NumQubits.has_value()) {
+              mlir::emitError(allocaOp->getLoc(),
+                              "CatalystExtractor: gaterOpInfo: Dynamic qubit "
+                              "allocation is not supported");
+              _valid = false;
+              return;
+            }
+            kernelInfo.AllocatedQubits = NumQubits.value();
             kernelInfo.AllocOp = allocaOp;
             return;
           }
@@ -267,10 +272,15 @@ private:
       auto gateName = g.getGateName();
       view.isAdjoint = g.getAdjointFlag(); // Is this correct?
 
-      if (gateName == "S" && view.isAdjoint)
-        gateName = "SAdj";
-      else if ((gateName == "Hadamard" || gateName == "H") &&
-               (g.getQubitOperands().size() == 2)) {
+      if (view.isAdjoint) {
+        if (gateName == "S") {
+          gateName = "SAdj";
+        } else if (gateName == "T") {
+          gateName = "TAdj";
+        }
+      }
+      if ((gateName == "Hadamard" || gateName == "H") &&
+          (g.getQubitOperands().size() == 2)) {
         gateName = "CH";
       }
 

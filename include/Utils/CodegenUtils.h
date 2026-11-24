@@ -51,7 +51,9 @@ inline const llvm::StringMap<llvm::StringRef> &getMnemonicAliasTable() {
 inline const llvm::StringRef qasmGateDefinitionBody(llvm::StringRef mnemonic) {
   static const llvm::StringMap<llvm::StringRef> qasmgateDef = {
       {"phased_rx",
-       "(param0,param1) q0 { U(param0,-pi/2 + param1,pi/2 - param1) q0; }"}};
+       "(param0,param1) q0 { U(param0,-pi/2 + param1,pi/2 - param1) q0; }"},
+      {"sxdg", " q0 { s q0; h q0; s q0; }"},
+  };
   auto it = qasmgateDef.find(mnemonic);
   return it == qasmgateDef.end() ? "" : it->second;
 }

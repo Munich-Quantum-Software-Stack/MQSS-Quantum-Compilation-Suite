@@ -9,10 +9,9 @@ add_mlir_library(
   GlobalizeArrayValuesPass.cpp
   StaticAllocas.cpp
   TranslateToIQMJSON.cpp
-  CatalystQuantumtoQASM.cpp
+  MLIRToQASMPass.cpp
   DEPENDS
   MQSSMQSSCodeGenPassIncGen
-  MQSSTransformsPassIncGen
   LINK_LIBS
   PUBLIC
   MQSSSupportedDialects
@@ -23,9 +22,6 @@ add_mlir_library(
   qdmi::example_driver
   MLIRPass
   MLIRTransforms
-  MLIRFuncToLLVM
-  MLIRMathToFuncs
-  MLIRMathToLLVM
   # Translation
   MLIRTargetLLVMIRExport)
 

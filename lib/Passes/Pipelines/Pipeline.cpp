@@ -18,7 +18,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
 #include "Passes/CodeGen/CodeGenPasses.h"
-#include "Passes/Transforms/Pipelines.h"
+#include "Passes/Pipelines/Pipelines.h"
 #include "Passes/Transforms/TransformPasses.h"
 
 #include <llvm/ADT/StringRef.h>
@@ -65,4 +65,13 @@ void mqss::mqssci::opt::QIRConversionPipeline(mlir::OpPassManager &pm,
   pm.addPass(createSymbolDCEPass());
   pm.addPass(cudaq::opt::createCCToLLVM());
   pm.addPass(mqss::mqssci::codegen::LLVMDialectToLLVMIRPass(os));
+}
+
+void mqss::mqssci::opt::QASMLoweringPipeline(mlir::OpPassManager &pm,
+                                             bool qasm3,
+                                             llvm::raw_ostream &os) {
+  // Remove what the QASM printer cannot express before translating.
+  pm.addPass(createCSEPass());
+  pm.addPass(createCanonicalizerPass()); // folds angles, trivial scf.for/if
+  pm.addPass(mqss::mqssci::codegen::MLIRToQASMPass(os, qasm3));
 }

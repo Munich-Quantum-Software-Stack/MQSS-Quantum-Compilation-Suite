@@ -23,11 +23,11 @@ def QuakeToQASM2Pass : Pass<"quake-to-qasm2", "mlir::ModuleOp"> {
 
 }
 
-def CatalystToQASMPass : Pass<"catalyst-quantum-to-qasm", "mlir::ModuleOp"> {
-  let summary = "Transforms Catalyst Quantum MLIR module to OpenQASM2.";
+def MLIRToQASMPass : Pass<"mlir-to-qasm", "mlir::ModuleOp"> {
+  let summary = "Transforms any supported MLIR dialect to OpenQASM2 or OpenQASM3.";
 
   let description = [{
-          Transforms Catalyst Quantum MLIR module to OpenQASM2 or OpenQASM3.
+          Transforms any supported MLIR dialect to OpenQASM2 or OpenQASM3.
   }];
 
   let options = [
@@ -35,7 +35,7 @@ def CatalystToQASMPass : Pass<"catalyst-quantum-to-qasm", "mlir::ModuleOp"> {
       /*default=*//*default=*/"\"qasm2\"", "Select output format: qasm2 or qasm3.">,
   ];
 
-  let constructor = "mqss::mqssci::codegen::CatalystToQASMPass()";
+  let constructor = "mqss::mqssci::codegen::MLIRToQASMPass()";
 
 }
 

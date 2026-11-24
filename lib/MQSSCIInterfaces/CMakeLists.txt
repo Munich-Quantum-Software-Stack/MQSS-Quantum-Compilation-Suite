@@ -5,7 +5,9 @@ add_mlir_library(
   PUBLIC
   MQSSCITransformPasses
   MQSSCIVerificationPasses
-  MQSSCITranslation)
+  MQSSCIPipelines
+  MQSSCITranslation
+  MQSSCICodeGenPasses)
 
 target_compile_options(MQSSCIInterfaces PRIVATE -fexceptions)
 if(TARGET obj.MQSSCIInterfaces)

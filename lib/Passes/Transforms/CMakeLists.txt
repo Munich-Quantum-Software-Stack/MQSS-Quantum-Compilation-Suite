@@ -7,13 +7,12 @@ add_mlir_library(
   CommonPatternReductionPass.cpp
   CommonMappingPass.cpp
   CommonNormalizeArgAnglePass.cpp
-  Pipeline.cpp
   QuakeExpandMeasurements.cpp
   DEPENDS
   MQSSTransformsPassIncGen
   LINK_LIBS
   PUBLIC
-  MQSSCICodeGenPasses
+  MQSSSupportedDialects
   qdmi::qdmi
   qdmi::example_driver
   MQT::CoreIR

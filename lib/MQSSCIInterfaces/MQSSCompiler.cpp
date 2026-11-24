@@ -20,8 +20,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "MQSSCIInterfaces/MQSSCompiler.h"
 
 #include "Passes/CodeGen/CodeGenPasses.h"
+#include "Passes/Pipelines/Pipelines.h"
 #include "Passes/Transforms/Dialects.h"
-#include "Passes/Transforms/Pipelines.h"
 #include "Passes/Transforms/TransformPasses.h"
 #include "Passes/Verification/Instrumentation.h"
 #include "Translation/QASM2ToQuake.h"
@@ -157,16 +157,6 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   mlir::PassManager pmConvert(&context);
   BasisConversionPassOptions conv_opts;
   conv_opts.gates = "";
-  std::vector<std::pair<std::string, std::string>>
-      appliedAliases; // (caller spelling, QASM2 gate name)
-  if (backend_name == "LRZ") {
-    for (const auto &gate : native_gates) {
-      llvm::StringRef resolvedMnemonic = resolveMnemonicAlias(gate);
-      if (resolvedMnemonic != gate)
-        appliedAliases.emplace_back(
-            gate, mnemonicToQasmGateName(resolvedMnemonic).str());
-    }
-  }
   if (!native_gates.empty()) {
     for (unsigned i = 0; i < native_gates.size(); i++) {
       conv_opts.gates += native_gates[i];
@@ -219,34 +209,22 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   // whether or not anything in the final circuit still calls it. Strip these
   // out so the returned OpenQASM2 is just the entry point's circuit body.
   case OPENQASM2:
-    pmLower.addPass(mqss::mqssci::codegen::CatalystToQASMPass(os));
+    mqss::mqssci::opt::QASMLoweringPipeline(pmLower, /*qasm3=*/false, os);
     // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(module->getLoc(),
                       "Compiler: Conversion of MLIR dialect to QASM2 failed");
       return std::nullopt;
     }
-    // result =
-    //     restoreCallerGateNames(stripSpuriousGateDefs(result),
-    //     appliedAliases);
-    // if (backend_name == "LRZ") {
-    //   result = insertCallerGateDefinitions(result, appliedAliases);
-    // }
     break;
   case OPENQASM3:
-    pmLower.addPass(mqss::mqssci::codegen::CatalystToQASMPass(os, true));
+    mqss::mqssci::opt::QASMLoweringPipeline(pmLower, /*qasm3=*/true, os);
     // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(module->getLoc(),
                       "Compiler: Conversion of MLIR dialect to QASM2 failed");
       return std::nullopt;
     }
-    // result =
-    //     restoreCallerGateNames(stripSpuriousGateDefs(result),
-    //     appliedAliases);
-    // if (backend_name == "LRZ") {
-    //   result = insertCallerGateDefinitions(result, appliedAliases);
-    // }
     break;
   case IQMJSON:
     pmLower.addPass(mqss::mqssci::opt::createExpandMeasurementsPass());
@@ -265,7 +243,8 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     auto convertto = tryProcessQIRLoweringOpts(result_type_string);
     if (!convertto) {
       mlir::emitError(module->getLoc(),
-                      "invalid QIR lowering options: " + opts.result_format);
+                      "Compiler: invalid QIR lowering options: " +
+                          opts.result_format);
       return std::nullopt;
     }
     mqss::mqssci::opt::QIRConversionPipeline(pmLower, *convertto, os);
@@ -277,9 +256,8 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     break;
   }
   default:
-    mlir::emitError(
-        module->getLoc(),
-        "Unsupported exchange format! Only OpenQASM2 and QIR supported!");
+    mlir::emitError(module->getLoc(), "Compiler: Unsupported exchange format! "
+                                      "Only OpenQASM2 and QIR supported!");
     return std::nullopt;
   }
 
@@ -309,7 +287,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compile(
   auto module = parseModuleFromFile(input_circuit_path, context);
   if (!module) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "failed to parse input circuit file");
+                    "Compiler: failed to parse input circuit file");
     return std::nullopt;
   }
 
@@ -339,7 +317,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileSource(
   auto module = parseModuleString(input_circuit, context);
   if (!module) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "failed to parse input circuit source");
+                    "Compiler: failed to parse input circuit source");
     return std::nullopt;
   }
 

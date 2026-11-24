@@ -1,4 +1,4 @@
-// RUN: %mqss-opt %s --CommonCNOTReversePass --convert-quantum-to-llvm --mlir-to-llvmIR -o /dev/null 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCNOTReversePass | %mqss-translate --convert-quantum-to-llvm | %mqss-translate --llvm-dialect-to-llvm-ir | FileCheck %s
 
 // CommonCNOTReversePass leaves the leading Hadamard untouched (it's not a
 // CNOT) and rewrites only the CNOT into its H-CX-H sandwich, lowered all the

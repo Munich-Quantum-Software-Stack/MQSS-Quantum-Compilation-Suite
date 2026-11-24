@@ -9,8 +9,6 @@ set(CMAKE_CXX_FLAGS "-w -fPIC")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-error")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions")
 
-include_directories(${MLIR_INCLUDE_DIRS})
-
 # Set default build type to Release if none is specified
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE
@@ -46,13 +44,25 @@ add_definitions(${LLVM_DEFINITIONS} ${MLIR_DEFINITIONS})
 set(CMAKE_MODULE_PATH "${MQSSCI_ROOT_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 set(MQT_QMAP_TESTS OFF)
+
+# mqt-core enables LTO (ENABLE_IPO) for Release builds, and the setting leaks
+# into this whole project. With LTO the final link of MQSSCIInterface_test drops
+# a llvm::DenseMap<mlir::TypeID, unsigned> instantiation that the native
+# libMLIRMathToLLVM.a still references ("undefined reference to ...::grow").
+# Keep LTO off; this must be set before find_package(mqt-core).
+set(ENABLE_IPO
+    OFF
+    CACHE BOOL "Enable Interprocedural Optimization (LTO)" FORCE)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION
+    OFF
+    CACHE BOOL "Enable Interprocedural Optimization" FORCE)
+
 find_package(CUDAQ REQUIRED)
 find_package(Catalyst REQUIRED)
 find_package(qdmi REQUIRED)
 find_package(mqt-core REQUIRED)
 find_package(mqt-qmap REQUIRED)
 find_package(mqt-qcec REQUIRED)
-find_package(GTest REQUIRED)
 
 include_directories(
   BEFORE
@@ -107,28 +117,21 @@ target_include_directories(mqss-opt PRIVATE ${MQSSCI_ROOT_DIR}/include
                                             ${MQSSCI_ROOT_DIR_BINARY}/include)
 
 # Link the dialect implementations and other dependencies
-target_link_libraries(mqss-opt PUBLIC MLIROptLib MQSSCITransformPasses
-                                      MQSSCIVerificationPasses)
+target_link_libraries(
+  mqss-opt PUBLIC MLIROptLib MQSSCITransformPasses MQSSCIPipelines
+                  MQSSCIVerificationPasses MQSSCICodeGenPasses)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  target_compile_definitions(mqss-opt PRIVATE MQSS_ENABLE_DEBUG)
+# Default output directory for the executables (scripts/build.sh overrides it).
+if(NOT INSTALL_DIR)
+  set(INSTALL_DIR "${CMAKE_BINARY_DIR}/bin")
 endif()
 
 # Ensure it outputs to INSTALL_DIR
 set_target_properties(mqss-opt PROPERTIES RUNTIME_OUTPUT_DIRECTORY
                                           "${INSTALL_DIR}")
 
-# (Optional) Verify links
-mlir_check_all_link_libraries(mqss-opt)
-
-# add Interface Tests
-if(BUILD_INTERFACES_TESTS)
-  include(GoogleTest)
-  enable_testing()
-  add_subdirectory(tests)
-endif()
-
-# QASM2 -> Quake frontend, built next to mqss-opt.
+# Translation tool, built next to mqss-opt: imports OpenQASM 2 into Quake and
+# emits MLIR as OpenQASM, IQM JSON or QIR.
 add_executable(mqss-translate mqss-translate.cpp)
 target_include_directories(
   mqss-translate PRIVATE ${MQSSCI_ROOT_DIR}/include
@@ -136,3 +139,19 @@ target_include_directories(
 target_link_libraries(mqss-translate PUBLIC MQSSCITranslation MLIRTranslateLib)
 set_target_properties(mqss-translate PROPERTIES RUNTIME_OUTPUT_DIRECTORY
                                                 "${INSTALL_DIR}")
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  target_compile_definitions(mqss-opt PRIVATE MQSS_ENABLE_DEBUG)
+  target_compile_definitions(mqss-translate PRIVATE MQSS_ENABLE_DEBUG)
+endif()
+
+# (Optional) Verify links
+mlir_check_all_link_libraries(mqss-opt)
+mlir_check_all_link_libraries(mqss-translate)
+# add Interface Tests
+if(BUILD_INTERFACES_TESTS)
+  find_package(GTest REQUIRED)
+  include(GoogleTest)
+  enable_testing()
+  add_subdirectory(tests)
+endif()

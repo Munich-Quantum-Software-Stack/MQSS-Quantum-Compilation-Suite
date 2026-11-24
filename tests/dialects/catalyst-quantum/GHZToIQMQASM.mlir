@@ -1,5 +1,5 @@
 
-// RUN: mqss-opt %s --BasisConversionPass=gates=prx,cz --cse --canonicalize --catalyst-quantum-to-qasm=mode=qasm3 -o /dev/null 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --BasisConversionPass=gates=prx,cz --cse --canonicalize | %mqss-translate --mlir-to-qasm3 | FileCheck %s
 
 func.func @ghz() -> (i1, i1, i1) {
   // Allocate a 3-qubit register.

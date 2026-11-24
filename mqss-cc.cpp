@@ -18,8 +18,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
 #include "Passes/CodeGen/CodeGenPasses.h"
+#include "Passes/Pipelines/Pipelines.h"
 #include "Passes/Transforms/Dialects.h"
-#include "Passes/Transforms/Pipelines.h"
 #include "Passes/Transforms/TransformPasses.h"
 #include "Passes/Verification/Instrumentation.h"
 #include "mlir/IR/Dialect.h"
@@ -45,17 +45,6 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 using namespace llvm;
 
-struct ToQirPipelineOptions
-    : public mlir::PassPipelineOptions<ToQirPipelineOptions> {
-  Option<std::string> profile{
-      *this, "profile",
-      llvm::cl::desc("Target transport layer format, <name:version>. Valid "
-                     "names: \"qir\", \"qir-base\", \"qir-adaptive\", "
-                     "\"qir-full\". version: \"2.0\", "
-                     "\"2.1\", [Default: \"qir-base:2.0\"]"),
-      llvm::cl::init("qir-base:2.0")};
-};
-
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
 
@@ -66,7 +55,7 @@ int main(int argc, char **argv) {
   // that parser scans the registry at construction time to build its own
   // CLI flags (per-pass flags and pipeline names).
   registerMQSSTransformsPasses();
-  registerMQSSCodeGenPasses();
+  registerBasisConversionPass();
 
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::createCanonicalizerPass();
@@ -98,13 +87,6 @@ int main(int argc, char **argv) {
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {});
-
-  mlir::PassPipelineRegistration<ToQirPipelineOptions>(
-      "lower-quake-to-qir", "MQSS Quake to QIR Conversion pipeline",
-      [](mlir::OpPassManager &pm, const ToQirPipelineOptions &opts) {
-        auto convertto = processQIRLoweringOpts(opts.profile);
-        mqss::mqssci::opt::QIRConversionPipeline(pm, convertto);
-      });
 
   // Must be constructed after every pass/pipeline above is registered, and
   // before CLI parsing happens below (registerAndParseCLIOptions), since

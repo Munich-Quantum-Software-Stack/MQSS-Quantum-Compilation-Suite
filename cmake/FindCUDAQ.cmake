@@ -223,6 +223,10 @@ if(CUDAQ_FOUND)
                  INTERFACE_LINK_LIBRARIES "CUDAQ::Quake;CUDAQ::CC;MLIRIR")
   endif()
 
+  # libOptCodeGen.a is a static archive whose objects (e.g. ConvertToQIR.cpp)
+  # use the Quake and QEC dialects and the MLIR Complex/Math/Func -> LLVM
+  # conversions. They must be declared here so CMake places them *after* it on
+  # the link line; otherwise the linker reports undefined references.
   if(CUDAQ_CODEGEN_LIBRARY AND NOT TARGET CUDAQ::CodeGen)
     add_library(CUDAQ::CodeGen UNKNOWN IMPORTED GLOBAL)
     set_target_properties(
@@ -231,7 +235,7 @@ if(CUDAQ_FOUND)
         IMPORTED_LOCATION "${CUDAQ_CODEGEN_LIBRARY}"
         INTERFACE_INCLUDE_DIRECTORIES "${CUDAQ_INCLUDE_DIRS}"
         INTERFACE_LINK_LIBRARIES
-        "CUDAQ::CC;MLIRIR;MLIRSupport;MLIRFuncDialect;MLIRArithDialect;MLIRControlFlowDialect"
+        "CUDAQ::CC;CUDAQ::Quake;CUDAQ::QEC;MLIRIR;MLIRSupport;MLIRFuncDialect;MLIRArithDialect;MLIRControlFlowDialect;MLIRComplexToLibm;MLIRComplexToLLVM;MLIRMathToLLVM;MLIRMathToFuncs;MLIRFuncToLLVM"
     )
   endif()
 

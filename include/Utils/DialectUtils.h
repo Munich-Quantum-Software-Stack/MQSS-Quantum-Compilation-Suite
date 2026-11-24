@@ -116,6 +116,15 @@ inline quantum::CustomOp isCatalystQuantumGateOp(mlir::Operation *op) {
   return nullptr;
 }
 
+// Ops that carry no gate semantics and are safe to skip when building the
+// QuantumComputation. Anything else with GateTy == UNKNOWN is unsupported.
+inline bool isIgnorableStructuralOp(mlir::Operation *op) {
+  return isa<quantum::InitializeOp, quantum::FinalizeOp, quantum::DeviceInitOp,
+             quantum::DeviceReleaseOp, quantum::DeallocOp, quantum::ExtractOp,
+             quantum::InsertOp, quake::DeallocOp, quake::ExtractRefOp,
+             quake::DiscriminateOp>(op);
+}
+
 inline bool hasQuantumEffect(Operation *op) {
   for (auto type : op->getOperandTypes()) {
     if (isa<quantum::QubitType>(type))

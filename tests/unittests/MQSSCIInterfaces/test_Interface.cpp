@@ -50,6 +50,11 @@ std::filesystem::path kBellStateQASM2 =
 
 std::filesystem::path kGHZQASM2 = MQSSCI_TEST_FIXTURE_DIR "/ghz.qasm";
 
+// The 3-qubit GHZ circuit in the Catalyst quantum dialect. Catalyst-quantum
+// input can only be translated to OpenQASM.
+std::filesystem::path kGHZCatalystCircuit =
+    MQSSCI_TEST_FIXTURE_DIR "/ghz_catalyst.mlir";
+
 // Measures a whole 2-qubit register in one `quake.mz` (rather than
 // per-qubit, like kBellStateCircuit) -- the shape that used to make
 // QuakeDialectToIQMJSONPass silently drop every qubit but the first, since
@@ -92,15 +97,16 @@ TEST(MQSSCIInterfacesTest, CompilesToOpenQASM2ForPlanqcBackend) {
          "program";
   EXPECT_FALSE(qasm->empty());
 
-  // Header emitted by cudaq::translateToOpenQASM for every OpenQASM2 program.
+  // Header emitted for every OpenQASM2 program.
   EXPECT_NE(qasm->find("OPENQASM 2.0;"), std::string::npos);
 
   // The circuit allocates a qubit register and measures it.
   EXPECT_NE(qasm->find("qreg"), std::string::npos);
   EXPECT_NE(qasm->find("measure"), std::string::npos);
 
-  // stripSpuriousGateDefs should have removed any leftover custom "gate"
-  // definition blocks, leaving only the entry point's circuit body.
+  // planqc's native set {rx, cz, rz} is fully covered by qelib1.inc, so no
+  // custom "gate" declaration should be emitted (declarations are only added
+  // for gates qelib1.inc lacks, such as r).
   EXPECT_EQ(qasm->find("gate "), std::string::npos);
 
   // planqc's native-gate set is {rx, cz, rz}. BasisConversionPass should
@@ -160,12 +166,13 @@ TEST(MQSSCIInterfacesTest, CompileSourceMatchesCompileForSameCircuit) {
   EXPECT_EQ(*qasm_from_path, *qasm_from_source);
 }
 
-TEST(MQSSCIInterfacesTest, RestoresCallerGateNameForLRZBackend) {
+TEST(MQSSCIInterfacesTest, DeclaresRGateOnceBeforeFirstUse) {
   // "r" is an alias for BasisConversionPass's own "prx" mnemonic (see
-  // resolveMnemonicAlias), which cudaq's QASM2 emitter writes as
-  // "phased_rx". For the LRZ backend, the output must be renamed back to
-  // the caller's own "r" spelling, and "r" -- which qelib1.inc doesn't
-  // define -- must be declared with a "gate r(...)" definition.
+  // resolveMnemonicAlias). The QASM emitter prints that gate as "r", which
+  // qelib1.inc doesn't define, so the output must declare it with a
+  // "gate r(...)" definition: exactly once, after the include and before the
+  // first call, and built only from constructs strict OpenQASM2 parsers
+  // accept.
   mqss::mqssci::MQSSCompiler compiler;
 
   mqss::mqssci::CompilerOptions opts;
@@ -178,17 +185,16 @@ TEST(MQSSCIInterfacesTest, RestoresCallerGateNameForLRZBackend) {
   // "r" is listed twice to check it's still only declared once.
   const std::vector<std::string> nativeGates{"r", "cz", "r"};
   std::optional<std::string> qasm =
-      compiler.compileSource(source, "LRZ", nativeGates, {}, opts);
+      compiler.compileSource(source, nativeGates, opts);
 
   ASSERT_TRUE(qasm.has_value())
       << "compileSource() returned nullopt; expected a valid OpenQASM2 "
          "program";
+
   EXPECT_NE(qasm->find("\nr("), std::string::npos)
-      << "expected the legalized H gate rendered as 'r', the caller's own "
-         "name for it";
+      << "expected the legalized H gate rendered as 'r'";
   EXPECT_EQ(qasm->find("phased_rx("), std::string::npos)
-      << "found cudaq's internal 'phased_rx' spelling; the alias didn't "
-         "round-trip to the output";
+      << "found the internal 'phased_rx' spelling instead of 'r'";
 
   // Exactly one definition of "r", placed after the qelib1.inc include and
   // before the first call to it.
@@ -222,12 +228,12 @@ TEST(MQSSCIInterfacesTest, RestoresCallerGateNameForLRZBackend) {
       << "found a 'gate cz' definition; cz is already defined in qelib1.inc";
 }
 
-TEST(MQSSCIInterfacesTest, KeepsQasmGateNameForNonLRZBackend) {
-  // Same circuit and native-gate set as RestoresCallerGateNameForLRZBackend,
-  // but with any backend name other than LRZ (including none, and a
-  // wrongly-cased "lrz"): the compile still succeeds and "r" is still
-  // resolved to "prx" for decomposition, but the output is left with cudaq's
-  // own "phased_rx" spelling rather than renamed back to "r".
+TEST(MQSSCIInterfacesTest, QasmOutputDoesNotDependOnBackendName) {
+  // The backend name does not influence the OpenQASM output: the native-gate
+  // set is passed explicitly, and the emitter spells and declares gates the
+  // same way for every backend. So any backend name -- including none, a
+  // known device, and a wrongly-cased or unknown one -- must produce
+  // byte-identical output for the same circuit and native-gate set.
   mqss::mqssci::MQSSCompiler compiler;
 
   mqss::mqssci::CompilerOptions opts;
@@ -238,20 +244,20 @@ TEST(MQSSCIInterfacesTest, KeepsQasmGateNameForNonLRZBackend) {
   ASSERT_FALSE(source.empty());
 
   const std::vector<std::string> nativeGates{"r", "cz"};
-  for (const std::string backend : {"", "iqm", "lrz", "not-a-real-backend"}) {
+  std::optional<std::string> baseline =
+      compiler.compileSource(source, "", nativeGates, {}, opts);
+  ASSERT_TRUE(baseline.has_value())
+      << "compileSource() returned nullopt without a backend name";
+
+  for (const std::string backend :
+       {"iqm", "LRZ", "lrz", "not-a-real-backend"}) {
     std::optional<std::string> qasm =
         compiler.compileSource(source, backend, nativeGates, {}, opts);
 
     ASSERT_TRUE(qasm.has_value())
-        << "compileSource() returned nullopt for backend '" << backend
-        << "'; expected a valid OpenQASM2 program";
-    EXPECT_NE(qasm->find("phased_rx("), std::string::npos)
-        << "expected the legalized H gate rendered as 'phased_rx' for "
-           "backend '"
-        << backend << "'";
-    EXPECT_EQ(qasm->find("\nr("), std::string::npos)
-        << "found 'r' for backend '" << backend
-        << "'; aliases should only be renamed back for LRZ";
+        << "compileSource() returned nullopt for backend '" << backend << "'";
+    EXPECT_EQ(*qasm, *baseline)
+        << "output differs for backend '" << backend << "'";
   }
 }
 
@@ -642,8 +648,9 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   // angle theta about an axis that's an arbitrary combination of X and Y,
   // parameterized by phi. That's exactly phased_rx's definition
   // (R(theta, phi) = exp(-i*theta/2*(cos(phi)*X + sin(phi)*Y))), i.e.
-  // BasisConversionPass's "prx". The device calls it "r", which the LRZ
-  // backend resolves to "prx" and renames back to "r" in the output.
+  // BasisConversionPass's "prx". The device calls it "r", which
+  // BasisConversionPass resolves to "prx"; the QASM emitter prints that gate
+  // as "r" and declares it.
   // "id"/"if_else"/ "reset" are real device capabilities BasisConversionPass
   // has no case for yet (the same gap already flagged for WMI's "id"), but are
   // inert for this particular circuit since ghz.qke never produces ops that
@@ -683,7 +690,10 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   // the count of *distinct* qubits mentioned in the coupling map (which
   // would undercount whenever indices aren't contiguous, e.g. this map never
   // mentions qubit 2 on its own -- only paired with 3 and 8).
-  EXPECT_NE(compiled->find("qreg var0[52];"), std::string::npos);
+  EXPECT_NE(compiled->find("qreg q[52];"), std::string::npos);
+
+  // The classical register holds one bit per measured logical qubit.
+  EXPECT_NE(compiled->find("creg c[3];"), std::string::npos);
 
   // "prx" (IQM's "arbitrary X and Y rotations", i.e. phased_rx) and "cz" are
   // mnemonics BasisConversionPass does understand ("r" aliases to its own
@@ -699,17 +709,26 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
   EXPECT_EQ(compiled->find("\nswap "), std::string::npos)
       << "found a non-native 'swap' gate";
 
-  // The device reports this gate as "r", not BasisConversionPass's own
-  // "prx"/cudaq's "phased_rx" -- the emitted QASM2 must round-trip back to
-  // the caller's own spelling, not leak the pass's internal mnemonic or
-  // cudaq's op name.
+  // The device reports this gate as "r", not BasisConversionPass's own "prx"
+  // -- the emitted QASM2 must spell it "r" and must not leak the internal
+  // "phased_rx" name.
   EXPECT_NE(compiled->find("\nr("), std::string::npos)
-      << "expected ghz.qke's H gate, legalized and rendered back as 'r', "
-         "the device's own name for this gate";
+      << "expected ghz.qke's H gate, legalized and rendered as 'r', the "
+         "device's own name for this gate";
   EXPECT_EQ(compiled->find("phased_rx("), std::string::npos)
-      << "found cudaq's internal 'phased_rx' spelling instead of the "
-         "device's own 'r' name -- the alias didn't round-trip to the "
-         "output";
+      << "found the internal 'phased_rx' spelling instead of the device's "
+         "own 'r' name";
+
+  // qelib1.inc doesn't define "r", so it must be declared exactly once, with
+  // the gate-definition syntax, before its first use.
+  const size_t gateDefPos = compiled->find("\ngate r(");
+  ASSERT_NE(gateDefPos, std::string::npos)
+      << "expected a 'gate r(...)' definition, since qelib1.inc doesn't "
+         "define r";
+  EXPECT_EQ(compiled->find("\ngate r(", gateDefPos + 1), std::string::npos)
+      << "'r' is defined more than once";
+  EXPECT_LT(gateDefPos, compiled->find("\nr("))
+      << "the 'r' definition must come before the first call to r";
 
   int czCount = 0;
   for (size_t pos = compiled->find("cz "); pos != std::string::npos;
@@ -740,7 +759,7 @@ TEST(MQSSCIInterfacesTest, TestsMappingAndTranspilationFor52QubitCircuit) {
     return false;
   };
 
-  std::regex twoQubitOpRe(R"(cz var0\[(\d+)\], var0\[(\d+)\];)");
+  std::regex twoQubitOpRe(R"(cz q\[(\d+)\], q\[(\d+)\];)");
   auto matchesBegin =
       std::sregex_iterator(compiled->begin(), compiled->end(), twoQubitOpRe);
   int twoQubitOpCount = 0;
@@ -829,6 +848,304 @@ TEST(MQSSCIInterfacesTest, QASM2InputRejectsOtherQASMVersions) {
   EXPECT_FALSE(compileQASM2ForPlanqc("OPENQASM 3.0;\n"
                                      "qubit[1] q;\n")
                    .has_value());
+}
+
+// Compiles `source` for `nativeGates` to OpenQASM 3.
+std::optional<std::string>
+compileToQASM3(const std::string &source,
+               const std::vector<std::string> &nativeGates) {
+  mqss::mqssci::MQSSCompiler compiler;
+
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = mqss::mqssci::ResultFormat::OPENQASM3;
+
+  return compiler.compileSource(source, nativeGates, opts);
+}
+
+// Returns the gate statements of an OpenQASM program, one entry per line:
+// everything except the version line, includes, declarations (gate, qreg,
+// creg, qubit, bit) and measurements. The OpenQASM 2 and 3 spellings of those
+// differ, but the gate statements are written identically, so this lets the
+// two outputs be compared.
+std::vector<std::string> gateStatements(const std::string &qasm) {
+  const std::vector<std::string> skippedPrefixes{
+      "OPENQASM", "include", "gate ", "qreg ", "creg ", "qubit[", "bit["};
+  std::vector<std::string> statements;
+  std::istringstream lines(qasm);
+  for (std::string line; std::getline(lines, line);) {
+    if (line.empty() || line.find("measure") != std::string::npos)
+      continue;
+    bool skip = false;
+    for (const std::string &prefix : skippedPrefixes)
+      skip = skip || line.rfind(prefix, 0) == 0;
+    if (!skip)
+      statements.push_back(line);
+  }
+  return statements;
+}
+
+TEST(MQSSCIInterfacesTest, CompilesToOpenQASM3ForPlanqcBackend) {
+  const std::string source = readFixture(kBellStateCircuit);
+  ASSERT_FALSE(source.empty());
+
+  std::optional<std::string> qasm = compileToQASM3(source, kPlanqcNativeGates);
+  ASSERT_TRUE(qasm.has_value())
+      << "compileSource() returned nullopt; expected a valid OpenQASM3 "
+         "program";
+
+  // OpenQASM 3 header, standard-gate include and register declarations.
+
+  EXPECT_NE(qasm->find("OPENQASM 3.0;"), std::string::npos);
+  EXPECT_EQ(qasm->find("OPENQASM 2.0;"), std::string::npos);
+  EXPECT_NE(qasm->find("include \"stdgates.inc\";"), std::string::npos);
+  EXPECT_EQ(qasm->find("qelib1.inc"), std::string::npos)
+      << "OpenQASM 3 output must not include the OpenQASM 2 library";
+  EXPECT_NE(qasm->find("qubit[5] q;"), std::string::npos);
+  EXPECT_NE(qasm->find("bit[2] c;"), std::string::npos);
+
+  // None of the OpenQASM 2 declaration or measurement syntax may leak into
+  // the OpenQASM 3 output.
+  EXPECT_EQ(qasm->find("qreg"), std::string::npos);
+  EXPECT_EQ(qasm->find("creg"), std::string::npos);
+  EXPECT_EQ(qasm->find("->"), std::string::npos)
+      << "found OpenQASM 2 'measure q -> c' syntax";
+
+  // Measurements use `c[i] = measure q[j];`, one per qubit.
+  EXPECT_NE(qasm->find("c[0] = measure q[0];"), std::string::npos);
+  EXPECT_NE(qasm->find("c[1] = measure q[1];"), std::string::npos);
+  EXPECT_EQ(countOccurrences(*qasm, "measure "), 2);
+
+  // planqc's native set is {rx, cz, rz}, all in stdgates.inc, so everything
+  // is decomposed into it and no custom gate declaration is needed.
+  EXPECT_NE(qasm->find("\nrz("), std::string::npos);
+  EXPECT_NE(qasm->find("\nrx("), std::string::npos);
+  EXPECT_EQ(countOccurrences(*qasm, "cz "), 1)
+      << "the fixture's single CNOT should become exactly one cz";
+  EXPECT_EQ(qasm->find("\nh "), std::string::npos);
+  EXPECT_EQ(qasm->find("\ncx "), std::string::npos);
+  EXPECT_EQ(qasm->find("gate "), std::string::npos);
+}
+
+TEST(MQSSCIInterfacesTest, OpenQASM3DeclaresRGateOnceBeforeFirstUse) {
+  // Same as DeclaresRGateOnceBeforeFirstUse, for OpenQASM 3: stdgates.inc
+  // doesn't define "r" either, so it must be declared exactly once, after the
+  // include and before its first call, using the built-in U.
+  const std::string source = readFixture(kBellStateCircuit);
+  ASSERT_FALSE(source.empty());
+
+  // "r" is listed twice to check it's still only declared once.
+  const std::vector<std::string> nativeGates{"r", "cz", "r"};
+  std::optional<std::string> qasm = compileToQASM3(source, nativeGates);
+  ASSERT_TRUE(qasm.has_value())
+      << "compileSource() returned nullopt; expected a valid OpenQASM3 "
+         "program";
+
+  EXPECT_NE(qasm->find("\nr("), std::string::npos)
+      << "expected the legalized H gate rendered as 'r'";
+  EXPECT_EQ(qasm->find("phased_rx("), std::string::npos);
+
+  const std::string gateDef = "\ngate r(";
+  const size_t defPos = qasm->find(gateDef);
+  ASSERT_NE(defPos, std::string::npos)
+      << "expected a 'gate r(...)' definition, since stdgates.inc doesn't "
+         "define r";
+  EXPECT_EQ(qasm->find(gateDef, defPos + 1), std::string::npos)
+      << "'r' is defined more than once";
+  EXPECT_LT(qasm->find("include \"stdgates.inc\";"), defPos)
+      << "the 'r' definition must come after the stdgates.inc include";
+  EXPECT_LT(defPos, qasm->find("\nr("))
+      << "the 'r' definition must come before the first call to r";
+
+  const std::string defLine =
+      qasm->substr(defPos + 1, qasm->find('\n', defPos + 1) - (defPos + 1));
+  EXPECT_NE(defLine.find("{ U("), std::string::npos)
+      << "expected the 'r' definition to use the built-in U gate, got: "
+      << defLine;
+
+  // cz is already defined by stdgates.inc; redefining it is invalid.
+  EXPECT_EQ(qasm->find("gate cz"), std::string::npos);
+}
+
+TEST(MQSSCIInterfacesTest, OpenQASM2AndOpenQASM3HaveSameGateSequence) {
+  // The two output formats differ only in declarations and measurement
+  // syntax. Compiling one circuit to both must produce the same gate
+  // statements in the same order, for gate sets with and without custom
+  // declarations ({rx, cz, rz} needs none; {r, cz} declares r).
+  const std::string source = readFixture(kGHZCircuit);
+  ASSERT_FALSE(source.empty());
+
+  const std::vector<std::vector<std::string>> gateSets{kPlanqcNativeGates,
+                                                       {"r", "cz"}};
+  for (const std::vector<std::string> &nativeGates : gateSets) {
+    mqss::mqssci::MQSSCompiler compiler;
+    mqss::mqssci::CompilerOptions opts2;
+    opts2.optimization_level = mqss::mqssci::OptLevel::O1;
+    opts2.result_format = mqss::mqssci::ResultFormat::OPENQASM2;
+
+    std::optional<std::string> qasm2 =
+        compiler.compileSource(source, nativeGates, opts2);
+    std::optional<std::string> qasm3 = compileToQASM3(source, nativeGates);
+    ASSERT_TRUE(qasm2.has_value());
+    ASSERT_TRUE(qasm3.has_value());
+
+    const std::vector<std::string> gates2 = gateStatements(*qasm2);
+    const std::vector<std::string> gates3 = gateStatements(*qasm3);
+    EXPECT_FALSE(gates2.empty());
+    EXPECT_EQ(gates2, gates3)
+        << "OpenQASM 2 and 3 outputs disagree on the gate sequence for "
+           "native gate set starting with '"
+        << nativeGates.front() << "'";
+    EXPECT_EQ(countOccurrences(*qasm2, "measure "),
+              countOccurrences(*qasm3, "measure "));
+  }
+}
+
+TEST(MQSSCIInterfacesTest, CompilesQASM2InputToOpenQASM3) {
+  const std::string source = readFixture(kBellStateQASM2);
+  ASSERT_FALSE(source.empty());
+
+  std::optional<std::string> qasm = compileToQASM3(source, kPlanqcNativeGates);
+  ASSERT_TRUE(qasm.has_value())
+      << "compileSource() returned nullopt for an OpenQASM2 input compiled "
+         "to OpenQASM3";
+
+  std::cout << *qasm << "\n";
+  EXPECT_NE(qasm->find("OPENQASM 3.0;"), std::string::npos);
+  EXPECT_NE(qasm->find("qubit[5] q;"), std::string::npos);
+  EXPECT_EQ(countOccurrences(*qasm, "measure "), 2);
+  // The Bell circuit's single cx must end up as the native cz, and its h as
+  // rz/rx rotations: planqc's native set is {rx, cz, rz}.
+  EXPECT_EQ(countOccurrences(*qasm, "cz "), 1);
+  EXPECT_EQ(qasm->find("\nh "), std::string::npos);
+  EXPECT_EQ(qasm->find("\ncx "), std::string::npos);
+}
+
+TEST(MQSSCIInterfacesTest, OpenQASM3WholeRegisterMeasurementIsPerQubit) {
+  // kMultiRotationCircuit measures both qubits with a single `quake.mz` on
+  // the whole register. OpenQASM 3 has no single-statement form that the
+  // emitter uses for that, so it must come out as one measurement per qubit,
+  // each assigned to its own classical bit.
+  const std::string source = readFixture(kMultiRotationCircuit);
+  ASSERT_FALSE(source.empty());
+
+  std::optional<std::string> qasm = compileToQASM3(source, kPlanqcNativeGates);
+  ASSERT_TRUE(qasm.has_value())
+      << "compileSource() returned nullopt; expected a valid OpenQASM3 "
+         "program";
+
+  EXPECT_NE(qasm->find("c[0] = measure q[0];"), std::string::npos);
+  EXPECT_NE(qasm->find("c[1] = measure q[1];"), std::string::npos);
+  EXPECT_EQ(countOccurrences(*qasm, "measure "), 2);
+
+  // The fixture uses rx, ry, rz and a CNOT; ry and cx are not in planqc's
+  // native set and must have been decomposed away.
+  EXPECT_EQ(qasm->find("\nry"), std::string::npos)
+      << "found a non-native 'ry' gate; planqc's native set is {rx, cz, rz}";
+  EXPECT_EQ(qasm->find("\ncx "), std::string::npos);
+  EXPECT_EQ(countOccurrences(*qasm, "cz "), 1);
+}
+
+// Compiles `source` (a circuit in the Catalyst quantum dialect) to `format`
+// for `nativeGates`. Catalyst-quantum input can only be translated to
+// OpenQASM.
+std::optional<std::string>
+compileCatalyst(const std::string &source, mqss::mqssci::ResultFormat format,
+                const std::vector<std::string> &nativeGates) {
+  mqss::mqssci::MQSSCompiler compiler;
+
+  mqss::mqssci::CompilerOptions opts;
+  opts.optimization_level = mqss::mqssci::OptLevel::O1;
+  opts.result_format = format;
+
+  return compiler.compileSource(source, nativeGates, opts);
+}
+
+TEST(MQSSCIInterfacesTest, CompilesCatalystQuantumToOpenQASM2ForPlanqcBackend) {
+  const std::string source = readFixture(kGHZCatalystCircuit);
+  ASSERT_FALSE(source.empty());
+
+  std::optional<std::string> qasm = compileCatalyst(
+      source, mqss::mqssci::ResultFormat::OPENQASM2, kPlanqcNativeGates);
+  ASSERT_TRUE(qasm.has_value())
+      << "compileSource() returned nullopt; expected a valid OpenQASM2 "
+         "program from Catalyst-quantum input";
+
+  std::cout << *qasm << "\n";
+  EXPECT_NE(qasm->find("OPENQASM 2.0;"), std::string::npos);
+  EXPECT_NE(qasm->find("include \"qelib1.inc\";"), std::string::npos);
+  EXPECT_NE(qasm->find("qreg q[5];"), std::string::npos);
+  EXPECT_NE(qasm->find("creg c[3];"), std::string::npos);
+
+  // One measurement per qubit of the GHZ register.
+  EXPECT_EQ(countOccurrences(*qasm, "measure "), 3);
+  EXPECT_NE(qasm->find("measure q[0] -> c[0];"), std::string::npos);
+  EXPECT_NE(qasm->find("measure q[1] -> c[1];"), std::string::npos);
+  EXPECT_NE(qasm->find("measure q[2] -> c[2];"), std::string::npos);
+
+  // planqc's native set is {rx, cz, rz}: the H and both CNOTs of the GHZ
+  // circuit must be rewritten into it, leaving two cz gates.
+  EXPECT_EQ(countOccurrences(*qasm, "cz "), 2);
+  EXPECT_EQ(qasm->find("\nh "), std::string::npos);
+  EXPECT_EQ(qasm->find("\ncx "), std::string::npos);
+  EXPECT_EQ(qasm->find("gate "), std::string::npos);
+}
+
+TEST(MQSSCIInterfacesTest, CompilesCatalystQuantumToOpenQASM3ForIqmBackend) {
+  const std::string source = readFixture(kGHZCatalystCircuit);
+  ASSERT_FALSE(source.empty());
+
+  std::optional<std::string> qasm = compileCatalyst(
+      source, mqss::mqssci::ResultFormat::OPENQASM3, kIqmNativeGates);
+  ASSERT_TRUE(qasm.has_value())
+      << "compileSource() returned nullopt; expected a valid OpenQASM3 "
+         "program from Catalyst-quantum input";
+
+  EXPECT_NE(qasm->find("OPENQASM 3.0;"), std::string::npos);
+  EXPECT_NE(qasm->find("include \"stdgates.inc\";"), std::string::npos);
+  EXPECT_NE(qasm->find("qubit[5] q;"), std::string::npos);
+  EXPECT_NE(qasm->find("bit[3] c;"), std::string::npos);
+  EXPECT_EQ(qasm->find("qreg"), std::string::npos)
+      << "found OpenQASM 2 register syntax in OpenQASM 3 output";
+
+  EXPECT_NE(qasm->find("c[0] = measure q[0];"), std::string::npos);
+  EXPECT_NE(qasm->find("c[1] = measure q[1];"), std::string::npos);
+  EXPECT_NE(qasm->find("c[2] = measure q[2];"), std::string::npos);
+
+  // IQM's native set is {prx, cz}. prx is emitted as the gate "r", which
+  // stdgates.inc doesn't define, so it must be declared exactly once before
+  // its first use.
+  EXPECT_NE(qasm->find("\nr("), std::string::npos);
+  EXPECT_EQ(qasm->find("phased_rx("), std::string::npos);
+  const std::string gateDef = "\ngate r(";
+  const size_t defPos = qasm->find(gateDef);
+  ASSERT_NE(defPos, std::string::npos) << "expected a 'gate r(...)' definition";
+  EXPECT_EQ(qasm->find(gateDef, defPos + 1), std::string::npos)
+      << "'r' is defined more than once";
+  EXPECT_LT(defPos, qasm->find("\nr("))
+      << "the 'r' definition must come before the first call to r";
+
+  EXPECT_EQ(countOccurrences(*qasm, "cz "), 2);
+  EXPECT_EQ(qasm->find("\nh "), std::string::npos);
+  EXPECT_EQ(qasm->find("\ncx "), std::string::npos);
+}
+
+TEST(MQSSCIInterfacesTest, CatalystQuantumInputIsRejectedForIQMJSON) {
+  // Catalyst-quantum input can only be translated to OpenQASM. The IQM JSON
+  // emitter only understands Quake, so asking for it must fail cleanly with
+  // nullopt rather than produce empty or wrong output.
+  //
+  // QIR is deliberately not covered here: the QIR pipeline currently aborts
+  // the whole process on Catalyst input (it loads the quake dialect while the
+  // pass manager is running) instead of failing, so it needs a guard in
+  // MQSSCompiler before it can be tested.
+  const std::string source = readFixture(kGHZCatalystCircuit);
+  ASSERT_FALSE(source.empty());
+
+  std::optional<std::string> json = compileCatalyst(
+      source, mqss::mqssci::ResultFormat::IQMJSON, kIqmNativeGates);
+  EXPECT_FALSE(json.has_value())
+      << "expected Catalyst-quantum input to be rejected for IQM JSON output";
 }
 
 } // namespace
