@@ -2,8 +2,8 @@
 
 // RUN: %mqss-cc %S/../HToRzXRz.cpp --passes=CommonDecompositionPass=mode=HToRzXRz | FileCheck %s
 
-// CHECK: %cst = arith.constant 3.1415926535897931 : f64
-// CHECK: %cst_0 = arith.constant 1.5707963267948966 : f64
-// CHECK: quake.rz (%cst) %3 : (f64, !quake.ref) -> ()
-// CHECK: quake.x %3 : (!quake.ref) -> ()
-// CHECK: quake.rz (%cst_0) %3 : (f64, !quake.ref) -> ()
+// CHECK: %[[CST:[A-Za-z0-9_]+]] = arith.constant 3.1415926535897931 : f64
+// CHECK: %[[CST_0:[A-Za-z0-9_]+]] = arith.constant 1.5707963267948966 : f64
+// CHECK: quake.rz (%[[CST]]) %[[V3:[A-Za-z0-9_]+]] : (f64, !quake.ref) -> ()
+// CHECK: quake.x %[[V3]] : (!quake.ref) -> ()
+// CHECK: quake.rz (%[[CST_0]]) %[[V3]] : (f64, !quake.ref) -> ()

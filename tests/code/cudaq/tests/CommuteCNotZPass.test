@@ -2,7 +2,7 @@
 
 // RUN: %mqss-cc %S/../CommuteCNotZPass.cpp --passes=CommonCommutePass=mode=CX-Z | FileCheck %s
 
-// CHECK: %7 = quake.extract_ref %0[1] : (!quake.veq<3>) -> !quake.ref
-// CHECK: quake.z %7 : (!quake.ref) -> ()
-// CHECK: quake.x [%5] %6 : (!quake.ref, !quake.ref) -> ()
-// CHECK: %8 = quake.extract_ref %0[0] : (!quake.veq<3>) -> !quake.ref
+// CHECK: %[[V7:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0:[A-Za-z0-9_]+]][1] : (!quake.veq<3>) -> !quake.ref
+// CHECK: quake.z %[[V7]] : (!quake.ref) -> ()
+// CHECK: quake.x [%{{[A-Za-z0-9_]+}}] %{{[A-Za-z0-9_]+}} : (!quake.ref, !quake.ref) -> ()
+// CHECK: %{{[A-Za-z0-9_]+}} = quake.extract_ref %[[V0]][0] : (!quake.veq<3>) -> !quake.ref

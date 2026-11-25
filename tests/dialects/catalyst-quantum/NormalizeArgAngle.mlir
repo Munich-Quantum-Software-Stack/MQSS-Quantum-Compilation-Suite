@@ -26,6 +26,6 @@ module @circuit_NormalizeAngle {
   }
 }
 
-// CHECK:  %cst_0 = arith.constant 3.1415926535897931 : f64
-// CHECK:  %out_qubits_1 = quantum.custom "RZ"(%cst_0) %out_qubits#0 : !quantum.bit
-// CHECK: %mres, %out_qubit = quantum.measure %out_qubits_1 : i1, !quantum.bit
+// CHECK:  %[[CST_0:[A-Za-z0-9_]+]] = arith.constant 3.1415926535897931 : f64
+// CHECK:  %[[OUT_QUBITS_1:[A-Za-z0-9_]+]] = quantum.custom "RZ"(%[[CST_0]]) %{{[A-Za-z0-9_]+}}#0 : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} = quantum.measure %[[OUT_QUBITS_1]] : i1, !quantum.bit

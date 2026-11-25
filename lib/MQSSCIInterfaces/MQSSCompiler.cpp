@@ -137,7 +137,8 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   }
 
   if (mlir::failed(pmOptimize.run(*module))) {
-    mlir::emitError(module->getLoc(), "Compiler: Optimization Pipeline failed");
+    mlir::emitError(module->getLoc(),
+                    "MQSSCompiler: Optimization Pipeline failed");
     return std::nullopt;
   }
 
@@ -145,7 +146,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   // 4. Perform Qubit Mapping
   pmMap.addPass(mqss::mqssci::opt::CommonMappingPass(qubit_connectivity));
   if (mlir::failed(pmMap.run(*module))) {
-    mlir::emitError(module->getLoc(), "Compiler: Qubit Mapping failed!");
+    mlir::emitError(module->getLoc(), "MQSSCompiler: Qubit Mapping failed!");
     return std::nullopt;
   }
 
@@ -166,9 +167,10 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     pmConvert.addPass(
         mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
   } else {
-    mlir::emitError(module->getLoc(),
-                    "Compiler: No native gate-set provided! BasisConversion "
-                    "and or Verification failed!");
+    mlir::emitError(
+        module->getLoc(),
+        "MQSSCompiler: No native gate-set provided! BasisConversion "
+        "and or Verification failed!");
     return nullopt;
   }
 
@@ -194,8 +196,9 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   }
 
   if (mlir::failed(pmConvert.run(*module))) {
-    mlir::emitError(module->getLoc(),
-                    "Compiler: BasisConversion and or Verification failed!");
+    mlir::emitError(
+        module->getLoc(),
+        "MQSSCompiler: BasisConversion and or Verification failed!");
     return std::nullopt;
   }
 
@@ -212,8 +215,9 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     mqss::mqssci::opt::QASMLoweringPipeline(pmLower, /*qasm3=*/false, os);
     // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pmLower.run(*module))) {
-      mlir::emitError(module->getLoc(),
-                      "Compiler: Conversion of MLIR dialect to QASM2 failed");
+      mlir::emitError(
+          module->getLoc(),
+          "MQSSCompiler: Conversion of MLIR dialect to QASM2 failed");
       return std::nullopt;
     }
     break;
@@ -221,8 +225,9 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     mqss::mqssci::opt::QASMLoweringPipeline(pmLower, /*qasm3=*/true, os);
     // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pmLower.run(*module))) {
-      mlir::emitError(module->getLoc(),
-                      "Compiler: Conversion of MLIR dialect to QASM2 failed");
+      mlir::emitError(
+          module->getLoc(),
+          "MQSSCompiler: Conversion of MLIR dialect to QASM2 failed");
       return std::nullopt;
     }
     break;
@@ -231,7 +236,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     pmLower.addPass(mqss::mqssci::codegen::QuakeDialectToIQMJSONPass(os));
     if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(module->getLoc(),
-                      "Compiler: Conversion of Quake to IQMJSON failed");
+                      "MQSSCompiler: Conversion of Quake to IQMJSON failed");
       return std::nullopt;
     }
     break;
@@ -243,21 +248,23 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     auto convertto = tryProcessQIRLoweringOpts(result_type_string);
     if (!convertto) {
       mlir::emitError(module->getLoc(),
-                      "Compiler: invalid QIR lowering options: " +
+                      "MQSSCompiler: invalid QIR lowering options: " +
                           opts.result_format);
       return std::nullopt;
     }
     mqss::mqssci::opt::QIRConversionPipeline(pmLower, *convertto, os);
     if (mlir::failed(pmLower.run(*module))) {
-      mlir::emitError(module->getLoc(), "Compiler: Conversion of Quake to " +
-                                            result_type_string + " failed");
+      mlir::emitError(module->getLoc(),
+                      "MQSSCompiler: Conversion of Quake to " +
+                          result_type_string + " failed");
       return std::nullopt;
     }
     break;
   }
   default:
-    mlir::emitError(module->getLoc(), "Compiler: Unsupported exchange format! "
-                                      "Only OpenQASM2 and QIR supported!");
+    mlir::emitError(module->getLoc(),
+                    "MQSSCompiler: Unsupported Output exchange format! "
+                    "Only OpenQASM, IQMJSON and QIR supported!");
     return std::nullopt;
   }
 
@@ -287,7 +294,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compile(
   auto module = parseModuleFromFile(input_circuit_path, context);
   if (!module) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "Compiler: failed to parse input circuit file");
+                    "MQSSCompiler: failed to parse input circuit file");
     return std::nullopt;
   }
 
@@ -317,7 +324,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileSource(
   auto module = parseModuleString(input_circuit, context);
   if (!module) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "Compiler: failed to parse input circuit source");
+                    "MQSSCompiler: failed to parse input circuit source");
     return std::nullopt;
   }
 

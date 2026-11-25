@@ -43,12 +43,13 @@ mqss::mqssci::MQSSCompiler compiler;
 
 mqss::mqssci::CompilerOptions opts;
 opts.optimization_level = mqss::mqssci::OptLevel::O1;        // O1, O2, or O3 — selects the preset pipeline
-opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;  // or QIR, QIRBASE, QIRADAPTIVE, QIRFULL, IQMJSON
+opts.result_format = mqss::mqssci::ResultFormat::OPENQASM2;  // or OPENQASM3, QIR, QIRBASE, QIRADAPTIVE, QIRFULL, IQMJSON
 opts.verify = false;                                         // optional; see Verifying the Compiled Output below
 
 std::optional<std::string> qasm =
     compiler.compile("path/to/circuit.qke", {"rx", "cz", "rz"}, opts); // Use compileSource() to parse source string
-    // The input may also be an OpenQASM 2 file/string; see "OpenQASM 2 as Input".
+    // The input may also be a Catalyst-quantum MLIR file/string (OpenQASM output only) or an
+    // OpenQASM 2 file/string; see "Translating Circuits with mqss-translate".
 if (!qasm) {
   // Compilation failed. MQSSCompiler has already reported a diagnostic through
   // MLIR's diagnostic engine — it never throws or aborts the process.
@@ -64,8 +65,9 @@ Walking through it:
 2. `mqss::mqssci::CompilerOptions` configures the run: `optimization_level` selects the
    `O1`/`O2`/`O3` preset pipeline (see [Pass Pipelines](passes.md#pass-pipelines) for what each
    includes), and `result_format` selects the output format — one of the
-   `mqss::mqssci::ResultFormat` enumerators: `OPENQASM2`, `QIR`, `QIRBASE`, `QIRADAPTIVE`,
-   `QIRFULL`, or `IQMJSON`.
+   `mqss::mqssci::ResultFormat` enumerators: `OPENQASM2`, `OPENQASM3`, `QIR`, `QIRBASE`,
+   `QIRADAPTIVE`, `QIRFULL`, or `IQMJSON`. Which formats a given input supports is listed in
+   [Translating Circuits with mqss-translate](mqss-translate.md#using-the-mqsscompiler-interface).
 3. The second argument to `compile` (`{"rx", "cz", "rz"}` above) is the target's native-gate set,
    which the circuit is decomposed into. See
    [Choosing a Native-Gate Set and Backend](#choosing-a-native-gate-set-and-backend) below for the
@@ -131,13 +133,14 @@ The full signature also takes a `backend_name` and a `qubit_connectivity` map:
 compiler.compile("path/to/circuit.qke", "LRZ", {"r", "cz"}, qubit_connectivity, opts);
 ```
 
-`backend_name` only changes anything when it is `"LRZ"` (case-sensitive); any other value, including
-`""`, compiles exactly the same way.
+`backend_name` does not change the output: any value, including `""`, compiles exactly the same way.
+The target is described entirely by the native-gate set and the connectivity you pass. The argument
+is kept so callers can state which device they compile for.
 
-With `"LRZ"`, OpenQASM2 output uses your own spelling for any aliased gate in the native-gate set.
-For example, passing `r` produces `r(...)` calls in the output, not `phased_rx(...)`, which is the
-name `prx` is otherwise emitted under. With any other backend name, the output keeps `phased_rx`.
-This renaming only applies to `OPENQASM2` output.
+The OpenQASM output always spells the `prx` gate `r(...)`, whichever name you used for it in the
+native-gate set (`prx` or its alias `r`), and declares it once with a `gate r(...)` definition,
+since neither `qelib1.inc` nor `stdgates.inc` defines it. See
+[What the output looks like](mqss-translate.md#what-the-output-looks-like).
 
 `qubit_connectivity` lists the coupled qubit pairs of a target with restricted connectivity; the
 circuit is mapped onto it before decomposition. See `MQSSCIInterfaces/MQSSCompiler.h` for all four
@@ -156,10 +159,10 @@ for (std::string_view name : mqss::mqssci::MQSSCompiler::getSupportedInputFormat
 
 It returns a `std::vector<std::string_view>` (currently
 `{"cudaq-quake", "catalyst-quantum", "OpenQASM2"}`) — useful for validating a user-supplied format
-name or listing the options in a CLI's `--help` output. Note that `compile`/`compileSource`
-currently only accept the `cudaq-quake` dialect and OpenQASM 2 (see
-[OpenQASM 2 as Input](qasm2-input.md)), regardless of what this list reports; see the note at the
-top of `MQSSCompiler.cpp`.
+name or listing the options in a CLI's `--help` output. `compile`/`compileSource` accept all three
+formats. Catalyst-quantum input can only be compiled to OpenQASM 2 or 3, and OpenQASM 2 input is
+translated to Quake first (see
+[Translating Circuits with mqss-translate](mqss-translate.md#using-the-mqsscompiler-interface)).
 
 ## Advanced: Building a Custom Pipeline Yourself
 
@@ -170,7 +173,7 @@ drop down to the same `mlir::OpPassManager`-based API `MQSSCompiler` itself is b
 
 ```cpp
 #include "Passes/Transforms/Dialects.h"
-#include "Passes/Transforms/Pipelines.h"
+#include "Passes/Pipelines/Pipelines.h"
 #include "Passes/CodeGen/CodeGenPasses.h"
 
 // 1. Get an MLIRContext with every dialect MQSSCI's passes need already loaded.
@@ -197,10 +200,13 @@ if (mlir::failed(pm.run(*module))) {
   llvm::errs() << "Compiler: Pipeline failed\n";
 }
 
-// 4. Lower the optimized module to OpenQASM 2
-pm.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass());
-if (mlir::failed(pm.run(*module))) {
-  llvm::errs() << "Compiler: Conversion of Quake to QASM2 failed\n";
+// 4. Lower the optimized module to OpenQASM 3, capturing the text in a string
+std::string qasm;
+llvm::raw_string_ostream os(qasm);
+mlir::PassManager lowering(context.get());
+mqss::mqssci::opt::QASMLoweringPipeline(lowering, /*qasm3=*/true, os);
+if (mlir::failed(lowering.run(*module))) {
+  llvm::errs() << "Compiler: Conversion of the module to OpenQASM failed\n";
 }
 ```
 
@@ -209,14 +215,17 @@ returns a ready-to-use `MLIRContext` in one call — equivalent to building a `D
 `registerMQSSDialects`, constructing an `MLIRContext` from it, and calling
 `loadAllAvailableDialects()` yourself.
 
-If you'd rather capture the OpenQASM output in a string instead of printing it, `QuakeToQASM2Pass`
-also accepts an `llvm::raw_ostream&`:
+`QASMLoweringPipeline` appends `cse`, `canonicalize` and `MLIRToQASMPass`, and works for Quake and
+Catalyst-quantum modules alike. Its stream defaults to `llvm::outs()`. To add the pass yourself,
+`MLIRToQASMPass(os, qasm3)` takes the same stream and flag:
 
 ```cpp
-std::string qasm;
-llvm::raw_string_ostream os(qasm);
-pm.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
+pm.addPass(mqss::mqssci::codegen::MLIRToQASMPass(os, /*qasm3=*/false));
 ```
+
+For QIR, `mqss::mqssci::opt::QIRConversionPipeline(pm, "qir-base:2.0", os)` does the equivalent for
+a Quake module. The module must already be in the target's gate set; add `createBasisConversionPass`
+(see [Passes](passes.md)) before the lowering step if it is not.
 
 For the full list of available passes, their options, and valid option values, see
 [Passes](passes.md).

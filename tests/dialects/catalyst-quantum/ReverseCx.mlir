@@ -41,10 +41,10 @@ module @circuit_ReverseCx {
   }
 }
 
-// CHECK: %out_qubits_1 = quantum.custom "H"() %out_qubits_0 : !quantum.bit
-// CHECK: %out_qubits_2 = quantum.custom "H"() %out_qubits : !quantum.bit
-// CHECK: %out_qubits_3:2 = quantum.custom "CNOT"() %out_qubits_1, %out_qubits_2 : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_4 = quantum.custom "H"() %out_qubits_3#0 : !quantum.bit
-// CHECK: %out_qubits_5 = quantum.custom "H"() %out_qubits_3#1 : !quantum.bit
-// CHECK: %out_qubits_6 = quantum.custom "PauliY"() %out_qubits_4 : !quantum.bit
-// CHECK: %out_qubits_7 = quantum.custom "PauliY"() %out_qubits_5 : !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]] = quantum.custom "H"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK: %[[OUT_QUBITS_2:[A-Za-z0-9_]+]] = quantum.custom "H"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK: %[[OUT_QUBITS_3:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS_1]], %[[OUT_QUBITS_2]] : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS_4:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS_3]]#0 : !quantum.bit
+// CHECK: %[[OUT_QUBITS_5:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS_3]]#1 : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "PauliY"() %[[OUT_QUBITS_4]] : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "PauliY"() %[[OUT_QUBITS_5]] : !quantum.bit

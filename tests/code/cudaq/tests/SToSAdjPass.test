@@ -2,6 +2,6 @@
 
 // RUN: %mqss-cc %S/../SToSAdjPass.cpp --passes=CommonReductionPass=mode=SZToSAdj | FileCheck %s
 
-// CHECK: quake.s<adj> %1 : (!quake.ref) -> ()
-// CHECK: %2 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
-// CHECK: quake.s<adj> %2 : (!quake.ref) -> ()
+// CHECK: quake.s<adj> %{{[A-Za-z0-9_]+}} : (!quake.ref) -> ()
+// CHECK: %[[V2:[A-Za-z0-9_]+]] = quake.extract_ref %{{[A-Za-z0-9_]+}}[1] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.s<adj> %[[V2]] : (!quake.ref) -> ()

@@ -67,16 +67,39 @@ replacing the quake dialect input with the catalyst-quantum input.
 Add `--mqssci-verify` to the command above to automatically check that the decomposition preserved
 the circuit's behavior. See [Verifying Circuit Correctness](verification.md) for details.
 
+`mqss-opt` only produces MLIR. To write the circuit out as OpenQASM, IQM JSON or QIR, pipe it into
+`mqss-translate` (see below).
+
 ## Using mqss-translate
 
-The binary `mqss-translate` converts OpenQASM 2 circuits into the Quake dialect, so they can be fed
-to `mqss-opt`:
+The binary `mqss-translate` converts circuits between MLIR and text formats, in both directions. It
+imports OpenQASM 2 into the Quake dialect, and it exports a Quake or Catalyst-quantum module as
+OpenQASM 2/3, IQM JSON, QIR or LLVM IR. To check the list of available translations, run:
 
 ```sh
-mqss-translate --import-qasm2 bell.qasm | mqss-opt --BasisConversionPass=gates=prx,cz
+mqss-translate -h
 ```
 
-See [OpenQASM 2 as Input](qasm2-input.md) for the supported subset and the C++ interface.
+Import an OpenQASM 2 circuit, decompose it into a native gate set with `mqss-opt`, and write it back
+out as OpenQASM 3:
+
+```sh
+mqss-translate --import-qasm2 bell.qasm \
+  | mqss-opt --BasisConversionPass=gates=prx,cz --cse --canonicalize \
+  | mqss-translate --mlir-to-qasm3
+```
+
+Export works the same way for a Catalyst-quantum circuit; replace the input with an `.mlir` file in
+the `quantum` dialect and choose an OpenQASM output:
+
+```sh
+mqss-opt circuit.mlir --BasisConversionPass=gates=rx,cz,rz --cse --canonicalize \
+  | mqss-translate --mlir-to-qasm2
+```
+
+The exports expect the circuit to already be in the target's gate set, so run
+`--BasisConversionPass` first. See [Translating Circuits with mqss-translate](mqss-translate.md) for
+every translation, the supported OpenQASM 2 subset, what the exporters reject and the C++ interface.
 
 ## Using mqss-cc script (Frontend test)
 
@@ -138,8 +161,13 @@ To run the above test circuit using `mqss-cc` use the following command:
 mqss-cc test.cpp --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 ```
 
-The `Commutation Optimization pass` is applied to commute `CNOT and RX` gates. The output in this
-case will be QIR since the `emit-qir` flag is enabled.
+The `CommonGateCancellationPass` cancels pairs of identical gates acting on the same qubits. With
+`--out-dir`, the optimized Quake module is written to `output/test.qke`. `mqss-cc` stops at
+optimized MLIR; to emit OpenQASM or QIR, translate that file with `mqss-translate`:
+
+```bash
+mqss-translate --mlir-to-qir-base output/test.qke
+```
 
 Note: One can use cudaq to write quantum circuits in python. But this is not supported yet within
 `mqss-cc`.
@@ -180,5 +208,7 @@ mqss-cc test.py --function circuit \
            --out-dir output/ --passes=CommonGateCancellationPass=mode=CancelGate
 ```
 
-Do Not forget to mention the function to compile after the `--function` flag. Refer to
+Do Not forget to mention the function to compile after the `--function` flag. With `--out-dir`, the
+extracted and optimized Catalyst-quantum module is written to a `.mlir` file there, which
+`mqss-translate` can turn into OpenQASM (`--mlir-to-qasm2` or `--mlir-to-qasm3`). Refer to
 [Passes](passes.md) for a list of all available MLIR passes.

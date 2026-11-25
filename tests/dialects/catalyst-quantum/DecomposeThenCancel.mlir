@@ -47,10 +47,10 @@ module @circuit_DecomposeThenCancel {
   }
 }
 
-// CHECK: %out_qubits = quantum.custom "H"() %2 : !quantum.bit
-// CHECK: %out_qubits_0 = quantum.custom "H"() %1 : !quantum.bit
-// CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0 : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_2 = quantum.custom "H"() %out_qubits_1#0 : !quantum.bit
-// CHECK: %out_qubits_3 = quantum.custom "H"() %out_qubits_1#1 : !quantum.bit
-// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_2 : !quantum.reg, !quantum.bit
-// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_3 : !quantum.reg, !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]] = quantum.custom "H"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK: %[[OUT_QUBITS_0:[A-Za-z0-9_]+]] = quantum.custom "H"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS]], %[[OUT_QUBITS_0]] : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS_2:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS_1]]#0 : !quantum.bit
+// CHECK: %[[OUT_QUBITS_3:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS_1]]#1 : !quantum.bit
+// CHECK: %[[V3:[A-Za-z0-9_]+]] = quantum.insert %{{[A-Za-z0-9_]+}}[ 0], %[[OUT_QUBITS_2]] : !quantum.reg, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.insert %[[V3]][ 1], %[[OUT_QUBITS_3]] : !quantum.reg, !quantum.bit

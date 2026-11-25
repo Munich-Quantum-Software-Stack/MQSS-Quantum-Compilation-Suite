@@ -22,7 +22,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 This guide outlines the steps to build the project and generate the required targets. The scripts
 required for building the targets can be found in `root/scripts/` directory. The `MakeFile` within
-root is the one that invokes these scripts. Please check the following pages for more details.
+root is the one that invokes these scripts. Two command-line tools are built: `mqss-opt` runs passes
+and pipelines on MLIR circuits, and `mqss-translate` converts circuits to and from text formats
+(OpenQASM 2/3, IQM JSON, QIR, LLVM IR). Please check the following pages for more details.
 
 ```{toctree}
 :maxdepth: 1
@@ -30,7 +32,7 @@ root is the one that invokes these scripts. Please check the following pages for
 
 build
 running
-qasm2-input
+mqss-translate
 passes
 verification
 library

@@ -3,10 +3,10 @@
 
 // RUN: %mqss-cc %S/../QuakeQMapPass-02.cpp --passes=CommonMappingPass=input=/workspaces/MQSS-Passes-Suite/tests/input/qmap.json | sed -E 's/\x1b\[[0-9;]*m//g' | FileCheck %s
 
-// CHECK: quake.x [%4] %3 : (!quake.ref, !quake.ref) -> ()
-// CHECK: %5 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
-// CHECK: %6 = quake.extract_ref %0[4] : (!quake.veq<5>) -> !quake.ref
-// CHECK: quake.swap %5, %6 : (!quake.ref, !quake.ref) -> ()
-// CHECK: %7 = quake.extract_ref %0[1] : (!quake.veq<5>) -> !quake.ref
-// CHECK: %8 = quake.extract_ref %0[0] : (!quake.veq<5>) -> !quake.ref
-// CHECK: quake.x [%8] %7 : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.x [%{{[A-Za-z0-9_]+}}] %{{[A-Za-z0-9_]+}} : (!quake.ref, !quake.ref) -> ()
+// CHECK: %[[V5:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0:[A-Za-z0-9_]+]][0] : (!quake.veq<5>) -> !quake.ref
+// CHECK: %[[V6:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][4] : (!quake.veq<5>) -> !quake.ref
+// CHECK: quake.swap %[[V5]], %[[V6]] : (!quake.ref, !quake.ref) -> ()
+// CHECK: %[[V7:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][1] : (!quake.veq<5>) -> !quake.ref
+// CHECK: %[[V8:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][0] : (!quake.veq<5>) -> !quake.ref
+// CHECK: quake.x [%[[V8]]] %[[V7]] : (!quake.ref, !quake.ref) -> ()

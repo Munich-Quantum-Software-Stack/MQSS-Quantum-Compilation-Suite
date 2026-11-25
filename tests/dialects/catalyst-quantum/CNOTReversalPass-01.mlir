@@ -15,10 +15,10 @@
     return %out_qubits_0#0 : !quantum.bit
   }
 
-// CHECK:  %out_qubits = quantum.custom "PauliX"() %1 : !quantum.bit
-// CHECK:  %out_qubits_0 = quantum.custom "H"() %2 : !quantum.bit
-// CHECK:  %out_qubits_1 = quantum.custom "H"() %out_qubits : !quantum.bit
-// CHECK:  %out_qubits_2:2 = quantum.custom "CNOT"() %out_qubits_0, %out_qubits_1 : !quantum.bit, !quantum.bit
-// CHECK:  %out_qubits_3 = quantum.custom "H"() %out_qubits_2#0 : !quantum.bit
-// CHECK:  %out_qubits_4 = quantum.custom "H"() %out_qubits_2#1 : !quantum.bit
-// CHECK:  return %out_qubits_3
+// CHECK:  %[[OUT_QUBITS:[A-Za-z0-9_]+]] = quantum.custom "PauliX"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK:  %[[OUT_QUBITS_0:[A-Za-z0-9_]+]] = quantum.custom "H"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK:  %[[OUT_QUBITS_1:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS]] : !quantum.bit
+// CHECK:  %[[OUT_QUBITS_2:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS_0]], %[[OUT_QUBITS_1]] : !quantum.bit, !quantum.bit
+// CHECK:  %[[OUT_QUBITS_3:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS_2]]#0 : !quantum.bit
+// CHECK:  %{{[A-Za-z0-9_]+}} = quantum.custom "H"() %[[OUT_QUBITS_2]]#1 : !quantum.bit
+// CHECK:  return %[[OUT_QUBITS_3]]

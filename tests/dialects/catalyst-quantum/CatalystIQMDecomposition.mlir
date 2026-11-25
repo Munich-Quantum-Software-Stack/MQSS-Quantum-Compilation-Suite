@@ -21,15 +21,15 @@ func.func @bell_to_iqm() -> (i1, i1) {
   return %m0, %m1 : i1, i1
 }
 
-// CHECK: call void @__catalyst__qis__PhasedRx(double 0x3FF921FB54442D18, double 0x3FF921FB54442D18, ptr %3, ptr null)
-// CHECK: call void @__catalyst__qis__PhasedRx(double 0x400921FB54442D18, double 0.000000e+00, ptr %3, ptr null)
-// CHECK: %4 = call ptr @__catalyst__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK: %5 = load ptr, ptr %4, align 8
-// CHECK: call void @__catalyst__qis__PhasedRx(double 0x3FF921FB54442D18, double 0x3FF921FB54442D18, ptr %5, ptr null)
-// CHECK: call void @__catalyst__qis__PhasedRx(double 0x400921FB54442D18, double 0.000000e+00, ptr %5, ptr null)
-// CHECK: call void @__catalyst__qis__CZ(ptr %3, ptr %5, ptr null)
-// CHECK: call void @__catalyst__qis__PhasedRx(double 0x3FF921FB54442D18, double 0x3FF921FB54442D18, ptr %5, ptr null)
-// CHECK: call void @__catalyst__qis__PhasedRx(double 0x400921FB54442D18, double 0.000000e+00, ptr %5, ptr null)
-// CHECK: %6 = call ptr @__catalyst__qis__Measure(ptr %3, i32 -1)
-// CHECK: %7 = load i1, ptr %6, align 1
-// CHECK: %8 = call ptr @__catalyst__qis__Measure(ptr %5, i32 -1)
+// CHECK: call void @__catalyst__qis__PhasedRx(double 0x3FF921FB54442D18, double 0x3FF921FB54442D18, ptr %[[V3:[A-Za-z0-9_]+]], ptr null)
+// CHECK: call void @__catalyst__qis__PhasedRx(double 0x400921FB54442D18, double 0.000000e+00, ptr %[[V3]], ptr null)
+// CHECK: %[[V4:[A-Za-z0-9_]+]] = call ptr @__catalyst__rt__array_get_element_ptr_1d(ptr %{{[A-Za-z0-9_]+}}, i64 1)
+// CHECK: %[[V5:[A-Za-z0-9_]+]] = load ptr, ptr %[[V4]], align 8
+// CHECK: call void @__catalyst__qis__PhasedRx(double 0x3FF921FB54442D18, double 0x3FF921FB54442D18, ptr %[[V5]], ptr null)
+// CHECK: call void @__catalyst__qis__PhasedRx(double 0x400921FB54442D18, double 0.000000e+00, ptr %[[V5]], ptr null)
+// CHECK: call void @__catalyst__qis__CZ(ptr %[[V3]], ptr %[[V5]], ptr null)
+// CHECK: call void @__catalyst__qis__PhasedRx(double 0x3FF921FB54442D18, double 0x3FF921FB54442D18, ptr %[[V5]], ptr null)
+// CHECK: call void @__catalyst__qis__PhasedRx(double 0x400921FB54442D18, double 0.000000e+00, ptr %[[V5]], ptr null)
+// CHECK: %[[V6:[A-Za-z0-9_]+]] = call ptr @__catalyst__qis__Measure(ptr %[[V3]], i32 -1)
+// CHECK: %{{[A-Za-z0-9_]+}} = load i1, ptr %[[V6]], align 1
+// CHECK: %{{[A-Za-z0-9_]+}} = call ptr @__catalyst__qis__Measure(ptr %[[V5]], i32 -1)

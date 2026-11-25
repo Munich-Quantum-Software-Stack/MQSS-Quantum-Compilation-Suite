@@ -30,20 +30,20 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
-// CHECK:  quake.rx (%cst_4) %1 : (f64, !quake.ref) -> ()
-// CHECK:  %cst_5 = arith.constant 1.300000e+00 : f64
-// CHECK:  %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK:  quake.ry (%cst_3) %2 : (f64, !quake.ref) -> ()
-// CHECK:  %cst_6 = arith.constant 2.000000e+00 : f64
-// CHECK:  %3 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK:  quake.rz (%cst_2) %3 : (f64, !quake.ref) -> ()
-// CHECK:  %cst_7 = arith.constant 3.141600e+00 : f64
-// CHECK:  %4 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
-// CHECK:  %cst_8 = arith.constant 5.0168146928204145 : f64
-// CHECK:  quake.rx (%cst_8) %4 : (f64, !quake.ref) -> ()
-// CHECK:  %5 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK:  %cst_9 = arith.constant 1.1504440784612413 : f64
-// CHECK:  quake.ry (%cst_9) %5 : (f64, !quake.ref) -> ()
-// CHECK:  %6 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
-// CHECK:  %cst_10 = arith.constant 1.7256734641020657 : f64
-// CHECK:  quake.rz (%cst_10) %6 : (f64, !quake.ref) -> ()
+// CHECK:  quake.rx (%{{[A-Za-z0-9_]+}}) %{{[A-Za-z0-9_]+}} : (f64, !quake.ref) -> ()
+// CHECK:  %{{[A-Za-z0-9_]+}} = arith.constant 1.300000e+00 : f64
+// CHECK:  %[[V2:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0:[A-Za-z0-9_]+]][0] : (!quake.veq<2>) -> !quake.ref
+// CHECK:  quake.ry (%{{[A-Za-z0-9_]+}}) %[[V2]] : (f64, !quake.ref) -> ()
+// CHECK:  %{{[A-Za-z0-9_]+}} = arith.constant 2.000000e+00 : f64
+// CHECK:  %[[V3:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][0] : (!quake.veq<2>) -> !quake.ref
+// CHECK:  quake.rz (%{{[A-Za-z0-9_]+}}) %[[V3]] : (f64, !quake.ref) -> ()
+// CHECK:  %{{[A-Za-z0-9_]+}} = arith.constant 3.141600e+00 : f64
+// CHECK:  %[[V4:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][1] : (!quake.veq<2>) -> !quake.ref
+// CHECK:  %[[CST_8:[A-Za-z0-9_]+]] = arith.constant 5.0168146928204145 : f64
+// CHECK:  quake.rx (%[[CST_8]]) %[[V4]] : (f64, !quake.ref) -> ()
+// CHECK:  %[[V5:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][0] : (!quake.veq<2>) -> !quake.ref
+// CHECK:  %[[CST_9:[A-Za-z0-9_]+]] = arith.constant 1.1504440784612413 : f64
+// CHECK:  quake.ry (%[[CST_9]]) %[[V5]] : (f64, !quake.ref) -> ()
+// CHECK:  %[[V6:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][1] : (!quake.veq<2>) -> !quake.ref
+// CHECK:  %[[CST_10:[A-Za-z0-9_]+]] = arith.constant 1.7256734641020657 : f64
+// CHECK:  quake.rz (%[[CST_10]]) %[[V6]] : (f64, !quake.ref) -> ()

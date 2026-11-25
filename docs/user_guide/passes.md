@@ -25,15 +25,16 @@ grouped into three categories:
   intended hardware,
 - target-specific transpilation passes that adapt a circuit to a concrete device, and
 - code-generation passes that lower the MLIR dialect down toward an executable representation (QIR,
-  OpenQASM etc.).
+  OpenQASM etc.). These write text rather than MLIR, so they are exposed through `mqss-translate`
+  instead of `mqss-opt`; see [Code Generation Passes](#code-generation-passes).
 
 Before using the passes, please take note of the following:
 
 1. Passes prefixed with `Common` operate on both the `Quake` and `Catalyst-quantum` MLIR dialects.
    This lets a single implementation serve multiple front-end SDKs without duplicating the
    optimization logic per dialect.
-2. Transpilation — that is native-gate-set mapping and basis conversion — is currently only enabled
-   for the `Quake` dialect.
+2. Transpilation — that is native-gate-set mapping and basis conversion — works on both the `Quake`
+   and the `Catalyst-quantum` dialect.
 3. Refer to the [Example Usage](#example-usage) section below for instructions on how to enable and
    invoke a pass.
 
@@ -56,23 +57,6 @@ Pass Options:
 Example Invocation:
 
 - `--CommonCommutePass=mode=CX-RX`
-
-### CommonDecompositionPass
-
-Performs gate decomposition: `{Cx}` → `HCzH`, `{Cz}` → `HCxH`, `{H}` → `Rz-X-Rz`, or `{CH}` →
-`S-H-T-CNOT-TAdj-H-SAdj`.
-
-Pass Options:
-
-- `--mode=<string>` — Select pass mode: `CxToHCzH`, `CzToHCxH`, `HToRzXRz`, or `CHToCX`
-
-Example Invocation:
-
-- `--CommonDecompositionPass=mode=CxToHCzH`
-
-Note: This is a representative dialect-agnostic decomposition pass. It will be superseded by the
-`BasisConversionPass`, which performs recursive, device-aware decomposition rather than a fixed set
-of rewrites, and can query the target's native gate set from a QDMI device.
 
 ### CommonGateCancellationPass
 
@@ -178,6 +162,15 @@ Example invocation:
   `.conf` file contains one line with the path to the QDMI device shared object file and the device
   prefix. See `tests/input/cxx_qdmi.conf` and `tests/input/mqt_qdmi.conf` for examples.
 
+When neither option is given, the pass maps onto a built-in default device (currently 5 qubits), so
+the allocated qubit register is widened accordingly.
+
+For `Catalyst-quantum`, whose qubits have value semantics (every gate returns a new SSA value for
+each qubit), the pass threads the latest value of each qubit through the mapped gates and
+measurements. Every gate therefore stays connected to the measurements that depend on it, so a later
+`canonicalize` cannot delete it as dead code, and each returned measurement bit comes from its own
+measurement.
+
 ### BasisConversionPass
 
 This pass decomposes all gate operations in the input MLIR dialect into the native gate set of the
@@ -185,7 +178,10 @@ target quantum device. It incorporates numerous decomposition patterns and opera
 repeatedly rewriting non-native gates until every operation belongs to the requested native set (or
 no further decomposition rule applies).
 
-Note: Currently only available for the `Quake` MLIR dialect.
+Note: Works on both the `Quake` and the `Catalyst-quantum` MLIR dialects. For `Catalyst-quantum` the
+pass threads each qubit's value through the gates it creates, so the decomposed circuit keeps the
+data dependencies of the original. See [Catalyst-quantum Gate Names](#catalyst-quantum-gate-names)
+for the gates the Catalyst front end recognizes.
 
 Pass Options:
 
@@ -261,29 +257,64 @@ Notes:
   decomposition rules bottoms out in only native mnemonics — the pass emits a warning and leaves
   that gate as-is rather than looping forever.
 
-## CodeGen Passes
+#### Catalyst-quantum Gate Names
 
-These passes lower the optimized and transpiled MLIR down toward a target transport format,
-ultimately producing QIR or OpenQASM.
+In the `Catalyst-quantum` dialect gates are `quantum.custom` operations identified by name. These
+are the names the Catalyst front end recognizes for each mnemonic:
 
-### lower-quake-to-qir
+| Mnemonic | `quantum.custom` name            |
+| -------- | -------------------------------- |
+| `h`      | `Hadamard` (or `H`)              |
+| `x`      | `PauliX`                         |
+| `cx`     | `CNOT`                           |
+| `y`      | `PauliY`                         |
+| `cy`     | `CY`                             |
+| `z`      | `PauliZ`                         |
+| `cz`     | `CZ`                             |
+| `s`      | `S`                              |
+| `sdg`    | `S` with the `adjoint` attribute |
+| `t`      | `T`                              |
+| `tdg`    | `T` with the `adjoint` attribute |
+| `rx`     | `RX`                             |
+| `crx`    | `CRX`                            |
+| `ry`     | `RY`                             |
+| `cry`    | `CRY`                            |
+| `rz`     | `RZ`                             |
+| `crz`    | `CRZ`                            |
+| `u2`     | `U2`                             |
+| `u3`     | `U3`                             |
+| `swap`   | `SWAP`                           |
+| `prx`    | `PhasedRx`                       |
 
-The MQSS Quake-to-QIR conversion pass pipeline.
+The `r1` and `sx` mnemonics are Quake-only for now: the Catalyst front end does not recognize `R1`
+or `SX` yet, and a `quantum.custom` with one of those names is rejected when the module is analyzed.
 
-Pass Options:
+## Code Generation Passes
 
-- `profile=<string>` - Target transport layer format or QIR-Profile, <name[:version]>. Valid names:
-  `qir`, `qir-base`, `qir-adaptive`, `qir-full`. version: `2.0`, `2.1`. [Default: `qir-base:2.0`]
+These passes lower the optimized and transpiled MLIR toward a target format. Except for
+`expand-measurements`, they write text (or a different dialect) instead of rewriting the circuit, so
+they are not `mqss-opt` flags. Each one is exposed as a translation of `mqss-translate`, which runs
+the pass, or a pipeline built around it, and streams the result to its output. See
+[Translating Circuits with mqss-translate](mqss-translate.md) for usage and for what each one
+produces.
 
-Example Invocation:
+| Pass (factory in `CodeGenPasses.h`)                 | `mqss-translate` flag                                                              |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `MLIRToQASMPass` (`mlir-to-qasm`)                   | `--mlir-to-qasm2`, `--mlir-to-qasm3`                                               |
+| `QuakeDialectToIQMJSONPass` (`quake-to-iqmJSON`)    | `--mlir-to-iqm-json`                                                               |
+| `QuantumConversionPass` (`convert-quantum-to-llvm`) | `--convert-quantum-to-llvm`                                                        |
+| `LLVMDialectToLLVMIRPass` (`mlir-to-llvmIR`)        | `--llvm-dialect-to-llvm-ir`, and the last step of `--mlir-to-qir` and its variants |
 
-- `--lower-quake-to-qir=profile=qir-base:2.0`
+`MLIRToQASMPass` emits OpenQASM 2 or 3 for a Quake or Catalyst-quantum module. It takes the option
+`mode=qasm2|qasm3`; from C++, `MLIRToQASMPass(os, qasm3)` writes to a stream. It builds an MQT Core
+`QuantumComputation` and prints it, and it fails with a diagnostic on anything OpenQASM cannot
+express (dynamic angles, loops, unsupported operations); see
+[What is rejected](mqss-translate.md#what-is-rejected). `QuakeToQASM2Pass` is CUDA-Q's own OpenQASM
+2 emitter for Quake. It stays in the library but neither command-line tool exposes it.
 
-### quake-to-qasm2
-
-Transforms a Quake MLIR module into OpenQASM 2. Invocation:
-
-- `--quake-to-qasm2`
+`QuantumConversionPass` converts the Catalyst-quantum dialect to the LLVM dialect (MLIR, not LLVM
+IR). It has the option `use-array-backed-registers`, which the translation leaves at its default
+(`false`). Turning the LLVM dialect into LLVM IR is the separate `LLVMDialectToLLVMIRPass`.
 
 ### expand-measurements
 
@@ -309,49 +340,17 @@ See `tests/unittests/input/multi_rotation_circuit.qke` (used by
 `MQSSCIInterfacesTest.CompilesToIQMJSONForWholeRegisterMeasurement` in `test_Interface.cpp`) for a
 circuit that measures a whole register and the resulting IQM JSON, one measurement per qubit.
 
-### quake-to-iqmJSON
-
-Transforms a Quake MLIR module into IQM's JSON circuit format.
-
-Invocation:
-
-- `--quake-to-iqmJSON`
-
-Note: This pass emits gate names and arguments as understood by IQM's native gate set (`prx`, `cz`)
-and expects the input module to already be expressed in that gate set. Run
-[`BasisConversionPass`](#basisconversionpass) with `gates=prx,cz` beforehand to legalize the
-circuit, `cse` and `canonicalize` to clean up the result, and
-[`expand-measurements`](#expand-measurements) to flatten any whole-register measurement into
-per-qubit ones this pass can translate. For example:
+The IQM JSON emitter (`QuakeDialectToIQMJSONPass`) expects IQM's native gate set (`prx`, `cz`) and
+per-qubit measurements. `mqss-translate --mlir-to-iqm-json` runs `expand-measurements` for you, so
+the usual flow is:
 
 ```sh
-mqss-opt test.qke --BasisConversionPass=gates=prx,cz --cse --canonicalize --expand-measurements --quake-to-iqmJSON
+mqss-opt test.qke --BasisConversionPass=gates=prx,cz --cse --canonicalize \
+  | mqss-translate --mlir-to-iqm-json
 ```
 
 See `tests/dialects/quake/IQMTranspileToIQMJSON.qke` for a full example, including the expected JSON
 output.
-
-### convert-quantum-to-llvm
-
-Performs a dialect conversion from the Catalyst-quantum dialect to the LLVM dialect.
-
-Pass Options:
-
-- `--use-array-backed-registers=<bool>` — Use the array-backed-registers conversion pattern for
-  `quantum.insert` ops. [Default: `false`]
-
-Invocation:
-
-- `--convert-quantum-to-llvm`</br>
-
-Note: This pass emits the LLVM MLIR dialect and **not** LLVM IR. To emit LLVM IR, this pass should
-be followed by the `mlir-to-llvmIR` pass.
-
-### mlir-to-llvmIR
-
-Transforms the LLVM dialect into LLVM IR.
-
-- `--mlir-to-llvmIR`
 
 ## Pass Pipelines
 
@@ -384,6 +383,18 @@ MQSS-O3 optimization pipeline</br> Passes enabled:
 - `cse`
 - `canonicalize`
 
+### Output pipelines (C++ only)
+
+Two further pipelines build the output stage that `mqss-translate` and `MQSSCompiler` run. They are
+declared in `Passes/Pipelines/Pipelines.h` and are not `mqss-opt` flags, since the passes at their
+end write text:
+
+- `QASMLoweringPipeline(pm, qasm3, os)` appends `cse`, `canonicalize` and then `MLIRToQASMPass`. The
+  cleanup folds trivial loops and constant angle expressions before the circuit is printed.
+- `QIRConversionPipeline(pm, "<profile>:<version>", os)` lowers a Quake module to QIR with CUDA-Q's
+  conversion pipeline and writes LLVM IR. The profile is one of `qir`, `qir-base`, `qir-adaptive` or
+  `qir-full`, and the version is `2.0` or `2.1`.
+
 ## Verifying a Pipeline's Correctness
 
 Any pass or pipeline above can be checked for correctness with the `--mqssci-verify` flag, which
@@ -408,6 +419,11 @@ mqss-opt test.qke --cse --canonicalize --BasisConversionPass=gates=rx,cz,rz
 ```sh
 mqss-opt test.mlir --CommonMappingPass=input=/workspaces/MQSS-Quantum-Compilation-Suite/tests/input/qmap.json
 ```
+
+`mqss-opt` writes MLIR. To turn the result into OpenQASM, IQM JSON or QIR, pipe it into
+`mqss-translate`, for example
+`mqss-opt test.qke --BasisConversionPass=gates=rx,cz,rz | mqss-translate --mlir-to-qasm2`. See
+[Translating Circuits with mqss-translate](mqss-translate.md).
 
 Note: Check the directory `tests/dialects` for more test cases using `mqss-opt` and example pass
 invocations.

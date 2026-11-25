@@ -20,9 +20,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 Transpilation involves two key components:
 
-1. Qubit Mapping Mapping logical or algorithmic qubits to the physical qubits of target device
-2. Basis Conversion (Native-gate set decomposition) Decomposing algorithmic gates to the native-gate
-   set of target device
+1. Qubit Mapping: Mapping logical or algorithmic qubits to the physical qubits of target device
+2. Basis Conversion (Native-gate set decomposition): Decomposing algorithmic gates to the
+   native-gate set of target device
 
 ## Qubit Mapping
 
@@ -85,16 +85,27 @@ The pass uses the Heuristic Mapping algorithm to perform the mapping on the MLIR
 details about Heuristic Mapping and the various fields within `mapper_settings` please refer to the
 documentation : <https://mqt.readthedocs.io/projects/qmap/en/latest/mapping.html>.
 
+If no coupling map is given, the pass maps onto a built-in default device (currently 5 qubits), so
+the allocated register is widened to that size. For Catalyst-quantum circuits the mapped gates and
+measurements are chained through each qubit's latest SSA value, which keeps them live through later
+`canonicalize` runs; see [CommonMappingPass](passes.md#commonmappingpass).
+
 ## Basis Conversion (Native gate-set Decomposition)
 
 The transpiler includes a Basis Conversion pass that can map the gate operations in the input MLIR
-(quake) dialect to the native gate-set of the target device. The native-gate can be provided as a
-comma separated list of gates to the pass `--BasisConversion=gates=prx,cz`. The pass recursively
-goes through each gate operation in the input dialect and maps the gate to one of the native gates
-of the target device using a set of Decomposition Patterns. Please refer to
-`include/Passes/transforms/DecompositionPatterns.h` for a list of decomposition patterns currently
+(Quake or Catalyst-quantum) dialect to the native gate-set of the target device. The native-gate can
+be provided as a comma separated list of gates to the pass `--BasisConversionPass=gates=prx,cz`. The
+pass recursively goes through each gate operation in the input dialect and maps the gate to one of
+the native gates of the target device using a set of Decomposition Patterns. Please refer to
+`include/Passes/CodeGen/BasisConversionPatterns.h` for a list of decomposition patterns currently
 available to the pass. If a the pass cannot decompose a certain gate operation in the input dialect
-a warning message is displayed pointing to the failed decomposition.
+a warning message is displayed pointing to the failed decomposition. The rewrite rules work on a
+dialect-neutral view of each gate (its controls, targets, parameters and adjoint flag), so the same
+patterns serve both dialects.
+
+Once a circuit is in the native gate set, `mqss-translate` writes it out in the format the device
+consumes, for example OpenQASM, IQM JSON or QIR; see
+[Translating Circuits with mqss-translate](mqss-translate.md).
 
 We have tested the BasisConversion pass for decomposing to the native-gate set of target devices
 provided by the following vendors:
@@ -109,7 +120,8 @@ For details on pass invocation and mapping to the devices of the aforementioned 
 refer to the [passes](passes.md) documentation and the following test cases:
 
 ```sh
-tests/dialects/quake/IQMDecompositionToQIR.qke
-tests/dialects/quake/PLANQCDecompositionToQASM2.qke
+tests/dialects/quake/IQMTranspilationToQIR.qke
+tests/dialects/quake/PLANQCTranspilationToQASM2.qke
 tests/dialects/quake/WMIDecompositionToQIR.qke
+tests/dialects/catalyst-quantum/CatalystIQMDecomposition.mlir
 ```

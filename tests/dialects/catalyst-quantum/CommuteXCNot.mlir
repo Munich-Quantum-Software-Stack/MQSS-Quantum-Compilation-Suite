@@ -40,7 +40,7 @@ module @circuit_CommuteXCNot {
   }
 }
 
-// CHECK: %out_qubits:2 = quantum.custom "CNOT"() %2, %1 : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_0 = quantum.custom "PauliX"() %out_qubits#1 : !quantum.bit
-// CHECK: %out_qubits_1 = quantum.custom "PauliX"() %out_qubits#1 : !quantum.bit
-// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %out_qubits_1, %out_qubits#0 : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} : !quantum.bit, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "PauliX"() %[[OUT_QUBITS]]#1 : !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]] = quantum.custom "PauliX"() %[[OUT_QUBITS]]#1 : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}:2 = quantum.custom "CNOT"() %[[OUT_QUBITS_1]], %[[OUT_QUBITS]]#0 : !quantum.bit, !quantum.bit

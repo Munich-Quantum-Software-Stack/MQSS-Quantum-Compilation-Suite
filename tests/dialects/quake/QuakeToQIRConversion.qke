@@ -35,38 +35,38 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
 
 
 // CHECK: define void @__nvqpp__mlirgen__testILm3EE() {
-// CHECK:  %1 = call ptr @__quantum__rt__qubit_allocate_array(i64 3)
-// CHECK:  %2 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 0)
-// CHECK:  %3 = load ptr, ptr %2, align 8
-// CHECK:  %4 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK:  %5 = load ptr, ptr %4, align 8
-// CHECK:  %6 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 2)
-// CHECK:  %7 = load ptr, ptr %6, align 8
-// CHECK:  call void @__quantum__qis__x(ptr %7)
-// CHECK:  %8 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK:  %9 = load ptr, ptr %8, align 8
-// CHECK:  call void @__quantum__qis__rx(double 2.400000e+00, ptr %9)
-// CHECK:  call void (i64, i64, i64, i64, ptr, ...) @generalizedInvokeWithRotationsControlsTargets(i64 0, i64 0, i64 1, i64 1, ptr @__quantum__qis__x__ctl, ptr %3, ptr %5)
-// CHECK:  %10 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK:  %11 = load ptr, ptr %10, align 8
-// CHECK:  %12 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 0)
-// CHECK:  %13 = load ptr, ptr %12, align 8
-// CHECK:  call void (i64, i64, i64, i64, ptr, ...) @generalizedInvokeWithRotationsControlsTargets(i64 0, i64 0, i64 1, i64 1, ptr @__quantum__qis__x__ctl, ptr %11, ptr %13)
-// CHECK:  %14 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK:  %15 = load ptr, ptr %14, align 8
-// CHECK:  call void @__quantum__qis__rx(double 3.141600e+00, ptr %15)
-// CHECK:  %16 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 0)
-// CHECK:  %17 = load ptr, ptr %16, align 8
-// CHECK:  %18 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK:  %19 = load ptr, ptr %18, align 8
-// CHECK:  call void (i64, i64, i64, i64, ptr, ...) @generalizedInvokeWithRotationsControlsTargets(i64 0, i64 0, i64 1, i64 1, ptr @__quantum__qis__x__ctl, ptr %17, ptr %19)
-// CHECK:  %20 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK:  %21 = load ptr, ptr %20, align 8
-// CHECK:  call void @__quantum__qis__x(ptr %21)
-// CHECK:  %22 = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %1, i64 1)
-// CHECK:  %23 = load ptr, ptr %22, align 8
-// CHECK:  call void @__quantum__qis__rx(double 5.141600e+00, ptr %23)
-// CHECK:  %24 = call ptr @__quantum__qis__mz(ptr %1)
+// CHECK:  %[[V1:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__qubit_allocate_array(i64 3)
+// CHECK:  %[[V2:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 0)
+// CHECK:  %[[V3:[A-Za-z0-9_]+]] = load ptr, ptr %[[V2]], align 8
+// CHECK:  %[[V4:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 1)
+// CHECK:  %[[V5:[A-Za-z0-9_]+]] = load ptr, ptr %[[V4]], align 8
+// CHECK:  %[[V6:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 2)
+// CHECK:  %[[V7:[A-Za-z0-9_]+]] = load ptr, ptr %[[V6]], align 8
+// CHECK:  call void @__quantum__qis__x(ptr %[[V7]])
+// CHECK:  %[[V8:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 1)
+// CHECK:  %[[V9:[A-Za-z0-9_]+]] = load ptr, ptr %[[V8]], align 8
+// CHECK:  call void @__quantum__qis__rx(double 2.400000e+00, ptr %[[V9]])
+// CHECK:  call void (i64, i64, i64, i64, ptr, ...) @generalizedInvokeWithRotationsControlsTargets(i64 0, i64 0, i64 1, i64 1, ptr @__quantum__qis__x__ctl, ptr %[[V3]], ptr %[[V5]])
+// CHECK:  %[[V10:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 1)
+// CHECK:  %[[V11:[A-Za-z0-9_]+]] = load ptr, ptr %[[V10]], align 8
+// CHECK:  %[[V12:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 0)
+// CHECK:  %[[V13:[A-Za-z0-9_]+]] = load ptr, ptr %[[V12]], align 8
+// CHECK:  call void (i64, i64, i64, i64, ptr, ...) @generalizedInvokeWithRotationsControlsTargets(i64 0, i64 0, i64 1, i64 1, ptr @__quantum__qis__x__ctl, ptr %[[V11]], ptr %[[V13]])
+// CHECK:  %[[V14:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 1)
+// CHECK:  %[[V15:[A-Za-z0-9_]+]] = load ptr, ptr %[[V14]], align 8
+// CHECK:  call void @__quantum__qis__rx(double 3.141600e+00, ptr %[[V15]])
+// CHECK:  %[[V16:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 0)
+// CHECK:  %[[V17:[A-Za-z0-9_]+]] = load ptr, ptr %[[V16]], align 8
+// CHECK:  %[[V18:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 1)
+// CHECK:  %[[V19:[A-Za-z0-9_]+]] = load ptr, ptr %[[V18]], align 8
+// CHECK:  call void (i64, i64, i64, i64, ptr, ...) @generalizedInvokeWithRotationsControlsTargets(i64 0, i64 0, i64 1, i64 1, ptr @__quantum__qis__x__ctl, ptr %[[V17]], ptr %[[V19]])
+// CHECK:  %[[V20:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 1)
+// CHECK:  %[[V21:[A-Za-z0-9_]+]] = load ptr, ptr %[[V20]], align 8
+// CHECK:  call void @__quantum__qis__x(ptr %[[V21]])
+// CHECK:  %[[V22:[A-Za-z0-9_]+]] = call ptr @__quantum__rt__array_get_element_ptr_1d(ptr %[[V1]], i64 1)
+// CHECK:  %[[V23:[A-Za-z0-9_]+]] = load ptr, ptr %[[V22]], align 8
+// CHECK:  call void @__quantum__qis__rx(double 5.141600e+00, ptr %[[V23]])
+// CHECK:  %{{[A-Za-z0-9_]+}} = call ptr @__quantum__qis__mz(ptr %[[V1]])
 // CHECK:  ret void
 // CHECK: }
 

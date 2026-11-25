@@ -50,7 +50,7 @@ module @circuit_CommuteRXCNOT {
 }
 
 
-// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %3, %2 : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_3 = quantum.custom "RX"(%cst) %out_qubits_2#1 : !quantum.bit
-// CHECK: %out_qubits_4 = quantum.custom "RX"(%cst_0) %out_qubits_2#1 : !quantum.bit
-// CHECK: %out_qubits_5:2 = quantum.custom "CNOT"() %out_qubits_4, %out_qubits_2#0 : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS_2:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} : !quantum.bit, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "RX"(%{{[A-Za-z0-9_]+}}) %[[OUT_QUBITS_2]]#1 : !quantum.bit
+// CHECK: %[[OUT_QUBITS_4:[A-Za-z0-9_]+]] = quantum.custom "RX"(%{{[A-Za-z0-9_]+}}) %[[OUT_QUBITS_2]]#1 : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}:2 = quantum.custom "CNOT"() %[[OUT_QUBITS_4]], %[[OUT_QUBITS_2]]#0 : !quantum.bit, !quantum.bit

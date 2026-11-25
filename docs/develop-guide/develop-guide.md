@@ -28,11 +28,11 @@ started.
   and RUN the docker container using the following commands:
 
 ```sh
-docker build -t mqss-pass-dev -f .devcontainer/Dockerfile .
+docker build -t mqss-ci-dev -f .devcontainer/Dockerfile .
 docker run --rm -it \
   -v "$PWD":/workspaces/MQSS-Quantum-Compilation-Suite \
   -w /workspaces/MQSS-Quantum-Compilation-Suite \
-  mqss-pass-dev \
+  mqss-ci-dev \
   bash
 ```
 
@@ -67,25 +67,29 @@ MQSS-Quantum-Compilation-Suite/
 │   │   │   ├── CodeGenPasses.td
 │   │   │   ├── Patterns.h
 │   │   │   └── StaticAllocas.h
+│   │   ├── Pipelines/
+│   │   │   └── Pipelines.h     # O1/O2/O3 and the QASM/QIR output pipelines
 │   │   ├── Transforms/
 │   │   │   ├── CMakeLists.txt
-│   │   │   ├── Decomposition.h
 │   │   │   ├── Dialects.h
 │   │   │   ├── PassLogic.h
-│   │   │   ├── Pipelines.h
 │   │   │   ├── TransformPasses.h
 │   │   │   └── TransformPasses.td
 │   │   ├── Verification/
 │   │   │   └── Instrumentation.h
 │   │   └── CMakeLists.txt
+│   ├── Translation/
+│   │   ├── MLIRToTarget.h      # MLIR -> OpenQASM / IQM JSON / QIR / LLVM IR translations
+│   │   └── QASM2ToQuake.h      # OpenQASM 2 -> Quake translation
 │   ├── Utils/
+│   │   ├── BasisConversionUtils.h
 │   │   ├── CodegenUtils.h
 │   │   ├── DebugUtils.h
 │   │   ├── DialectUtils.h
 │   │   ├── Error.h
-│   │   ├── MQTCoreUtils.h
-│   │   ├── TransformUtils.h
-│   │   └── TranspilationPassUtils.h
+│   │   ├── MQTCoreUtils.h      # MLIR -> qc::QuantumComputation (shared by QASM output and verification)
+│   │   ├── QDMI_Utils.h
+│   │   └── TransformUtils.h
 │   └── CMakeLists.txt
 ├── lib/
 │   ├── Dialects/
@@ -101,38 +105,53 @@ MQSS-Quantum-Compilation-Suite/
 │   │   │   ├── ConversionPatterns.cpp
 │   │   │   ├── GlobalizeArrayValuesPass.cpp
 │   │   │   ├── LLVMDialectToLLVMIRPass.cpp
+│   │   │   ├── MLIRToQASMPass.cpp
 │   │   │   ├── QuakeToQASM2Pass.cpp
 │   │   │   ├── QuantumToLLVMDialectPass.cpp
-│   │   │   └── StaticAllocas.cpp
+│   │   │   ├── StaticAllocas.cpp
+│   │   │   └── TranslateToIQMJSON.cpp
+│   │   ├── Pipelines/
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── Pipeline.cpp
 │   │   ├── Transforms/
 │   │   │   ├── CMakeLists.txt
 │   │   │   ├── CommonCNOTReversalPass.cpp
 │   │   │   ├── CommonCommuteAndSwitchPass.cpp
-│   │   │   ├── CommonDecompositionPass.cpp
 │   │   │   ├── CommonGateCancellationPass.cpp
 │   │   │   ├── CommonGateCommutationPass.cpp
 │   │   │   ├── CommonMappingPass.cpp
 │   │   │   ├── CommonNormalizeArgAnglePass.cpp
 │   │   │   ├── CommonPatternReductionPass.cpp
-│   │   │   └── Pipeline.cpp
+│   │   │   └── QuakeExpandMeasurements.cpp
 │   │   ├── Verification/
 │   │   │   ├── CMakeLists.txt
 │   │   │   └── EquivalenceVerification.cpp
 │   │   └── CMakeLists.txt
+│   ├── Translation/
+│   │   ├── CMakeLists.txt
+│   │   ├── MLIRToTarget.cpp
+│   │   └── QASM2ToQuake.cpp
 │   └── CMakeLists.txt
 ├── scripts/                    # build.sh, mqss-cc wrapper, front-end toolchain download scripts
-├── tests/                      # tests/dialects (lit + FileCheck) and tests/code (end-to-end)
+├── tests/                      # tests/dialects (lit + FileCheck), tests/unittests (GoogleTest), tests/code (reference)
 ├── CMakeLists.txt
-└── mqss-cc.cpp
+├── mqss-cc.cpp                 # the mqss-opt tool
+└── mqss-translate.cpp          # the mqss-translate tool
 ```
 
 - Dialect registration lives in `lib/Dialects`. Dialect-agnostic MLIR optimization passes (namespace
   `mqss::mqssci::opt`) live in `lib/Passes/Transforms`. Code-generation/lowering passes (namespace
-  `mqss::mqssci::codegen`) live in `lib/Passes/CodeGen`. Circuit-equivalence verification (namespace
-  `mqss::mqssci::verify`) lives in `lib/Passes/Verification` — see
-  [Verification Infrastructure](verification.md). `lib/MQSSCIInterfaces` wraps the pass library
-  behind a single-call `MQSSCompiler` API for consumers who don't need direct `mlir::OpPassManager`
-  access — see [Integrating the MQSS Quantum Compilation Suite](integrate.md).
+  `mqss::mqssci::codegen`) live in `lib/Passes/CodeGen`. The preset pipelines (`O1`/`O2`/`O3`) and
+  the pipelines that build the output stage (`QASMLoweringPipeline`, `QIRConversionPipeline`) live
+  in `lib/Passes/Pipelines`. Circuit-equivalence verification (namespace `mqss::mqssci::verify`)
+  lives in `lib/Passes/Verification` — see [Verification Infrastructure](verification.md).
+- `lib/Translation` holds the `mqss-translate` translations (namespace `mqss::mqssci::translation`):
+  the OpenQASM 2 importer (`QASM2ToQuake.cpp`) and the exporters (`MLIRToTarget.cpp`), which run a
+  pipeline from `lib/Passes/Pipelines` and stream its text output. See
+  [Translating Circuits with mqss-translate](../user_guide/mqss-translate.md).
+- `lib/MQSSCIInterfaces` wraps the pass library behind a single-call `MQSSCompiler` API for
+  consumers who don't need direct `mlir::OpPassManager` access — see
+  [Integrating the MQSS Quantum Compilation Suite](integrate.md).
 
 - CUDAQ and Catalyst are included as external dependencies and are downloaded and installed as
   `cmake` modules. Following targets are built for each of these modules:
@@ -140,7 +159,7 @@ MQSS-Quantum-Compilation-Suite/
   - Catalyst : `MLIRMBQC MLIRQRef MLIRQuantum` These targets incorporate all dialect related headers
     and API implementations.
   - MQT-Core, MQT-QMAP, and MQT-QCEC are fetched similarly and are what the verification
-    infrastructure uses to represent circuits and run equivalence checks.
+    infrastructure and the OpenQASM output use to represent circuits and run equivalence checks.
 
 ## CMakeLists.txt
 
@@ -150,52 +169,73 @@ MQT-QMAP, MQT-QCEC, MLIR conversion libraries, etc.) that its own sources actual
 
 - `lib/Dialects/CMakeLists.txt` — builds `MQSSSupportedDialects` (dialect registration).
 - `lib/Passes/CodeGen/CMakeLists.txt` — builds `MQSSCICodeGenPasses` (code-generation/lowering
-  passes), linking `MQSSSupportedDialects` `PUBLIC`.
+  passes), linking `MQSSSupportedDialects` `PUBLIC`. This is the only `SHARED` library.
 - `lib/Passes/Transforms/CMakeLists.txt` — builds `MQSSCITransformPasses` (dialect-agnostic
-  optimization passes), linking `MQSSCICodeGenPasses` `PUBLIC`.
+  optimization passes), linking `MQSSSupportedDialects`, QDMI and MQT `PUBLIC`. It does not depend
+  on the code-generation library.
 - `lib/Passes/Verification/CMakeLists.txt` — builds `MQSSCIVerificationPasses` (equivalence-checking
   instrumentation, see [Verification Infrastructure](verification.md)), linking
   `MQSSSupportedDialects`, `MQT::CoreIR`, and `MQT::QCEC` `PUBLIC`.
+- `lib/Passes/Pipelines/CMakeLists.txt` — builds `MQSSCIPipelines` (the preset and output
+  pipelines), linking `MQSSCICodeGenPasses` and `MQSSCITransformPasses` `PUBLIC`, since a pipeline
+  is built out of passes from both.
+- `lib/Translation/CMakeLists.txt` — builds `MQSSCITranslation` (the `mqss-translate` translations),
+  linking `MQSSCIPipelines`, `MQSSCICodeGenPasses` and `MQSSCITransformPasses` `PUBLIC`.
 - `lib/MQSSCIInterfaces/CMakeLists.txt` — builds `MQSSCIInterfaces` (the `MQSSCompiler` library
-  API), linking `MQSSCITransformPasses` and `MQSSCIVerificationPasses` `PUBLIC`. Exposed to external
-  consumers as the `mqss-ci::mqss-ci` alias (see [Integrate](integrate.md)).
+  API), linking the transform, verification, pipeline, translation and code-generation libraries
+  `PUBLIC`. Exposed to external consumers as the `mqss-ci::mqss-ci` alias (see
+  [Integrate](integrate.md)).
 
-Note: `MQSSCITransformPasses` and `MQSSCIVerificationPasses` are built as plain static libraries (no
+Note: apart from `MQSSCICodeGenPasses`, the libraries are built as plain static libraries (no
 `SHARED` keyword). `add_mlir_library` builds a static library in two pieces — an `obj.<name>` object
 library that does the actual compiling, and a `<name>` static archive that just packages its
 already- compiled objects — so `target_compile_options`/`target_compile_definitions` calls must
 target `obj.<name>` (guarded by `if(TARGET obj.<name>)`) to actually affect compilation; targeting
 `<name>` alone silently does nothing. See
 [Verification Infrastructure](verification.md#a-cmake-pitfall-specific-to-this-library) for a worked
-example of this pitfall. Relatedly, these two libraries used to be built `SHARED`; they were
-switched to static because two `SHARED` libraries that both statically link overlapping LLVM
-component libraries (as these do, transitively through `MLIRPass`/`MLIRTransforms`) each end up with
-their own private copy of LLVM's global command-line option registry, which crashes at runtime with
-an "option registered more than once" error the moment both are loaded into the same process.
+example of this pitfall. Relatedly, the pass libraries used to be built `SHARED`; they were switched
+to static because two `SHARED` libraries that both statically link overlapping LLVM component
+libraries (as these do, transitively through `MLIRPass`/`MLIRTransforms`) each end up with their own
+private copy of LLVM's global command-line option registry, which crashes at runtime with an "option
+registered more than once" error the moment both are loaded into the same process.
 
 Because each dependency is declared `PUBLIC` at the target that actually needs it, everything
-propagates transitively up the chain. `root/CMakeLists.txt` only has to link the final executable
-against the top of that chain plus MLIR's own driver library:
+propagates transitively up the chain. `root/CMakeLists.txt` only has to link each executable against
+the top of its chain plus MLIR's own driver library:
 
 ```cmake
-target_link_libraries(mqss-opt PUBLIC MLIROptLib MQSSCITransformPasses MQSSCIVerificationPasses)
+target_link_libraries(mqss-opt PUBLIC MLIROptLib MQSSCITransformPasses MQSSCIPipelines
+                                      MQSSCIVerificationPasses MQSSCICodeGenPasses)
+target_link_libraries(mqss-translate PUBLIC MQSSCITranslation MLIRTranslateLib)
 ```
 
 Note: this transitive propagation is convenient, but it isn't a substitute for checking what a given
-`.cpp` file's callees actually require. If a source file (or a library it calls into, such as
-`CUDAQ::CodeGen`) needs a specific MLIR conversion library, link it explicitly at the target that
-contains that source file — don't assume it will arrive transitively from another target further
-down the chain.
+`.cpp` file's callees actually require. If a source file (or a library it calls into) needs a
+specific library, declare it explicitly at the target that contains that source file — don't assume
+it will arrive transitively from another target. Two cases in this repository are worth knowing:
+
+- **Static archive order.** The linker only scans a static archive once, so a library must come
+  _after_ everything that references it. CUDA-Q's `libOptCodeGen.a` uses the Quake and QEC dialects
+  and MLIR's Complex/Math/Func-to-LLVM conversions without declaring them, so
+  `cmake/FindCUDAQ.cmake` lists them as the `INTERFACE_LINK_LIBRARIES` of `CUDAQ::CodeGen`. Without
+  that, CMake may place them before `libOptCodeGen.a` and the link fails with undefined references
+  such as `mlir::populateMathToLLVMConversionPatterns`.
+- **LTO is off.** MQT-Core turns on link-time optimization (`ENABLE_IPO`) for Release builds and the
+  setting leaks into the whole project. With LTO, the link of the interface test executable dropped
+  a `llvm::DenseMap<mlir::TypeID, unsigned>` instantiation that a native MLIR library still
+  referenced. `root/CMakeLists.txt` therefore forces `ENABLE_IPO` and
+  `CMAKE_INTERPROCEDURAL_OPTIMIZATION` to `OFF` before `find_package(mqt-core)`.
 
 ## Testing
 
-- We use python-lit along-with ninja and FileCheck to perform dialect-level (input: MLIR dialect;
-  output: MLIR dialect) and optionally end-to-end (input:c++/python code; output: MLIR dialect)
-  testing. In the end, what is tested for correctness is the output optimized/transformed MLIR
-  dialect. In a select few cases, especially the `CodeGen` passes, the backend exchange formats e.g.
-  QIR or OpenQasm2 are tested for correctness.
+- We use python-lit along-with ninja and FileCheck to perform dialect-level testing (input: MLIR
+  dialect), and GoogleTest to test the C++ interface. In most lit tests what is checked is the
+  output optimized/transformed MLIR dialect. In the tests of the `CodeGen` passes, the backend
+  exchange formats (OpenQASM, QIR, IQM JSON, LLVM IR) are checked instead, by piping `mqss-opt` into
+  `mqss-translate`.
 
-- The tests can be found in directories : `tests/dialects` and `tests/code`.
+- The tests can be found in directories : `tests/dialects` (lit), `tests/unittests` (GoogleTest) and
+  `tests/code` (end-to-end examples, kept for reference).
 
 - Dialect-level testing
 
@@ -203,42 +243,55 @@ down the chain.
 
   `// RUN: %mqss-opt %s --CommonCommutePass=mode=CX-X 2>&1 | FileCheck %s` which runs the
   target/executable `mqss-opt` along-with the pass `CommonCommutePass`. FileCheck looks for strings
-  to match, specified using the `CHECK:` keyword, for e.g.
+  to match, specified using the `CHECK:` keyword. To test a text format, pipe into `mqss-translate`:
 
-  ```sh
-  // CHECK: %out_qubits = quantum.custom "PauliX"() %2 : !quantum.bit
-  // CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %1, %2 : !quantum.bit, !quantum.bit
-  ```
+  `// RUN: %mqss-opt %s --BasisConversionPass=gates=prx,cz --cse --canonicalize | %mqss-translate --mlir-to-qasm3 | FileCheck %s`
 
-  If an exact match is found in the output dialect, the test succeeds, otherwise the test fails.
+  Rejections are tested by expecting the command to fail and matching the diagnostic:
 
-  1. End-to-End testing (Optional) In this testing, the input is a c++/python code, which is then
-     translated to the input MLIR dialect. The testing then proceeds as in (1). The emphasis here is
-     on testing the front-end translation pipeline as well as the transformed dialects. A wrapper
-     script `mqss-cc` is used to invoke the necessary tools to translate the c++/python code to the
-     input quake or catalyst-quantum dialect. If the input code to MLIR dialect translation fails,
-     then the test itself will fail. An example test file performing such a test is shown below:
+  `// RUN: %not %mqss-translate --mlir-to-qasm2 %s 2>&1 | FileCheck %s`
+
+  If every `CHECK:` pattern is found in order in the output, the test succeeds, otherwise the test
+  fails.
+
+  1. Write SSA names as FileCheck variables, not literals. MLIR and LLVM renumber values whenever a
+     pass changes the IR (`%out_qubits_3`, `%7`), so a literal name breaks the test for no real
+     reason. Capture a name where the data flow matters and reuse it, and use a wildcard where it
+     does not:
+
+     ```sh
+     // CHECK: %[[X:[A-Za-z0-9_]+]] = quantum.custom "PauliX"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+     // CHECK: %{{[A-Za-z0-9_]+}}:2 = quantum.custom "CNOT"() %{{[A-Za-z0-9_]+}}, %[[X]] : !quantum.bit, !quantum.bit
+     ```
+
+     `%[[X:...]]` defines a variable and `%[[X]]` requires the same value again, so the second line
+     only matches a CNOT that consumes the PauliX output.
+
+  2. Watch for operations that appear more than once. A `CHECK:` line matches the _first_ line that
+     fits, and FileCheck does not backtrack, so a captured variable can bind to an earlier,
+     unintended operation. Consume the earlier operations with a plain `CHECK:` line first, or use
+     `CHECK-NEXT:` when two lines are adjacent. A kernel that repeats `%1 = quake.extract_ref`
+     before the interesting gate is the usual example. Do not reuse one capture across separate
+     functions: SSA names restart in each function, so a shared variable only matches by accident.
+
+  3. End-to-End testing (reference only) The tests in `tests/code` take c++/python code, translate
+     it with the wrapper script `mqss-cc` (which invokes `cudaq-quake` or the Catalyst tools and
+     then `mqss-opt`) and check the result as in (1). They need the front-end toolchains, are not
+     part of the regular test runs, and are kept as reference examples of the end-to-end flow:
 
      ```sh
       // RUN: %mqss-cc %S/../CommuteCNotRxPass.cpp --passes=CommonCommutePass=mode=CX-RX | FileCheck %s
-
-      // CHECK: quake.rx (%cst_1) %4 : (f64, !quake.ref) -> ()
-      // CHECK-NEXT: quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
      ```
 
-  The test proceeds as follows:
+     Make sure the paths to `cudaq-quake` and `mqss-opt` are appended to the `$PATH` environment
+     variable of your shell via the command : `eval "$(make set-target-paths)"`.
 
-  1. mqss-cc parses the command-line arguments
-     `%S/../CommuteCNotRxPass.cpp --passes=CommonCommutePass=mode=CX-RX`
-  2. Since, a c++ code is the input, it is assumed that the code contains a quantum circuit defined
-     using cudaq (will be updated in the future).
-  3. The c++ to quake dialect translation pipeline is invoked via the tool `cudaq-quake`
-  4. Once the input dialect is generated, `mqss-opt` tool is used to apply MQSS
-     optimization/translation passes defined using the `--passes` flag.
-  5. Finally, the optimized/transformed dialect is emitted which is checked by FileCheck.
+- Interface testing
 
-  Note: Make sure that the path to `cudaq-quake` and `mqss-opt` are appended to the `$PATH`
-  environment variable of your shell via the command : `eval "$(make set-target-paths)"`.
+  `MQSSCompiler` has a GoogleTest suite in `tests/unittests/MQSSCIInterfaces/test_Interface.cpp`,
+  with fixtures in `tests/unittests/input` (Quake, Catalyst-quantum and OpenQASM 2 circuits). It
+  compiles them to OpenQASM 2/3, QIR and IQM JSON and checks the output and the rejected inputs. Run
+  it with `make test-interfaces`; see [Integrate](integrate.md#testing-the-interface).
 
 ## Verification
 

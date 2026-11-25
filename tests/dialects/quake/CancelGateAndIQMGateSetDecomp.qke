@@ -40,18 +40,18 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
 }
 
 
-// CHECK: %cst = arith.constant 1.5707963267948966 : f64
-// CHECK: %cst_0 = arith.constant 3.1415926535897931 : f64
-// CHECK: %cst_1 = arith.constant 0.000000e+00 : f64
-// CHECK: quake.phased_rx (%cst_0, %cst_1) %1 : (f64, f64, !quake.ref) -> ()
-// CHECK: quake.phased_rx (%cst, %cst) %1 : (f64, f64, !quake.ref) -> ()
-// CHECK: quake.phased_rx (%cst_0, %cst_1) %1 : (f64, f64, !quake.ref) -> ()
-// CHECK: quake.z [%2] %1 : (!quake.ref, !quake.ref) -> ()
-// CHECK: quake.phased_rx (%cst, %cst) %1 : (f64, f64, !quake.ref) -> ()
-// CHECK: quake.phased_rx (%cst_0, %cst_1) %1 : (f64, f64, !quake.ref) -> ()
-// CHECK: quake.phased_rx (%cst_0, %cst_1) %1 : (f64, f64, !quake.ref) -> ()
-// CHECK: quake.phased_rx (%cst, %cst) %2 : (f64, f64, !quake.ref) -> ()
-// CHECK: quake.phased_rx (%cst_0, %cst_1) %2 : (f64, f64, !quake.ref) -> ()
-// CHECK: quake.z [%1] %2 : (!quake.ref, !quake.ref) -> ()
-// CHECK: quake.phased_rx (%cst, %cst) %2 : (f64, f64, !quake.ref) -> ()
-// CHECK: quake.phased_rx (%cst_0, %cst_1) %2 : (f64, f64, !quake.ref) -> ()
+// CHECK: %[[CST:[A-Za-z0-9_]+]] = arith.constant 1.5707963267948966 : f64
+// CHECK: %[[CST_0:[A-Za-z0-9_]+]] = arith.constant 3.1415926535897931 : f64
+// CHECK: %[[CST_1:[A-Za-z0-9_]+]] = arith.constant 0.000000e+00 : f64
+// CHECK: quake.phased_rx (%[[CST_0]], %[[CST_1]]) %[[V1:[A-Za-z0-9_]+]] : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%[[CST]], %[[CST]]) %[[V1]] : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%[[CST_0]], %[[CST_1]]) %[[V1]] : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.z [%[[V2:[A-Za-z0-9_]+]]] %[[V1]] : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%[[CST]], %[[CST]]) %[[V1]] : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%[[CST_0]], %[[CST_1]]) %[[V1]] : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%[[CST_0]], %[[CST_1]]) %[[V1]] : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%[[CST]], %[[CST]]) %[[V2]] : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%[[CST_0]], %[[CST_1]]) %[[V2]] : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.z [%[[V1]]] %[[V2]] : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%[[CST]], %[[CST]]) %[[V2]] : (f64, f64, !quake.ref) -> ()
+// CHECK: quake.phased_rx (%[[CST_0]], %[[CST_1]]) %[[V2]] : (f64, f64, !quake.ref) -> ()
