@@ -12,7 +12,7 @@ func.func @__nvqpp__mlirgen__ghzILm2EE() attributes {"cudaq-entrypoint", "cudaq-
   return
 }
 
-// CHECK: %cst = arith.constant 1.5707963267948966 : f64
-// CHECK: quake.rz (%cst) %3 : (f64, !quake.ref) -> ()
-// CHECK: quake.rx (%cst) %3 : (f64, !quake.ref) -> ()
-// CHECK: quake.rz (%cst) %3 : (f64, !quake.ref) -> ()
+// CHECK: %[[CST:[A-Za-z0-9_]+]] = arith.constant 1.5707963267948966 : f64
+// CHECK: quake.rz (%[[CST]]) %[[V3:[A-Za-z0-9_]+]] : (f64, !quake.ref) -> ()
+// CHECK: quake.rx (%[[CST]]) %[[V3]] : (f64, !quake.ref) -> ()
+// CHECK: quake.rz (%[[CST]]) %[[V3]] : (f64, !quake.ref) -> ()

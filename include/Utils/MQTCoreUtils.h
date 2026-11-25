@@ -17,13 +17,14 @@ the License.
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
+#pragma once
+
 #include "Utils/TransformUtils.h"
 #include "ir/QuantumComputation.hpp"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Rewrite/FrozenRewritePatternSet.h"
-#include "sc/exact/ExactMapper.hpp"
-#include "sc/heuristic/HeuristicMapper.hpp"
 
+#include <llvm/Support/Error.h>
 #include <mlir/Dialect/Utils/StaticValueUtils.h>
 #include <mlir/IR/Diagnostics.h>
 #include <mlir/IR/Location.h>
@@ -49,15 +50,38 @@ static std::optional<int64_t> toQubitIndex(mlir::OpFoldResult Opfr) {
 }
 
 static std::optional<double> getConstantDouble(mlir::Value v) {
-  auto defOp = v.getDefiningOp<mlir::arith::ConstantOp>();
+  auto *defOp = v.getDefiningOp();
   if (!defOp)
     return std::nullopt;
 
-  auto attr = llvm::dyn_cast<mlir::FloatAttr>(defOp.getValue());
-  if (!attr)
+  if (auto c = dyn_cast<mlir::arith::ConstantOp>(defOp)) {
+    if (auto attr = dyn_cast<mlir::FloatAttr>(c.getValue()))
+      return attr.getValueAsDouble();
     return std::nullopt;
+  }
+  if (auto n = dyn_cast<mlir::arith::NegFOp>(defOp)) {
+    auto x = getConstantDouble(n.getOperand());
+    return x ? std::optional<double>(-*x) : std::nullopt;
+  }
+  if (auto e = dyn_cast<mlir::arith::ExtFOp>(defOp))
+    return getConstantDouble(e.getIn());
 
-  return attr.getValueAsDouble();
+  auto binary = [&](auto op, auto fn) -> std::optional<double> {
+    auto l = getConstantDouble(op.getLhs());
+    auto r = getConstantDouble(op.getRhs());
+    if (!l || !r)
+      return std::nullopt;
+    return fn(*l, *r);
+  };
+  if (auto a = dyn_cast<mlir::arith::AddFOp>(defOp))
+    return binary(a, [](double l, double r) { return l + r; });
+  if (auto s = dyn_cast<mlir::arith::SubFOp>(defOp))
+    return binary(s, [](double l, double r) { return l - r; });
+  if (auto m = dyn_cast<mlir::arith::MulFOp>(defOp))
+    return binary(m, [](double l, double r) { return l * r; });
+  if (auto d = dyn_cast<mlir::arith::DivFOp>(defOp))
+    return binary(d, [](double l, double r) { return l / r; });
+  return std::nullopt;
 }
 
 static bool resolveSSAformForMeasureOps(mlir::Operation *OldMeasOp,
@@ -98,14 +122,12 @@ static bool loadMeasureOpIntoQC(QuantumOpView qview, qc::QuantumComputation &qc,
     return false;
   }
 
-  auto targetQubit = targetQubitVector[0].index;
   for (auto entry : qview.measurements) {
     auto qcQubit = toQubitIndex(entry.QubitIndex);
     if (!qcQubit.has_value()) {
-      mlir::emitError(
-          loc,
-          "Mapping: CommonMappingPass requires statically-known qubit indices; "
-          "got a dynamic quake.extract_ref/quantum.extract index");
+      mlir::emitError(loc,
+                      "Mapping: requires statically-known qubit indices; "
+                      "got a dynamic quake.extract_ref/quantum.extract index");
       return false;
     }
     qc.measure(static_cast<qc::Qubit>(*qcQubit), entry.ClassicalBitIndex);
@@ -113,16 +135,46 @@ static bool loadMeasureOpIntoQC(QuantumOpView qview, qc::QuantumComputation &qc,
   return true;
 }
 
+// Resolves `n` constant angles, or emits an error and returns nullopt.
+static std::optional<SmallVector<double, 3>>
+getConstantAngles(mlir::Operation *gateOp, ArrayRef<mlir::Value> params,
+                  size_t n, StringRef gateName) {
+  if (params.size() != n) {
+    mlir::emitError(gateOp->getLoc())
+        << "Mapping: " << gateName << " gate should have " << n
+        << " parameter(s)!";
+    return std::nullopt;
+  }
+  SmallVector<double, 3> angles;
+  for (mlir::Value p : params) {
+    auto v = getConstantDouble(p);
+    if (!v) {
+      mlir::emitError(gateOp->getLoc())
+          << "Mapping: No constant angle found to create " << gateName
+          << " gate!";
+      return std::nullopt;
+    }
+    angles.push_back(*v);
+  }
+  return angles;
+}
+
 static bool loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
                       Gate GateTy, SmallVector<mlir::Value, 2> params,
                       mlir::OpFoldResult controlQubit,
                       mlir::OpFoldResult targetQubit1,
-                      mlir::OpFoldResult targetQubit2) {
+                      mlir::OpFoldResult targetQubit2, bool isAdjoint) {
 
   // llvm::outs() << "Gate Op: " << *gateOp << " , Ty: " << GateTy << "\n";
-
-  std::optional<double> angle;
-  std::optional<double> param2;
+  // Adjoint handling (isAdjoint comes from QuantumOpView):
+  //  - Self-inverse gates (H, X, Y, Z, CNOT, CY, CZ, CH, SWAP): flag ignored.
+  //  - SAdj/TAdj: both extractors fold S/T + adjoint into these types but
+  //    leave isAdjoint set, so the flag is ignored for them (no double
+  //    inversion). S and T therefore never arrive with isAdjoint set.
+  //  - SX: sxdg when adjoint.
+  //  - Rotations (RX, RY, RZ, R1, CRX, CRY, CRZ, PhasedRx): negate the angle.
+  //  - U2, U3: emitted as the equivalent inverse U3.
+  const double sign = isAdjoint ? -1.0 : 1.0;
   // TODO: Load more gates into qc. Add to the following list.
   switch (GateTy) {
   case Gate::H:
@@ -185,87 +237,155 @@ static bool loadGates(mlir::Operation *gateOp, qc::QuantumComputation &qc,
     break;
   }
   case Gate::RX: {
-    if (params.size() != 1) {
-      mlir::emitError(gateOp->getLoc(),
-                      "Mapping: RX gate should have only 1 parameter!");
+    auto angles = getConstantAngles(gateOp, params, 1, parseGateTy(GateTy));
+    if (!angles)
       return false;
-    }
-    angle = getConstantDouble(params[0]);
-    if (!angle.has_value()) {
-      mlir::emitError(gateOp->getLoc(),
-                      "Mapping: No angle found to create RX gate!");
-      return false;
-    }
     GET_QUBIT_INDEX_OR_RETURN(RxtgtIdx, targetQubit1, gateOp->getLoc(), false);
-    qc.rx(angle.value(), RxtgtIdx);
+    qc.rx(sign * angles.value().back(), RxtgtIdx);
     break;
   }
   case Gate::RY: {
-    if (params.size() != 1) {
-      mlir::emitError(gateOp->getLoc(),
-                      "Mapping: RY gate should have only 1 parameter!");
+    auto angles = getConstantAngles(gateOp, params, 1, parseGateTy(GateTy));
+    if (!angles)
       return false;
-    }
-    angle = getConstantDouble(params[0]);
-    if (!angle.has_value()) {
-      mlir::emitError(gateOp->getLoc(),
-                      "Mapping: No angle found to create RY gate!");
-      return false;
-    }
     GET_QUBIT_INDEX_OR_RETURN(RytgtIdx, targetQubit1, gateOp->getLoc(), false);
-    qc.ry(angle.value(), RytgtIdx);
+    qc.ry(sign * angles.value().back(), RytgtIdx);
     break;
   }
   case Gate::RZ: {
-    if (params.size() != 1) {
-      mlir::emitError(gateOp->getLoc(),
-                      "Mapping: RZ gate should have only 1 parameter!");
+    auto angles = getConstantAngles(gateOp, params, 1, parseGateTy(GateTy));
+    if (!angles)
       return false;
-    }
-    angle = getConstantDouble(params[0]);
-    if (!angle.has_value()) {
-      mlir::emitError(gateOp->getLoc(),
-                      "Mapping: No angle found to create RZ gate!");
-      return false;
-    }
     GET_QUBIT_INDEX_OR_RETURN(RztgtIdx, targetQubit1, gateOp->getLoc(), false);
-    qc.rz(angle.value(), RztgtIdx);
+    qc.rz(sign * angles.value().back(), RztgtIdx);
     break;
   }
   case Gate::SWAP: {
     GET_QUBIT_INDEX_OR_RETURN(Swptgt1Idx, targetQubit1, gateOp->getLoc(),
                               false);
-    GET_QUBIT_INDEX_OR_RETURN(Swptgt2Idx, targetQubit1, gateOp->getLoc(),
+    GET_QUBIT_INDEX_OR_RETURN(Swptgt2Idx, targetQubit2, gateOp->getLoc(),
                               false);
     qc.swap(Swptgt1Idx, Swptgt2Idx);
     break;
   }
   case Gate::PhasedRx: {
-    if (params.size() != 2) {
-      mlir::emitError(gateOp->getLoc(),
-                      "Mapping: PhasedRx gate should have 2 parameters!");
+    auto angles = getConstantAngles(gateOp, params, 2, parseGateTy(GateTy));
+    if (!angles)
       return false;
-    }
-    angle = getConstantDouble(params[0]);
-    param2 = getConstantDouble(params[1]);
-    if (!angle.has_value() || !param2.has_value()) {
-      mlir::emitError(gateOp->getLoc(),
-                      "Mapping: Missing angle needed to create PhasedRx gate!");
-      return false;
-    }
+
     GET_QUBIT_INDEX_OR_RETURN(PRxtgt2Idx, targetQubit1, gateOp->getLoc(),
                               false);
-    qc.r(angle.value(), param2.value(), PRxtgt2Idx);
+    // R(theta, phi)^dagger == R(-theta, phi)
+    qc.r(sign * angles.value()[0], angles.value()[1], PRxtgt2Idx);
+    break;
+  }
+  case Gate::SX: {
+    GET_QUBIT_INDEX_OR_RETURN(SxtgtIdx, targetQubit1, gateOp->getLoc(), false);
+    if (isAdjoint)
+      qc.sxdg(SxtgtIdx);
+    else
+      qc.sx(SxtgtIdx);
+    break;
+  }
+  case Gate::R1: { // R1(theta) == MQT's P(theta)
+    auto a = getConstantAngles(gateOp, params, 1, "R1");
+    if (!a)
+      return false;
+    GET_QUBIT_INDEX_OR_RETURN(R1tgtIdx, targetQubit1, gateOp->getLoc(), false);
+    qc.p(sign * (*a)[0], R1tgtIdx);
+    break;
+  }
+  case Gate::CH: {
+    GET_QUBIT_INDEX_OR_RETURN(chctrlIdx, controlQubit, gateOp->getLoc(), false);
+    GET_QUBIT_INDEX_OR_RETURN(chtgtIdx, targetQubit1, gateOp->getLoc(), false);
+    qc.ch(chctrlIdx, chtgtIdx);
+    break;
+  }
+  case Gate::CRX: {
+    auto a = getConstantAngles(gateOp, params, 1, parseGateTy(GateTy));
+    if (!a)
+      return false;
+    GET_QUBIT_INDEX_OR_RETURN(crxctrlIdx, controlQubit, gateOp->getLoc(),
+                              false);
+    GET_QUBIT_INDEX_OR_RETURN(crxtgtIdx, targetQubit1, gateOp->getLoc(), false);
+    qc.crx(sign * (*a)[0], crxctrlIdx, crxtgtIdx);
+    break;
+  }
+  case Gate::CRY: {
+    auto a = getConstantAngles(gateOp, params, 1, parseGateTy(GateTy));
+    if (!a)
+      return false;
+    GET_QUBIT_INDEX_OR_RETURN(crxctrlIdx, controlQubit, gateOp->getLoc(),
+                              false);
+    GET_QUBIT_INDEX_OR_RETURN(crxtgtIdx, targetQubit1, gateOp->getLoc(), false);
+    qc.cry(sign * (*a)[0], crxctrlIdx, crxtgtIdx);
+    break;
+  }
+  case Gate::CRZ: {
+    auto a = getConstantAngles(gateOp, params, 1, parseGateTy(GateTy));
+    if (!a)
+      return false;
+    GET_QUBIT_INDEX_OR_RETURN(crxctrlIdx, controlQubit, gateOp->getLoc(),
+                              false);
+    GET_QUBIT_INDEX_OR_RETURN(crxtgtIdx, targetQubit1, gateOp->getLoc(), false);
+    qc.crz(sign * (*a)[0], crxctrlIdx, crxtgtIdx);
+    break;
+  }
+  case Gate::U2: {
+    auto a = getConstantAngles(gateOp, params, 2, parseGateTy(GateTy));
+    if (!a)
+      return false;
+    GET_QUBIT_INDEX_OR_RETURN(U2tgtIdx, targetQubit1, gateOp->getLoc(), false);
+    if (isAdjoint) {
+      // U2(phi, lambda) == U3(pi/2, phi, lambda), so the adjoint is
+      // U3(-pi/2, -lambda, -phi).
+      qc.u(-qc::PI / 2, -(*a)[1], -(*a)[0], U2tgtIdx);
+    } else {
+      qc.u2((*a)[0], (*a)[1], U2tgtIdx); // (phi, lambda)
+    }
+    break;
+  }
+  case Gate::U3: {
+    auto a = getConstantAngles(gateOp, params, 3, parseGateTy(GateTy));
+    if (!a)
+      return false;
+    GET_QUBIT_INDEX_OR_RETURN(U3tgtIdx, targetQubit1, gateOp->getLoc(), false);
+    if (isAdjoint) {
+      // U3(theta, phi, lambda)^dagger == U3(-theta, -lambda, -phi)
+      qc.u(-(*a)[0], -(*a)[2], -(*a)[1], U3tgtIdx);
+    } else {
+      qc.u((*a)[0], (*a)[1], (*a)[2], U3tgtIdx); // (theta, phi, lambda)
+    }
     break;
   }
   default:
-    mlir::emitError(gateOp->getLoc(), "Mapping: Unsupported Gate Type");
+    mlir::emitError(gateOp->getLoc())
+        << "Mapping: gate '" << parseGateTy(GateTy)
+        << "' is not supported by the OpenQASM backend";
     return false;
   }
   return true;
 }
 
-static bool loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
+static bool resolveIdx(const QubitID &q, mlir::OpFoldResult &out) {
+
+  if (q.index) {
+    out = q.index;
+    return true;
+  }
+  auto origin = getOriginQubit(q.base);
+  if (!origin) {
+    mlir::emitError(q.base.getLoc(),
+                    "Mapping: Could not fetch origin Qubit of operand!");
+    return false;
+  }
+  out = origin->index;
+
+  return true;
+}
+
+static bool loadGateOpsIntoQC(mlir::Operation *gateOp,
+                              const QuantumOpView &qview,
                               qc::QuantumComputation &qc,
                               bool isControlled = false) {
 
@@ -282,19 +402,10 @@ static bool loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
       return false;
     }
 
-    controlQubitIdx = controlQubitVector[0].index;
-    if (!controlQubitIdx) {
-      // Gate operation in Catalyst (value semantics)
-      // Qubit in Catalyst
-      auto operand = controlQubitVector[0].base;
-      auto controlOrig = getOriginQubit(operand);
-      if (controlOrig.has_value()) {
-        controlQubitIdx = controlOrig->index;
-      } else {
-        mlir::emitError(operand.getLoc(),
-                        "Mapping: Could not fetch origin Qubit of operand!");
-        return false;
-      }
+    if (!resolveIdx(controlQubitVector[0], controlQubitIdx)) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: Could not resolve the Index of Control Qubit!");
+      return false;
     }
   }
   if (targetQubitVector.size() != 1 && targetQubitVector.size() != 2) {
@@ -303,24 +414,62 @@ static bool loadGateOpsIntoQC(mlir::Operation *gateOp, QuantumOpView qview,
     return false;
   }
 
-  targetQubit1Idx = targetQubitVector[0].index;
   if (targetQubitVector.size() == 2) {
     targetQubit2Idx = targetQubitVector[1].index;
   }
 
-  if (!targetQubit1Idx) {
-    // Gate operation in Catalyst (value semantics)
-    // Qubit in Catalyst
-    auto operand = targetQubitVector[0].base;
-    auto targetOrig = getOriginQubit(operand);
-    if (targetOrig.has_value()) {
-      targetQubit1Idx = targetOrig->index;
-    } else {
-      mlir::emitError(operand.getLoc(),
-                      "Mapping: Could not fetch origin Qubit of operand!");
+  if (!resolveIdx(targetQubitVector[0], targetQubit1Idx)) {
+    mlir::emitError(gateOp->getLoc(),
+                    "Mapping: Could not resolve the Index of Target Qubit!");
+    return false;
+  }
+
+  if (qview.GateTy == Gate::SWAP) {
+    if (targetQubitVector.size() != 2) {
+      mlir::emitError(gateOp->getLoc(),
+                      "Mapping: SWAP gate requires exactly 2 target Qubits!");
       return false;
+    }
+    if (!targetQubit2Idx) {
+      // Gate operation in Catalyst (value semantics)
+      // Qubit in Catalyst
+      if (!resolveIdx(targetQubitVector[1], targetQubit2Idx)) {
+        mlir::emitError(
+            gateOp->getLoc(),
+            "Mapping: Could not resolve the Index of Target Qubit!");
+        return false;
+      }
     }
   }
   return loadGates(gateOp, qc, qview.GateTy, qview.params, controlQubitIdx,
-                   targetQubit1Idx, targetQubit2Idx);
+                   targetQubit1Idx, targetQubit2Idx, qview.isAdjoint);
+}
+
+static llvm::Expected<qc::QuantumComputation>
+createMQTQuantumComputation(mlir::Location loc,
+                            const QuantumKernelInfo &kernel_info) {
+  qc::QuantumComputation qc{kernel_info.AllocatedQubits,
+                            kernel_info.NumMeasureQubits};
+
+  for (auto &[Op, OpQView] : kernel_info.OpQViewMap) {
+    if (OpQView.GateTy != Gate::UNKNOWN) {
+      if (!loadGateOpsIntoQC(Op, OpQView, qc, OpQView.isControlled())) {
+        return llvm::createStringError("Mapping: Error when loading GateOp "
+                                       "into MQT's QuantumComputation");
+      }
+    } else if (!OpQView.isMeasureOp && !isIgnorableStructuralOp(Op)) {
+      mlir::emitError(Op->getLoc()) << "Mapping: operation '" << Op->getName()
+                                    << "' has no OpenQASM equivalent";
+      return llvm::createStringError("Mapping: unsupported operation");
+    }
+
+    if (OpQView.isMeasureOp) {
+      if (!loadMeasureOpIntoQC(OpQView, qc, loc)) {
+        return llvm::createStringError("Mapping: Error when loading MeasureOp "
+                                       "into MQT's QuantumComputation");
+      }
+    }
+  }
+
+  return qc;
 }

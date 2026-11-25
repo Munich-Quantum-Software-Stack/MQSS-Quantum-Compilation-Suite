@@ -15,6 +15,6 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
 }
 
 
-// CHECK: quake.h %2 : (!quake.ref) -> ()
-// CHECK: quake.z [%1] %2 : (!quake.ref, !quake.ref) -> ()
-// CHECK: quake.h %2 : (!quake.ref) -> ()
+// CHECK: quake.h %[[V2:[A-Za-z0-9_]+]] : (!quake.ref) -> ()
+// CHECK: quake.z [%{{[A-Za-z0-9_]+}}] %[[V2]] : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.h %[[V2]] : (!quake.ref) -> ()

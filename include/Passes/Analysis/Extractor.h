@@ -51,10 +51,16 @@ enum Gate {
   RX,
   RY,
   RZ,
+  R1,
+  CRX,
+  CRY,
+  CRZ,
   S,
   SAdj,
+  SX,
   T,
   TAdj,
+  U2,
   U3,
   SWAP,
   PhasedRx,
@@ -82,7 +88,9 @@ inline const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         {"CY", {QubitRole::Control, QubitRole::Target}},
         {"CZ", {QubitRole::Control, QubitRole::Target}},
         {"CH", {QubitRole::Control, QubitRole::Target}},
-        {"U3", {QubitRole::Control, QubitRole::Target}},
+        {"CRX", {QubitRole::Control, QubitRole::Target}},
+        {"CRY", {QubitRole::Control, QubitRole::Target}},
+        {"CRZ", {QubitRole::Control, QubitRole::Target}},
 
         // Single-qubit gates
         {"PauliX", {QubitRole::Target}},
@@ -102,9 +110,10 @@ inline const std::map<StringRef, std::vector<QubitRole>> gateOperandRoleTable =
         {"PhasedRx", {QubitRole::Target}},
 
         // Two-qubit symmetric gates
-        {"SWAP", {QubitRole::Target, QubitRole::Target}}
+        {"SWAP", {QubitRole::Target, QubitRole::Target}},
         // TODO:Add more Here
-};
+        {"U2", {QubitRole::Target}},
+        {"U3", {QubitRole::Target}}};
 
 inline const std::vector<QubitRole> getGateOpRoles(const StringRef &gateName) {
   auto it = gateOperandRoleTable.find(gateName);
@@ -186,13 +195,25 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return RY;
   if (GateTy == "RZ")
     return RZ;
+  if (GateTy == "R1")
+    return R1;
 
+  if (GateTy == "CRX")
+    return CRX;
+  if (GateTy == "CRY")
+    return CRY;
+  if (GateTy == "CRZ")
+    return CRZ;
+  if (GateTy == "CY")
+    return CY;
   if (GateTy == "CZ")
     return CZ;
   if (GateTy == "S")
     return S;
   if (GateTy == "SAdj")
     return SAdj;
+  if (GateTy == "SX")
+    return SX;
   if (GateTy == "T")
     return T;
   if (GateTy == "CH")
@@ -203,6 +224,8 @@ inline Gate parseGateTy(const StringRef &GateTy) {
     return SWAP;
   if (GateTy == "PhasedRx")
     return PhasedRx;
+  if (GateTy == "U2")
+    return U2;
   if (GateTy == "U3")
     return U3;
   return UNKNOWN;
@@ -223,14 +246,27 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "RY";
   if (GateTy == Gate::RZ)
     return "RZ";
+  if (GateTy == Gate::R1)
+    return "R1";
+  if (GateTy == Gate::CRX)
+    return "CRX";
+  if (GateTy == Gate::CRY)
+    return "CRY";
+  if (GateTy == Gate::CRZ)
+    return "CRZ";
   if (GateTy == Gate::PauliZ)
     return "PauliZ";
+  if (GateTy == Gate::CY)
+    return "CY";
+
   if (GateTy == Gate::CZ)
     return "CZ";
   if (GateTy == Gate::PauliY)
     return "PauliY";
   if (GateTy == Gate::S)
     return "S";
+  if (GateTy == Gate::SX)
+    return "SX";
   if (GateTy == Gate::T)
     return "T";
   if (GateTy == Gate::SAdj)
@@ -239,6 +275,12 @@ inline StringRef parseGateTy(const Gate &GateTy) {
     return "TAdj";
   if (GateTy == Gate::SWAP)
     return "SWAP";
+  if (GateTy == Gate::U2)
+    return "U2";
+  if (GateTy == Gate::U3)
+    return "U3";
+  if (GateTy == Gate::PhasedRx)
+    return "PhasedRx";
   return "UNKNOWN";
 }
 
@@ -315,10 +357,20 @@ public:
 
   virtual bool isValid() const = 0;
 
-  virtual MapVector<mlir::func::FuncOp, QuantumKernelInfo>
+  virtual MapVector<mlir::func::FuncOp, QuantumKernelInfo> &
   getKernelDialectInfo() = 0;
 
   virtual bool addOperation(Operation *NewOp) = 0;
+
+  virtual bool removeOperation(Operation *NewOp) = 0;
+
+  // Rebuilds the cached QuantumOpView of an op that is already tracked, after
+  // the op was modified in place (e.g. an operand was replaced by a folded or
+  // uniqued constant, leaving the Values cached in the old view dangling).
+  // Ops the analysis does not track (other dialects, untracked functions,
+  // measurements) are left untouched and reported as success, so this is safe
+  // to call for every modification notification.
+  virtual bool refreshOperation(Operation *Op) = 0;
 
   virtual bool UpdateOperands(Operation *Op, QubitRole Role,
                               mlir::Value OrigValue, mlir::Value NewValue) = 0;

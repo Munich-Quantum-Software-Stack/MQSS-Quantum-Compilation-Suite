@@ -90,19 +90,19 @@ module @module_HAndXYZSwitch {
   }
 }
 
-// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_1 = quantum.custom "PauliZ"() %2 : !quantum.bit
-// CHECK-NEXT: %out_qubits_2 = quantum.custom "Hadamard"() %out_qubits_1 : !quantum.bit
-// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_0 : !quantum.reg, !quantum.bit
+// CHECK: %[[V2:[A-Za-z0-9_]+]] = quantum.extract %[[V0:[A-Za-z0-9_]+]][ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]] = quantum.custom "PauliZ"() %[[V2]] : !quantum.bit
+// CHECK-NEXT: %{{[A-Za-z0-9_]+}} = quantum.custom "Hadamard"() %[[OUT_QUBITS_1]] : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.insert %[[V0]][ 0], %[[OUT_QUBITS_0:[A-Za-z0-9_]+]] : !quantum.reg, !quantum.bit
 
-// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_1 = quantum.custom "PauliX"() %2 : !quantum.bit
-// CHECK: %out_qubits_2 = quantum.custom "Hadamard"() %out_qubits_1 : !quantum.bit
-// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_0 : !quantum.reg, !quantum.bit
-// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_1 : !quantum.reg, !quantum.bit
+// CHECK: %[[V2_2:[A-Za-z0-9_]+]] = quantum.extract %[[V0]][ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS_1_2:[A-Za-z0-9_]+]] = quantum.custom "PauliX"() %[[V2_2]] : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "Hadamard"() %[[OUT_QUBITS_1_2]] : !quantum.bit
+// CHECK: %[[V3:[A-Za-z0-9_]+]] = quantum.insert %[[V0]][ 0], %[[OUT_QUBITS_0]] : !quantum.reg, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.insert %[[V3]][ 1], %[[OUT_QUBITS_1_2]] : !quantum.reg, !quantum.bit
 
-// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_1 = quantum.custom "PauliY"() %2 : !quantum.bit
-// CHECK: %out_qubits_2 = quantum.custom "Hadamard"() %out_qubits_1 : !quantum.bit
-// CHECK: %3 = quantum.insert %0[ 0], %out_qubits_0 : !quantum.reg, !quantum.bit
-// CHECK: %4 = quantum.insert %3[ 1], %out_qubits_1 : !quantum.reg, !quantum.bit
+// CHECK: %[[V2_3:[A-Za-z0-9_]+]] = quantum.extract %[[V0]][ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS_1_3:[A-Za-z0-9_]+]] = quantum.custom "PauliY"() %[[V2_3]] : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "Hadamard"() %[[OUT_QUBITS_1_3]] : !quantum.bit
+// CHECK: %[[V3_2:[A-Za-z0-9_]+]] = quantum.insert %[[V0]][ 0], %[[OUT_QUBITS_0]] : !quantum.reg, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.insert %[[V3_2]][ 1], %[[OUT_QUBITS_1_3]] : !quantum.reg, !quantum.bit

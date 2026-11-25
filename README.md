@@ -18,9 +18,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./docs/_static/mqss_logo_dark.svg" width="20%">
-    <img src="./docs/_static/mqss_logo.svg" width="20%">
-  </picture>
+  <source media="(prefers-color-scheme: dark)"  srcset="./docs/_static/mqss_logo_dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./docs/_static/mqss_logo.svg">
+  <img alt="MQSS logo" src="./docs/_static/mqss_logo.svg" width="20%">
+</picture>
+
 </div>
 
 # Munich Quantum Software Stack (MQSS)-Quantum Compilation Suite

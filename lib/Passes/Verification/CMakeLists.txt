@@ -1,7 +1,6 @@
 add_mlir_library(
   MQSSCIVerificationPasses
   EquivalenceVerification.cpp
-  DEPENDS
   LINK_LIBS
   PUBLIC
   MQSSSupportedDialects

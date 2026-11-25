@@ -18,7 +18,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
 #include "Passes/CodeGen/CodeGenPasses.h"
-#include "Passes/Transforms/Pipelines.h"
+#include "Passes/Pipelines/Pipelines.h"
 #include "Passes/Transforms/TransformPasses.h"
 
 #include <llvm/ADT/StringRef.h>
@@ -27,12 +27,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 using namespace mlir;
 
-void mqss::mqssci::opt::O1(mlir::OpPassManager &pm) {
+void mqss::mqssci::pipeline::O1(mlir::OpPassManager &pm) {
   pm.addPass(createCSEPass());
   pm.addPass(createCanonicalizerPass());
 }
 
-void mqss::mqssci::opt::O2(mlir::OpPassManager &pm) {
+void mqss::mqssci::pipeline::O2(mlir::OpPassManager &pm) {
 
   // MQSS MLIR Passes
   CommonGateCancellationPassOptions CancelOpts;
@@ -40,24 +40,32 @@ void mqss::mqssci::opt::O2(mlir::OpPassManager &pm) {
   CancelOpts.mode = "CancelGate";
   CommuteOpts.mode = "CX-RX";
 
-  pm.addPass(CommonGateCancellationPass(CancelOpts));
-  pm.addPass(CommonCNOTReversePass());
-  pm.addPass(CommonCommutePass(CommuteOpts));
+  pm.addPass(opt::CommonGateCancellationPass(CancelOpts));
+  pm.addPass(opt::CommonCNOTReversePass());
+  pm.addPass(opt::CommonCommutePass(CommuteOpts));
 
   // Standard MLIR Passes
   pm.addPass(createCSEPass());
   pm.addPass(createCanonicalizerPass());
 }
 
-void mqss::mqssci::opt::O3(mlir::OpPassManager &pm) {
+void mqss::mqssci::pipeline::O3(mlir::OpPassManager &pm) {
 
   pm.addPass(createCSEPass());
   pm.addPass(createCanonicalizerPass());
 }
 
-void mqss::mqssci::opt::QIRConversionPipeline(mlir::OpPassManager &pm,
-                                              const std::string &convertTo,
-                                              llvm::raw_ostream &os) {
+void mqss::mqssci::pipeline::CatalystQIRConversionPipeline(
+    mlir::OpPassManager &pm, llvm::raw_ostream &os) {
+
+  pm.addPass(createSymbolDCEPass());
+  pm.addPass(codegen::QuantumConversionPass());
+  pm.addPass(mqss::mqssci::codegen::LLVMDialectToLLVMIRPass(os));
+}
+
+void mqss::mqssci::pipeline::QIRConversionPipeline(mlir::OpPassManager &pm,
+                                                   const std::string &convertTo,
+                                                   llvm::raw_ostream &os) {
 
   addQIRConversionPipeline(pm, convertTo);
   // pm.addPass(cudaq::opt::createReturnToOutputLog(opts));
@@ -65,4 +73,13 @@ void mqss::mqssci::opt::QIRConversionPipeline(mlir::OpPassManager &pm,
   pm.addPass(createSymbolDCEPass());
   pm.addPass(cudaq::opt::createCCToLLVM());
   pm.addPass(mqss::mqssci::codegen::LLVMDialectToLLVMIRPass(os));
+}
+
+void mqss::mqssci::pipeline::QASMLoweringPipeline(mlir::OpPassManager &pm,
+                                                  bool qasm3,
+                                                  llvm::raw_ostream &os) {
+  // Remove what the QASM printer cannot express before translating.
+  pm.addPass(createCSEPass());
+  pm.addPass(createCanonicalizerPass()); // folds angles, trivial scf.for/if
+  pm.addPass(mqss::mqssci::codegen::MLIRToQASMPass(os, qasm3));
 }

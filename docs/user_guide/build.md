@@ -43,9 +43,9 @@ Note: These are automatically downloaded and installed by the build scripts
 - C++ : 17...20
 - Compiler : gcc and g++ 11.4
 
-A list of major packages/toolchains required is also mentioned in [dependencies](dependencies.md).
-For a full list of dependencies, including those required for the development environment, refer to
-the `.devcontainer/Dockerfile`.
+A list of major packages/toolchains required is also mentioned in
+[dependencies](../dependencies.md). For a full list of dependencies, including those required for
+the development environment, refer to the `.devcontainer/Dockerfile`.
 
 ## Prerequisites
 
@@ -127,8 +127,15 @@ For mlir dialect-level testing (faster), RUN:
 make test-dialects
 ```
 
-This command will run all the available test cases in the `tests/dialects` directory. There are a
-total of about 30 test cases currently, with more added regularly.
+This command will run all the available test cases in the `tests/dialects` directory. There are more
+than 80 test cases currently, with more added regularly. Many of them pipe `mqss-opt` into
+`mqss-translate`, so both executables have to be built and on the `$PATH`.
+
+To test the C++ interface (`MQSSCompiler`), which also builds as part of `make target`, RUN:
+
+```bash
+make test-interfaces
+```
 
 ## Source-level Compilation (Optional)
 
@@ -167,4 +174,5 @@ environment variable. After this, RUN the command:
 make test-all
 ```
 
-This runs the test-cases within `tests/code`.
+This runs the test-cases within `tests/code`. They are end-to-end examples that need the front-end
+toolchains, and are kept as reference examples rather than as part of the regular test runs above.

@@ -64,10 +64,10 @@ module @circuit_SwitchThenReduce {
   }
 }
 
-// CHECK: %out_qubits = quantum.custom "Hadamard"() %1 : !quantum.bit
-// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %3 = quantum.insert %0[ 0], %out_qubits : !quantum.reg, !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]] = quantum.custom "Hadamard"() %[[V1:[A-Za-z0-9_]+]] : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.extract %[[V0:[A-Za-z0-9_]+]][ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.insert %[[V0]][ 0], %[[OUT_QUBITS]] : !quantum.reg, !quantum.bit
 
-// CHECK: %out_qubits = quantum.custom "S"() %1 adj : !quantum.bit
-// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %3 = quantum.insert %0[ 0], %out_qubits : !quantum.reg, !quantum.bit
+// CHECK: %[[OUT_QUBITS_2:[A-Za-z0-9_]+]] = quantum.custom "S"() %[[V1]] adj : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.extract %[[V0]][ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.insert %[[V0]][ 0], %[[OUT_QUBITS_2]] : !quantum.reg, !quantum.bit

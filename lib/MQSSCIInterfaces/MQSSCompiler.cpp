@@ -20,10 +20,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "MQSSCIInterfaces/MQSSCompiler.h"
 
 #include "Passes/CodeGen/CodeGenPasses.h"
+#include "Passes/Pipelines/Pipelines.h"
 #include "Passes/Transforms/Dialects.h"
-#include "Passes/Transforms/Pipelines.h"
 #include "Passes/Transforms/TransformPasses.h"
 #include "Passes/Verification/Instrumentation.h"
+#include "Translation/MLIRToTarget.h"
 #include "Translation/QASM2ToQuake.h"
 #include "Utils/DebugUtils.h"
 #include "Utils/Error.h"
@@ -123,21 +124,22 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   mlir::PassManager pmOptimize(&context);
   switch (opts.optimization_level) {
   case OptLevel::O1:
-    mqss::mqssci::opt::O1(pmOptimize);
+    mqss::mqssci::pipeline::O1(pmOptimize);
     break;
   case OptLevel::O2:
-    mqss::mqssci::opt::O2(pmOptimize);
+    mqss::mqssci::pipeline::O2(pmOptimize);
     break;
   case OptLevel::O3:
-    mqss::mqssci::opt::O3(pmOptimize);
+    mqss::mqssci::pipeline::O3(pmOptimize);
     break;
   default:
-    mqss::mqssci::opt::O1(pmOptimize);
+    mqss::mqssci::pipeline::O1(pmOptimize);
     break;
   }
 
   if (mlir::failed(pmOptimize.run(*module))) {
-    mlir::emitError(module->getLoc(), "Compiler: Optimization Pipeline failed");
+    mlir::emitError(module->getLoc(),
+                    "MQSSCompiler: Optimization Pipeline failed");
     return std::nullopt;
   }
 
@@ -145,7 +147,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   // 4. Perform Qubit Mapping
   pmMap.addPass(mqss::mqssci::opt::CommonMappingPass(qubit_connectivity));
   if (mlir::failed(pmMap.run(*module))) {
-    mlir::emitError(module->getLoc(), "Compiler: Qubit Mapping failed!");
+    mlir::emitError(module->getLoc(), "MQSSCompiler: Qubit Mapping failed!");
     return std::nullopt;
   }
 
@@ -157,16 +159,6 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   mlir::PassManager pmConvert(&context);
   BasisConversionPassOptions conv_opts;
   conv_opts.gates = "";
-  std::vector<std::pair<std::string, std::string>>
-      appliedAliases; // (caller spelling, QASM2 gate name)
-  if (backend_name == "LRZ") {
-    for (const auto &gate : native_gates) {
-      llvm::StringRef resolvedMnemonic = resolveMnemonicAlias(gate);
-      if (resolvedMnemonic != gate)
-        appliedAliases.emplace_back(
-            gate, mnemonicToQasmGateName(resolvedMnemonic).str());
-    }
-  }
   if (!native_gates.empty()) {
     for (unsigned i = 0; i < native_gates.size(); i++) {
       conv_opts.gates += native_gates[i];
@@ -176,9 +168,10 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     pmConvert.addPass(
         mqss::mqssci::codegen::createBasisConversionPass(conv_opts));
   } else {
-    mlir::emitError(module->getLoc(),
-                    "Compiler: No native gate-set provided! BasisConversion "
-                    "and or Verification failed!");
+    mlir::emitError(
+        module->getLoc(),
+        "MQSSCompiler: No native gate-set provided! BasisConversion "
+        "and or Verification failed!");
     return nullopt;
   }
 
@@ -204,8 +197,9 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   }
 
   if (mlir::failed(pmConvert.run(*module))) {
-    mlir::emitError(module->getLoc(),
-                    "Compiler: BasisConversion and or Verification failed!");
+    mlir::emitError(
+        module->getLoc(),
+        "MQSSCompiler: BasisConversion and or Verification failed!");
     return std::nullopt;
   }
 
@@ -219,16 +213,23 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   // whether or not anything in the final circuit still calls it. Strip these
   // out so the returned OpenQASM2 is just the entry point's circuit body.
   case OPENQASM2:
-    pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
+    mqss::mqssci::pipeline::QASMLoweringPipeline(pmLower, /*qasm3=*/false, os);
+    // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pmLower.run(*module))) {
-      mlir::emitError(module->getLoc(),
-                      "Compiler: Conversion of Quake to QASM2 failed");
+      mlir::emitError(
+          module->getLoc(),
+          "MQSSCompiler: Conversion of MLIR dialect to QASM2 failed");
       return std::nullopt;
     }
-    result =
-        restoreCallerGateNames(stripSpuriousGateDefs(result), appliedAliases);
-    if (backend_name == "LRZ") {
-      result = insertCallerGateDefinitions(result, appliedAliases);
+    break;
+  case OPENQASM3:
+    mqss::mqssci::pipeline::QASMLoweringPipeline(pmLower, /*qasm3=*/true, os);
+    // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
+    if (mlir::failed(pmLower.run(*module))) {
+      mlir::emitError(
+          module->getLoc(),
+          "MQSSCompiler: Conversion of MLIR dialect to QASM2 failed");
+      return std::nullopt;
     }
     break;
   case IQMJSON:
@@ -236,7 +237,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     pmLower.addPass(mqss::mqssci::codegen::QuakeDialectToIQMJSONPass(os));
     if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(module->getLoc(),
-                      "Compiler: Conversion of Quake to IQMJSON failed");
+                      "MQSSCompiler: Conversion of Quake to IQMJSON failed");
       return std::nullopt;
     }
     break;
@@ -251,18 +252,18 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
                       "invalid QIR lowering options: " + opts.result_format);
       return std::nullopt;
     }
-    mqss::mqssci::opt::QIRConversionPipeline(pmLower, *convertto, os);
-    if (mlir::failed(pmLower.run(*module))) {
-      mlir::emitError(module->getLoc(), "Compiler: Conversion of Quake to " +
+    auto translate = mqss::mqssci::translation::makeQIRTranslation(*convertto);
+    if (mlir::failed(translate(module->getOperation(), os))) {
+      mlir::emitError(module->getLoc(), "MQSSCompiler: Conversion to " +
                                             result_type_string + " failed");
       return std::nullopt;
     }
     break;
   }
   default:
-    mlir::emitError(
-        module->getLoc(),
-        "Unsupported exchange format! Only OpenQASM2 and QIR supported!");
+    mlir::emitError(module->getLoc(),
+                    "MQSSCompiler: Unsupported Output exchange format! "
+                    "Only OpenQASM, IQMJSON and QIR supported!");
     return std::nullopt;
   }
 
@@ -292,7 +293,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compile(
   auto module = parseModuleFromFile(input_circuit_path, context);
   if (!module) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "failed to parse input circuit file");
+                    "MQSSCompiler: failed to parse input circuit file");
     return std::nullopt;
   }
 
@@ -322,7 +323,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileSource(
   auto module = parseModuleString(input_circuit, context);
   if (!module) {
     mlir::emitError(mlir::UnknownLoc::get(&context),
-                    "failed to parse input circuit source");
+                    "MQSSCompiler: failed to parse input circuit source");
     return std::nullopt;
   }
 
@@ -375,58 +376,6 @@ mqss::mqssci::MQSSCompiler::stripSpuriousGateDefs(const std::string &qasm) {
   return result.str();
 }
 
-// Renames each gate call in OpenQASM2 text from its QASM2 gate name back to
-// the caller's own spelling, e.g. "phased_rx(" -> "r(". Only aliases this
-// specific compile actually used are applied, so a caller that genuinely
-// calls the gate "prx" is never touched. A match is only replaced when it
-// starts a gate name, so e.g. a hypothetical "cphased_rx(" is left alone.
-std::string mqss::mqssci::MQSSCompiler::restoreCallerGateNames(
-    std::string qasm,
-    const std::vector<std::pair<std::string, std::string>> &appliedAliases) {
-  auto isIdentChar = [](char c) {
-    return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
-  };
-  for (const auto &[callerSpelling, qasmName] : appliedAliases) {
-    const std::string needle = qasmName + "(";
-    const std::string replacement = callerSpelling + "(";
-    for (size_t pos = qasm.find(needle); pos != std::string::npos;
-         pos = qasm.find(needle, pos)) {
-      if (pos > 0 && isIdentChar(qasm[pos - 1])) {
-        pos += needle.size();
-        continue;
-      }
-      qasm.replace(pos, needle.size(), replacement);
-      pos += replacement.size();
-    }
-  }
-  return qasm;
-}
-
-// Declares each caller-spelled gate that restoreCallerGateNames introduced
-// (e.g. "r") right after the qelib1.inc include, since those names aren't
-// defined there. Gates qelib1.inc already defines (e.g. "cz") have no entry
-// and are left alone; each gate is declared at most once.
-std::string mqss::mqssci::MQSSCompiler::insertCallerGateDefinitions(
-    std::string qasm,
-    const std::vector<std::pair<std::string, std::string>> &appliedAliases) {
-  std::string defs;
-  std::unordered_set<std::string> alreadyDefined;
-  for (const auto &[callerSpelling, qasmName] : appliedAliases) {
-    auto body = qasmGateDefinitionBody(qasmName);
-    if (body.empty() || !alreadyDefined.insert(callerSpelling).second)
-      continue;
-    defs += "gate " + callerSpelling + body.str() + "\n";
-  }
-  if (defs.empty())
-    return qasm;
-
-  // Insert after the include line if present, else after the version line.
-  size_t pos = qasm.find("include \"qelib1.inc\";");
-  if (pos == std::string::npos)
-    pos = qasm.find("OPENQASM 2.0;");
-  if (pos == std::string::npos)
-    return defs + qasm;
-  size_t eol = qasm.find('\n', pos);
-  qasm.insert(eol == std::string::npos ? qasm.size() : eol + 1, defs);
-  return qasm;
-}
+// restoreCallerGateNames and insertCallerGateDefinitions (the other OpenQASM
+// post-processing helpers) live in Utils/CodegenUtils.h, shared with the
+// Catalyst-to-QASM pass.

@@ -39,7 +39,7 @@ module @kernel_CommuteCNOTX {
   }
 }
 
-// CHECK: %out_qubits = quantum.custom "PauliX"() %2 : !quantum.bit
-// CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %1, %out_qubits : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0#0 : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_2 = quantum.custom "PauliX"() %out_qubits_1#0 : !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]] = quantum.custom "PauliX"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK: %[[OUT_QUBITS_0:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %{{[A-Za-z0-9_]+}}, %[[OUT_QUBITS]] : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS]], %[[OUT_QUBITS_0]]#0 : !quantum.bit, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "PauliX"() %[[OUT_QUBITS_1]]#0 : !quantum.bit

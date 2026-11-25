@@ -49,14 +49,14 @@ module @circuit_CommuteThenCancel {
   }
 }
 
-// CHECK: %1 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits = quantum.custom "RX"(%cst) %2 : !quantum.bit
-// CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %1, %out_qubits : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0#0 : !quantum.bit, !quantum.bit
-// CHECK: %3 = quantum.extract %0[ 2] : !quantum.reg -> !quantum.bit
-// CHECK: %4 = quantum.extract %0[ 3] : !quantum.reg -> !quantum.bit
-// CHECK: %5 = quantum.insert %0[ 0], %out_qubits_1#0 : !quantum.reg, !quantum.bit
-// CHECK: %6 = quantum.insert %5[ 1], %out_qubits_1#1 : !quantum.reg, !quantum.bit
-// CHECK: %7 = quantum.insert %6[ 2], %3 : !quantum.reg, !quantum.bit
-// CHECK: %8 = quantum.insert %7[ 3], %4 : !quantum.reg, !quantum.bit
+// CHECK: %[[V1:[A-Za-z0-9_]+]] = quantum.extract %[[V0:[A-Za-z0-9_]+]][ 0] : !quantum.reg -> !quantum.bit
+// CHECK: %[[V2:[A-Za-z0-9_]+]] = quantum.extract %[[V0]][ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]] = quantum.custom "RX"(%{{[A-Za-z0-9_]+}}) %[[V2]] : !quantum.bit
+// CHECK: %[[OUT_QUBITS_0:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[V1]], %[[OUT_QUBITS]] : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS]], %[[OUT_QUBITS_0]]#0 : !quantum.bit, !quantum.bit
+// CHECK: %[[V3:[A-Za-z0-9_]+]] = quantum.extract %[[V0]][ 2] : !quantum.reg -> !quantum.bit
+// CHECK: %[[V4:[A-Za-z0-9_]+]] = quantum.extract %[[V0]][ 3] : !quantum.reg -> !quantum.bit
+// CHECK: %[[V5:[A-Za-z0-9_]+]] = quantum.insert %[[V0]][ 0], %[[OUT_QUBITS_1]]#0 : !quantum.reg, !quantum.bit
+// CHECK: %[[V6:[A-Za-z0-9_]+]] = quantum.insert %[[V5]][ 1], %[[OUT_QUBITS_1]]#1 : !quantum.reg, !quantum.bit
+// CHECK: %[[V7:[A-Za-z0-9_]+]] = quantum.insert %[[V6]][ 2], %[[V3]] : !quantum.reg, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.insert %[[V7]][ 3], %[[V4]] : !quantum.reg, !quantum.bit

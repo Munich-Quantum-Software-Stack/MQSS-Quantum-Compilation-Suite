@@ -20,5 +20,5 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
-// CHECK: %cst_1 = arith.constant 5.0168146928204145 : f64
-// CHECK: quake.rz (%cst_1) %2 : (f64, !quake.ref) -> ()
+// CHECK: %[[CST_1:[A-Za-z0-9_]+]] = arith.constant 5.0168146928204145 : f64
+// CHECK: quake.rz (%[[CST_1]]) %{{[A-Za-z0-9_]+}} : (f64, !quake.ref) -> ()

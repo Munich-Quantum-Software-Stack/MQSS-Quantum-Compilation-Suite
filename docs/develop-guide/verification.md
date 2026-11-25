@@ -187,8 +187,13 @@ transpilation pipeline with `--mqssci-verify` appended, and check for the printe
   currently skip kernels once they stop being translatable to `qc::QuantumComputation` (e.g. after
   lowering past the quantum dialects into LLVM dialect during code generation). Placing
   `--mqssci-verify` ahead of a `CodeGen` pass in a pipeline is untested territory.
-- `createMQTQuantumComputation` silently skips any `Gate` enum value it has no translation case for
-  (see `loadGates` in `include/Utils/MQTCoreUtils.h`) rather than erroring. A gate type added to the
-  `Gate` enum in `include/Passes/Analysis/Extractor.h` without a corresponding case in `loadGates`
-  will be dropped from the translated circuit rather than causing a build or runtime error. When
-  adding a new gate type end-to-end, add its `loadGates` case in the same change.
+- `createMQTQuantumComputation` (in `include/Utils/MQTCoreUtils.h`) is shared with the OpenQASM
+  output, and returns an `llvm::Expected`. It reports an error, instead of skipping the operation,
+  for a `Gate` enum value that has no case in `loadGates`, for a quantum operation that has no
+  circuit equivalent (for example `quantum.gphase`), and for a gate with more than one control. A
+  gate type added to the `Gate` enum in `include/Passes/Analysis/Extractor.h` without its
+  `loadGates` case is therefore an error for every circuit that uses it, whether the circuit is
+  being verified or printed. When adding a new gate type end-to-end, add its `loadGates` case in the
+  same change; see [Adding a gate](templates.md#adding-a-gate).
+- A circuit that `createMQTQuantumComputation` rejects cannot be checked. The instrumentation
+  reports `Verify: Could not create MQT Core's qc::QuantumComputation Obj` for that kernel.

@@ -13,10 +13,10 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
     %4 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
     quake.x %4 : (!quake.ref) -> ()
 
-// CHECK: %1 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK: quake.h %2 : (!quake.ref) -> ()
-// CHECK: quake.z %1 : (!quake.ref) -> ()
+// CHECK: %[[V1:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0:[A-Za-z0-9_]+]][0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %[[V2:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.h %[[V2]] : (!quake.ref) -> ()
+// CHECK: quake.z %[[V1]] : (!quake.ref) -> ()
 
     %measOut = quake.mz %0 : (!quake.veq<2>) -> !cc.stdvec<!quake.measure>
     return
@@ -29,10 +29,11 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
     %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
     quake.h %2 : (!quake.ref) -> ()
 
-// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK: quake.h %2 : (!quake.ref) -> ()
-// CHECK: quake.y %1 : (!quake.ref) -> ()
-// CHECK: %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %[[Y1:[A-Za-z0-9_]+]] = quake.extract_ref %[[REG_Y:[A-Za-z0-9_]+]][0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %[[Y2:[A-Za-z0-9_]+]] = quake.extract_ref %[[REG_Y]][0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.h %[[Y2]] : (!quake.ref) -> ()
+// CHECK: quake.y %[[Y1]] : (!quake.ref) -> ()
+// CHECK: %{{[A-Za-z0-9_]+}} = quake.extract_ref %[[REG_Y]][1] : (!quake.veq<2>) -> !quake.ref
 
     %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
     quake.h %3 : (!quake.ref) -> ()
@@ -48,10 +49,11 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
     %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
     quake.h %2 : (!quake.ref) -> ()
 
-// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK: quake.h %2 : (!quake.ref) -> ()
-// CHECK: quake.x %1 : (!quake.ref) -> ()
-// CHECK: %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %[[Z1:[A-Za-z0-9_]+]] = quake.extract_ref %[[REG_Z:[A-Za-z0-9_]+]][0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %[[Z2:[A-Za-z0-9_]+]] = quake.extract_ref %[[REG_Z]][0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.h %[[Z2]] : (!quake.ref) -> ()
+// CHECK: quake.x %[[Z1]] : (!quake.ref) -> ()
+// CHECK: %{{[A-Za-z0-9_]+}} = quake.extract_ref %[[REG_Z]][1] : (!quake.veq<2>) -> !quake.ref
 
     %3 = quake.extract_ref %0[1] : (!quake.veq<2>) -> !quake.ref
     quake.h %3 : (!quake.ref) -> ()

@@ -2,5 +2,5 @@
 
 // RUN: %mqss-cc %S/../CommuteCNotRxPass.cpp --passes=CommonCommutePass=mode=CX-RX | FileCheck %s
 
-// CHECK: quake.rx (%cst_1) %4 : (f64, !quake.ref) -> ()
-// CHECK-NEXT: quake.x [%1] %2 : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.rx (%{{[A-Za-z0-9_]+}}) %{{[A-Za-z0-9_]+}} : (f64, !quake.ref) -> ()
+// CHECK-NEXT: quake.x [%{{[A-Za-z0-9_]+}}] %{{[A-Za-z0-9_]+}} : (!quake.ref, !quake.ref) -> ()

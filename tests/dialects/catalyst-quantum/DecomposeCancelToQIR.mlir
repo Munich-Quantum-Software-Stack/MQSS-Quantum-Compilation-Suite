@@ -1,4 +1,4 @@
-// RUN: %mqss-opt %s --CommonCNOTReversePass --CommonGateCancellationPass=mode=CancelGate --convert-quantum-to-llvm --mlir-to-llvmIR -o /dev/null 2>&1 | FileCheck %s
+// RUN: %mqss-opt %s --CommonCNOTReversePass --CommonGateCancellationPass=mode=CancelGate | %mqss-translate --mlir-to-qir | FileCheck %s
 
 // A three-stage pipeline: reverse the CNOT into an H-CX-H sandwich, cancel the
 // adjacent Hadamard pair that forms on the target-output chain (where the

@@ -37,57 +37,75 @@ using namespace llvm;
 using namespace cudaq;
 using namespace catalyst;
 
+// Maps a Quake op to the name of the Gate it represents. An op is only
+// reported as a gate if its *control count matches that gate*: 0 or exactly 1
+// control for the gates that have a controlled variant (X/Y/Z/Rx/Ry/Rz/H ->
+// CNOT/CY/CZ/CRX/CRY/CRZ/CH), and 0 controls for the rest. Anything else (a
+// Toffoli, a controlled S, ...) is reported as {false, ""} so consumers see
+// GateTy == UNKNOWN instead of a mislabelled gate.
+//
+// Target and parameter counts are deliberately NOT checked here: they are
+// already enforced by the dialect's NumTargets<N>/NumParameters<N> op traits
+// (QuakeOps.td), so a verified module can't violate them.
+//
+// Adjointness is not part of the shape and is not checked here either, except
+// where it is part of the gate's name (SAdj/TAdj); consumers read it from
+// QuantumOpView::isAdjoint.
 inline std::tuple<bool, StringLiteral> isQuakeQuantumGate(Operation *op) {
+  using Result = std::tuple<bool, StringLiteral>;
+  const Result NotAGate{false, ""};
 
-  if (auto x = dyn_cast<quake::XOp>(op)) {
-    if (x.getControls().size() == 0)
-      return {true, "PauliX"};
-    return {true, "CNOT"};
-  }
+  // 0 controls -> `plain`, exactly 1 control -> `controlled`, else not a gate.
+  auto zeroOrOneControl = [&](size_t numControls, StringLiteral plain,
+                              StringLiteral controlled) -> Result {
+    if (numControls == 0)
+      return {true, plain};
+    if (numControls == 1)
+      return {true, controlled};
+    return NotAGate;
+  };
+  // Gates that only exist without controls.
+  auto uncontrolled = [&](size_t numControls, StringLiteral name) -> Result {
+    if (numControls == 0)
+      return {true, name};
+    return NotAGate;
+  };
 
-  if (auto x = dyn_cast<quake::YOp>(op)) {
-    if (x.getControls().size() == 0)
-      return {true, "PauliY"};
-    return {true, "CY"};
-  }
-  if (auto x = dyn_cast<quake::ZOp>(op)) {
-    if (x.getControls().size() == 0)
-      return {true, "PauliZ"};
-    return {true, "CZ"};
-  }
+  if (auto x = dyn_cast<quake::XOp>(op))
+    return zeroOrOneControl(x.getControls().size(), "PauliX", "CNOT");
+  if (auto x = dyn_cast<quake::YOp>(op))
+    return zeroOrOneControl(x.getControls().size(), "PauliY", "CY");
+  if (auto x = dyn_cast<quake::ZOp>(op))
+    return zeroOrOneControl(x.getControls().size(), "PauliZ", "CZ");
+  if (auto x = dyn_cast<quake::HOp>(op))
+    return zeroOrOneControl(x.getControls().size(), "H", "CH");
 
   if (auto x = dyn_cast<quake::RxOp>(op))
-    return {true, "RX"};
+    return zeroOrOneControl(x.getControls().size(), "RX", "CRX");
   if (auto x = dyn_cast<quake::RyOp>(op))
-    return {true, "RY"};
+    return zeroOrOneControl(x.getControls().size(), "RY", "CRY");
   if (auto x = dyn_cast<quake::RzOp>(op))
-    return {true, "RZ"};
+    return zeroOrOneControl(x.getControls().size(), "RZ", "CRZ");
 
-  if (auto x = dyn_cast<quake::HOp>(op)) {
-    if (!x.getControls().empty())
-      return {true, "CH"};
-    return {true, "H"};
-  }
-  if (auto x = dyn_cast<quake::PhasedRxOp>(op)) {
-    return {true, "PhasedRx"};
-  }
-  if (auto x = dyn_cast<quake::SwapOp>(op)) {
-    return {true, "SWAP"};
-  }
-  if (auto x = dyn_cast<quake::U3Op>(op)) {
-    return {true, "U3"};
-  }
-  if (auto x = dyn_cast<quake::SOp>(op)) {
-    if (x.isAdj())
-      return {true, "SAdj"};
-    return {true, "S"};
-  }
-  if (auto t = dyn_cast<quake::TOp>(op)) {
-    if (t.isAdj())
-      return {true, "TAdj"};
-    return {true, "T"};
-  }
-  return {false, ""};
+  if (auto x = dyn_cast<quake::R1Op>(op))
+    return uncontrolled(x.getControls().size(), "R1");
+  if (auto x = dyn_cast<quake::PhasedRxOp>(op))
+    return uncontrolled(x.getControls().size(), "PhasedRx");
+  if (auto x = dyn_cast<quake::SwapOp>(op))
+    return uncontrolled(x.getControls().size(), "SWAP");
+  if (auto x = dyn_cast<quake::U2Op>(op))
+    return uncontrolled(x.getControls().size(), "U2");
+  if (auto x = dyn_cast<quake::U3Op>(op))
+    return uncontrolled(x.getControls().size(), "U3");
+
+  if (auto x = dyn_cast<quake::SOp>(op))
+    return uncontrolled(x.getControls().size(),
+                        x.isAdj() ? StringLiteral("SAdj") : StringLiteral("S"));
+  if (auto x = dyn_cast<quake::TOp>(op))
+    return uncontrolled(x.getControls().size(),
+                        x.isAdj() ? StringLiteral("TAdj") : StringLiteral("T"));
+
+  return NotAGate;
 }
 
 inline quantum::CustomOp isCatalystQuantumGateOp(mlir::Operation *op) {
@@ -96,6 +114,15 @@ inline quantum::CustomOp isCatalystQuantumGateOp(mlir::Operation *op) {
     return g;
   }
   return nullptr;
+}
+
+// Ops that carry no gate semantics and are safe to skip when building the
+// QuantumComputation. Anything else with GateTy == UNKNOWN is unsupported.
+inline bool isIgnorableStructuralOp(mlir::Operation *op) {
+  return isa<quantum::InitializeOp, quantum::FinalizeOp, quantum::DeviceInitOp,
+             quantum::DeviceReleaseOp, quantum::DeallocOp, quantum::ExtractOp,
+             quantum::InsertOp, quake::DeallocOp, quake::ExtractRefOp,
+             quake::DiscriminateOp>(op);
 }
 
 inline bool hasQuantumEffect(Operation *op) {

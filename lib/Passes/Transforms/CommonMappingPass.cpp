@@ -20,8 +20,12 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Passes/Transforms/TransformPasses.h"
 #include "Utils/MQTCoreUtils.h"
-#include "Utils/TranspilationPassUtils.h"
+#include "Utils/QDMI_Utils.h"
+#include "ir/QuantumComputation.hpp"
+#include "ir/operations/NonUnitaryOperation.hpp"
 #include "sc/configuration/Configuration.hpp"
+#include "sc/exact/ExactMapper.hpp"
+#include "sc/heuristic/HeuristicMapper.hpp"
 
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/IR/Diagnostics.h>
@@ -272,7 +276,7 @@ private:
   }
 };
 
-struct MeasureMeantOpInfoTy {
+struct MeasurementOpInfoTy {
   const qc::Operation *MeasOp;
   SmallVector<mlir::Value> Results;
 };
@@ -280,8 +284,8 @@ struct MeasureMeantOpInfoTy {
 // Performs a controlled Dead-Code elimination optimization.
 // It is less aggressive than MLIR's canonicalize and cse optimizations.
 // canonicalize and cse can remove newly introduced gates.
-bool controlledDCE(SmallPtrSet<mlir::Operation *, 16> OpsToErase,
-                   mlir::Value OldAllocaOp, mlir::Value newAllocOp) {
+static bool controlledDCE(SmallPtrSet<mlir::Operation *, 16> OpsToErase,
+                          mlir::Value OldAllocaOp, mlir::Value newAllocOp) {
   llvm::SmallPtrSet<mlir::Operation *, 16> operandsToCleanup;
 
   for (mlir::Operation *op : OpsToErase) {
@@ -315,13 +319,30 @@ bool controlledDCE(SmallPtrSet<mlir::Operation *, 16> OpsToErase,
   return true;
 }
 
-bool createMappedCircuit(mlir::IRRewriter &builder, Location &loc,
-                         QuantumDialect &DialectTy, mlir::Value newAllocOp,
-                         QuantumComputation &qcMapped,
-                         MapVector<mlir::Operation *, int> &MeasureOps) {
+static bool
+createMappedCircuit(mlir::IRRewriter &builder, Location &loc,
+                    QuantumDialect &DialectTy, mlir::Value newAllocOp,
+                    QuantumComputation &qcMapped,
+                    MapVector<mlir::Operation *, tuple<int, int>> &MeasureOps) {
 
-  std::vector<MeasureMeantOpInfoTy> NewMeasureOps;
+  std::vector<MeasurementOpInfoTy> NewMeasureOps;
+  // Catalyst has value semantics: a gate or measure returns new SSA values
+  // for its qubits, and the next op on a qubit must consume that value.
+  // Otherwise the gate's results are dead and canonicalize deletes it.
+  // Quake qubits are references, so re-extracting them is harmless.
+  const bool valueSemantics = DialectTy == QuantumDialect::Catalyst;
+  llvm::DenseMap<unsigned, mlir::Value>
+      latestQubit; // physical qubit -> newest value
 
+  // Returns the latest SSA value of the qubit. Important in value semantics
+  auto getQubit = [&](unsigned q) -> mlir::Value {
+    if (valueSemantics)
+      if (auto it = latestQubit.find(q); it != latestQubit.end())
+        return it->second;
+    return createExtractOp(loc, DialectTy, builder, newAllocOp, q);
+  };
+
+  llvm::DenseMap<int, SmallVector<mlir::Value>> classical_bit_new_results_map;
   for (const auto &op : qcMapped) {
     if (op->getType() == qc::Barrier)
       continue;
@@ -335,8 +356,7 @@ bool createMappedCircuit(mlir::IRRewriter &builder, Location &loc,
     SmallVector<mlir::Value> targetValues = {};
 
     for (auto target : targets) {
-      auto targetRefOp =
-          createExtractOp(loc, DialectTy, builder, newAllocOp, target);
+      auto targetRefOp = getQubit(target);
       if (!targetRefOp) {
         mlir::emitError(loc, "Mapping: Could not create targetRefOp");
         return false;
@@ -344,8 +364,7 @@ bool createMappedCircuit(mlir::IRRewriter &builder, Location &loc,
       targetValues.push_back(targetRefOp);
     }
     for (auto ctrl : controls) {
-      auto controlRef =
-          createExtractOp(loc, DialectTy, builder, newAllocOp, ctrl.qubit);
+      auto controlRef = getQubit(ctrl.qubit);
       if (!controlRef) {
         mlir::emitError(loc, "Mapping: Could not create ExtractRefOp");
         return false;
@@ -421,13 +440,35 @@ bool createMappedCircuit(mlir::IRRewriter &builder, Location &loc,
         mlir::emitError(loc, "Mapping: Could not create new GateOp");
         return false;
       }
+      if (valueSemantics) {
+        // Record the new values of the Qubits: controls, then targets.
+        unsigned i = 0;
+        for (auto ctrl : controls)
+          latestQubit[ctrl.qubit] = newop->getResult(i++);
+        for (auto target : targets)
+          latestQubit[target] = newop->getResult(i++);
+      }
     } else if (op->getType() == qc::Measure) {
       auto newResults = createMeasureOp(loc, DialectTy, builder, targetValues);
       if (newResults.empty()) {
         mlir::emitError(loc, "Mapping: Could not create MeasureOp");
         return false;
       }
+      const auto *measureop = dynamic_cast<NonUnitaryOperation *>(op.get());
+      if (!measureop) {
+        mlir::emitError(
+            loc,
+            "Mapping: Could not cast qc::MeasureOp to NonUnitaryOperation");
+        return false;
+      }
+      classical_bit_new_results_map[measureop->getClassics()[0]] = newResults;
       NewMeasureOps.push_back({op.get(), newResults});
+      if (valueSemantics) {
+        for (size_t k = 0; k < targets.size(); ++k)
+          latestQubit[targets[k]] =
+              newResults[2 * k + 1]; // [mres, outQubit] per target
+      }
+
     } else {
       mlir::emitError(loc,
                       "Mapping: Unsupported gate type produced by the mapper");
@@ -443,14 +484,25 @@ bool createMappedCircuit(mlir::IRRewriter &builder, Location &loc,
   // instead of its own corresponding one. Needs to look up the NewMeasureOps
   // entry that actually corresponds to oldMeasOp (matching on identity or
   // position) rather than hardcoding index 0.
-  for (auto &[oldMeasOp, numMeasurements] : MeasureOps) {
-    if (numMeasurements == 1) {
-      auto newResults = NewMeasureOps[0].Results;
-      if (!resolveSSAformForMeasureOps(oldMeasOp, newResults)) {
-        mlir::emitError(loc,
-                        "Mapping: Could not resolve SSA form for MeasureOp");
-        return false;
-      }
+  for (auto &[oldMeasOp, MeasurementInfo] : MeasureOps) {
+    auto [numMeasurements, classicalBitIndx] = MeasurementInfo;
+    // Whole-register measures are in OpsToErase and
+    // are erased later by controlledDCE. Resolving them here would erase them
+    // too, leaving a dangling pointer in OpsToErase.
+    if (numMeasurements != 1) {
+      continue;
+    }
+
+    if (!classical_bit_new_results_map.count(classicalBitIndx)) {
+      mlir::emitError(oldMeasOp->getLoc(),
+                      "Mapping: createMappedCircuit: Classical Bit of "
+                      "MeasureOp does not have new Results");
+      return false;
+    }
+    auto newResults = classical_bit_new_results_map[classicalBitIndx];
+    if (!resolveSSAformForMeasureOps(oldMeasOp, newResults)) {
+      mlir::emitError(loc, "Mapping: Could not resolve SSA form for MeasureOp");
+      return false;
     }
   }
   // builder.create<func::ReturnOp>(loc);
@@ -461,10 +513,10 @@ bool createMappedCircuit(mlir::IRRewriter &builder, Location &loc,
   return true;
 }
 
-tuple<bool, llvm::StringRef> performMapping(MyModuleAnalysis &analysis,
-                                            Architecture architecture,
-                                            Configuration &settings,
-                                            QuantumDialect &DialectTy) {
+static tuple<bool, llvm::StringRef> performMapping(MyModuleAnalysis &analysis,
+                                                   Architecture architecture,
+                                                   Configuration &settings,
+                                                   QuantumDialect &DialectTy) {
 
   for (auto &[kernel, info] : analysis.getKernelDialectInfo()) {
 
@@ -487,9 +539,8 @@ tuple<bool, llvm::StringRef> performMapping(MyModuleAnalysis &analysis,
     }
 
     qc::QuantumComputation qc{info.AllocatedQubits, info.NumMeasureQubits};
-    MapVector<mlir::Operation *, int> MeasureOps;
+    MapVector<mlir::Operation *, tuple<int, int>> MeasureOps;
     SmallPtrSet<mlir::Operation *, 16> OpsToErase;
-    SmallVector<SmallVector<mlir::Value, 2>> AllResults;
 
     for (auto &[Op, qview] : info.OpQViewMap) {
       if (qview.GateTy != Gate::UNKNOWN) {
@@ -507,7 +558,10 @@ tuple<bool, llvm::StringRef> performMapping(MyModuleAnalysis &analysis,
                                         "into MQT's QuantumComputation");
           return {false, kernel.getSymName()};
         }
-        MeasureOps[Op] = qview.measurements.size();
+        MeasureOps[Op] = {qview.measurements.size(),
+                          qview.measurements.empty()
+                              ? -1
+                              : qview.measurements[0].ClassicalBitIndex};
         if (qview.measurements.size() != 1)
           OpsToErase.insert(
               Op); // only the shape resolveSSAformForMeasureOps can't handle

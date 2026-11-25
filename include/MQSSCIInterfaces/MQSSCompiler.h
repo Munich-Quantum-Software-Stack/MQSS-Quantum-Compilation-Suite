@@ -51,7 +51,15 @@ inline constexpr std::array<InputFormatInfo, 3> kInputFormats = {{
     {QASM2, "OpenQASM2"},
 }};
 
-enum ResultFormat { OPENQASM2, QIR, QIRBASE, QIRADAPTIVE, QIRFULL, IQMJSON };
+enum ResultFormat {
+  OPENQASM2,
+  OPENQASM3,
+  QIR,
+  QIRBASE,
+  QIRADAPTIVE,
+  QIRFULL,
+  IQMJSON
+};
 
 enum OptLevel { O1, O2, O3 };
 
@@ -60,6 +68,8 @@ inline std::string resulttype_tostring(ResultFormat result_format) {
   switch (result_format) {
   case OPENQASM2:
     return "OpenQASM2";
+  case OPENQASM3:
+    return "OpenQASM3";
   case QIR:
     return "qir";
   case QIRBASE:
@@ -212,14 +222,6 @@ public:
 
 private:
   static std::string stripSpuriousGateDefs(const std::string &qasm);
-
-  static std::string restoreCallerGateNames(
-      std::string qasm,
-      const std::vector<std::pair<std::string, std::string>> &appliedAliases);
-
-  static std::string insertCallerGateDefinitions(
-      std::string qasm,
-      const std::vector<std::pair<std::string, std::string>> &appliedAliases);
 
   // Shared pipeline core: runs optimization, qubit mapping, basis
   // conversion, and lowering on an already-parsed module. compile() and

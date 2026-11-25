@@ -42,7 +42,7 @@ module @circuit_HXHToZ {
   }
 }
 
-// CHECK: %out_qubits = quantum.custom "PauliZ"() %1 : !quantum.bit
-// CHECK: %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_0 = quantum.custom "Hadamard"() %2 : !quantum.bit
-// CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0 : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]] = quantum.custom "PauliZ"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK: %[[V2:[A-Za-z0-9_]+]] = quantum.extract %{{[A-Za-z0-9_]+}}[ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS_0:[A-Za-z0-9_]+]] = quantum.custom "Hadamard"() %[[V2]] : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}:2 = quantum.custom "CNOT"() %[[OUT_QUBITS]], %[[OUT_QUBITS_0]] : !quantum.bit, !quantum.bit

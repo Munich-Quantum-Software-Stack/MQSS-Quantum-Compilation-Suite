@@ -30,10 +30,21 @@ func.func @circuit_qmap1() attributes {qnode} {
   func.return
 }
 
-// CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %4, %3 : !quantum.bit, !quantum.bit
-// CHECK: %5 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %6 = quantum.extract %0[ 4] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_1:2 = quantum.custom "SWAP"() %5, %6 : !quantum.bit, !quantum.bit
-// CHECK: %7 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %8 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %8, %7 : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} : !quantum.bit, !quantum.bit
+// CHECK: %[[V3:[A-Za-z0-9_]+]] = quantum.extract %[[V0:[A-Za-z0-9_]+]][ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %[[V4:[A-Za-z0-9_]+]] = quantum.extract %[[V0]][ 2] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS_0:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[V4]], %[[V3]] : !quantum.bit, !quantum.bit
+// CHECK: %[[V5:[A-Za-z0-9_]+]] = quantum.extract %[[V0]][ 0] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]]:2 = quantum.custom "SWAP"() %[[V5]], %[[OUT_QUBITS]]#0 : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS_2:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS_1]]#0, %[[OUT_QUBITS_0]]#1 : !quantum.bit, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %[[OUT_QUBIT:[A-Za-z0-9_]+]] = quantum.measure %[[OUT_QUBITS_2]]#0 : i1, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %[[OUT_QUBIT_4:[A-Za-z0-9_]+]] = quantum.measure %[[OUT_QUBITS_2]]#1 : i1, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %[[OUT_QUBIT_6:[A-Za-z0-9_]+]] = quantum.measure %[[OUT_QUBITS_0]]#0 : i1, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %[[OUT_QUBIT_8:[A-Za-z0-9_]+]] = quantum.measure %[[OUT_QUBITS]]#1 : i1, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %[[OUT_QUBIT_10:[A-Za-z0-9_]+]] = quantum.measure %[[OUT_QUBITS_1]]#1 : i1, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.extract %[[V0]][ 0] : !quantum.reg -> !quantum.bit
+// CHECK: %[[V7:[A-Za-z0-9_]+]] = quantum.insert %[[V0]][ 0], %[[OUT_QUBIT_10]] : !quantum.reg, !quantum.bit
+// CHECK: %[[V8:[A-Za-z0-9_]+]] = quantum.insert %[[V7]][ 1], %[[OUT_QUBIT_4]] : !quantum.reg, !quantum.bit
+// CHECK: %[[V9:[A-Za-z0-9_]+]] = quantum.insert %[[V8]][ 2], %[[OUT_QUBIT_8]] : !quantum.reg, !quantum.bit
+// CHECK: %[[V10:[A-Za-z0-9_]+]] = quantum.insert %[[V9]][ 3], %[[OUT_QUBIT_6]] : !quantum.reg, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.insert %[[V10]][ 4], %[[OUT_QUBIT]] : !quantum.reg, !quantum.bit

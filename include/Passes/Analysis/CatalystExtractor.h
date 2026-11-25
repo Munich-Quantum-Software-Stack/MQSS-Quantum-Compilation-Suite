@@ -60,12 +60,8 @@ public:
 
       kernel.getBody().walk([&](Operation *Op) {
         if (Op->getDialect()->getNamespace() == "quantum") {
-          // if (auto measop = dyn_cast<catalyst::quantum::MeasureOp>(Op)) {
-          //     kernelInfo.NumMeasureQubits += getMeasuredQubitCount(measop);
-          //     return;
-          // }
+
           if (auto allocaOp = dyn_cast<catalyst::quantum::AllocOp>(Op)) {
-            kernelInfo.AllocatedQubits = allocaOp.getNqubitsAttr().value();
             if (kernelInfo.AllocOp) {
               mlir::emitError(allocaOp->getLoc(),
                               "CatalystExtractor: gaterOpInfo: Can Only have 1 "
@@ -73,6 +69,15 @@ public:
               _valid = false;
               return;
             }
+            auto NumQubits = allocaOp.getNqubitsAttr();
+            if (!NumQubits.has_value()) {
+              mlir::emitError(allocaOp->getLoc(),
+                              "CatalystExtractor: gaterOpInfo: Dynamic qubit "
+                              "allocation is not supported");
+              _valid = false;
+              return;
+            }
+            kernelInfo.AllocatedQubits = NumQubits.value();
             kernelInfo.AllocOp = allocaOp;
             return;
           }
@@ -93,6 +98,9 @@ public:
   }
 
   bool addOperation(Operation *NewOp) override {
+    if (NewOp->getDialect()->getNamespace() != "quantum") {
+      return true;
+    }
     auto funcOp = NewOp->getParentOfType<mlir::func::FuncOp>();
     if (!funcOp) {
       mlir::emitError(
@@ -124,6 +132,61 @@ public:
     return true;
   }
 
+  bool removeOperation(Operation *Op) override {
+    if (Op->getDialect()->getNamespace() != "quantum") {
+      return true;
+    }
+    auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
+    if (!funcOp) {
+      mlir::emitError(
+          Op->getLoc(),
+          "CatalystExtractor: Removing Op: Parent Function not found!");
+      return false;
+    }
+    if (!KernelDialectInfo.count(funcOp)) {
+      mlir::emitError(
+          Op->getLoc(),
+          "CatalystExtractor: Removing Op: No QuantumOpInfo for funcOp");
+      return false;
+    }
+    auto &QInfo = KernelDialectInfo[funcOp].OpQViewMap;
+    if (!QInfo.count(Op)) {
+      mlir::emitError(Op->getLoc(), "CatalystExtractor: Removing Op: Op "
+                                    "Not present in QuantumInfoMap");
+      return false;
+    }
+    QInfo.erase(Op);
+    return true;
+  }
+
+  bool refreshOperation(Operation *Op) override {
+    if (Op->getDialect()->getNamespace() != "quantum")
+      return true;
+    auto funcOp = Op->getParentOfType<mlir::func::FuncOp>();
+    if (!funcOp)
+      return true;
+    auto kernelIt = KernelDialectInfo.find(funcOp);
+    if (kernelIt == KernelDialectInfo.end())
+      return true; // not a tracked kernel
+    auto &QInfo = kernelIt->second.OpQViewMap;
+    auto viewIt = QInfo.find(Op);
+    if (viewIt == QInfo.end())
+      return true; // op is not tracked (e.g. alloc)
+    // Rebuilding a measurement view would add to NumMeasureQubits a second
+    // time, so keep the existing one.
+    if (viewIt->second.isMeasureOp)
+      return true;
+    auto view = createQuantumView(Op, kernelIt->second.NumMeasureQubits);
+    if (!view) {
+      mlir::emitError(Op->getLoc(),
+                      "CatalystExtractor: refreshOperation: Could not create "
+                      "QuantumView for Op");
+      return false;
+    }
+    viewIt->second = std::move(*view);
+    return true;
+  }
+
   bool UpdateOperands(Operation *Op, QubitRole Role, mlir::Value OrigValue,
                       mlir::Value NewValue) {
     auto funcOp = getOpParentFunc(Op);
@@ -150,7 +213,7 @@ public:
 
   bool clearKernelBody(func::FuncOp &kernel,
                        std::set<Operation *> notToErase) override {
-    // cleaning the mlir::funcOp corresponding to the quake circuit
+    // cleaning the mlir::funcOp corresponding to the quantum circuit
     if (!KernelDialectInfo.count(kernel)) {
       mlir::emitError(kernel->getLoc(),
                       "CatalystExtractor: No QuantumOpInfo for funcOp");
@@ -166,7 +229,7 @@ public:
     return true;
   }
 
-  MapVector<func::FuncOp, QuantumKernelInfo> getKernelDialectInfo() override {
+  MapVector<func::FuncOp, QuantumKernelInfo> &getKernelDialectInfo() override {
     return KernelDialectInfo;
   }
 
@@ -209,10 +272,15 @@ private:
       auto gateName = g.getGateName();
       view.isAdjoint = g.getAdjointFlag(); // Is this correct?
 
-      if (gateName == "S" && view.isAdjoint)
-        gateName = "SAdj";
-      else if ((gateName == "Hadamard" || gateName == "H") &&
-               (g.getQubitOperands().size() == 2)) {
+      if (view.isAdjoint) {
+        if (gateName == "S") {
+          gateName = "SAdj";
+        } else if (gateName == "T") {
+          gateName = "TAdj";
+        }
+      }
+      if ((gateName == "Hadamard" || gateName == "H") &&
+          (g.getQubitOperands().size() == 2)) {
         gateName = "CH";
       }
 

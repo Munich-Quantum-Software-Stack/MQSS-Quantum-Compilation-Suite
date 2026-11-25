@@ -39,7 +39,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <llvm/Support/raw_ostream.h>
 #include <string>
 
-namespace mqss::mqssci::opt {
+namespace mqss::mqssci::pipeline {
 /**
   @brief Function defining the optimization level `O1`.
   @details This functions appends to a `mlir::PassManager` the list of passes
@@ -64,8 +64,14 @@ void O2(mlir::OpPassManager &pm);
   corresponding to optimization level `O3`.
 */
 void O3(mlir::OpPassManager &pm);
+void CatalystQIRConversionPipeline(mlir::OpPassManager &pm,
+                                   llvm::raw_ostream &os);
+
 void QIRConversionPipeline(mlir::OpPassManager &pm,
                            const std::string &qir_version,
                            llvm::raw_ostream &os = llvm::outs());
 void QuakeToIQMJSONPipeline(mlir::OpPassManager &pm);
-} // namespace mqss::mqssci::opt
+void QASMLoweringPipeline(mlir::OpPassManager &pm, bool qasm3,
+                          llvm::raw_ostream &os = llvm::outs());
+
+} // namespace mqss::mqssci::pipeline

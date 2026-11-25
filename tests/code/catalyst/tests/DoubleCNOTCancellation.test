@@ -2,8 +2,8 @@
 
 // RUN: %mqss-cc %S/../DoubleCNOTCancellation.py --function circuit_DoubleCNOTCancellation --passes=CommonGateCancellationPass=mode=CancelGate | FileCheck %s
 
-// CHECK: %out_qubits = quantum.custom "PauliX"() %1 : !quantum.bit
-// CHECK: %2 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %2, %out_qubits : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_1 = quantum.custom "PauliX"() %out_qubits_0#1 : !quantum.bit
-// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %out_qubits_1, %out_qubits_0#0 : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]] = quantum.custom "PauliX"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK: %[[V2:[A-Za-z0-9_]+]] = quantum.extract %{{[A-Za-z0-9_]+}}[ 0] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS_0:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[V2]], %[[OUT_QUBITS]] : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]] = quantum.custom "PauliX"() %[[OUT_QUBITS_0]]#1 : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}:2 = quantum.custom "CNOT"() %[[OUT_QUBITS_1]], %[[OUT_QUBITS_0]]#0 : !quantum.bit, !quantum.bit

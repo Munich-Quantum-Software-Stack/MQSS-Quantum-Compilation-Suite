@@ -25,11 +25,11 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
-// CHECK: %1 = quake.extract_ref %0[1] : (!quake.veq<4>) -> !quake.ref
-// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<4>) -> !quake.ref
-// CHECK: %3 = quake.extract_ref %0[1] : (!quake.veq<4>) -> !quake.ref
-// CHECK: quake.x [%2] %3 : (!quake.ref, !quake.ref) -> ()
-// CHECK: quake.rx (%cst) %1 : (f64, !quake.ref) -> ()
-// CHECK: %4 = quake.extract_ref %0[2] : (!quake.veq<4>) -> !quake.ref
-// CHECK: %5 = quake.extract_ref %0[3] : (!quake.veq<4>) -> !quake.ref
-// CHECK: %measOut = quake.mz %0 : (!quake.veq<4>) -> !cc.stdvec<!quake.measure>
+// CHECK: %[[V1:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0:[A-Za-z0-9_]+]][1] : (!quake.veq<4>) -> !quake.ref
+// CHECK: %[[V2:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][0] : (!quake.veq<4>) -> !quake.ref
+// CHECK: %[[V3:[A-Za-z0-9_]+]] = quake.extract_ref %[[V0]][1] : (!quake.veq<4>) -> !quake.ref
+// CHECK: quake.x [%[[V2]]] %[[V3]] : (!quake.ref, !quake.ref) -> ()
+// CHECK: quake.rx (%{{[A-Za-z0-9_]+}}) %[[V1]] : (f64, !quake.ref) -> ()
+// CHECK: %{{[A-Za-z0-9_]+}} = quake.extract_ref %[[V0]][2] : (!quake.veq<4>) -> !quake.ref
+// CHECK: %{{[A-Za-z0-9_]+}} = quake.extract_ref %[[V0]][3] : (!quake.veq<4>) -> !quake.ref
+// CHECK: %measOut = quake.mz %[[V0]] : (!quake.veq<4>) -> !cc.stdvec<!quake.measure>

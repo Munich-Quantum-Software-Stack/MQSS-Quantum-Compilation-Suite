@@ -44,10 +44,6 @@ public:
   llvm::DenseMap<StringRef, VerifyQuantumComputationTy> get_module_snap_shot();
 
 private:
-  llvm::Expected<qc::QuantumComputation>
-  createMQTQuantumComputation(mlir::Location loc, std::size_t allocatedQubits,
-                              std::size_t numMeasureQubits,
-                              MapVector<Operation *, QuantumOpView> OpQView);
   void runBeforePass(mlir::Pass *pass, mlir::Operation *op) override;
   void runAfterPass(mlir::Pass *pass, mlir::Operation *op) override;
   void runAfterPassFailed(Pass *pass, Operation *op) override;

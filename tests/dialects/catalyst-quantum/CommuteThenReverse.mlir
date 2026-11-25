@@ -68,20 +68,20 @@ module @circuit_CommuteThenReverse {
   }
 }
 
-// CHECK: %out_qubits_0 = quantum.custom "H"() %3 : !quantum.bit
-// CHECK: %out_qubits_1 = quantum.custom "H"() %2 : !quantum.bit
-// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %out_qubits_0, %out_qubits_1 : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_3 = quantum.custom "H"() %out_qubits_2#0 : !quantum.bit
-// CHECK: %out_qubits_4 = quantum.custom "H"() %out_qubits_2#1 : !quantum.bit
-// CHECK: %out_qubits_5 = quantum.custom "PauliZ"() %out_qubits_4 : !quantum.bit
-// CHECK: %out_qubits_6 = quantum.custom "H"() %out_qubits_3 : !quantum.bit
-// CHECK: %out_qubits_7 = quantum.custom "H"() %out_qubits_5 : !quantum.bit
-// CHECK: %out_qubits_8:2 = quantum.custom "CNOT"() %out_qubits_6, %out_qubits_7 : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_9 = quantum.custom "H"() %out_qubits_8#0 : !quantum.bit
-// CHECK: %out_qubits_10 = quantum.custom "H"() %out_qubits_8#1 : !quantum.bit
+// CHECK: %[[OUT_QUBITS_0:[A-Za-z0-9_]+]] = quantum.custom "H"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[V2:[A-Za-z0-9_]+]] : !quantum.bit
+// CHECK: %[[OUT_QUBITS_2:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS_0]], %[[OUT_QUBITS_1]] : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS_3:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS_2]]#0 : !quantum.bit
+// CHECK: %[[OUT_QUBITS_4:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS_2]]#1 : !quantum.bit
+// CHECK: %[[OUT_QUBITS_5:[A-Za-z0-9_]+]] = quantum.custom "PauliZ"() %[[OUT_QUBITS_4]] : !quantum.bit
+// CHECK: %[[OUT_QUBITS_6:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS_3]] : !quantum.bit
+// CHECK: %[[OUT_QUBITS_7:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[OUT_QUBITS_5]] : !quantum.bit
+// CHECK: %[[OUT_QUBITS_8:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS_6]], %[[OUT_QUBITS_7]] : !quantum.bit, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "H"() %[[OUT_QUBITS_8]]#0 : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "H"() %[[OUT_QUBITS_8]]#1 : !quantum.bit
 
-// CHECK: %out_qubits = quantum.custom "H"() %2 : !quantum.bit
-// CHECK: %out_qubits_0 = quantum.custom "H"() %1 : !quantum.bit
-// CHECK: %out_qubits_1:2 = quantum.custom "CNOT"() %out_qubits, %out_qubits_0 : !quantum.bit, !quantum.bit
-// CHECK: %out_qubits_2 = quantum.custom "H"() %out_qubits_1#0 : !quantum.bit
-// CHECK: %out_qubits_3 = quantum.custom "H"() %out_qubits_1#1 : !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]] = quantum.custom "H"() %[[V2]] : !quantum.bit
+// CHECK: %[[OUT_QUBITS_0_2:[A-Za-z0-9_]+]] = quantum.custom "H"() %{{[A-Za-z0-9_]+}} : !quantum.bit
+// CHECK: %[[OUT_QUBITS_1_2:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS]], %[[OUT_QUBITS_0_2]] : !quantum.bit, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "H"() %[[OUT_QUBITS_1_2]]#0 : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}} = quantum.custom "H"() %[[OUT_QUBITS_1_2]]#1 : !quantum.bit

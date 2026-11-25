@@ -37,10 +37,12 @@ dialect to the MQSS Quantum Compilation Suite
 - A key step in adding your pass is pass registration. This ensures that the passes can be found by
   the target `mqss-opt`.
 
-  - To register a pass we need to make additions to 2 files `Transforms.h` and `Transforms.td`.
-    These files can be found within `include/Passes/Transforms` .
+  - To register a pass we need to make additions to 2 files `TransformPasses.h` and
+    `TransformPasses.td`. These files can be found within `include/Passes/Transforms`. Passes that
+    lower to another format or dialect live in `include/Passes/CodeGen` instead, with
+    `CodeGenPasses.h` and `CodeGenPasses.td`.
 
-  - Here is an example of pass registration within `Transforms.td`:
+  - Here is an example of pass registration within `TransformPasses.td`:
 
   ```sh
     def CommonNormalizeArgAnglePass : Pass<"CommonNormalizeArgAnglePass", "mlir::ModuleOp"> {
@@ -55,7 +57,10 @@ dialect to the MQSS Quantum Compilation Suite
 
   ```
 
-  The pass is registered for the `mqss-opt` target. The pass does not have any options.
+  The pass is registered for the `mqss-opt` target. The pass does not have any options. Every pass
+  in `TransformPasses.td` is registered with `mqss-opt` by `registerMQSSTransformsPasses()`, which
+  `mqss-cc.cpp` (the source of `mqss-opt`) calls. A pass from `CodeGenPasses.td` needs its own
+  `register<PassName>Pass()` call there, as `registerBasisConversionPass()` does.
 
   - If your pass will need options/arguments to be passed, you can add the field:
 
@@ -66,7 +71,7 @@ dialect to the MQSS Quantum Compilation Suite
     ];
     ```
 
-  - In `Transforms.h` within the `mqss::mqssci::opt` namespace, the following should be added:
+  - In `TransformPasses.h` within the `mqss::mqssci::opt` namespace, the following should be added:
 
     ```sh
        std::unique_ptr<mlir::Pass> CommonNormalizeArgAnglePass();
@@ -81,7 +86,7 @@ A basic pass structure is as shown:
 
 ```c++
 
-     #include "Passes/Transforms/PassUtils.h"
+     #include "Passes/Transforms/TransformPasses.h"
 
       using namespace mlir;
       using namespace llvm;
@@ -89,14 +94,14 @@ A basic pass structure is as shown:
       namespace mqss::mqssci::opt {
 
       #define GEN_PASS_DEF_COMMONCNOTREVERSEPASS
-      #include "Passes/Transforms/Transforms.h.inc"
+      #include "Passes/Transforms/TransformPasses.h.inc"
 
       } // namespace mqss::mqssci::opt
 
      namespace {
 
 
-      class CommonCNOTReverse : public mqss_backend::impl::CommonCNOTReversePassBase<CommonCNOTReverse> {
+      class CommonCNOTReverse : public mqss::mqssci::opt::impl::CommonCNOTReversePassBase<CommonCNOTReverse> {
 
       public:
 
@@ -110,14 +115,15 @@ A basic pass structure is as shown:
 
       } // namespace
 
-      std::unique_ptr<mlir::Pass> mqss_backend::CommonCNOTReversePass() {
+      std::unique_ptr<mlir::Pass> mqss::mqssci::opt::CommonCNOTReversePass() {
         return std::make_unique<CommonCNOTReverse>();
       }
 
 ```
 
-After the pass is registered within `Transforms.td`, and the project is re-built, a templated class
-is automatically created within `build/include/Passes/Transforms.h.inc`. The class looks like this:
+After the pass is registered within `TransformPasses.td`, and the project is re-built, a templated
+class is automatically created within `build/include/Passes/Transforms/TransformPasses.h.inc`. The
+class looks like this:
 
 ```mlir
 #ifdef GEN_PASS_DECL_COMMONCNOTREVERSEPASS
@@ -206,4 +212,49 @@ and enable our quantum abstractions on top of it, follow these steps:
 - Include the header files with the required dialect definitions within
   `include/Utils/dialectutils.h`.
 - Add an entry for the dialect within `include/Analysis/DialectAnalysisSelector.h`.
-- Register the dialect within `mqss-cc.cpp` (`registry.insert<>()`).
+- Register the dialect in `registerMQSSDialects` (`lib/Dialects/Dialects.cpp`,
+  `registry.insert<>()`). Both `mqss-opt` and `mqss-translate` call it, so one registration serves
+  both tools.
+
+## Adding a gate
+
+A gate has to be known in several places before it works end to end. Walk through them in this
+order, and add a test for each tool the gate should reach:
+
+1. **`include/Passes/Analysis/Extractor.h`** — add the gate to the `Gate` enum and to both
+   `parseGateTy` overloads (name to enum and back).
+2. **Operand roles (Catalyst).** Add the gate's `quantum.custom` name to `gateOperandRoleTable`,
+   listing which operands are controls and which are targets. A gate missing from this table is
+   rejected when a Catalyst module is analyzed (`Found a gate Op with empty Operand Roles`). `SX`
+   and `R1` are in the enum but not in this table yet, so they cannot be used from Catalyst.
+3. **Quake.** Map the Quake operation to the gate name in `isQuakeQuantumGate`
+   (`include/Utils/DialectUtils.h`). Shapes the function does not return as a gate (for example a
+   gate with too many controls) are treated as unsupported.
+4. **`loadGates` in `include/Utils/MQTCoreUtils.h`** — add a `case` that creates the matching
+   `qc::QuantumComputation` operation, and handle the adjoint flag (negate an angle, or use the
+   inverse gate). This function feeds both the OpenQASM output and the equivalence checker. A gate
+   without a `case` hits the `default:` branch and fails with
+   `gate '<name>' is not supported by the OpenQASM backend`, instead of being dropped silently.
+5. **Decomposition.** If the gate takes part in native-gate decomposition, add its rewrite rules to
+   `include/Passes/CodeGen/BasisConversionPatterns.h` and its mnemonic to the tables in
+   `lib/Passes/CodeGen/BasisConversionPass.cpp`.
+
+## Adding a translation
+
+`mqss-translate` only runs MLIR _translations_; it never consults the pass registry, so a pass
+registered with `registerXPass()` does not appear in `mqss-translate -h`. To expose a new output
+format, add a `static mlir::TranslateFromMLIRRegistration` to `registerMLIRToTargetTranslations()`
+in `lib/Translation/MLIRToTarget.cpp`:
+
+- Give it a name and description that are **string literals**: the registration keeps a reference to
+  them and they must outlive it.
+- Build the translation function with `makeTranslation` when the last pass of the pipeline writes
+  text to the stream it is given (OpenQASM, QIR, IQM JSON, LLVM IR), or with `makeModuleTranslation`
+  when the pipeline produces MLIR that should be printed afterwards. No registered translation uses
+  it at the moment.
+- Pass `registerDialects` as the dialect registration so the input module can be parsed.
+- Put reusable pass sequences in `lib/Passes/Pipelines` (declared in `Pipelines.h`) rather than in
+  the translation, so `MQSSCompiler` and your own tools can run the same pipeline.
+
+Cover the new flag with a lit test that pipes `mqss-opt` into `mqss-translate`; see
+[Testing](develop-guide.md#testing).

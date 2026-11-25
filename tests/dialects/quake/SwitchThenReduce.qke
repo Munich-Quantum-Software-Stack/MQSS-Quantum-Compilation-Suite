@@ -30,8 +30,13 @@ module attributes {cc.sizeof_string = 24 : i64, llvm.data_layout = "e-m:e-i8:8:3
   }
 }
 
-// CHECK: %2 = quake.extract_ref %0[0] : (!quake.veq<2>) -> !quake.ref
-// CHECK: quake.h %2 : (!quake.ref) -> ()
-// CHECK: quake.z %1 : (!quake.ref) -> ()
+// First kernel: "X then H" was switched to "H then Z", so the H now acts on
+// the second extracted qubit and the Z on the first one.
+// CHECK: %[[V1:[A-Za-z0-9_]+]] = quake.extract_ref %{{[A-Za-z0-9_]+}}[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: %[[V2:[A-Za-z0-9_]+]] = quake.extract_ref %{{[A-Za-z0-9_]+}}[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.h %[[V2]] : (!quake.ref) -> ()
+// CHECK: quake.z %[[V1]] : (!quake.ref) -> ()
 
-// CHECK: quake.s<adj> %1 : (!quake.ref) -> ()
+// Second kernel: S followed by Z was reduced to S-adjoint.
+// CHECK: %[[V3:[A-Za-z0-9_]+]] = quake.extract_ref %{{[A-Za-z0-9_]+}}[0] : (!quake.veq<2>) -> !quake.ref
+// CHECK: quake.s<adj> %[[V3]] : (!quake.ref) -> ()

@@ -17,12 +17,19 @@ the License.
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 */
 
+#include "Translation/MLIRToTarget.h"
 #include "Translation/QASM2ToQuake.h"
 #include "mlir/Tools/mlir-translate/MlirTranslateMain.h"
 
-// Frontend counterpart of mqss-opt: translates foreign circuit formats into
-// MLIR, e.g. `mqss-translate --import-qasm2 bell.qasm`.
+// Translation counterpart of mqss-opt. It imports foreign circuit formats into
+// MLIR and emits MLIR as a target format, e.g.
+//   mqss-translate --import-qasm2 bell.qasm
+//   mqss-translate --mlir-to-qasm3 circuit.mlir
+// mlir-translate only runs translations (it never consults the pass
+// registry), so every output format is registered as a translation.
 int main(int argc, char **argv) {
   mqss::mqssci::translation::registerQASM2ToQuakeTranslation();
+  mqss::mqssci::translation::registerMLIRToTargetTranslations();
+
   return mlir::failed(mlir::mlirTranslateMain(argc, argv, "MQSS Translator\n"));
 }

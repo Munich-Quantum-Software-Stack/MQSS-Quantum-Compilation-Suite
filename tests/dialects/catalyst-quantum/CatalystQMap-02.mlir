@@ -40,27 +40,22 @@ func.func @circuit_qmap2() attributes {qnode} {
   func.return
 }
 
-// CHECK: %0 = quantum.alloc( 5) : !quantum.reg
-// CHECK: %1 = quantum.extract %0[ 3] : !quantum.reg -> !quantum.bit
-// CHECK: %2 = quantum.extract %0[ 4] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits:2 = quantum.custom "CNOT"() %2, %1 : !quantum.bit, !quantum.bit
-// CHECK: %3 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %4 = quantum.extract %0[ 2] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_0:2 = quantum.custom "CNOT"() %4, %3 : !quantum.bit, !quantum.bit
-// CHECK: %5 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %6 = quantum.extract %0[ 4] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_1:2 = quantum.custom "SWAP"() %5, %6 : !quantum.bit, !quantum.bit
-// CHECK: %7 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %8 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_2:2 = quantum.custom "CNOT"() %8, %7 : !quantum.bit, !quantum.bit
-// CHECK: %9 = quantum.extract %0[ 3] : !quantum.reg -> !quantum.bit
-// CHECK: %cst = arith.constant 3.141600e+00 : f64
-// CHECK: %out_qubits_3 = quantum.custom "RY"(%cst) %9 : !quantum.bit
-// CHECK: %10 = quantum.extract %0[ 2] : !quantum.reg -> !quantum.bit
-// CHECK: %cst_4 = arith.constant 2.250000e+00 : f64
-// CHECK: %out_qubits_5 = quantum.custom "RZ"(%cst_4) %10 : !quantum.bit
-// CHECK: %11 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
-// CHECK: %cst_6 = arith.constant 1.500000e+00 : f64
-// CHECK: %out_qubits_7 = quantum.custom "RX"(%cst_6) %11 : !quantum.bit
-// CHECK: %12 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
-// CHECK: %out_qubits_8 = quantum.custom "T"() %12 : !quantum.bit
+// CHECK: %[[OUT_QUBITS:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} : !quantum.bit, !quantum.bit
+// CHECK: %[[V3:[A-Za-z0-9_]+]] = quantum.extract %[[V0:[A-Za-z0-9_]+]][ 1] : !quantum.reg -> !quantum.bit
+// CHECK: %[[V4:[A-Za-z0-9_]+]] = quantum.extract %[[V0]][ 2] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS_0:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[V4]], %[[V3]] : !quantum.bit, !quantum.bit
+// CHECK: %[[V5:[A-Za-z0-9_]+]] = quantum.extract %[[V0]][ 0] : !quantum.reg -> !quantum.bit
+// CHECK: %[[OUT_QUBITS_1:[A-Za-z0-9_]+]]:2 = quantum.custom "SWAP"() %[[V5]], %[[OUT_QUBITS]]#0 : !quantum.bit, !quantum.bit
+// CHECK: %[[OUT_QUBITS_2:[A-Za-z0-9_]+]]:2 = quantum.custom "CNOT"() %[[OUT_QUBITS_1]]#0, %[[OUT_QUBITS_0]]#1 : !quantum.bit, !quantum.bit
+// CHECK: %[[CST:[A-Za-z0-9_]+]] = arith.constant 3.141600e+00 : f64
+// CHECK: %[[OUT_QUBITS_3:[A-Za-z0-9_]+]] = quantum.custom "RY"(%[[CST]]) %[[OUT_QUBITS]]#1 : !quantum.bit
+// CHECK: %[[CST_4:[A-Za-z0-9_]+]] = arith.constant 2.250000e+00 : f64
+// CHECK: %[[OUT_QUBITS_5:[A-Za-z0-9_]+]] = quantum.custom "RZ"(%[[CST_4]]) %[[OUT_QUBITS_0]]#0 : !quantum.bit
+// CHECK: %[[CST_6:[A-Za-z0-9_]+]] = arith.constant 1.500000e+00 : f64
+// CHECK: %[[OUT_QUBITS_7:[A-Za-z0-9_]+]] = quantum.custom "RX"(%[[CST_6]]) %[[OUT_QUBITS_2]]#1 : !quantum.bit
+// CHECK: %[[OUT_QUBITS_8:[A-Za-z0-9_]+]] = quantum.custom "T"() %[[OUT_QUBITS_2]]#0 : !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} = quantum.measure %[[OUT_QUBITS_8]] : i1, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} = quantum.measure %[[OUT_QUBITS_7]] : i1, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} = quantum.measure %[[OUT_QUBITS_5]] : i1, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} = quantum.measure %[[OUT_QUBITS_3]] : i1, !quantum.bit
+// CHECK: %{{[A-Za-z0-9_]+}}, %{{[A-Za-z0-9_]+}} = quantum.measure %[[OUT_QUBITS_1]]#1 : i1, !quantum.bit

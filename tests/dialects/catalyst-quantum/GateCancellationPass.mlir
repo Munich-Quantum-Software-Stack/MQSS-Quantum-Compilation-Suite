@@ -42,5 +42,5 @@ module @circuit_CancelHH {
   }
 }
 
-// CHECK:  %3 = quantum.insert %0[ 0], %1 : !quantum.reg, !quantum.bit
-// CHECK:  %4 = quantum.insert %3[ 1], %2 : !quantum.reg, !quantum.bit
+// CHECK:  %[[V3:[A-Za-z0-9_]+]] = quantum.insert %{{[A-Za-z0-9_]+}}[ 0], %{{[A-Za-z0-9_]+}} : !quantum.reg, !quantum.bit
+// CHECK:  %{{[A-Za-z0-9_]+}} = quantum.insert %[[V3]][ 1], %{{[A-Za-z0-9_]+}} : !quantum.reg, !quantum.bit
