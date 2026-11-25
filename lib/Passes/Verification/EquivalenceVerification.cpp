@@ -52,6 +52,7 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runBeforePass(
           kernel->getLoc(),
           "Verify: Could not create MQT Core's qc::QuantumComputation Obj");
       signalPassFailure(pass);
+      return;
     }
     vqc_ty.qc1 = *qcOrErr;
     cached_module_snapshot[kernel.getSymName()] = std::move(vqc_ty);
@@ -89,6 +90,7 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
           kernel->getLoc(),
           "Verify: Could not create MQT Core's qc::QuantumComputation Obj");
       signalPassFailure(pass);
+      return;
     }
     vqc_ty.qc2 = *qcOrErr;
   }
@@ -138,6 +140,7 @@ void mqss::mqssci::verify::VerifyPassInstrumentation::runAfterPass(
     // TODO: This is a failure signal that would bail an entire pipeline. Worth
     // revisiting.
     signalPassFailure(pass);
+    return;
   }
 }
 

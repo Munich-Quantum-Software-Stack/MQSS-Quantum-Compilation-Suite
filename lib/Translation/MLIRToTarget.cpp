@@ -19,21 +19,13 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "Translation/MLIRToTarget.h"
 
-#include "Passes/CodeGen/CodeGenPasses.h"
-#include "Passes/Pipelines/Pipelines.h"
-#include "Passes/Transforms/Dialects.h"
-#include "Passes/Transforms/TransformPasses.h"
-#include "mlir/IR/Operation.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Tools/mlir-translate/Translation.h"
-
 #include <functional>
 #include <string>
 #include <utility>
 
 using namespace mlir;
 
-namespace {
+namespace mqss::mqssci::translation {
 
 using PipelineBuilder =
     std::function<void(OpPassManager &, llvm::raw_ostream &)>;
@@ -58,13 +50,42 @@ TranslateFromMLIRFunction makeTranslation(PipelineBuilder build) {
 // the translation runs so a bad value is reported as a diagnostic.
 TranslateFromMLIRFunction makeQIRTranslation(std::string profile) {
   return [profile = std::move(profile)](
-             Operation *op, llvm::raw_ostream &os) -> LogicalResult {
-    auto converted = tryProcessQIRLoweringOpts(profile);
-    if (!converted)
-      return op->emitError() << "invalid QIR lowering options: " << profile;
-    return runPipeline(op, os, [&](OpPassManager &pm, llvm::raw_ostream &out) {
-      mqss::mqssci::opt::QIRConversionPipeline(pm, *converted, out);
+             Operation *module_op, llvm::raw_ostream &os) -> LogicalResult {
+    std::string DialectTy;
+
+    module_op->walk([&](Operation *op) {
+      if (op->getDialect()->getNamespace() == "quake") {
+        DialectTy = "quake";
+        return WalkResult::interrupt();
+      }
+      if (op->getDialect()->getNamespace() == "quantum") {
+        DialectTy = "catalyst-quantum";
+        return WalkResult::interrupt();
+      }
+      return WalkResult::advance();
     });
+    if (DialectTy.empty()) {
+      return module_op->emitError() << "Unsupported dialect for QIR lowering";
+    }
+
+    module_op->getContext()->loadAllAvailableDialects();
+    if (DialectTy == "quake") {
+      auto converted = tryProcessQIRLoweringOpts(profile);
+      if (!converted) {
+        return module_op->emitError()
+               << "invalid QIR lowering options: " << profile;
+      }
+      return runPipeline(
+          module_op, os, [&](OpPassManager &pm, llvm::raw_ostream &out) {
+            mqss::mqssci::pipeline::QIRConversionPipeline(pm, *converted, out);
+          });
+    }
+    if (DialectTy == "catalyst-quantum") {
+      return runPipeline(
+          module_op, os, [&](OpPassManager &pm, llvm::raw_ostream &out) {
+            mqss::mqssci::pipeline::CatalystQIRConversionPipeline(pm, out);
+          });
+    }
   };
 }
 
@@ -86,7 +107,7 @@ void registerDialects(DialectRegistry &registry) {
   mqss::mqssci::opt::registerMQSSDialects(registry);
 }
 
-} // namespace
+} // namespace mqss::mqssci::translation
 
 // Note: the name and description passed to TranslateFromMLIRRegistration must
 // outlive the registration, so they are string literals.
@@ -99,23 +120,11 @@ void mqss::mqssci::translation::registerMLIRToTargetTranslations() {
       }),
       registerDialects);
 
-  static TranslateFromMLIRRegistration quantum(
-      "convert-quantum-to-llvm",
-      "Translate Catalyst-quantum dialect to LLVM dialect",
-      makeModuleTranslation([](OpPassManager &pm, llvm::raw_ostream &os) {
-        pm.addPass(mqss::mqssci::codegen::QuantumConversionPass());
-      }),
-      registerDialects);
-
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return mqss::mqssci::codegen::QuantumConversionPass();
-  });
-
   static TranslateFromMLIRRegistration qasm2(
       "mlir-to-qasm2",
       "Translate a Quake or Catalyst-quantum module to OpenQASM 2",
       makeTranslation([](OpPassManager &pm, llvm::raw_ostream &os) {
-        mqss::mqssci::opt::QASMLoweringPipeline(pm, /*qasm3=*/false, os);
+        mqss::mqssci::pipeline::QASMLoweringPipeline(pm, /*qasm3=*/false, os);
       }),
       registerDialects);
 
@@ -123,7 +132,7 @@ void mqss::mqssci::translation::registerMLIRToTargetTranslations() {
       "mlir-to-qasm3",
       "Translate a Quake or Catalyst-quantum module to OpenQASM 3",
       makeTranslation([](OpPassManager &pm, llvm::raw_ostream &os) {
-        mqss::mqssci::opt::QASMLoweringPipeline(pm, /*qasm3=*/true, os);
+        mqss::mqssci::pipeline::QASMLoweringPipeline(pm, /*qasm3=*/true, os);
       }),
       registerDialects);
 

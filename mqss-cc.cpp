@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
       "O1", "MQSS-O1 optimization pipeline",
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::mqssci::opt::O1(pm);
+        mqss::mqssci::pipeline::O1(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {});
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
       "O2", "MQSS-O2 optimization pipeline",
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::mqssci::opt::O2(pm);
+        mqss::mqssci::pipeline::O2(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {});
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
       "O3", "MQSS-O3 optimization pipeline",
       [](mlir::OpPassManager &pm, StringRef options,
          std::function<LogicalResult(const Twine &)> errorHandler) {
-        mqss::mqssci::opt::O3(pm);
+        mqss::mqssci::pipeline::O3(pm);
         return mlir::success();
       },
       [](llvm::function_ref<void(const mlir::detail::PassOptions &)>) {});

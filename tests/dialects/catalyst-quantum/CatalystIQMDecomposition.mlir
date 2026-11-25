@@ -1,4 +1,4 @@
-// RUN: %mqss-opt %s --BasisConversionPass=gates=prx,cz --cse --canonicalize | %mqss-translate --convert-quantum-to-llvm | %mqss-translate --llvm-dialect-to-llvm-ir | FileCheck %s
+// RUN: %mqss-opt %s --BasisConversionPass=gates=prx,cz --cse --canonicalize | %mqss-translate --mlir-to-qir | FileCheck %s
 
 
 func.func @bell_to_iqm() -> (i1, i1) {

@@ -24,6 +24,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "Passes/Transforms/Dialects.h"
 #include "Passes/Transforms/TransformPasses.h"
 #include "Passes/Verification/Instrumentation.h"
+#include "Translation/MLIRToTarget.h"
 #include "Translation/QASM2ToQuake.h"
 #include "Utils/DebugUtils.h"
 #include "Utils/Error.h"
@@ -123,16 +124,16 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   mlir::PassManager pmOptimize(&context);
   switch (opts.optimization_level) {
   case OptLevel::O1:
-    mqss::mqssci::opt::O1(pmOptimize);
+    mqss::mqssci::pipeline::O1(pmOptimize);
     break;
   case OptLevel::O2:
-    mqss::mqssci::opt::O2(pmOptimize);
+    mqss::mqssci::pipeline::O2(pmOptimize);
     break;
   case OptLevel::O3:
-    mqss::mqssci::opt::O3(pmOptimize);
+    mqss::mqssci::pipeline::O3(pmOptimize);
     break;
   default:
-    mqss::mqssci::opt::O1(pmOptimize);
+    mqss::mqssci::pipeline::O1(pmOptimize);
     break;
   }
 
@@ -212,7 +213,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
   // whether or not anything in the final circuit still calls it. Strip these
   // out so the returned OpenQASM2 is just the entry point's circuit body.
   case OPENQASM2:
-    mqss::mqssci::opt::QASMLoweringPipeline(pmLower, /*qasm3=*/false, os);
+    mqss::mqssci::pipeline::QASMLoweringPipeline(pmLower, /*qasm3=*/false, os);
     // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(
@@ -222,7 +223,7 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     }
     break;
   case OPENQASM3:
-    mqss::mqssci::opt::QASMLoweringPipeline(pmLower, /*qasm3=*/true, os);
+    mqss::mqssci::pipeline::QASMLoweringPipeline(pmLower, /*qasm3=*/true, os);
     // pmLower.addPass(mqss::mqssci::codegen::QuakeToQASM2Pass(os));
     if (mlir::failed(pmLower.run(*module))) {
       mlir::emitError(
@@ -248,15 +249,13 @@ std::optional<std::string> mqss::mqssci::MQSSCompiler::compileImpl(
     auto convertto = tryProcessQIRLoweringOpts(result_type_string);
     if (!convertto) {
       mlir::emitError(module->getLoc(),
-                      "MQSSCompiler: invalid QIR lowering options: " +
-                          opts.result_format);
+                      "invalid QIR lowering options: " + opts.result_format);
       return std::nullopt;
     }
-    mqss::mqssci::opt::QIRConversionPipeline(pmLower, *convertto, os);
-    if (mlir::failed(pmLower.run(*module))) {
-      mlir::emitError(module->getLoc(),
-                      "MQSSCompiler: Conversion of Quake to " +
-                          result_type_string + " failed");
+    auto translate = mqss::mqssci::translation::makeQIRTranslation(*convertto);
+    if (mlir::failed(translate(module->getOperation(), os))) {
+      mlir::emitError(module->getLoc(), "MQSSCompiler: Conversion to " +
+                                            result_type_string + " failed");
       return std::nullopt;
     }
     break;

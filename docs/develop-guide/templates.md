@@ -250,8 +250,8 @@ in `lib/Translation/MLIRToTarget.cpp`:
   them and they must outlive it.
 - Build the translation function with `makeTranslation` when the last pass of the pipeline writes
   text to the stream it is given (OpenQASM, QIR, IQM JSON, LLVM IR), or with `makeModuleTranslation`
-  when the pipeline produces MLIR that should be printed afterwards (the Catalyst-to-LLVM-dialect
-  conversion).
+  when the pipeline produces MLIR that should be printed afterwards. No registered translation uses
+  it at the moment.
 - Pass `registerDialects` as the dialect registration so the input module can be parsed.
 - Put reusable pass sequences in `lib/Passes/Pipelines` (declared in `Pipelines.h`) rather than in
   the translation, so `MQSSCompiler` and your own tools can run the same pipeline.

@@ -160,8 +160,8 @@ for (std::string_view name : mqss::mqssci::MQSSCompiler::getSupportedInputFormat
 It returns a `std::vector<std::string_view>` (currently
 `{"cudaq-quake", "catalyst-quantum", "OpenQASM2"}`) — useful for validating a user-supplied format
 name or listing the options in a CLI's `--help` output. `compile`/`compileSource` accept all three
-formats. Catalyst-quantum input can only be compiled to OpenQASM 2 or 3, and OpenQASM 2 input is
-translated to Quake first (see
+formats. Catalyst-quantum input can be compiled to OpenQASM 2 or 3 and to QIR (not IQM JSON), and
+OpenQASM 2 input is translated to Quake first (see
 [Translating Circuits with mqss-translate](mqss-translate.md#using-the-mqsscompiler-interface)).
 
 ## Advanced: Building a Custom Pipeline Yourself
@@ -204,7 +204,7 @@ if (mlir::failed(pm.run(*module))) {
 std::string qasm;
 llvm::raw_string_ostream os(qasm);
 mlir::PassManager lowering(context.get());
-mqss::mqssci::opt::QASMLoweringPipeline(lowering, /*qasm3=*/true, os);
+mqss::mqssci::pipeline::QASMLoweringPipeline(lowering, /*qasm3=*/true, os);
 if (mlir::failed(lowering.run(*module))) {
   llvm::errs() << "Compiler: Conversion of the module to OpenQASM failed\n";
 }
@@ -223,9 +223,9 @@ Catalyst-quantum modules alike. Its stream defaults to `llvm::outs()`. To add th
 pm.addPass(mqss::mqssci::codegen::MLIRToQASMPass(os, /*qasm3=*/false));
 ```
 
-For QIR, `mqss::mqssci::opt::QIRConversionPipeline(pm, "qir-base:2.0", os)` does the equivalent for
-a Quake module. The module must already be in the target's gate set; add `createBasisConversionPass`
-(see [Passes](passes.md)) before the lowering step if it is not.
+For QIR, `mqss::mqssci::pipeline::QIRConversionPipeline(pm, "qir-base:2.0", os)` does the equivalent
+for a Quake module. The module must already be in the target's gate set; add
+`createBasisConversionPass` (see [Passes](passes.md)) before the lowering step if it is not.
 
 For the full list of available passes, their options, and valid option values, see
 [Passes](passes.md).

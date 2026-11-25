@@ -27,7 +27,36 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
+#include "Passes/CodeGen/CodeGenPasses.h"
+#include "Passes/Pipelines/Pipelines.h"
+#include "Passes/Transforms/Dialects.h"
+#include "Passes/Transforms/TransformPasses.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Tools/mlir-translate/Translation.h"
+
 namespace mqss::mqssci::translation {
+
+using PipelineBuilder =
+    std::function<void(OpPassManager &, llvm::raw_ostream &)>;
+
+// Builds a pipeline with `build` and runs it on `op`. The last pass of every
+// pipeline writes its text output to `os`, which is mlir-translate's output.
+LogicalResult runPipeline(Operation *op, llvm::raw_ostream &os,
+                          const PipelineBuilder &build);
+
+TranslateFromMLIRFunction makeTranslation(PipelineBuilder build);
+
+// For pipelines whose result is an MLIR module rather than text.
+TranslateFromMLIRFunction makeModuleTranslation(PipelineBuilder build);
+
+// The input module is parsed by mlir-translate, so every dialect the MQSS
+// pipelines can consume must be registered.
+void registerDialects(DialectRegistry &registry);
+
+// `profile` is "<name>:<version>", e.g. "qir-base:2.0". It is validated when
+// the translation runs so a bad value is reported as a diagnostic.
+mlir::TranslateFromMLIRFunction makeQIRTranslation(std::string profile);
 
 /**
   @brief Registers the MLIR-to-target translations with mlir-translate.

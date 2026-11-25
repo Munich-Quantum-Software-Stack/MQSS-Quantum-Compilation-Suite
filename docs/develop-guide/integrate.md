@@ -87,7 +87,7 @@ formats and `mqss::mqssci::translation` for the text-format translations:
   need to understand your program. Include this before parsing or building any MLIR module.
 - `Passes/Transforms/TransformPasses.h` (`mqss::mqssci::opt`) — declares every individual
   transformation pass factory function, for building a custom pass pipeline pass-by-pass.
-- `Passes/Pipelines/Pipelines.h` (`mqss::mqssci::opt`) — declares the three preset optimization
+- `Passes/Pipelines/Pipelines.h` (`mqss::mqssci::pipeline`) — declares the three preset optimization
   levels `O1`, `O2` and `O3`, and the pipelines that build the output stage, `QASMLoweringPipeline`
   and `QIRConversionPipeline`, for appending a whole stage to an `mlir::OpPassManager` in one call.
 - `Passes/CodeGen/CodeGenPasses.h` (`mqss::mqssci::codegen`) — declares every individual
@@ -96,7 +96,9 @@ formats and `mqss::mqssci::translation` for the text-format translations:
 - `Translation/MLIRToTarget.h` and `Translation/QASM2ToQuake.h` (`mqss::mqssci::translation`) —
   register the `mlir-translate` translations (`registerMLIRToTargetTranslations()`,
   `registerQASM2ToQuakeTranslation()`), for building your own translation tool the way
-  `mqss-translate` is built, and declare `translateQASM2ToQuake`.
+  `mqss-translate` is built, and declare `translateQASM2ToQuake`. `makeQIRTranslation(profile)` is
+  also declared there; `MQSSCompiler` uses it for its QIR output formats, so the two always produce
+  the same QIR.
 
 ## Declaring and Using a Pass Pipeline
 
@@ -125,7 +127,7 @@ if (!module) {
 mlir::PassManager pm(context.get());
 
 // 4. Add passes from the O1 pass pipeline
-mqss::mqssci::opt::O1(pm);
+mqss::mqssci::pipeline::O1(pm);
 
 // Run the passes
 if (mlir::failed(pm.run(*module))) {
@@ -136,7 +138,7 @@ if (mlir::failed(pm.run(*module))) {
 std::string qasm;
 llvm::raw_string_ostream os(qasm);
 mlir::PassManager lowering(context.get());
-mqss::mqssci::opt::QASMLoweringPipeline(lowering, /*qasm3=*/false, os);
+mqss::mqssci::pipeline::QASMLoweringPipeline(lowering, /*qasm3=*/false, os);
 if (mlir::failed(lowering.run(*module))) {
   llvm::errs() << "Compiler: Conversion of the module to OpenQASM failed\n";
 }
@@ -207,7 +209,7 @@ The built-in `O2` optimization level combines both styles above into a single re
 (`lib/Passes/Pipelines/Pipeline.cpp`):
 
 ```cpp
-void mqss::mqssci::opt::O2(mlir::OpPassManager &pm) {
+void mqss::mqssci::pipeline::O2(mlir::OpPassManager &pm) {
   CommonGateCancellationPassOptions CancelOpts;
   CommonCommutePassOptions CommuteOpts;
   CancelOpts.mode = "CancelGate";

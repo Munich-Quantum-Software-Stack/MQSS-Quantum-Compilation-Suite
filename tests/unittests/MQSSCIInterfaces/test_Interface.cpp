@@ -20,6 +20,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include "MQSSCIInterfaces/MQSSCompiler.h"
 #include "Passes/Transforms/Dialects.h"
 #include "Passes/Verification/Instrumentation.h"
+#include "Translation/MLIRToTarget.h"
 
 #include <cudaq/Optimizer/Dialect/Quake/QuakeOps.h>
 #include <filesystem>
@@ -1146,6 +1147,40 @@ TEST(MQSSCIInterfacesTest, CatalystQuantumInputIsRejectedForIQMJSON) {
       source, mqss::mqssci::ResultFormat::IQMJSON, kIqmNativeGates);
   EXPECT_FALSE(json.has_value())
       << "expected Catalyst-quantum input to be rejected for IQM JSON output";
+}
+
+TEST(MQSSCIInterfacesTest, TranslatesCatalystQuantumToQIRRuntimeCalls) {
+  // The QIR translation takes Catalyst-quantum input directly. No native-gate
+  // decomposition runs here, so the gates reach the output as Catalyst runtime
+  // calls (__catalyst__qis__*) instead of the Quake QIR runtime names.
+  const std::string source = readFixture(kGHZCatalystCircuit);
+  ASSERT_FALSE(source.empty());
+
+  std::optional<std::string> qir = compileCatalyst(
+      source, mqss::mqssci::ResultFormat::QIRBASE, kPlanqcNativeGates);
+  ASSERT_TRUE(qir.has_value())
+      << "compileSource() returned nullopt; expected a valid QIR Base "
+         "program from Catalyst-quantum input";
+
+  // The GHZ function returns its three measurement results.
+  EXPECT_NE(qir->find("define { i1, i1, i1 } @ghz()"), std::string::npos);
+  EXPECT_NE(qir->find("ret { i1, i1, i1 }"), std::string::npos);
+
+  // Qubits come from the Catalyst runtime, not the Quake QIR one. The mapper
+  // widens the register to the 5-qubit default device.
+  EXPECT_NE(qir->find("call ptr @__catalyst__rt__qubit_allocate_array(i64 5)"),
+            std::string::npos);
+  EXPECT_EQ(qir->find("__quantum__"), std::string::npos)
+      << "found Quake QIR runtime names in Catalyst output";
+
+  // Native-gate decomposition into {rx, cz, rz}: H and the two CNOTs are gone,
+  // leaving two CZ, five RX, ten RZ and one Measure per qubit.
+  EXPECT_EQ(qir->find("__catalyst__qis__Hadamard"), std::string::npos);
+  EXPECT_EQ(qir->find("__catalyst__qis__CNOT"), std::string::npos);
+  EXPECT_EQ(countOccurrences(*qir, "call void @__catalyst__qis__CZ("), 2);
+  EXPECT_EQ(countOccurrences(*qir, "call void @__catalyst__qis__RX("), 5);
+  EXPECT_EQ(countOccurrences(*qir, "call void @__catalyst__qis__RZ("), 10);
+  EXPECT_EQ(countOccurrences(*qir, "call ptr @__catalyst__qis__Measure("), 3);
 }
 
 } // namespace

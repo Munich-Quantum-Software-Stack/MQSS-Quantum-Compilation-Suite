@@ -298,12 +298,12 @@ the pass, or a pipeline built around it, and streams the result to its output. S
 [Translating Circuits with mqss-translate](mqss-translate.md) for usage and for what each one
 produces.
 
-| Pass (factory in `CodeGenPasses.h`)                 | `mqss-translate` flag                                                              |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `MLIRToQASMPass` (`mlir-to-qasm`)                   | `--mlir-to-qasm2`, `--mlir-to-qasm3`                                               |
-| `QuakeDialectToIQMJSONPass` (`quake-to-iqmJSON`)    | `--mlir-to-iqm-json`                                                               |
-| `QuantumConversionPass` (`convert-quantum-to-llvm`) | `--convert-quantum-to-llvm`                                                        |
-| `LLVMDialectToLLVMIRPass` (`mlir-to-llvmIR`)        | `--llvm-dialect-to-llvm-ir`, and the last step of `--mlir-to-qir` and its variants |
+| Pass (factory in `CodeGenPasses.h`)                 | `mqss-translate` flag                                              |
+| --------------------------------------------------- | ------------------------------------------------------------------ |
+| `MLIRToQASMPass` (`mlir-to-qasm`)                   | `--mlir-to-qasm2`, `--mlir-to-qasm3`                               |
+| `QuakeDialectToIQMJSONPass` (`quake-to-iqmJSON`)    | `--mlir-to-iqm-json`                                               |
+| `QuantumConversionPass` (`convert-quantum-to-llvm`) | none; used by `--mlir-to-qir*` for Catalyst input                  |
+| `LLVMDialectToLLVMIRPass` (`mlir-to-llvmIR`)        | `--llvm-dialect-to-llvm-ir`, and the last step of `--mlir-to-qir*` |
 
 `MLIRToQASMPass` emits OpenQASM 2 or 3 for a Quake or Catalyst-quantum module. It takes the option
 `mode=qasm2|qasm3`; from C++, `MLIRToQASMPass(os, qasm3)` writes to a stream. It builds an MQT Core
@@ -313,8 +313,9 @@ express (dynamic angles, loops, unsupported operations); see
 2 emitter for Quake. It stays in the library but neither command-line tool exposes it.
 
 `QuantumConversionPass` converts the Catalyst-quantum dialect to the LLVM dialect (MLIR, not LLVM
-IR). It has the option `use-array-backed-registers`, which the translation leaves at its default
-(`false`). Turning the LLVM dialect into LLVM IR is the separate `LLVMDialectToLLVMIRPass`.
+IR). It has the option `use-array-backed-registers`, which defaults to `false`. The QIR translations
+run it for Catalyst input, followed by `LLVMDialectToLLVMIRPass`, which turns the LLVM dialect into
+LLVM IR.
 
 ### expand-measurements
 
@@ -385,15 +386,19 @@ MQSS-O3 optimization pipeline</br> Passes enabled:
 
 ### Output pipelines (C++ only)
 
-Two further pipelines build the output stage that `mqss-translate` and `MQSSCompiler` run. They are
-declared in `Passes/Pipelines/Pipelines.h` and are not `mqss-opt` flags, since the passes at their
-end write text:
+The output stage that `mqss-translate` and `MQSSCompiler` run is built from pipelines in the
+`mqss::mqssci::pipeline` namespace, declared in `Passes/Pipelines/Pipelines.h`. They are not
+`mqss-opt` flags, since the passes at their end write text:
 
 - `QASMLoweringPipeline(pm, qasm3, os)` appends `cse`, `canonicalize` and then `MLIRToQASMPass`. The
   cleanup folds trivial loops and constant angle expressions before the circuit is printed.
 - `QIRConversionPipeline(pm, "<profile>:<version>", os)` lowers a Quake module to QIR with CUDA-Q's
   conversion pipeline and writes LLVM IR. The profile is one of `qir`, `qir-base`, `qir-adaptive` or
   `qir-full`, and the version is `2.0` or `2.1`.
+- `CatalystQIRConversionPipeline(pm, os)` lowers a Catalyst-quantum module to QIR. It runs
+  `QuantumConversionPass`, then `LLVMDialectToLLVMIRPass`, and emits the `__catalyst__qis__*`
+  runtime calls. It does not decompose gates, so run `BasisConversionPass` first if the circuit
+  needs it.
 
 ## Verifying a Pipeline's Correctness
 

@@ -23,7 +23,7 @@ MQSSCI's passes operate on MLIR, but circuits are exchanged as text: OpenQASM, I
 
 - **Import**: OpenQASM 2 text becomes a CUDA-Q Quake module (`--import-qasm2`).
 - **Export**: a Quake or Catalyst-quantum module becomes OpenQASM 2/3, IQM JSON, QIR or LLVM IR
-  (`--mlir-to-*`, `--convert-quantum-to-llvm`, `--llvm-dialect-to-llvm-ir`).
+  (`--mlir-to-*`).
 
 The typical workflow is a pipe: `mqss-opt` transforms the circuit, `mqss-translate` writes it out in
 the format your target consumes.
@@ -49,27 +49,25 @@ usual `mlir-translate` arguments: `-o`, `--help` and `-` (stdin).
 
 ## Available translations
 
-| Flag                        | Input                   | Output                                          |
-| --------------------------- | ----------------------- | ----------------------------------------------- |
-| `--import-qasm2`            | OpenQASM 2 text         | Quake module                                    |
-| `--mlir-to-qasm2`           | Quake or Catalyst       | OpenQASM 2                                      |
-| `--mlir-to-qasm3`           | Quake or Catalyst       | OpenQASM 3                                      |
-| `--mlir-to-iqm-json`        | Quake                   | IQM JSON circuit                                |
-| `--mlir-to-qir`             | Quake                   | QIR, `qir` (full) profile, version 2.0          |
-| `--mlir-to-qir-base`        | Quake                   | QIR, `qir-base` profile, version 2.0            |
-| `--mlir-to-qir-adaptive`    | Quake                   | QIR, `qir-adaptive` profile, version 2.0        |
-| `--mlir-to-qir-full`        | Quake                   | QIR, `qir-full` profile, version 2.0            |
-| `--convert-quantum-to-llvm` | Catalyst-quantum module | The same module in the LLVM dialect (MLIR text) |
-| `--llvm-dialect-to-llvm-ir` | LLVM-dialect module     | LLVM IR                                         |
+| Flag                        | Input               | Output                                   |
+| --------------------------- | ------------------- | ---------------------------------------- |
+| `--import-qasm2`            | OpenQASM 2 text     | Quake module                             |
+| `--mlir-to-qasm2`           | Quake or Catalyst   | OpenQASM 2                               |
+| `--mlir-to-qasm3`           | Quake or Catalyst   | OpenQASM 3                               |
+| `--mlir-to-iqm-json`        | Quake               | IQM JSON circuit                         |
+| `--mlir-to-qir`             | Quake or Catalyst   | QIR, `qir` (full) profile, version 2.0   |
+| `--mlir-to-qir-base`        | Quake or Catalyst   | QIR, `qir-base` profile, version 2.0     |
+| `--mlir-to-qir-adaptive`    | Quake or Catalyst   | QIR, `qir-adaptive` profile, version 2.0 |
+| `--mlir-to-qir-full`        | Quake or Catalyst   | QIR, `qir-full` profile, version 2.0     |
+| `--llvm-dialect-to-llvm-ir` | LLVM-dialect module | LLVM IR                                  |
 
 Run `mqss-translate --help` for the authoritative list. Two things to keep in mind:
 
 - The exports expect the circuit to be **already lowered to the target's gate set**. They do not
   decompose gates. Run `mqss-opt --BasisConversionPass=gates=...` first.
-- **Catalyst-quantum input can only be translated to OpenQASM** (and, through LLVM, to LLVM IR with
-  the last two flags). The IQM JSON and QIR translations are Quake-only: IQM JSON reports an error
-  on Catalyst input, while the QIR translations currently abort instead of failing with a
-  diagnostic.
+- **Catalyst-quantum input can be translated to OpenQASM and QIR, but not to IQM JSON.** The QIR
+  translations lower Catalyst gates to calls into the Catalyst runtime (`__catalyst__qis__*`). The
+  IQM JSON translation is Quake-only and reports an error on Catalyst input.
 
 ## Exporting to OpenQASM 2 and 3
 
@@ -169,14 +167,14 @@ IQM's native gate set (`prx`, `cz`). The QIR translations lower with the CUDA-Q 
 LLVM IR text; only version 2.0 of each profile is available from the command line (the C++
 `QIRConversionPipeline` accepts `2.1` as well).
 
-Catalyst-quantum circuits reach LLVM IR in two steps, because the first one produces MLIR (the LLVM
-dialect) and the second turns that into LLVM IR text:
+Catalyst-quantum circuits go to QIR with the same flags, for example:
 
 ```sh
-mqss-opt circuit.mlir \
-  | mqss-translate --convert-quantum-to-llvm \
-  | mqss-translate --llvm-dialect-to-llvm-ir
+mqss-opt circuit.mlir --BasisConversionPass=gates=rx,cz,rz --cse --canonicalize \
+  | mqss-translate --mlir-to-qir-base
 ```
+
+`--llvm-dialect-to-llvm-ir` on its own turns any LLVM-dialect MLIR module into LLVM IR text.
 
 ## Importing OpenQASM 2
 
@@ -310,7 +308,7 @@ Which input can go to which output:
 | ---------------- | :-----------------------: | :-------: | :----: |
 | Quake            |            yes            |    yes    |  yes   |
 | OpenQASM 2       |      yes (via Quake)      |    yes    |  yes   |
-| Catalyst-quantum |            yes            |    no     |   no   |
+| Catalyst-quantum |            yes            |    no     |  yes   |
 
 An input that starts with `OPENQASM` but uses a version other than 2.x, or that falls outside the
 supported subset above, makes `compile`/`compileSource` return `std::nullopt` after reporting a
@@ -403,9 +401,9 @@ The translations are covered by:
 
 - lit tests under `tests/dialects`, which pipe `mqss-opt` into `mqss-translate`, run as part of
   `check-mqss`: for example `GHZToIQMQASM.mlir` (QASM3), `PLANQCTranspilationToQASM2.qke`,
-  `IQMTranspileToIQMJSON.qke`, the `*ToQIR*` tests and `CatalystIQMDecomposition.mlir` (LLVM IR).
-  The `MLIRToQASM*.mlir` tests in `tests/dialects/catalyst-quantum` pin the adjoint,
-  controlled-rotation and constant-folding behavior and each rejection listed above.
+  `IQMTranspileToIQMJSON.qke`, the `*ToQIR*` tests and `CatalystIQMDecomposition.mlir` (QIR for
+  Catalyst input). The `MLIRToQASM*.mlir` tests in `tests/dialects/catalyst-quantum` pin the
+  adjoint, controlled-rotation and constant-folding behavior and each rejection listed above.
   `QASM2ToQuakeBell.test` covers the importer;
 - unit tests in `tests/unittests/MQSSCIInterfaces/test_Interface.cpp`, which compile the Bell and
   GHZ fixtures in Quake, OpenQASM 2 and Catalyst-quantum form to OpenQASM 2 and 3 through

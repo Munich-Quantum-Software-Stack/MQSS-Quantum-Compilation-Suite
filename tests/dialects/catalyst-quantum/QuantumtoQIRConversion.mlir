@@ -1,4 +1,4 @@
-// RUN: %mqss-opt %s --CommonCommutePass=mode=CX-RX | %mqss-translate --convert-quantum-to-llvm | %mqss-translate --llvm-dialect-to-llvm-ir | FileCheck %s
+// RUN: %mqss-opt %s --CommonCommutePass=mode=CX-RX | %mqss-translate --mlir-to-qir | FileCheck %s
 
 module {
   func.func @QuantumToQIRConversion_test() {
