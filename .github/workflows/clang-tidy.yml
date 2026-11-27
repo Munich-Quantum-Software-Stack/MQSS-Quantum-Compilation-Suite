@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [develop]
 
+permissions:
+  contents: read
+
 jobs:
   clang-tidy:
     runs-on: ubuntu-latest
@@ -12,8 +15,9 @@ jobs:
       packages: read # pull the private mqssci-deps image referenced by .devcontainer/Dockerfile
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          persist-credentials: false
           submodules: recursive
           fetch-depth: 0 # need history to diff against the base branch
 
@@ -27,7 +31,7 @@ jobs:
 
       - name: Log in to GHCR
         run:
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${GITHUB_ACTOR}"
           --password-stdin
 
       # Shared with .github/workflows/ci.yml and codeql.yml so this can't drift from
@@ -41,8 +45,10 @@ jobs:
       - name: Build Docker image
         run: |
           docker build --build-arg CMAKE_ARCH=x86_64 \
-            --build-arg DEPS_IMAGE="${{ steps.deps_vars.outputs.image }}" \
+            --build-arg DEPS_IMAGE="${STEPS_DEPS_VARS_OUTPUTS_IMAGE}" \
             --progress=plain -t mqss-pass-dev -f .devcontainer/Dockerfile .
+        env:
+          STEPS_DEPS_VARS_OUTPUTS_IMAGE: ${{ steps.deps_vars.outputs.image }}
 
       - name: Configure build (generate compile_commands.json)
         run: |
@@ -61,8 +67,8 @@ jobs:
             -w /workspaces/MQSS-Quantum-Compilation-Suite \
             mqss-pass-dev \
             bash -lc '
-              git fetch origin ${{ github.base_ref }} --depth=1
-              git diff -U0 origin/${{ github.base_ref }} -- "*.cpp" "*.cc" "*.h" "*.hpp" \
+              git fetch origin ${GITHUB_BASE_REF} --depth=1
+              git diff -U0 origin/${GITHUB_BASE_REF} -- "*.cpp" "*.cc" "*.h" "*.hpp" \
                 | python3 .devcontainer/clang-tidy-diff.py -p1 -path build -j"$(nproc)" -quiet \
                 | tee clang-tidy-report.txt
               # fail the job only if clang-tidy actually reported something
