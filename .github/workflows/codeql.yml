@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: "30 2 * * 1"
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -18,8 +21,9 @@ jobs:
       packages: read # pull the private mqssci-deps image referenced by .devcontainer/Dockerfile
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          persist-credentials: false
           submodules: recursive
 
       # Cache the CMake build dir (build/_deps and friends) so unchanged dependencies
@@ -29,7 +33,7 @@ jobs:
       # never indexes) dependency source that hasn't changed -- only invalidated when the
       # Dockerfile or the CMake files that pin dependency versions change.
       - name: Cache CMake build directory
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: build/_deps
           key:
@@ -48,7 +52,7 @@ jobs:
 
       - name: Log in to GHCR
         run:
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${GITHUB_ACTOR}"
           --password-stdin
 
       - name: Download CodeQL CLI
@@ -70,8 +74,10 @@ jobs:
       - name: Build Docker image
         run: |
           docker build --build-arg CMAKE_ARCH=x86_64 \
-            --build-arg DEPS_IMAGE="${{ steps.deps_vars.outputs.image }}" \
+            --build-arg DEPS_IMAGE="${STEPS_DEPS_VARS_OUTPUTS_IMAGE}" \
             --progress=plain -t mqss-pass-dev -f .devcontainer/Dockerfile .
+        env:
+          STEPS_DEPS_VARS_OUTPUTS_IMAGE: ${{ steps.deps_vars.outputs.image }}
 
       - name: Build + CodeQL scan
         run: |
@@ -99,7 +105,7 @@ jobs:
       # reported under build/ (e.g. vendored dependency source extracted on a cache-miss
       # run) before upload, since MQSS doesn't own that code and can't act on alerts in it.
       - name: Filter out vendored dependency findings
-        uses: advanced-security/filter-sarif@v1.1
+        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1
         with:
           patterns: |
             +**/*
@@ -108,6 +114,6 @@ jobs:
           output: codeql-results.sarif
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
         with:
           sarif_file: codeql-results.sarif

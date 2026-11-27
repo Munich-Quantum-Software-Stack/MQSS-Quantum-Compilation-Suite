@@ -25,5 +25,5 @@ runs:
         cudaq_tag=$(grep -A1 'set(CUDAQ_GIT_TAG' cmake/FindCUDAQ.cmake | tail -1 | grep -oP '"\K[^"]+')
         catalyst_tag=$(grep -A1 'set(CATALYST_GIT_TAG' cmake/FindCatalyst.cmake | tail -1 | grep -oP '"\K[^"]+')
         catalyst_tag=${catalyst_tag#v}
-        image=$(echo "ghcr.io/${{ github.repository }}/mqssci-deps" | tr '[:upper:]' '[:lower:]')
+        image=$(echo "ghcr.io/${GITHUB_REPOSITORY}/mqssci-deps" | tr '[:upper:]' '[:lower:]')
         echo "image=${image}:llvm${llvm_version}-cudaq${cudaq_tag}-catalyst${catalyst_tag}" >> "$GITHUB_OUTPUT"

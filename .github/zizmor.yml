@@ -1,0 +1,6 @@
+# zizmor configuration (https://docs.zizmor.sh/configuration/)
+rules:
+  # Keep `uses: ./.github/actions/...` for the local composite action; the
+  # newer `$/` self-repository syntax is a style suggestion, not a security issue.
+  self-repository:
+    disable: true

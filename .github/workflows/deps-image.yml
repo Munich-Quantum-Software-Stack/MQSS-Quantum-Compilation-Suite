@@ -21,6 +21,9 @@ on:
       - "cmake/FindCatalyst.cmake"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   # Compute the image name and version tag once, from the same cmake files
   # FindCUDAQ.cmake/FindCatalyst.cmake/FetchLLVM.cmake use, so it can never
@@ -36,7 +39,9 @@ jobs:
       tag: ${{ steps.vars.outputs.tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Compute image name and version tag
         id: vars
@@ -51,7 +56,7 @@ jobs:
             exit 1
           fi
 
-          image=$(echo "ghcr.io/${{ github.repository }}/mqssci-deps" | tr '[:upper:]' '[:lower:]')
+          image=$(echo "ghcr.io/${GITHUB_REPOSITORY}/mqssci-deps" | tr '[:upper:]' '[:lower:]')
           tag="llvm${llvm_version}-cudaq${cudaq_tag}-catalyst${catalyst_tag}"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
@@ -76,7 +81,9 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Free disk space
         run: |
@@ -88,20 +95,28 @@ jobs:
 
       - name: Log in to GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
 
       - name: Build deps image (${{ matrix.arch }})
+        env:
+          ARCH: ${{ matrix.arch }}
+          IMAGE: ${{ needs.vars.outputs.image }}
+          TAG: ${{ needs.vars.outputs.tag }}
         run: |
-          docker build --platform "linux/${{ matrix.arch }}" \
+          docker build --platform "linux/${ARCH}" \
             -f .devcontainer/deps.DockerFile \
-            -t "${{ needs.vars.outputs.image }}:${{ needs.vars.outputs.tag }}-${{ matrix.arch }}" \
-            -t "${{ needs.vars.outputs.image }}:latest-${{ matrix.arch }}" \
+            -t "${IMAGE}:${TAG}-${ARCH}" \
+            -t "${IMAGE}:latest-${ARCH}" \
             .devcontainer
 
       - name: Push deps image (${{ matrix.arch }})
+        env:
+          ARCH: ${{ matrix.arch }}
+          IMAGE: ${{ needs.vars.outputs.image }}
+          TAG: ${{ needs.vars.outputs.tag }}
         run: |
-          docker push "${{ needs.vars.outputs.image }}:${{ needs.vars.outputs.tag }}-${{ matrix.arch }}"
-          docker push "${{ needs.vars.outputs.image }}:latest-${{ matrix.arch }}"
+          docker push "${IMAGE}:${TAG}-${ARCH}"
+          docker push "${IMAGE}:latest-${ARCH}"
 
   # Stitch the per-arch tags into a multi-arch manifest list at the bare
   # <image>:<version> and <image>:latest tags, so consumers that don't append
@@ -116,13 +131,16 @@ jobs:
     steps:
       - name: Log in to GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
 
       - name: Publish multi-arch manifest lists
         run: |
-          for t in "${{ needs.vars.outputs.tag }}" latest; do
+          for t in "${NEEDS_VARS_OUTPUTS_TAG}" latest; do
             docker buildx imagetools create \
-              -t "${{ needs.vars.outputs.image }}:${t}" \
-              "${{ needs.vars.outputs.image }}:${t}-amd64" \
-              "${{ needs.vars.outputs.image }}:${t}-arm64"
+              -t "${NEEDS_VARS_OUTPUTS_IMAGE}:${t}" \
+              "${NEEDS_VARS_OUTPUTS_IMAGE}:${t}-amd64" \
+              "${NEEDS_VARS_OUTPUTS_IMAGE}:${t}-arm64"
           done
+        env:
+          NEEDS_VARS_OUTPUTS_TAG: ${{ needs.vars.outputs.tag }}
+          NEEDS_VARS_OUTPUTS_IMAGE: ${{ needs.vars.outputs.image }}
